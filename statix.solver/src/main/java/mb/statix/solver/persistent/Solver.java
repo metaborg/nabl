@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,13 +23,11 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.solver.StatixSolver;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
-import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.terms.Scope;
@@ -63,10 +60,6 @@ public class Solver {
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
             throws InterruptedException {
-        final Optional<SolverResult> trivial = solveTrivial(constraint, spec, state, Completeness.Immutable.of());
-        if(trivial.isPresent()) {
-            return trivial.get();
-        }
         return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
     }
 
@@ -81,10 +74,6 @@ public class Solver {
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
             IProgress progress, ICancel cancel, int flags) throws InterruptedException {
-        final Optional<SolverResult> trivial = solveTrivial(constraints, spec, state, completeness);
-        if(trivial.isPresent()) {
-            return trivial.get();
-        }
         return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
                 flags).solve();
     }
@@ -92,41 +81,8 @@ public class Solver {
     public static IFuture<SolverResult> solveConcurrent(IConstraint constraint, Spec spec, IState.Immutable state,
             ICompleteness.Immutable completeness, IDebugContext debug, IProgress progress, ICancel cancel,
             ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags, Iterable<Scope> rootScopes) {
-        Optional<SolverResult> trivial = solveTrivial(constraint, spec, state, completeness);
-        if(trivial.isPresent()) {
-            return CompletableFuture.completedFuture(trivial.get());
-        }
         return new StatixSolver(constraint, spec, state, completeness, debug, progress, cancel, scopeGraph, flags)
                 .solve(rootScopes);
-    }
-
-    public static Optional<SolverResult> solveTrivial(Iterable<IConstraint> constraints, Spec spec,
-            IState.Immutable state, ICompleteness.Immutable completeness) {
-        final Iterator<IConstraint> it = constraints.iterator();
-        if(!it.hasNext()) {
-            return Optional.of(SolverResult.of(spec, state, Collections.emptyMap(), Collections.emptyMap(),
-                    Collections.emptyMap(), Collections.emptySet(), Collections.emptySet(), completeness));
-        }
-        final IConstraint c = it.next();
-        if(it.hasNext()) {
-            return Optional.empty();
-        }
-        return solveTrivial(c, spec, state, completeness);
-
-    }
-
-    public static Optional<SolverResult> solveTrivial(IConstraint constraint, Spec spec, IState.Immutable state,
-            ICompleteness.Immutable completeness) {
-        return Constraints.trivial(constraint).map(trivial -> {
-            final Map<IConstraint, IMessage> messages;
-            if(trivial) {
-                messages = Collections.emptyMap();
-            } else {
-                messages = Collections.singletonMap(constraint, MessageUtil.findClosestMessage(constraint));
-            }
-            return SolverResult.of(spec, state, messages, Collections.emptyMap(), Collections.emptyMap(),
-                    Collections.emptySet(), Collections.emptySet(), completeness);
-        });
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
