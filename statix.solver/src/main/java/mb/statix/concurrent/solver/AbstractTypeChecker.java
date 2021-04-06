@@ -28,7 +28,6 @@ import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.ApplyMode;
@@ -139,8 +138,9 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                     new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }
 
-        solveResult = Solver.solveConcurrent(applyResult.body(), spec, unitState, applyResult.criticalEdges(), debug,
-                new NullProgress(), new NullCancel(), context, 0, scopes);
+        solver = new StatixSolver(applyResult.body(), spec, unitState, applyResult.criticalEdges(), debug,
+                new NullProgress(), new NullCancel(), context, 0);
+        solveResult = solver.solve(scopes);
 
         return solveResult.thenApply(r -> {
             logger.debug("checker {}: solver returned.", context.id());
