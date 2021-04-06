@@ -573,8 +573,10 @@ public class StatixSolver {
                 if(!freeVars.isEmpty()) {
                     return delay(c, Delay.ofVars(freeVars));
                 }
-                final Rule dataWfRule = RuleUtil.closeInUnifier(filter.getDataWF(), state.unifier(), Safety.UNSAFE);
-                final Rule dataLeqRule = RuleUtil.closeInUnifier(min.getDataEquiv(), state.unifier(), Safety.UNSAFE);
+                final Rule dataWfRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(filter.getDataWF(), state.unifier(), Safety.UNSAFE));
+                final Rule dataLeqRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(min.getDataEquiv(), state.unifier(), Safety.UNSAFE));
 
                 final Scope scope = AScope.matcher().match(scopeTerm, unifier).orElseThrow(
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));

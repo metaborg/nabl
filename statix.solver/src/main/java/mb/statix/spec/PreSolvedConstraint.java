@@ -27,6 +27,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -340,11 +341,62 @@ public class PreSolvedConstraint implements Serializable {
      * Externalize the given variables, returning a substitution for the variables and an updated rule body. The given
      * variables must be free in the rule body, or part of the existential variables. Existential variables of the rule
      * body may become free in the updated rule body.
+     * 
+     * This method works under the assumption that the provided variables were bound, and that these binders are
+     * replaced by the terms provided in the substitution, causing the variables that appear there to be bound instead.
      */
-    public Tuple2<ISubstitution.Immutable, PreSolvedConstraint> extern(Iterable<ITermVar> vars) {
-        throw new UnsupportedOperationException();
+    public Tuple2<ISubstitution.Immutable, PreSolvedConstraint> extern(Iterable<ITermVar> externVars) {
+        final Set.Immutable<ITermVar> freeVars = freeVars();
+        final Set.Immutable<ITermVar> externVarSet = CapsuleUtil.toSet(externVars).__retainAll(freeVars);
+
+        Set.Immutable<ITermVar> vars = this.vars;
+        final IUniDisunifier.Transient _unifier = this.unifier.melt();
+
+        // extract the terms for the variables, and adapt existential variables
+        ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of();
+        for(ITermVar var : externVarSet) {
+            subst = subst.put(var, _unifier.findRecursive(var));
+        }
+        final java.util.Set<ITermVar> externTermVars = subst.rangeSet();
+        final Set.Immutable<ITermVar> freedVars = vars.__retainAll(externTermVars);
+        vars = vars.__removeAll(externTermVars);
+
+        // reintroduce externalized variables that appear free in the body
+        final Set.Immutable<ITermVar> newFreeVars =
+                Constraints.freeVars(constraints).__insertAll(_unifier.varSet()).__removeAll(vars);
+        final Set.Immutable<ITermVar> lostVars = externVarSet.__removeAll(externTermVars).__retainAll(newFreeVars);
+        vars = vars.__insertAll(lostVars);
+
+        // fix free variables captured in new terms
+        final Set.Immutable<ITermVar> capturedVars = freeVars.__removeAll(externVarSet).__retainAll(externTermVars);
+        if(!capturedVars.isEmpty()) {
+            final FreshVars fresh = new FreshVars(freeVars, externTermVars, vars);
+            final IRenaming ren = fresh.fresh(capturedVars);
+            subst = subst.compose(ren.asSubstitution());
+            try {
+                if(!_unifier.unify(ren.entrySet()).isPresent()) {
+                    throw new IllegalStateException();
+                }
+            } catch(OccursException ex) {
+                throw new IllegalStateException();
+            }
+        }
+
+        return Tuple2.of(subst,
+                new PreSolvedConstraint(vars, _unifier.freeze(), constraints, cause, bodyCriticalEdges, null));
     }
 
+    /**
+     * Reduce the unifier to only include variables that are free or used in other constraints.
+     */
+    public PreSolvedConstraint cleanup() {
+        final Set.Immutable<ITermVar> constraintFreeVars = Constraints.freeVars(constraints);
+        final Set.Immutable<ITermVar> relevantVars = freeVars().__insertAll(constraintFreeVars);
+        final Set.Immutable<ITermVar> irrelevantVars = this.unifier.varSet().__removeAll(relevantVars);
+        final IUniDisunifier.Immutable unifier = this.unifier.removeAll(irrelevantVars).unifier();
+        final Set.Immutable<ITermVar> vars = this.vars.__retainAll(constraintFreeVars.__insertAll(unifier.varSet()));
+        return new PreSolvedConstraint(vars, unifier, constraints, cause, bodyCriticalEdges, null);
+    }
 
     public static PreSolvedConstraint of(IConstraint constraint) {
         final Set.Immutable<ITermVar> freeVars = constraint.freeVars();
@@ -370,11 +422,6 @@ public class PreSolvedConstraint implements Serializable {
 
     /**
      * Pre-solve the constraint into the given data structures. A list of failed constraints is returned.
-     * 
-     * @param failures
-     *            TODO
-     * @param delays
-     *            TODO
      */
     public static void preSolve(IConstraint constraint, Function1<java.util.Set<ITermVar>, IRenaming> fresh,
             IUniDisunifier.Transient unifier, Predicate1<ITermVar> isRigid, java.util.Set<ITermVar> updatedVars,

@@ -12,10 +12,13 @@ import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.ImmutableCollection;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -23,6 +26,7 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.spec.ApplyMode.Safety;
 
 public class RuleUtilTest {
 
@@ -37,6 +41,8 @@ public class RuleUtilTest {
         testInlineRules3();
         testInlineRules4();
         testTransforms();
+        testClose1();
+        testClose2();
     }
 
     private static void testUnorderedRules0() {
@@ -197,17 +203,39 @@ public class RuleUtilTest {
     private static void testTransformRules(List<Rule> rules) {
         for(Rule r : rules) {
             logger.info("Transform {}", r);
-            testTransformRuleResult("hoist", r, RuleUtil.hoist(r));
-            testTransformRuleResult("optimize", r, RuleUtil.optimizeRule(r));
+            //  testTransformRuleResult("hoist", r, RuleUtil.hoist(r));
+            testTransformRuleResult("inlineHead", r, RuleUtil.instantiateHeadPatterns(r));
         }
     }
 
     private static void testTransformRuleResult(String name, Rule r, Rule s) {
-        logger.info("* {} to {}", name, s.toString());
+        logger.info("* {} to {}", name, s);
         if(!Set.Immutable.subtract(s.freeVars(), r.freeVars()).isEmpty()) {
             logger.error("  !! {} introduced new free variables", name);
         }
     }
 
+
+    private static void testClose1() {
+        ITermVar x = B.newVar("", "x");
+        ITermVar y = B.newVar("", "y");
+        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
+                Map.Immutable.of(y, B.newAppl("Id", x)));
+        Rule r = Rule.of("", Arrays.asList(), new CExists(Arrays.asList(x), new CEqual(y, B.newAppl("Id", x))));
+        Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);
+        logger.info("Close {} in {}", r, u);
+        logger.info("  to {}", s);
+    }
+
+    private static void testClose2() {
+        ITermVar x = B.newVar("", "x");
+        ITermVar y = B.newVar("", "y");
+        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
+                Map.Immutable.of(y, B.newAppl("Id", x)));
+        Rule r = Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)));
+        Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);
+        logger.info("Close {} in {}", r, u);
+        logger.info("  to {}", s);
+    }
 
 }

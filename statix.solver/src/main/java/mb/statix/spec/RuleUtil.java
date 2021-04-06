@@ -237,57 +237,6 @@ public class RuleUtil {
         return newRules.build();
     }
 
-    /*
-    public static ImmutableSet<Rule> computeOrderIndependentRules_(List<Rule> rules) {
-        final List<Pattern> guards = Lists.newArrayList();
-    
-        return rules.stream().flatMap(r -> {
-            final IUniDisunifier.Transient diseqs = PersistentUniDisunifier.Immutable.of().melt();
-    
-            // Eliminate wildcards in the patterns
-            final FreshVars fresh = new FreshVars(vars(r));
-            final List<Pattern> paramPatterns = r.params().stream().map(p -> p.eliminateWld(() -> fresh.fresh("_")))
-                    .collect(ImmutableList.toImmutableList());
-            fresh.fix();
-            final Pattern paramsPattern = P.newTuple(paramPatterns);
-    
-            // Create term for params and add implied equalities
-            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = paramsPattern.asTerm(Optional::get);
-            try {
-                if(!diseqs.unify(p_eqs._2()).isPresent()) {
-                    return Stream.empty();
-                }
-            } catch(OccursException e) {
-                return Stream.empty();
-            }
-    
-            // Add disunifications for all patterns from previous rules
-            final boolean guardsOk = guards.stream().allMatch(g -> {
-                final IRenaming swap = fresh.fresh(g.getVars());
-                final Pattern g1 = g.eliminateWld(() -> fresh.fresh("_"));
-                final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> t_eqs = g1.apply(swap).asTerm(Optional::get);
-                // Add internal equalities from the guard pattern, which are also reasons why the guard wouldn't match
-                final List<ITermVar> leftEqs =
-                        t_eqs._2().stream().map(Tuple2::_1).collect(ImmutableList.toImmutableList());
-                final List<ITerm> rightEqs =
-                        t_eqs._2().stream().map(Tuple2::_2).collect(ImmutableList.toImmutableList());
-                final ITerm left = B.newTuple(p_eqs._1(), B.newTuple(leftEqs));
-                final ITerm right = B.newTuple(t_eqs._1(), B.newTuple(rightEqs));
-                final java.util.Set<ITermVar> universals = fresh.reset();
-                return diseqs.disunify(universals, left, right).isPresent();
-            });
-            if(!guardsOk)
-                return Stream.empty();
-    
-            // Add params as guard for next rule
-            guards.add(paramsPattern);
-    
-            final IConstraint body = Constraints.conjoin(StateUtil.asInequalities(diseqs), r.body());
-            return Stream.of(r.withParams(paramPatterns).withBody(body));
-        }).collect(ImmutableSet.toImmutableSet());
-    }
-    */
-
     /**
      * Inline rule into the i-th matching premise of the second rule. Inlining always succeeds (use simplify to solve
      * equalities in the resulting rule). The function returns empty if nothing was inlined because no i-th matching
@@ -333,79 +282,7 @@ public class RuleUtil {
     }
 
     /**
-     * Optimize rules for fast application by inlining head patterns and pre-unifiying equalities.
-     */
-    public static Rule optimizeRule(Rule rule) {
-        rule = headPatternsAsBodyEqualities(rule);
-        rule = hoist(rule);
-        rule = instantiateHeadPatterns(rule);
-        return rule;
-    }
-
-
-    /**
-     * Transform rule such that all non-variable head patterns are eliminated and added as equality constraints to the
-     * rule body.
-     * 
-     * Head patterns are not preserved, but eliminated.
-     * 
-     * For example:
-     * 
-     * <pre>
-     *   { Id(x) :- x == y }  --->  { arg :- arg == Id(x), x == y }
-     * </pre>
-     */
-    public static Rule headPatternsAsBodyEqualities(Rule rule) {
-        return rule;
-        /*
-        final Set.Immutable<ITermVar> freeVars = freeVars(rule);
-        
-        // 1. make arguments
-        final FreshVars fresh = new FreshVars(freeVars);
-        final VarProvider freshProvider = VarProvider.of(fresh::fresh, () -> fresh.fresh("_"));
-        final List<ITerm> args = rule.params().stream().map(p -> fresh.fresh("arg")).collect(Collectors.toList());
-        final Set.Immutable<ITermVar> argVars = fresh.fix();
-        
-        // 2. match patterns
-        //    match patterns against abstract arguments to get substitution and implied equalities
-        final MatchResult matchResult;
-        if((matchResult = P.matchWithEqs(rule.params(), args, PersistentUniDisunifier.Immutable.of(), freshProvider)
-                .orElse(null)) == null) {
-            return Rule.of(rule.name(),
-                    rule.params().stream().map(p -> P.newWld()).collect(ImmutableList.toImmutableList()),
-                    RuleBody.of(new CFalse()));
-        }
-        final Set.Immutable<ITermVar> matchVars = fresh.fix();
-        
-        // 3. update unifier with eqs
-        final IUniDisunifier.Immutable matchUnifier;
-        try {
-            if((matchUnifier =
-                    rule.unifier().unify(matchResult.equalities()).map(r -> r.unifier()).orElse(null)) == null) {
-                return Rule.of(rule.name(),
-                        rule.params().stream().map(p -> P.newWld()).collect(ImmutableList.toImmutableList()),
-                        Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(), new CFalse());
-            }
-        } catch(OccursException ex) {
-            return Rule.of(rule.name(),
-                    rule.params().stream().map(p -> P.newWld()).collect(ImmutableList.toImmutableList()),
-                    Set.Immutable.of(), PersistentUniDisunifier.Immutable.of(), new CFalse());
-        }
-        
-        // 4. construct body
-        final IConstraint matchBody = rule.body().apply(matchResult.substitution());
-        final Set.Immutable<ITermVar> freeMatchBodyVars = freeVars(matchVars, matchUnifier, matchBody);
-        
-        // 5. construct params
-        final List<Pattern> matchParams = args.stream().map(t -> P.fromTerm(t, v -> !freeMatchBodyVars.contains(v)))
-                .collect(ImmutableList.toImmutableList());
-        
-        return Rule.of(rule.name(), matchParams, matchVars, matchUnifier, matchBody);
-        */
-    }
-
-    /**
-     * Transform rule such that constraints and have a single top-level existsential.
+     * Transform rule such that constraints and have a single top-level existential.
      * 
      * Head patterns are preserved.
      * 
@@ -416,77 +293,50 @@ public class RuleUtil {
      * </pre>
      */
     public static Rule hoist(Rule rule) {
-        final PreSolvedConstraint preSolvedBody = PreSolvedConstraint.of(rule.body());
+        final PreSolvedConstraint preSolvedBody = PreSolvedConstraint.of(rule.body()).cleanup();
         return rule.withBody(preSolvedBody.toConstraint());
     }
 
     /**
-     * Transform rule such that head patterns are maximally instantiated based on the unifier.
+     * Transform rule such that head patterns are maximally instantiated based on the body. This implicitly applies
+     * hoisting.
      * 
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {
-        return rule;
-        /*
-        final Set.Immutable<ITermVar> freeVars = freeVars(rule);
-        
-        final FreshVars fresh = new FreshVars(Set.Immutable.union( //
-                freeVars, // prevent capture of free variables
-                rule.evars() // prevent capture by evars as we move under existential
-        ));
-        
-        // convert patterns to terms, creating variables and adding equalities from non-linear patterns
-        final List<ITerm> params = new ArrayList<>();
-        final IUniDisunifier.Transient unifier = rule.unifier().melt();
-        boolean okay = rule.params().stream().allMatch(p -> {
-            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> termResult =
-                    p.asTerm(v -> v.map(fresh::fresh).orElseGet(() -> fresh.fresh("_")));
-            params.add(termResult._1());
+        final Set.Immutable<ITermVar> ruleParamVars = rule.paramVars();
+        final FreshVars fresh = new FreshVars(rule.freeVars(), ruleParamVars);
+
+        final List<ITerm> paramTerms = new ArrayList<>();
+        final IUniDisunifier.Transient _paramsUnifier = PersistentUniDisunifier.Immutable.of().melt();
+        for(Pattern param : rule.params()) {
+            final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> paramTerm =
+                    param.asTerm(v -> v.orElseGet(() -> fresh.fresh("_")));
+            paramTerms.add(paramTerm._1());
             try {
-                return unifier.unify(termResult._2()).isPresent();
-            } catch(OccursException e) {
-                return false;
+                if(!_paramsUnifier.unify(paramTerm._2()).isPresent()) {
+                    return rule; // skip, unmatchable pattern
+                }
+            } catch(OccursException ex) {
+                return rule; // skip, unmatchable pattern
             }
-        });
-        if(!okay) {
-            return Rule.of(rule.name(), rule.params(), RuleBody.of(new CFalse()));
         }
-        Set.Immutable<ITermVar> paramVars = fresh.fix();
-        
-        // inline unifier into patterns
-        for(int i = 0; i < params.size(); i++) {
-            params.set(i, unifier.findRecursive(params.get(i)));
-        }
-        
-        // remove original free vars from patterns
-        paramVars = params.stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
-        final IRenaming surrogates = fresh.fresh(Set.Immutable.intersect(freeVars, paramVars));
-        for(int i = 0; i < params.size(); i++) {
-            params.set(i, surrogates.apply(params.get(i)));
-        }
-        try {
-            if(!unifier.unify(surrogates.entrySet()).isPresent()) {
-                throw new IllegalStateException("Unexpected failure.");
-            }
-        } catch(OccursException ex) {
-            throw new IllegalStateException("Unexpected failure.");
-        }
-        
-        // cleanup unifier
-        paramVars = params.stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
-        final Set.Immutable<ITermVar> bodyVars = Constraints.freeVars(rule.body());
-        final Set.Immutable<ITermVar> retainedVars = freeVars.__insertAll(paramVars).__insertAll(bodyVars);
-        unifier.retainAll(retainedVars);
-        
-        // cleanup evars
-        final Set.Immutable<ITermVar> evars = Set.Immutable.intersect(Set.Immutable.subtract(rule.evars(), paramVars),
-                Set.Immutable.union(unifier.varSet(), bodyVars));
-        final Set.Immutable<ITermVar> newFreeVars = freeVars(evars, unifier, rule.body());
-        
-        final List<Pattern> patterns = params.stream().map(t -> P.fromTerm(t, v -> !newFreeVars.contains(v)))
+        fresh.fix().__insertAll(ruleParamVars);
+        final IUniDisunifier.Immutable paramsUnifier = _paramsUnifier.freeze();
+        final Set.Immutable<ITermVar> paramVars = rule.paramVars();
+
+        final PreSolvedConstraint body = PreSolvedConstraint.of(rule.body());
+        final PreSolvedConstraint internedBody = body.intern(CapsuleUtil.immutableSet(), paramsUnifier);
+
+        final Tuple2<ISubstitution.Immutable, PreSolvedConstraint> externResult = internedBody.extern(paramVars);
+        final PreSolvedConstraint externedBody = externResult._2();
+        final PreSolvedConstraint finalBody = externedBody.cleanup();
+
+        final List<Pattern> params = paramTerms.stream().map(externResult._1()::apply)
+                .map(t -> P.fromTerm(t, v -> !finalBody.freeVars().contains(v)))
                 .collect(ImmutableList.toImmutableList());
-        return Rule.of(rule.name(), patterns, evars, unifier.freeze(), rule.body());
-        */
+
+        return Rule.builder().from(rule).params(params).body(finalBody.toConstraint()).build();
     }
 
 
@@ -498,11 +348,13 @@ public class RuleUtil {
         for(ITermVar var : rule.freeVars()) {
             subst = subst.put(var, unifier.findRecursive(var));
         }
+        Rule newRule;
         if(safety.equals(Safety.UNSAFE)) {
-            return rule.unsafeApply(subst);
+            newRule = rule.unsafeApply(subst);
         } else {
-            return rule.apply(subst);
+            newRule = rule.apply(subst);
         }
+        return hoist(newRule);
     }
 
 
