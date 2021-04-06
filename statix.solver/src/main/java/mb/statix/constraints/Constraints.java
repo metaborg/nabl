@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
@@ -355,7 +356,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> f.apply(new CConj(bottomup(f, recurseInLogicalScopes).apply(c.left()), bottomup(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null))),
             c -> f.apply(c),
-            c -> f.apply(new CExists(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), null)),
+            c -> f.apply(new CExists(c.vars(), c.unifier(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null))),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
@@ -386,7 +387,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
-                return new CExists(c.vars(), body, c.cause().orElse(null), null);
+                return new CExists(c.vars(), c.unifier(), body, c.cause().orElse(null));
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -425,7 +426,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
-                return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null), null));
+                return body.map(b -> new CExists(c.vars(), c.unifier(), b, c.cause().orElse(null)));
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -466,7 +467,7 @@ public final class Constraints {
             c -> f.apply(c),
             c -> {
                 return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
-                    return new CExists(c.vars(), b, c.cause().orElse(null), null);
+                    return new CExists(c.vars(), c.unifier(), b, c.cause().orElse(null));
                 });
             },
             c -> f.apply(c),
@@ -686,5 +687,10 @@ public final class Constraints {
         return varSet.isEmpty() ? body : new CExists(varSet, body);
     }
 
+    public static Optional<Boolean> trivial(IConstraint constraint) {
+        return Optional.ofNullable(
+                constraint.match(Constraints.cases(c -> null, c -> null, c -> null, c -> null, c -> false, c -> null,
+                        c -> null, c -> null, c -> null, c -> null, c -> null, c -> true, c -> null, c -> null)));
+    }
 
 }

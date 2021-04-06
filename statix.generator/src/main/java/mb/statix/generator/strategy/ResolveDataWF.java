@@ -30,11 +30,11 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
-import mb.statix.spec.ApplyMode.Safety;
 
 public class ResolveDataWF implements DataWF<ITerm, CEqual> {
     private final IState.Immutable state;

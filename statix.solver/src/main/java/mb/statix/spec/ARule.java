@@ -25,7 +25,7 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.Constraints;
+import mb.statix.constraints.CExists;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
@@ -45,7 +45,7 @@ public abstract class ARule {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
     }
 
-    @Value.Parameter public abstract IConstraint body();
+    @Value.Parameter public abstract CExists body();
 
     @Value.Default public @Nullable ICompleteness.Immutable bodyCriticalEdges() {
         return null;
@@ -55,8 +55,7 @@ public abstract class ARule {
         if(params().stream().anyMatch(p -> p.isConstructed())) {
             return Optional.empty();
         }
-        return body().match(Constraints.<Optional<Boolean>>cases()._true(c -> Optional.of(true))
-                ._false(c -> Optional.of(false)).otherwise(c -> Optional.empty()));
+        return body().isAlways();
     }
 
 
@@ -101,7 +100,7 @@ public abstract class ARule {
         }
 
         List<Pattern> params = this.params();
-        IConstraint body = this.body();
+        CExists body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
         Set.Immutable<ITermVar> freeVars = this.freeVars;
 
@@ -137,7 +136,7 @@ public abstract class ARule {
         }
 
         List<Pattern> params = this.params();
-        IConstraint body = this.body();
+        CExists body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         body = body.unsafeApply(localSubst);
@@ -154,20 +153,16 @@ public abstract class ARule {
      */
     public Rule apply(IRenaming subst) {
         List<Pattern> params = this.params();
-        IConstraint body = this.body();
+        CExists body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
-        Set.Immutable<ITermVar> freeVars = this.freeVars;
 
         params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
         body = body.apply(subst);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
-        if(freeVars != null) {
-            freeVars = freeVars.__removeAll(subst.keySet()).__insertAll(subst.rename(freeVars));
-        }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges).setFreeVars(freeVars);
+        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
     }
 
 
@@ -197,6 +192,15 @@ public abstract class ARule {
 
     @Override public String toString() {
         return toString(ITerm::toString);
+    }
+
+
+    public static Rule of(String name, Iterable<? extends Pattern> params, IConstraint body) {
+        return Rule.of(name, params, new CExists(CapsuleUtil.immutableSet(), body));
+    }
+
+    public static Rule of(String name, Iterable<? extends Pattern> params, CExists body) {
+        return Rule.of(name, params, body);
     }
 
 

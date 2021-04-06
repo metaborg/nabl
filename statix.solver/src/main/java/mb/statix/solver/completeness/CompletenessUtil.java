@@ -131,7 +131,7 @@ public class CompletenessUtil {
             Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         final Set.Immutable<ITermVar> paramVars = rule.paramVars();
         final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
-        final IConstraint newBody = precomputeCriticalEdges(rule.body(), spec, (s, l) -> {
+        final CExists newBody = (CExists) precomputeCriticalEdges(rule.body(), spec, (s, l) -> {
             if(paramVars.contains(s)) {
                 criticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
             } else {
@@ -161,7 +161,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return new CExists(cexists.vars(), newBody, cexists.cause().orElse(null), bodyCriticalEdges.freeze());
+                return cexists.withConstraint(newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
             },
             cfalse -> cfalse,
             cinequal -> cinequal,

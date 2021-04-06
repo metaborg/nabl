@@ -41,6 +41,8 @@ public interface ICompleteness {
 
         Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier);
 
+        Immutable updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier);
+
         ICompleteness.Transient melt();
 
     }

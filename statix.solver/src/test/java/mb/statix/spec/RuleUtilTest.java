@@ -16,6 +16,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -29,6 +30,7 @@ public class RuleUtilTest {
     private final static ILogger logger = LoggerUtils.logger(RuleUtilTest.class);
 
     public static void main(String[] args) {
+        testUnorderedRules0();
         testUnorderedRules1();
         testUnorderedRules2();
         testInlineRules1();
@@ -38,10 +40,20 @@ public class RuleUtilTest {
         testOptimize();
     }
 
+    private static void testUnorderedRules0() {
+        final IConstraint body = new CTrue();
+        // @formatter:off
+        final List<Rule> rules = Arrays.asList(
+          Rule.of("c", Arrays.asList(P.newAppl("f", P.newInt(1))), body)
+        , Rule.of("c", Arrays.asList(P.newAppl("f", P.newWld())), body)
+        , Rule.of("c", Arrays.asList(P.newWld()), body)
+        );
+        testUnorderedRules(rules);
+    }
 
     private static void testUnorderedRules1() {
-        final ITermVar v1 = B.newVar("", "p-1");
-        final ITermVar v2 = B.newVar("", "p-2");
+        final ITermVar v1 = B.newVar("", "x");
+        final ITermVar v2 = B.newVar("", "x");
         final Pattern p1 = P.newVar(v1);
         final IConstraint body = Constraints.exists(Arrays.asList(v1), new CEqual(v1, v2));
         // @formatter:off
@@ -85,7 +97,7 @@ public class RuleUtilTest {
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
         final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
-                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, v2)))));
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), PersistentUniDisunifier.Immutable.of(), new CUser("c", Arrays.asList(v1, v2)))));
         final Rule rule = Rule.of("c", Arrays.asList(p1, p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -96,7 +108,7 @@ public class RuleUtilTest {
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
         final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
-                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(B.newList(), v2)))));
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), PersistentUniDisunifier.Immutable.of(), new CUser("c", Arrays.asList(B.newList(), v2)))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -107,7 +119,7 @@ public class RuleUtilTest {
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
         final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
-                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), PersistentUniDisunifier.Immutable.of(), new CUser("c", Arrays.asList(v1, B.newList())))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -118,7 +130,7 @@ public class RuleUtilTest {
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
         final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
-                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), PersistentUniDisunifier.Immutable.of(), new CUser("c", Arrays.asList(v1, B.newList())))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CTrue());
         testInlineRules(rule, 0, into);
     }
@@ -155,8 +167,8 @@ public class RuleUtilTest {
           Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, A))
         , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, y))
 
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(A, wld))))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(y, wld))))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), PersistentUniDisunifier.Immutable.of(), new CEqual(x, B.newTuple(A, wld))))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), PersistentUniDisunifier.Immutable.of(), new CEqual(x, B.newTuple(y, wld))))
 
         , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, A))
         , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, y))
@@ -167,7 +179,7 @@ public class RuleUtilTest {
 
         , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", A)))
         , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(y, B.newAppl("Id", z))))
+        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), PersistentUniDisunifier.Immutable.of(), new CEqual(y, B.newAppl("Id", z))))
 
         , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, A), new CUser("p", Arrays.asList(Us, Ts))))
         , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))

@@ -37,7 +37,7 @@ public abstract class AState implements IState.Immutable {
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
         final IUniDisunifier.Immutable unifier;
         try {
-            unifier = unifier().unify(other.unifier()).map(IUniDisunifier.Result::unifier)
+            unifier = unifier().uniDisunify(other.unifier()).map(IUniDisunifier.Result::unifier)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");

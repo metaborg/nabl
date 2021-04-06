@@ -104,7 +104,7 @@ public class CTellEdge implements IConstraint, Serializable {
 
     @Override public CTellEdge apply(IRenaming subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges.apply(subst));
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

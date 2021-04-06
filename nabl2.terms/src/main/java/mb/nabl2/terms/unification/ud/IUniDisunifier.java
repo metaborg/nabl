@@ -75,6 +75,9 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
             }
         }
 
+        /**
+         * Unify the two input terms. Return an updated unifier, or throw if the terms cannot be unified.
+         */
         @Override Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(ITerm term1, ITerm term2,
                 Predicate1<ITermVar> isRigid) throws OccursException, RigidException;
 
@@ -90,22 +93,31 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
             }
         }
 
+        /**
+         * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
+         */
         @Override Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUnifier other,
                 Predicate1<ITermVar> isRigid) throws OccursException, RigidException;
 
         /**
-         * Unify with the given unifier. Return an updated unifier, or throw if the terms cannot be unified.
+         * Unify and disunify with the given unifier. Return an updated unifier, or throw if the terms cannot be
+         * unified.
          */
-        default Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other) throws OccursException {
+        default Optional<IUniDisunifier.Result<IUnifier.Immutable>> uniDisunify(IUniDisunifier other)
+                throws OccursException {
             try {
-                return unify(other, Predicate1.never());
+                return uniDisunify(other, Predicate1.never());
             } catch(RigidException ex) {
                 throw new IllegalStateException(ex);
             }
         }
 
-        Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other, Predicate1<ITermVar> isRigid)
-                throws OccursException, RigidException;
+        /**
+         * Unify and disunify with the given unifier. Return an updated unifier, or throw if the terms cannot be
+         * unified.
+         */
+        Optional<IUniDisunifier.Result<IUnifier.Immutable>> uniDisunify(IUniDisunifier other,
+                Predicate1<ITermVar> isRigid) throws OccursException, RigidException;
 
         /**
          * Unify the two term pairs. Return a diff unifier, or throw if the terms cannot be unified.
@@ -136,13 +148,32 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
             }
         }
 
+        /**
+         * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
+         */
         Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universal, ITerm term1,
                 ITerm term2, Predicate1<ITermVar> isRigid) throws RigidException;
 
+        /**
+         * Disunify the given unifier. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
+         */
+        Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universal,
+                IUnifier.Immutable diseqs, Predicate1<ITermVar> isRigid) throws RigidException;
+
+        /**
+         * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
+         */
         default Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(ITerm term1, ITerm term2) {
             return disunify(CapsuleUtil.immutableSet(), term1, term2);
         }
 
+        /**
+         * Disunify the two input terms. Returns empty if disunify failed, otherwise returns a unifier representing the
+         * reduced inequality.
+         */
         default Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(ITerm term1, ITerm term2,
                 Predicate1<ITermVar> isRigid) throws RigidException {
             return disunify(CapsuleUtil.immutableSet(), term1, term2, isRigid);
@@ -257,6 +288,17 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
         }
 
         Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, ITerm term1, ITerm term2,
+                Predicate1<ITermVar> isRigid) throws RigidException;
+
+        default Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, IUnifier.Immutable diseqs) {
+            try {
+                return disunify(universal, diseqs, Predicate1.never());
+            } catch(RigidException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
+
+        Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, IUnifier.Immutable diseqs,
                 Predicate1<ITermVar> isRigid) throws RigidException;
 
         default Optional<Optional<Diseq>> disunify(ITerm term1, ITerm term2) {

@@ -101,6 +101,12 @@ public abstract class Completeness implements ICompleteness {
             return new Completeness.Immutable(incomplete.retainAll(getVarsOrScopes(varOrScopes, unifier)));
         }
 
+        @Override public ICompleteness.Immutable updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
+            final Completeness.Transient _completeness = melt();
+            _completeness.updateAll(vars, unifier);
+            return _completeness.freeze();
+        }
+
         @Override public Completeness.Transient melt() {
             return new Completeness.Transient(incomplete.melt());
         }

@@ -9,9 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
-import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-
 public class AggregateFutureTest {
 
     @Test public void testAggregateOfNone() {

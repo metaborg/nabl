@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.statix.constraints.Constraints;
 import mb.statix.scopegraph.reference.DataWF;
 import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
@@ -19,6 +20,7 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.Solver.ApplyInStateResult;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
@@ -51,15 +53,23 @@ class ConstraintDataWF implements DataWF<ITerm> {
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
         final IUniDisunifier.Immutable unifier = state.unifier();
         try {
-            final ApplyResult result;
+            final ApplyResult applyResult;
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((result = RuleUtil
+            if((applyResult = RuleUtil
                     .apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT, Safety.UNSAFE)
                     .orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
-                    result.criticalEdges(), isComplete, debug, progress.subProgress(1), cancel)) {
+
+            final ApplyInStateResult bodyResult;
+            if((bodyResult = Solver.applyInState(state, applyResult.criticalEdges(), applyResult.body(), Safety.UNSAFE)
+                    .orElse(null)) == null) {
+                return false;
+            }
+
+            if(Solver.entails(spec, bodyResult.state, Constraints.disjoin(bodyResult.constraint),
+                    Collections.emptyMap(), bodyResult.criticalEdges, isComplete, debug, progress.subProgress(1),
+                    cancel)) {
                 if(debug.isEnabled(Level.Debug)) {
                     debug.debug("Well-formed {}", unifier.toString(B.newTuple(datum)));
                 }

@@ -82,10 +82,11 @@ class PatternAs extends Pattern {
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
         final ITerm term = pattern.asTerm(equalities, fresh);
-        if(!var.isWildcard()) {
-            equalities.apply(var.getVar(), term);
+        if(var.isWildcard()) {
+            return term;
         }
-        return term;
+        equalities.apply(var.getVar(), term);
+        return var.getVar();
     }
 
     @Override public String toString() {

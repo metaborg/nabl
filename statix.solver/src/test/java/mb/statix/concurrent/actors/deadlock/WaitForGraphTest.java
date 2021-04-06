@@ -14,9 +14,6 @@ import org.metaborg.util.functions.Action1;
 import com.google.common.collect.Lists;
 
 import mb.nabl2.util.collections.MultiSet;
-import mb.statix.concurrent.actors.deadlock.Clock;
-import mb.statix.concurrent.actors.deadlock.Deadlock;
-import mb.statix.concurrent.actors.deadlock.WaitForGraph;
 
 public class WaitForGraphTest {
 

@@ -2,7 +2,9 @@ package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,6 +75,10 @@ public class Renaming implements IRenaming {
             var -> (IListTerm) rename(var)
         ));
         // @formatter:on
+    }
+
+    @Override public Map<ITermVar, ITermVar> asMap() {
+        return Collections.unmodifiableMap(renaming);
     }
 
     @Override public ISubstitution.Immutable asSubstitution() {

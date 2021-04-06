@@ -46,4 +46,6 @@ public interface IRenaming {
 
     ISubstitution.Immutable asSubstitution();
 
+    Map<ITermVar, ITermVar> asMap();
+
 }

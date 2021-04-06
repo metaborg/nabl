@@ -41,8 +41,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
-import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -97,17 +95,18 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.BagTermProperty;
 import mb.statix.solver.persistent.SingletonTermProperty;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.Solver.ApplyInStateResult;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
-import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
@@ -487,26 +486,17 @@ public class StatixSolver {
             }
 
             @Override public Boolean caseExists(CExists c) throws InterruptedException {
-                final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
-                IState.Immutable newState = state;
-                for(ITermVar var : c.vars()) {
-                    final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
-                    final ITermVar freshVar = varAndState._1();
-                    newState = varAndState._2();
-                    existentialsBuilder.put(var, freshVar);
-                }
-                final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
-                final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
-                // unsafeApply : we assume the resource of spec variables is empty and of state variables non-empty
-                final IConstraint newConstraint = c.constraint().unsafeApply(subst).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
                 }
-                final ICompleteness.Immutable newCriticalEdges =
-                        c.bodyCriticalEdges().orElse(NO_NEW_CRITICAL_EDGES).apply(subst);
-                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges, existentials,
-                        fuel);
+                final ApplyInStateResult applyResult;
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                if((applyResult = Solver.applyInState(state, null, c, Safety.UNSAFE).orElse(null)) == null) {
+                    return fail(c);
+                }
+                return success(c, applyResult.state, applyResult.updatedVars, disjoin(applyResult.constraint),
+                        applyResult.criticalEdges, applyResult.existentials, fuel);
             }
 
             @Override public Boolean caseFalse(CFalse c) throws InterruptedException {
@@ -772,10 +762,8 @@ public class StatixSolver {
                         throw new IllegalArgumentException(
                                 "Solver only accepts specs with pre-computed critical edges.");
                     }
-                    final ICompleteness.Immutable newCriticalEdges =
-                            Optional.ofNullable(applyResult.criticalEdges()).orElse(NO_NEW_CRITICAL_EDGES);
-                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), newCriticalEdges,
-                            NO_EXISTENTIALS, fuel);
+                    return success(c, state, NO_UPDATED_VARS, Collections.singletonList(applyResult.body()),
+                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
                 } else {
                     final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
                             .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
@@ -795,6 +783,11 @@ public class StatixSolver {
     private static IFuture<Boolean> entails(ITypeCheckerContext<Scope, ITerm, ITerm> context, Spec spec,
             IState.Immutable state, IConstraint constraint, ICompleteness.Immutable criticalEdges, IDebugContext debug,
             ICancel cancel, IProgress progress) {
+        final Optional<Boolean> trivial = Solver.entailsTrivial(constraint);
+        if(trivial.isPresent()) {
+            return CompletableFuture.completedFuture(trivial.get());
+        }
+
         final IDebugContext subDebug = debug.subContext();
         final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = context.subContext("entails");
         final IState.Immutable subState = state.subState().withResource(subContext.id());
@@ -825,6 +818,11 @@ public class StatixSolver {
 
     private IFuture<Boolean> entails(ITypeCheckerContext<Scope, ITerm, ITerm> subContext, IConstraint constraint,
             ICompleteness.Immutable criticalEdges, ICancel cancel) {
+        final Optional<Boolean> trivial = Solver.entailsTrivial(constraint);
+        if(trivial.isPresent()) {
+            return CompletableFuture.completedFuture(trivial.get());
+        }
+
         final IDebugContext subDebug = debug.subContext();
         return absorbDelays(() -> {
             final IState.Immutable subState = state.subState().withResource(subContext.id());
@@ -996,14 +994,22 @@ public class StatixSolver {
         @Override public IFuture<Boolean> wf(ITerm datum, ITypeCheckerContext<Scope, ITerm, ITerm> context,
                 ICancel cancel) throws InterruptedException {
             try {
-                final ApplyResult result;
+                final ApplyResult applyResult;
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
+                if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
                         ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                     return CompletableFuture.completedFuture(false);
                 }
-                return entails(context, spec, state, result.body(), result.criticalEdges(), new NullDebugContext(),
-                        cancel, new NullProgress());
+
+                final ApplyInStateResult bodyResult;
+                if((bodyResult =
+                        Solver.applyInState(state, applyResult.criticalEdges(), applyResult.body(), Safety.UNSAFE)
+                                .orElse(null)) == null) {
+                    return CompletableFuture.completedFuture(false);
+                }
+
+                return entails(context, spec, bodyResult.state, bodyResult.constraint, bodyResult.criticalEdges,
+                        new NullDebugContext(), cancel, new NullProgress());
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1027,13 +1033,21 @@ public class StatixSolver {
                 ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final ApplyResult result;
+                    final ApplyResult applyResult;
                     // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                    if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
+                    if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null,
                             ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
-                    return entails(context, result.body(), result.criticalEdges(), cancel);
+
+                    final ApplyInStateResult bodyResult;
+                    if((bodyResult =
+                            Solver.applyInState(state, applyResult.criticalEdges(), applyResult.body(), Safety.UNSAFE)
+                                    .orElse(null)) == null) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+
+                    return entails(context, bodyResult.constraint, bodyResult.criticalEdges, cancel);
                 } catch(Delay delay) {
                     return CompletableFuture.completedExceptionally(delay);
                 }
@@ -1066,14 +1080,22 @@ public class StatixSolver {
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2,
                 ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
             try {
-                final ApplyResult result;
+                final ApplyResult applyResult;
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+                if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
                         ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                     return CompletableFuture.completedFuture(false);
                 }
-                return entails(context, spec, state, result.body(), result.criticalEdges(), new NullDebugContext(),
-                        cancel, new NullProgress());
+
+                final ApplyInStateResult bodyResult;
+                if((bodyResult =
+                        Solver.applyInState(state, applyResult.criticalEdges(), applyResult.body(), Safety.UNSAFE)
+                                .orElse(null)) == null) {
+                    return CompletableFuture.completedFuture(false);
+                }
+
+                return entails(context, spec, bodyResult.state, bodyResult.constraint, bodyResult.criticalEdges,
+                        new NullDebugContext(), cancel, new NullProgress());
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1144,13 +1166,21 @@ public class StatixSolver {
                 ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final ApplyResult result;
+                    final ApplyResult applyResult;
                     // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                    if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
-                            ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+                    if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2),
+                            null, ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                         return CompletableFuture.completedFuture(false);
                     }
-                    return entails(context, result.body(), result.criticalEdges(), cancel);
+
+                    final ApplyInStateResult bodyResult;
+                    if((bodyResult =
+                            Solver.applyInState(state, applyResult.criticalEdges(), applyResult.body(), Safety.UNSAFE)
+                                    .orElse(null)) == null) {
+                        return CompletableFuture.completedFuture(false);
+                    }
+
+                    return entails(context, bodyResult.constraint, bodyResult.criticalEdges, cancel);
                 } catch(Delay delay) {
                     return CompletableFuture.completedExceptionally(delay);
                 }

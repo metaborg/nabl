@@ -2,7 +2,10 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -14,18 +17,34 @@ import org.metaborg.util.task.IProgress;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.Renaming;
+import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.UnifierFormatter;
+import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
+import mb.nabl2.util.Tuple2;
+import mb.statix.concurrent.actors.futures.CompletableFuture;
+import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
+import mb.statix.concurrent.solver.StatixSolver;
+import mb.statix.constraints.CExists;
+import mb.statix.constraints.CTrue;
+import mb.statix.constraints.Constraints;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.INameResolution;
 import mb.statix.scopegraph.reference.FastNameResolution;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.Spec;
 
 public class Solver {
@@ -47,21 +66,81 @@ public class Solver {
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
             throws InterruptedException {
+        final Optional<SolverResult> trivial = solveTrivial(constraint, spec, state, Completeness.Immutable.of());
+        if(trivial.isPresent()) {
+            return trivial.get();
+        }
         return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
+    }
+
+    public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
+            final ICompleteness.Immutable completeness, final IDebugContext debug, ICancel cancel, IProgress progress,
+            int flags) throws InterruptedException {
+        return solve(spec, state, Collections.singletonList(constraint), Collections.emptyMap(), completeness,
+                (s, l, st) -> true, debug, progress, cancel, flags);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
             IProgress progress, ICancel cancel, int flags) throws InterruptedException {
+        final Optional<SolverResult> trivial = solveTrivial(constraints, spec, state, completeness);
+        if(trivial.isPresent()) {
+            return trivial.get();
+        }
         return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
                 flags).solve();
+    }
+
+    public static IFuture<SolverResult> solveConcurrent(IConstraint constraint, Spec spec, IState.Immutable state,
+            ICompleteness.Immutable completeness, IDebugContext debug, IProgress progress, ICancel cancel,
+            ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags, Iterable<Scope> rootScopes) {
+        Optional<SolverResult> trivial = solveTrivial(constraint, spec, state, completeness);
+        if(trivial.isPresent()) {
+            return CompletableFuture.completedFuture(trivial.get());
+        }
+        return new StatixSolver(constraint, spec, state, completeness, debug, progress, cancel, scopeGraph, flags)
+                .solve(rootScopes);
+    }
+
+    public static Optional<SolverResult> solveTrivial(Iterable<IConstraint> constraints, Spec spec,
+            IState.Immutable state, ICompleteness.Immutable completeness) {
+        final Iterator<IConstraint> it = constraints.iterator();
+        if(!it.hasNext()) {
+            return Optional.of(SolverResult.of(spec, state, Collections.emptyMap(), Collections.emptyMap(),
+                    Collections.emptyMap(), Collections.emptySet(), Collections.emptySet(), completeness));
+        }
+        final IConstraint c = it.next();
+        if(it.hasNext()) {
+            return Optional.empty();
+        }
+        return solveTrivial(c, spec, state, completeness);
+
+    }
+
+    public static Optional<SolverResult> solveTrivial(IConstraint constraint, Spec spec, IState.Immutable state,
+            ICompleteness.Immutable completeness) {
+        return Constraints.trivial(constraint).map(trivial -> {
+            final Map<IConstraint, IMessage> messages;
+            if(trivial) {
+                messages = Collections.emptyMap();
+            } else {
+                messages = Collections.singletonMap(constraint, MessageUtil.findClosestMessage(constraint));
+            }
+            return SolverResult.of(spec, state, messages, Collections.emptyMap(), Collections.emptyMap(),
+                    Collections.emptySet(), Collections.emptySet(), completeness);
+        });
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
             final Map<IConstraint, Delay> delays, final ICompleteness.Immutable completeness,
             final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
             throws Delay, InterruptedException {
+        final Optional<Boolean> trivial = entailsTrivial(constraints);
+        if(trivial.isPresent()) {
+            return trivial.get();
+        }
+
         final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Debug)) {
             debug.debug("Checking entailment of {}", toString(constraints, unifier));
@@ -76,6 +155,11 @@ public class Solver {
     public static boolean entails(final Spec spec, IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
             throws Delay, InterruptedException {
+        final Optional<Boolean> trivial = entailsTrivial(constraint);
+        if(trivial.isPresent()) {
+            return trivial.get();
+        }
+
         final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Debug)) {
             debug.debug("Checking entailment of {}", toString(constraint, unifier));
@@ -128,6 +212,23 @@ public class Solver {
         return true;
     }
 
+    public static Optional<Boolean> entailsTrivial(Iterable<IConstraint> constraints) {
+        final Iterator<IConstraint> it = constraints.iterator();
+        if(!it.hasNext()) {
+            return Optional.of(true);
+        }
+        final IConstraint c = it.next();
+        if(it.hasNext()) {
+            return Optional.empty();
+        }
+        return entailsTrivial(c);
+
+    }
+
+    public static Optional<Boolean> entailsTrivial(IConstraint constraint) {
+        return Constraints.trivial(constraint);
+    }
+
     static void printTrace(IConstraint failed, IUniDisunifier.Immutable unifier, IDebugContext debug) {
         @Nullable IConstraint constraint = failed;
         while(constraint != null) {
@@ -166,6 +267,92 @@ public class Solver {
             TermIndex.matcher()
         ).map(ITerm::toString).match(t, unifier));
         // @formatter:on
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    public static Tuple2<IState.Immutable, IRenaming> buildExistentials(IState.Immutable state, Set<ITermVar> vars) {
+        final Renaming.Builder renaming = Renaming.builder();
+        IState.Immutable newState = state;
+        for(ITermVar var : vars) {
+            final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
+            final ITermVar freshVar = varAndState._1();
+            newState = varAndState._2();
+            renaming.put(var, freshVar);
+        }
+        return Tuple2.of(newState, renaming.build());
+    }
+
+    public static Optional<ApplyInStateResult> applyInState(final IState.Immutable state,
+            final @Nullable ICompleteness.Immutable criticalEdges, final CExists body, final Safety safety) {
+        final Optional<Boolean> isAlways = body.isAlways();
+        if(isAlways.isPresent() && !isAlways.get()) {
+            return Optional.empty();
+        }
+
+        final Tuple2<IState.Immutable, IRenaming> ext = buildExistentials(state, body.vars());
+        IState.Immutable newState = ext._1();
+
+        final IUniDisunifier.Immutable newUnifier;
+        final Set<ITermVar> updatedVars;
+        if(body.unifier().isEmpty()) {
+            newUnifier = newState.unifier();
+            updatedVars = Collections.emptySet();
+        } else {
+            final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
+            try {
+                if((unifyResult =
+                        newState.unifier().uniDisunify(body.unifier().rename(ext._2())).orElse(null)) == null) {
+                    return Optional.empty();
+                }
+            } catch(OccursException ex) {
+                return Optional.empty();
+            }
+            newUnifier = unifyResult.unifier();
+            updatedVars = unifyResult.result().domainSet();
+        }
+        newState = newState.withUnifier(newUnifier);
+
+        ICompleteness.Immutable newBodyCriticalEdges =
+                criticalEdges != null ? criticalEdges : Completeness.Immutable.of();
+        if(body.bodyCriticalEdges().isPresent()) {
+            newBodyCriticalEdges = newBodyCriticalEdges.addAll(body.bodyCriticalEdges().get(), newUnifier);
+        }
+
+        IConstraint newConstraint;
+        if(isAlways.isPresent() && isAlways.get()) {
+            newConstraint = new CTrue();
+        } else {
+            // unsafeApply : we assume the resource of spec variables is empty and of state variables non-empty
+            if(safety.equals(Safety.UNSAFE)) {
+                newConstraint = body.constraint().unsafeApply(ext._2().asSubstitution());
+            } else {
+                newConstraint = body.constraint().apply(ext._2().asSubstitution());
+            }
+        }
+        newConstraint = newConstraint.withCause(body.cause().orElse(null));
+
+        return Optional.of(
+                new ApplyInStateResult(newState, updatedVars, newConstraint, newBodyCriticalEdges, ext._2().asMap()));
+    }
+
+    public static class ApplyInStateResult {
+        public final IState.Immutable state;
+        public final Set<ITermVar> updatedVars;
+        public final IConstraint constraint;
+        public final ICompleteness.Immutable criticalEdges;
+        public final Map<ITermVar, ITermVar> existentials;
+
+        public ApplyInStateResult(IState.Immutable state, Set<ITermVar> updatedVars, IConstraint constraints,
+                ICompleteness.Immutable criticalEdges, Map<ITermVar, ITermVar> existentials) {
+            this.state = state;
+            this.updatedVars = updatedVars;
+            this.constraint = constraints;
+            this.criticalEdges = criticalEdges;
+            this.existentials = existentials;
+        }
+
     }
 
 }

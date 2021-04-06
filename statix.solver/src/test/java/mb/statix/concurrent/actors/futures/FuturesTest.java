@@ -8,9 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import io.usethesource.capsule.Set;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.Futures;
-import mb.statix.concurrent.actors.futures.IFuture;
 
 public class FuturesTest {
 

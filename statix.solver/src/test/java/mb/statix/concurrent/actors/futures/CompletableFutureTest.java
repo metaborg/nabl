@@ -7,8 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-
 public class CompletableFutureTest {
 
     // complete + whenComplete
