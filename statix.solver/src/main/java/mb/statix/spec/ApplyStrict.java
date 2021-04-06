@@ -10,6 +10,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
 class ApplyStrict extends ApplyMode<Delay> {
@@ -29,7 +30,8 @@ class ApplyStrict extends ApplyMode<Delay> {
         }
         final ICompleteness.Immutable newBodyCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(subst);
-        final ApplyResult applyResult = ApplyResult.of(Optional.empty(), newBody, newBodyCriticalEdges);
+        final ApplyResult applyResult = ApplyResult.of(Optional.empty(), newBody,
+                newBodyCriticalEdges != null ? newBodyCriticalEdges : Completeness.Immutable.of());
         return Optional.of(applyResult);
     }
 

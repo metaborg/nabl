@@ -33,6 +33,8 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
@@ -295,7 +297,7 @@ public class RuleUtil {
         final FreshVars fresh = new FreshVars(vars(into));
 
         final AtomicInteger i = new AtomicInteger(0);
-        final CExists newBody = (CExists) Constraints.map(c -> {
+        final IConstraint newBody = Constraints.map(c -> {
             if(!(c instanceof CUser)) {
                 return c;
             }
@@ -331,19 +333,11 @@ public class RuleUtil {
     }
 
     /**
-     * Simplify the rule by hoisting existentials to the top and solving (dis)equalities. Returns empty if the
-     * (dis)equalities are inconsistent, otherwise return the simplified rule.
-     */
-    public static Rule simplify(Rule rule) {
-        return equalitiesAsUnifier(rule);
-    }
-
-    /**
      * Optimize rules for fast application by inlining head patterns and pre-unifiying equalities.
      */
     public static Rule optimizeRule(Rule rule) {
         rule = headPatternsAsBodyEqualities(rule);
-        rule = equalitiesAsUnifier(rule);
+        rule = hoist(rule);
         rule = instantiateHeadPatterns(rule);
         return rule;
     }
@@ -411,19 +405,19 @@ public class RuleUtil {
     }
 
     /**
-     * Transform rule such that equalities in the body constraint are removed from the body constraint and incorporated
-     * in the unifier.
+     * Transform rule such that constraints and have a single top-level existsential.
      * 
      * Head patterns are preserved.
      * 
      * For example:
      * 
      * <pre>
-     *   { x :- x == Id(y) }  --->  { x :- x == Id(x) | true }
+     *   { x :- {y} {y} x == Id(y) }  --->  { x :- {y y1} x == Id(y1) }
      * </pre>
      */
-    public static Rule equalitiesAsUnifier(Rule rule) {
-        return rule;
+    public static Rule hoist(Rule rule) {
+        final PreSolvedConstraint preSolvedBody = PreSolvedConstraint.of(rule.body());
+        return rule.withBody(preSolvedBody.toConstraint());
     }
 
     /**
@@ -497,6 +491,22 @@ public class RuleUtil {
 
 
     /**
+     * Close the rule by inlining free variables into the rule, taking their values from the given unifier.
+     */
+    public static Rule closeInUnifier(Rule rule, IUnifier.Immutable unifier, Safety safety) {
+        ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of();
+        for(ITermVar var : rule.freeVars()) {
+            subst = subst.put(var, unifier.findRecursive(var));
+        }
+        if(safety.equals(Safety.UNSAFE)) {
+            return rule.unsafeApply(subst);
+        } else {
+            return rule.apply(subst);
+        }
+    }
+
+
+    /**
      * Make closed fragments from the given rules by inlining into the given rules. The predicates includePredicate and
      * includeRule determine which premises should be inlined. The fragments are closed only w.r.t. the included
      * predicates.
@@ -547,7 +557,7 @@ public class RuleUtil {
                 }, false).apply(r.body()).collect(Collectors.toList());
                 for(IConstraint c : cs) {
                     final Rule f = r.withLabel("").withBody(new CExists(CapsuleUtil.immutableSet(), c));
-                    generation.put(name, simplify(f));
+                    generation.put(name, hoist(f));
                 }
             }
             fragments.putAll(generation);

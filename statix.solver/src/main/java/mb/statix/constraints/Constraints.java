@@ -600,8 +600,12 @@ public final class Constraints {
 
     public static Set.Immutable<ITermVar> freeVars(Iterable<? extends IConstraint> constraints) {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
-        constraints.forEach(c -> c.visitFreeVars(freeVars::__insert));
+        visitFreeVars(constraints, freeVars::__insert);
         return freeVars.freeze();
+    }
+
+    public static void visitFreeVars(Iterable<? extends IConstraint> constraints, Action1<ITermVar> onFreeVar) {
+        constraints.forEach(c -> c.visitFreeVars(onFreeVar));
     }
 
     public static Set.Immutable<ITermVar> vars(IConstraint constraint) {

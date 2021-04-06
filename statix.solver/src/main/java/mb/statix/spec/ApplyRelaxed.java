@@ -23,6 +23,7 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.StateUtil;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
 class ApplyRelaxed extends ApplyMode<VoidException> {
@@ -88,7 +89,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         }
 
         // construct result
-        final ApplyResult applyResult = ApplyResult.of(diseq, newBody, newCriticalEdges);
+        final ApplyResult applyResult = ApplyResult.of(diseq, newBody, newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
 
         return Optional.of(applyResult);
     }

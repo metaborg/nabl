@@ -36,7 +36,7 @@ public class RuleUtilTest {
         testInlineRules2();
         testInlineRules3();
         testInlineRules4();
-        testOptimize();
+        testTransforms();
     }
 
     private static void testUnorderedRules0() {
@@ -95,9 +95,8 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into =
-                Rule.of("c", Arrays.asList(p1, P.newWld()), new CConj(new CTrue(), new CExists(Arrays.asList(v2),
-                        new CUser("c", Arrays.asList(v1, v2)))));
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, v2)))));
         final Rule rule = Rule.of("c", Arrays.asList(p1, p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -107,9 +106,8 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into =
-                Rule.of("c", Arrays.asList(p1, P.newWld()), new CConj(new CTrue(), new CExists(Arrays.asList(v2),
-                        new CUser("c", Arrays.asList(B.newList(), v2)))));
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(B.newList(), v2)))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -119,9 +117,8 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into =
-                Rule.of("c", Arrays.asList(p1, P.newWld()), new CConj(new CTrue(), new CExists(Arrays.asList(v2),
-                        new CUser("c", Arrays.asList(v1, B.newList())))));
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
@@ -131,9 +128,8 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into =
-                Rule.of("c", Arrays.asList(p1, P.newWld()), new CConj(new CTrue(), new CExists(Arrays.asList(v2),
-                        new CUser("c", Arrays.asList(v1, B.newList())))));
+        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+                new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
         final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CTrue());
         testInlineRules(rule, 0, into);
     }
@@ -147,7 +143,7 @@ public class RuleUtilTest {
         if(r.isPresent()) {
             logger.info("gives");
             logger.info("* {}", r.get());
-            final Rule rs = RuleUtil.simplify(r.get());
+            final Rule rs = RuleUtil.hoist(r.get());
             logger.info("which simplifies to");
             logger.info("* {}", rs);
         } else {
@@ -156,7 +152,7 @@ public class RuleUtilTest {
     }
 
 
-    private static void testOptimize() {
+    private static void testTransforms() {
         final ITermVar x = B.newVar("", "x");
         final ITermVar y = B.newVar("", "y");
         final ITermVar z = B.newVar("", "z");
@@ -188,20 +184,28 @@ public class RuleUtilTest {
         , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))
 
         , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, B.newAppl("ID", y)))
+
+        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CExists(Arrays.asList(y),
+                new CConj(new CUser("p", Arrays.asList(z, y)), new CExists(Arrays.asList(z),
+                        new CEqual(y, B.newAppl("f", x, z))))))
         );
         // @formatter:on
 
-        testOptimizeRules(rules);
+        testTransformRules(rules);
     }
 
-    private static void testOptimizeRules(List<Rule> rules) {
+    private static void testTransformRules(List<Rule> rules) {
         for(Rule r : rules) {
-            final Rule s = RuleUtil.optimizeRule(r);
-            logger.info("Optimized {}", r);
-            logger.info(" => {}", s.toString());
-            if(!Set.Immutable.subtract(s.freeVars(), r.freeVars()).isEmpty()) {
-                logger.error(" !! Introduced new free variables");
-            }
+            logger.info("Transform {}", r);
+            testTransformRuleResult("hoist", r, RuleUtil.hoist(r));
+            testTransformRuleResult("optimize", r, RuleUtil.optimizeRule(r));
+        }
+    }
+
+    private static void testTransformRuleResult(String name, Rule r, Rule s) {
+        logger.info("* {} to {}", name, s.toString());
+        if(!Set.Immutable.subtract(s.freeVars(), r.freeVars()).isEmpty()) {
+            logger.error("  !! {} introduced new free variables", name);
         }
     }
 
