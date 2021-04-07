@@ -12,16 +12,16 @@ imports
 
 rules
 	    
-  rename-action(construct-textual-change, analyze):
+  rename-action(construct-textual-change, analyze, multi):
     (selected-term, _, selected-ast, _, _) -> renamed-program
     where
       {| ErrorMessage:
         new-name := <read-new-name>
-        ; renamed-asts := <rename(analyze|selected-term, new-name)> selected-ast
+        ; renamed-asts := <rename(analyze, multi|selected-term, new-name)> selected-ast
         ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
       <+ show-errors |}
     
-  rename(analyze|selected-term, new-name): selected-ast -> renamed-asts
+  rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
       asts := <get-analysed-asts> 
       ; analysis := <get-project-analysis>
@@ -29,7 +29,7 @@ rules
       ; selected-index := <find-name-index(|selected-ast, resolution-relation)> selected-term
       ; (target-paths, target-indices) := <find-rename-target> (selected-index, resolution-relation)
       ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
-      ; check-capture(analyze|renamed-asts, resolution-relation)     
+      ; check-capture(analyze, multi|renamed-asts, resolution-relation)     
 
 rules // Step 1: Calculate Resolution Relation
   calc-resolution-relation-project(|analysis): asts -> res-rels
@@ -82,7 +82,7 @@ rules //Step 3: Find occurrences to rename
       
   get-paths-to-rename: target-indices -> paths
     where
-      paths := <map(get-paths);nub> target-indices      
+      paths := <map(get-paths);nub> target-indices
       
   get-paths: TermIndex(path, _) -> path
 
@@ -110,21 +110,40 @@ rules //Step 4: Rename terms
       ; <elem> (term-index, target-indices)
 
 rules //Step 5: Checking for capture
-  check-capture(analyze|renamed-asts, resolution-relation) =
-    (new-asts, new-analysis) := <rerun-analysis(analyze)> renamed-asts
+  check-capture(analyze, multi|renamed-asts, resolution-relation) =
+    (new-asts, new-analysis) := <rerun-analysis(analyze, multi)> renamed-asts
     ; new-resolution-relation := <calc-resolution-relation-project(|new-analysis); qsort(res-pair-gt)> new-asts
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
     ; <eq>(old-resolution-relation, new-resolution-relation) 
-      <+ add-error(|"Capture detected", "This renaming leads to name capture") 
-
-  rerun-analysis(analyze): renamed-asts -> (new-asts, new-analysis)
+      <+ add-error(|"Capture detected", "This renaming leads to name capture")
+      
+  rerun-analysis(analyze, multi): renamed-asts -> reanalyzed-program
     where
-      input := <make-analysis-input> renamed-asts
+      if multi then
+        reanalyzed-program := <rerun-analysis-multi(analyze)> renamed-asts
+      else
+        reanalyzed-program := <rerun-analysis-single(analyze)> renamed-asts
+      end        
+            
+  rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> ([(path, new-ast)], new-analysis)
+    where
+      input := <make-analysis-input-single> (path, renamed-ast)
+      ; AnalysisResult(analyses) := <analyze> input
+      ; (_, Full(new-ast, FileAnalysis(_, new-analysis), _, _,_)) := <fetch-elem(?(path, _))> analyses
+      
+  make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
+    where
+      old-analysis := <stx--get-ast-analysis> renamed-ast
+      ; change := Changed(renamed-ast,old-analysis)       
+
+  rerun-analysis-multi(analyze): renamed-asts -> (new-asts, new-analysis)
+    where
+      input := <make-analysis-input-multi> renamed-asts
       ; analysis-result := <analyze> input
       ; new-asts := <get-new-asts(|renamed-asts)> analysis-result
       ; new-analysis := <get-new-analysis> analysis-result
       
-  make-analysis-input: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
+  make-analysis-input-multi: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
@@ -159,7 +178,7 @@ rules //Step 5: Checking for capture
   res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
       <term-index-gt> (ref-1, ref-2) 
-													
+
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
     where
       if <eq> (path-1, path-2) then
@@ -190,14 +209,14 @@ rules // Utility strategies
   get-project-analysis: _ -> analysis-object
     where 	
       project-analyses := <get-project-constraint-analyses>
-      ; analysis := <get-project-entry> project-analyses
+      ; analysis := <get-project-entry <+ get-single-file-entry> project-analyses
       ; analysis-object := <get-analysis-object> analysis
-      ; <not(stx-analysis-has-errors)> analysis-object
-        <+ add-error(|"Renaming impossible", "The program contains errors.") 	
       
   get-project-entry: entries -> project-analysis
     where
       (_, project-analysis) := <fetch-elem(is-project-entry)> entries
+      
+  get-single-file-entry: [(_, file-analysis)] -> file-analysis      
   	
   is-project-entry = get-entry(|".")
 
@@ -206,6 +225,8 @@ rules // Utility strategies
       <eq> (path, search-path)    
     
   get-analysis-object: ProjectAnalysis(_, _, _, analysis-object) -> analysis-object
+  
+  get-analysis-object: FileAnalysis(_, analysis-object) -> analysis-object
       
   get-analysed-asts: _ -> asts
     where
