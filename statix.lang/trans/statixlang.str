@@ -10,5 +10,6 @@ imports
 
   outline
   pp
+  renaming
 
   statixruntime

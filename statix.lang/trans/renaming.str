@@ -1,0 +1,225 @@
+module renaming
+
+imports 
+	signatures/-
+	nabl2/api
+	statix/lang/pp
+	libspoofax/stratego/debug
+	libspoofax/term/origin
+	libspoofax/ui/dialogs
+    libspoofax/analysis/constraint
+	
+	signatures/nabl2/shared/common/-
+  	signatures/nabl2/runtime/common/-
+
+rules // menu action strategies
+  rename-action-2 :
+    (selected-term, _, ast, path, _) -> (path, result)
+    where
+    	{| ErrorMessage:
+    	  new-name := <read-new-name> path
+	      ; renamed-ast := <rename-2(|selected-term, new-name, path)> ast
+	      ; (_, _, result) := <construct-textual-change> (ast, renamed-ast)
+        <+ show-errors |}	      
+    
+    rename-2(|selected-term, new-name, path): selected-ast -> renamed-asts
+    where
+        asts := <get-analysed-asts> 
+        ; analysis := <get-project-analysis>
+        ; res-rel := <calc-resolution-relation-2> analysis
+        ; <ppdebug(|"res-rel: ")> res-rel
+	    ; selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
+	    ; <ppdebug(|"selected-index: ")> selected-index
+	    ; (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
+	    ; <ppdebug(|"target-indices: ")> target-indices
+	    ; <ppdebug(|"target-paths: ")> target-paths
+		; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
+		; <ppdebug(|"renamed-asts: ")> renamed-asts
+	    ; check-capture(|selected-ast, res-rel, path)  
+	    
+   get-analysis: ast -> analysis
+   where 
+     analysis := <nabl2-get-ast-analysis> ast
+     ; <not(nabl2-analysis-has-errors)> analysis
+       <+ add-error(|"Renaming impossible", "The program contains errors.")	    
+
+rules // Step 1: Find all terms to rename
+  calc-resolution-relation-2: analysis -> user-defined-relation
+    where
+      refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)>
+      ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)>
+      ; fdecs := <filter(is-string-occ)> decs
+      ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
+      ; decs-reflexive-pairs := <filter(is-string-occ);map(make-reflexive-pair)> decs
+      ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
+      ; user-defined-relation := <filter(is-user-defined)> relation
+      
+  is-string-occ: Occurrence(_, term, _) -> <id>
+    where
+      <is-string> term      
+      
+  make-resolution-pair(|analysis) : ref -> (ref-index, dec-index)
+    where
+      (dec, _) := <nabl2-get-resolved-name(|analysis)> ref
+      ; ref-index := <get-term-index-from-occ> ref
+      ; dec-index := <get-term-index-from-occ> dec         
+
+  make-reflexive-pair: dec -> (term-index, term-index)
+    where
+      term-index := <get-term-index-from-occ> dec
+
+  is-user-defined: (ref, dec@TermIndex(path, num-index)) -> <id>
+    where
+      <not(eq)> (num-index, 0)
+
+  get-term-index-from-occ: Occurrence(_, name, _) -> term-index
+    where
+      term-index := <nabl2-get-ast-index> name
+      
+rules // Step 2: Find occurrence index in selection
+  find-name-index-2(|ast, res-rel): term -> occ-index
+  where
+    <check-selection(|term, ast)> ast
+    ; <ppdebug(|"term: ")> term
+  	; occ-index := <collect-one(get-name-index(|res-rel))> term  
+  	  <+  term-string := <write-to-string> term
+  	      ; error-msg := <conc-strings> ("The selected name cannot be renamed:\n", term-string)
+  	      ; add-error(|"Renaming impossible", error-msg)
+  	
+  check-selection(|selected-term, ast) =
+    <not(eq)> (selected-term, ast)
+  	<+ add-error(|"Invalid selection", "Please select a name")
+    
+	get-name-index(|res-rel): term -> occurrence
+	where
+		if (<is-list> term) then
+			<map(get-name-index(|res-rel))> term
+		else
+			<is-string> term
+			; term-index := <nabl2-get-ast-index> term
+			; occurrence := <fetch-elem(resolution-pair-contains(|term-index))> res-rel
+		end	
+			
+	resolution-pair-contains(|term-index): (ref-index, dec-index) -> term-index 
+	where
+		<eq> (term-index, ref-index) <+ <eq> (term-index, dec-index) 
+    
+rules //Step 3: Find occurrences to rename	 	
+ find-rename-target: (selected-occ, resolution-relation) -> (target-paths, target-indices)
+    where
+      target-indices := <find-all-related-occs> (selected-occ, resolution-relation)
+      ; target-paths := <get-paths-to-rename> target-indices
+      
+  get-paths-to-rename: target-indices -> paths
+    where
+      paths := <map(get-paths);nub> target-indices      
+      
+  get-paths: TermIndex(path, _) -> path
+
+
+rules //Step 4: Rename terms	 	
+  rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
+    where
+      renamed-asts := <map(rename-ast(|target-indices, target-paths, new-name))> asts
+      
+  rename-ast(|target-indices, target-paths, new-name): (path, ast) -> (path, ast, renamed-ast)
+    where
+      if (<path-in(|target-paths)> path) then
+        renamed-ast := <bottomup(try(rename-term(|target-indices, new-name)))> ast
+      else
+        renamed-ast := ()
+      end       
+  
+  path-in(|paths): path -> <id>
+    where
+      <elem> (path, paths)
+
+  rename-term(|target-indices, new-name): term -> new-name
+    where
+      <is-string> term
+      ; term-index := <nabl2-get-ast-index> term
+      ; <elem> (term-index, target-indices)
+        		  
+rules //Step 4: Checking for capture
+	  
+  check-capture(|renamed-ast, res-rel, path) =
+		(_, new-analysis, _, _, _) := <nabl2-analyze-ast(|path)> renamed-ast
+		; old-res-rel := <qsort(res-pair-gt)>  res-rel
+		; new-res-rel := <calc-resolution-relation-2; qsort(res-pair-gt)> new-analysis
+		; <ppdebug(|"old-resolution-relation: ")> old-res-rel
+		; <ppdebug(|"new-resolution-relation: ")> new-res-rel
+		; <eq>(old-res-rel, new-res-rel) 
+		  <+ add-error(|"Capture detected", "This renaming leads to name capture")
+															
+		res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
+		where
+			<term-index-gt> (ref-1, ref-2) 
+															
+		term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
+		where 
+			<string-gt> (path-1, path-2) <+ <gt> (num-index-1, num-index-2) 
+		
+rules // UI strategies
+
+	compose-filename: path -> filename
+	where
+		path-parts := <string-tokenize(|['.'])>
+		; file-extension := <last> path-parts
+		; new-file-extension := <conc-strings> ("refactored.", file-extension)
+		; filename := <guarantee-extension(|new-file-extension)> path
+	
+	read-new-name: _ -> new-name
+	where 	
+   		new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
+   
+		  
+rules // Utility strategies				
+	add-elem: (new-elem, list) -> [new-elem | list]
+	
+	get-project-analysis: _ -> analysis-object
+    where 	
+      project-analyses := <get-project-constraint-analyses>
+      ; analysis := <get-project-entry> project-analyses
+      ; <ppdebug(|"analysis: ")> analysis
+      ; analysis-object := <get-analysis-object> analysis
+      
+  get-project-entry: entries -> project-analysis
+    where
+      (_, project-analysis) := <fetch-elem(is-project-entry)> entries
+      
+  get-single-file-entry: [(_, file-analysis)] -> file-analysis      
+  	
+  is-project-entry = get-entry(|".")
+
+  get-entry(|search-path): (path, _) -> <id>
+    where
+      <eq> (path, search-path)    
+    
+  get-analysis-object: CompatProjectAnalysis(_, analysis-object) -> analysis-object
+  
+  get-analysis-object: FileAnalysis(_, analysis-object) -> analysis-object
+      
+  get-analysed-asts: _ -> asts
+    where
+      project-asts := <get-project-analyzed-asts>
+      ; asts := <filter(not(is-project-entry))> project-asts	       
+	
+						  
+rules // external rules
+	find-all-related-occs =  prim("FindAllRelatedOccurrences")
+	
+rules // error handling 
+	add-error(|title, message) =
+	  rules(
+	    ErrorMessage :+ () -> (title, message)
+	  ); fail
+	 
+	add-error-on-fail(s|title, message) =
+  	  s <+ add-error(|title, message); fail
+  	  
+	show-errors =
+		<ppdebug0> "show-errros";	 
+	  [(title, message) | _] := <bagof-ErrorMessage> ()
+	  ; <show-dialog(|title, "ERROR")> message 
+	  ; <ppdebug0> "show-errros-after"	 
+	  
