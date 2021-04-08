@@ -147,6 +147,14 @@ public class Broker<S, L, D, R> {
             return units.get(scopeImpl.id(scope));
         }
 
+        @Override public String name(S scope) {
+            return scopeImpl.name(scope);
+        }
+
+        @Override public D embed(S scope) {
+            return scopeImpl.embed(scope);
+        }
+
         @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> add(
                 String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
                 List<S> rootScopes) {

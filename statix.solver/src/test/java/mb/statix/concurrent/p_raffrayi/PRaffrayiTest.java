@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -68,6 +67,7 @@ public class PRaffrayiTest {
                 }, Set.Immutable.of());
 
         final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
+        assertNotNull("No analysis provided.", result.analysis());
     }
 
 
@@ -86,6 +86,7 @@ public class PRaffrayiTest {
                 }, Set.Immutable.of());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
+        assertNotNull("No analysis provided.", result.analysis());
     }
 
 
@@ -136,6 +137,7 @@ public class PRaffrayiTest {
                 }, Set.Immutable.of());
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
+        assertNotNull("No analysis provided.", result.analysis());
     }
 
 
@@ -508,6 +510,7 @@ public class PRaffrayiTest {
                 }, Arrays.asList(1, 2));
 
         final IUnitResult<Scope, Integer, ITerm, Object> result = future.asJavaCompletion().get();
+        assertNotNull("No analysis provided.", result.analysis());
     }
 
 
@@ -758,7 +761,7 @@ public class PRaffrayiTest {
 
                     @Override public IFuture<Set<ITerm>> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
                             List<Scope> roots) {
-                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, ITerm, Object>> declResult =
                                 unit.add("decl", new SingleDeclInRootUnit(lbl, datum), Collections.singletonList(s));
@@ -773,7 +776,8 @@ public class PRaffrayiTest {
                 }, CapsuleUtil.toSet(1));
 
         final IUnitResult<Scope, Integer, ITerm, Set<ITerm>> result = future.asJavaCompletion().get();
-        assertNotNull(result.analysis());
+        assertNotNull("No analysis provided.", result.analysis());
+        assertTrue("Unexpected failures.", result.failures().isEmpty());
         assertFalse("No query result found.", result.analysis().isEmpty());
         assertTrue("Query result did not contain expected result.", result.analysis().contains(datum));
         assertEquals("Query result contains superfluous results.", 1, result.analysis().size());

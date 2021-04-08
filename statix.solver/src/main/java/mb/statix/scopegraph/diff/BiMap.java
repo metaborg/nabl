@@ -131,6 +131,10 @@ public abstract class BiMap<E> {
             entries.forEach(e -> put(e.getKey(), e.getValue()));
         }
 
+        public E getValueOrDefault(E key, E defaultValue) {
+            return fwd.getOrDefault(key, defaultValue);
+        }
+
         public Immutable<E> freeze() {
             return new Immutable<>(fwd.freeze(), bwd.freeze());
         }

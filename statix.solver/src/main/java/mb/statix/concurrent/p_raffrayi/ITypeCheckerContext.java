@@ -1,5 +1,6 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -38,12 +39,12 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Initialize root scope.
      */
-    void initScope(S root, Iterable<L> labels, boolean shared);
+    void initScope(S root, Collection<L> labels, boolean shared);
 
     /**
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
      */
-    S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared);
+    S freshScope(String baseName, Collection<L> labels, boolean data, boolean shared);
 
     /**
      * Set datum of a scope. Scope must be open for data at given access level. Datum is automatically closed by setting
@@ -116,11 +117,11 @@ public interface ITypeCheckerContext<S, L, D> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean shared) {
+            @SuppressWarnings("unused") @Override public void initScope(S root, Collection<L> labels, boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> labels, boolean data,
+            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Collection<L> labels, boolean data,
                     boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }

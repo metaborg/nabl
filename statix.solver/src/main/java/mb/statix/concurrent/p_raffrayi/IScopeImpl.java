@@ -9,8 +9,12 @@ public interface IScopeImpl<S, D> {
 
     String id(S scope);
 
+    String name(S scope);
+
     Collection<S> getAllScopes(D datum);
 
     D subtituteScopes(D datum, Map<S, S> substitution);
+
+    D embed(S scope);
 
 }

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -166,24 +167,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @SuppressWarnings("unused") @Override public void _initShare(S scope, Iterable<L> edges, boolean data,
-            boolean sharing) {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
-    }
-
-    @SuppressWarnings("unused") @Override public void _addShare(S scope) {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
-    }
-
-    @SuppressWarnings("unused") @Override public void _doneSharing(S scope) {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
-    }
-
-    @SuppressWarnings("unused") @Override public void _addEdge(S source, L label, S target) {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
-    }
-
-    @SuppressWarnings("unused") @Override public void _closeEdge(S scope, EdgeOrData<L> edge) {
+    @SuppressWarnings("unused") @Override public void _initShare(S scope, Optional<S> childRepOpt) {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 

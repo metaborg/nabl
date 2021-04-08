@@ -1,5 +1,6 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -108,13 +109,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return ifActive(result);
     }
 
-    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+    @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         doInitShare(self, root, labels, false, sharing);
     }
 
-    @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
+    @Override public S freshScope(String baseName, Collection<L> edgeLabels, boolean data, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
@@ -125,7 +126,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     @Override public void shareLocal(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        doAddShare(self, scope);
+        doAddLocalShare(self, scope);
     }
 
     @Override public void setDatum(S scope, D datum) {

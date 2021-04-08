@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.diff.BiMap;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
@@ -85,6 +87,8 @@ public abstract class AbstractUnit<S, L, D, R>
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
+
+    private final BiMap.Transient<S> reps = BiMap.Transient.of();
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
@@ -125,27 +129,8 @@ public abstract class AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _initShare(S scope, Iterable<L> labels, boolean data, boolean sharing) {
-        resume();
-        doInitShare(self.sender(TYPE), scope, labels, data, sharing);
-    }
-
-    @Override public void _addShare(S scope) {
-        doAddShare(self.sender(TYPE), scope);
-    }
-
-    @Override public void _doneSharing(S scope) {
-        resume();
-        doCloseScope(self.sender(TYPE), scope);
-    }
-
-    @Override public void _addEdge(S source, L label, S target) {
-        doAddEdge(self.sender(TYPE), source, label, target);
-    }
-
-    @Override public void _closeEdge(S scope, EdgeOrData<L> edge) {
-        resume();
-        doCloseLabel(self.sender(TYPE), scope, edge);
+    @Override public void _initShare(S scope, Optional<S> childRepOpt) {
+        doChildInit(self.sender(TYPE), scope, childRepOpt);
     }
 
     @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
@@ -213,7 +198,7 @@ public abstract class AbstractUnit<S, L, D, R>
         result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
 
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
-            doAddShare(subunit, rootScope);
+            doAddLocalShare(subunit, rootScope);
         }
 
         final IFuture<IUnitResult<S, L, D, Q>> ret = internalResult.whenComplete((r, ex) -> {
@@ -230,7 +215,7 @@ public abstract class AbstractUnit<S, L, D, R>
         return Tuple2.of(subunit, ret);
     }
 
-    protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
+    protected final S doFreshScope(String baseName, Collection<L> edgeLabels, boolean data, boolean sharing) {
         final S scope = makeScope(baseName);
 
         scopes.__insert(scope);
@@ -242,39 +227,55 @@ public abstract class AbstractUnit<S, L, D, R>
 
     protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
-
         waitFor(InitScope.of(self, scope), sender);
     }
 
-    protected final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
-        doAddLocalShare(sender, scope);
-
-        if(!isOwner(scope)) {
-            self.async(parent)._addShare(scope);
+    protected final void doChildInit(IActorRef<? extends IUnit<S, L, D, ?>> sender, S root, Optional<S> childRepOpt) {
+        final S localRep = findRep(root);
+        if(!context.owner(localRep).equals(self)) {
+            logger.error("Cannot set child representative for non-owned local rep {} (orig: {}).", localRep, root);
+            throw new IllegalStateException("Cannot set child representative for " + localRep);
         }
+
+        childRepOpt.ifPresent(cRep -> scopeGraph.set(scopeGraph.get().addEdge(localRep, EdgeOrEps.eps(), cRep)));
+        granted(InitScope.of(self, localRep), sender);
     }
 
-    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
-            Iterable<L> labels, boolean data, boolean sharing) {
+    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, Collection<L> labels,
+            boolean data, boolean sharing) {
         assertOwnOrSharedScope(scope);
+
+        S localRep;
+        if(isOwner(scope)) {
+            localRep = scope;
+        } else {
+            if(data) {
+                throw new IllegalStateException("Cannot set data for shared scope " + scope);
+            }
+            if(labels.isEmpty() && !sharing) {
+                self.async(parent)._initShare(scope, Optional.empty());
+                localRep = scope;
+            } else {
+                localRep = doFreshScope(context.name(scope) + "-rep", edgeLabels, true, sharing);
+                waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), self);
+                doSetDatum(localRep, context.embed(scope)); // Set representative as datum.
+                reps.put(scope, localRep);
+                self.async(parent)._initShare(scope, Optional.of(localRep));
+            }
+        }
 
         granted(InitScope.of(self, scope), sender);
         for(L label : labels) {
-            waitFor(CloseLabel.of(self, scope, EdgeOrData.edge(label)), sender);
+            waitFor(CloseLabel.of(self, localRep, EdgeOrData.edge(label)), sender);
         }
         if(data) {
-            waitFor(CloseLabel.of(self, scope, EdgeOrData.data()), sender);
+            waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), sender);
         }
         if(sharing) {
-            waitFor(CloseScope.of(self, scope), sender);
+            waitFor(CloseScope.of(self, localRep), sender);
         }
-
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
-            self.async(parent)._initShare(scope, labels, data, sharing);
+        if(isScopeInitialized(localRep)) {
+            releaseDelays(localRep);
         }
     }
 
@@ -287,43 +288,30 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
-        assertOwnOrSharedScope(scope);
+        S rep = findRep(scope);
+        granted(CloseScope.of(self, rep), sender);
 
-        granted(CloseScope.of(self, scope), sender);
-
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
-            self.async(parent)._doneSharing(scope);
+        if(isScopeInitialized(rep)) {
+            releaseDelays(rep);
         }
     }
 
     protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeOrData<L> edge) {
-        assertOwnOrSharedScope(scope);
+        S rep = findRep(scope);
 
-        granted(CloseLabel.of(self, scope, edge), sender);
+        granted(CloseLabel.of(self, rep, edge), sender);
 
-        if(isOwner(scope)) {
-            if(isEdgeClosed(scope, edge)) {
-                releaseDelays(scope, edge);
-            }
-        } else {
-            self.async(parent)._closeEdge(scope, edge);
+        if(isEdgeClosed(rep, edge)) {
+            releaseDelays(rep, edge);
         }
     }
 
     protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
             L label, S target) {
-        assertOwnOrSharedScope(source);
-        assertLabelOpen(source, EdgeOrData.edge(label));
+        S rep = findRep(source);
 
-        scopeGraph.set(scopeGraph.get().addEdge(source, EdgeOrEps.edge(label), target));
-
-        if(!isOwner(source)) {
-            self.async(parent)._addEdge(source, label, target);
-        }
+        assertLabelOpen(rep, EdgeOrData.edge(label));
+        scopeGraph.set(scopeGraph.get().addEdge(rep, EdgeOrEps.edge(label), target));
     }
 
     protected final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, ScopePath<S, L> path,
@@ -477,12 +465,12 @@ public abstract class AbstractUnit<S, L, D, R>
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
-        @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+        @SuppressWarnings("unused") @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
-        @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data,
-                boolean sharing) {
+        @SuppressWarnings("unused") @Override public S freshScope(String baseName, Collection<L> edgeLabels,
+                boolean data, boolean sharing) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
@@ -531,6 +519,13 @@ public abstract class AbstractUnit<S, L, D, R>
 
     protected boolean canAnswer(S scope) {
         return isOwner(scope);
+    }
+
+    protected S findRep(S scope) {
+        assertOwnOrSharedScope(scope);
+        final S rep = reps.getValueOrDefault(scope, scope);
+        assertOwnScope(rep);
+        return rep;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -751,24 +746,18 @@ public abstract class AbstractUnit<S, L, D, R>
                     failures.add(new DeadlockException(initScope.toString()));
                     granted(initScope, self);
                     if(!isOwner(initScope.scope())) {
-                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false, false);
+                        self.async(parent)._initShare(initScope.scope(), Optional.empty());
                     }
                     releaseDelays(initScope.scope());
                 },
                 closeScope -> {
                     failures.add(new DeadlockException(closeScope.toString()));
                     granted(closeScope, self);
-                    if(!isOwner(closeScope.scope())) {
-                        self.async(parent)._doneSharing(closeScope.scope());
-                    }
                     releaseDelays(closeScope.scope());
                 },
                 closeLabel -> {
                     failures.add(new DeadlockException(closeLabel.toString()));
                     granted(closeLabel, self);
-                    if(!isOwner(closeLabel.scope())) {
-                        self.async(parent)._closeEdge(closeLabel.scope(), closeLabel.label());
-                    }
                     releaseDelays(closeLabel.scope(), closeLabel.label());
                 },
                 query -> {
@@ -910,6 +899,13 @@ public abstract class AbstractUnit<S, L, D, R>
         if(!scopes.contains(scope)) {
             logger.error("Scope {} is not owned or shared by {}", scope, this);
             throw new IllegalArgumentException("Scope " + scope + " is not owned or shared by " + this);
+        }
+    }
+
+    protected void assertOwnScope(S scope) {
+        if(!context.owner(scope).equals(self)) {
+            logger.error("Scope {} is not owned by {}", scope, this);
+            throw new IllegalArgumentException("Scope " + scope + " is not owned by " + this);
         }
     }
 

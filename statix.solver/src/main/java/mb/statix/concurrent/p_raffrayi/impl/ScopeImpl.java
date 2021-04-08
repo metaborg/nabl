@@ -18,6 +18,14 @@ public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
         return scope.getResource();
     }
 
+    @Override public String name(Scope scope) {
+        return scope.getName();
+    }
+
+    @Override public ITerm embed(Scope scope) {
+        return scope;
+    }
+
     @Override public Collection<Scope> getAllScopes(ITerm datum) {
         return T.collecttd(Scope.matcher()::match).apply(datum);
     }
