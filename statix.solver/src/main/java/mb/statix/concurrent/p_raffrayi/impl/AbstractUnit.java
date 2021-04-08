@@ -82,7 +82,7 @@ public abstract class AbstractUnit<S, L, D, R>
     private final Map<String, IUnitResult<S, L, D, ?>> subUnitResults;
     private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
-    protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
+    protected final Ref<IScopeGraph.Immutable<S, EdgeOrEps<L>, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
@@ -325,7 +325,7 @@ public abstract class AbstractUnit<S, L, D, R>
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
-        scopeGraph.set(scopeGraph.get().addEdge(source, label, target));
+        scopeGraph.set(scopeGraph.get().addEdge(source, EdgeOrEps.edge(label), target));
 
         if(!isOwner(source)) {
             self.async(parent)._addEdge(source, label, target);
@@ -402,7 +402,7 @@ public abstract class AbstractUnit<S, L, D, R>
 
             @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
                 return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
-                    return scopeGraph.get().getEdges(scope, label);
+                    return scopeGraph.get().getEdges(scope, EdgeOrEps.edge(label));
                 });
             }
 
@@ -700,7 +700,7 @@ public abstract class AbstractUnit<S, L, D, R>
     /**
      * Fail delays that are part of the deadlock. If any delays can be failed, computations should be able to continue
      * (or fail following the exception).
-     * 
+     *
      * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
     private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
@@ -741,7 +741,7 @@ public abstract class AbstractUnit<S, L, D, R>
      * If there are no delays to fail, the type checker has no way to make progress. In this case, everything is failed,
      * and the state cleaned such that all scopes and labels are closed and these closures properly reported to the
      * parent.
-     * 
+     *
      * After this, it is not safe if the type checker is ever called again, as it may then try to close scopes and
      * labels that were cleaned up. Therefore, local delays are not failed, as this would trigger their completion and
      * trigger the type checker. Delays resulting from remote queries must still be cancelled, or the remote unit waits

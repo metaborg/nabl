@@ -27,7 +27,6 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.concurrent.p_raffrayi.PRaffrayiUtil;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.solver.GroupResult;
@@ -41,6 +40,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.TextPart;
+import mb.statix.scopegraph.IScopeGraph;
+import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -155,9 +156,25 @@ public class STX_solve_multi extends StatixPrimitive {
 
     private SolverResult flatSolverResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult> result) {
         final IStatixResult unitResult = result.analysis();
-        SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
+        final SolverResult tmpSolveResult =
+                Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
 
-        solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
+        IScopeGraph.Transient<Scope, ITerm, ITerm> _scopeGraph = ScopeGraph.Transient.of();
+        result.scopeGraph().getEdges().forEach((src_lbl, tgts) -> {
+            Scope src = src_lbl.getKey();
+            ITerm repTerm =
+                    tmpSolveResult.state().unifier().findRecursive(result.scopeGraph().getData(src).orElse(src));
+            Scope rep = repTerm instanceof Scope ? (Scope) repTerm : Scope.matcher().match(repTerm).orElse(src);
+            // @formatter:off
+            src_lbl.getValue().accept(() -> {}, l -> {
+                tgts.forEach(tgt -> _scopeGraph.addEdge(rep, l, tgt));
+            });
+            // @formatter:on
+        });
+        result.scopeGraph().getData().forEach(_scopeGraph::setDatum);
+
+        SolverResult solveResult =
+                tmpSolveResult.withState(tmpSolveResult.state().withScopeGraph(_scopeGraph.freeze()));
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages =
                 ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());

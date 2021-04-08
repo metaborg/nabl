@@ -29,6 +29,7 @@ import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
+import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
@@ -94,9 +95,17 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
             java.util.Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph, List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
 
+        ScopeGraph.Transient<S, EdgeOrEps<L>, D> _sg = ScopeGraph.Transient.of();
+        givenScopeGraph.getData().forEach(_sg::setDatum);
+        givenScopeGraph.getEdges().forEach((src_lbl, tgts) -> {
+            final S src = src_lbl.getKey();
+            final L lbl = src_lbl.getValue();
+            tgts.forEach(tgt -> _sg.addEdge(src, EdgeOrEps.edge(lbl), tgt));
+        });
+
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
             return new StaticScopeGraphUnit<>(subself, self, subcontext, edgeLabels, givenRootScopes, givenOwnScopes,
-                    givenScopeGraph);
+                    _sg.freeze());
         }, rootScopes)._2();
 
         return ifActive(result);

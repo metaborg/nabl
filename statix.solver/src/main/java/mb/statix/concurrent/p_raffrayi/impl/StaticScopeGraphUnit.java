@@ -42,14 +42,14 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     protected List<S> givenRootScopes;
     protected Set<S> givenOwnScopes;
-    protected IScopeGraph.Immutable<S, L, D> givenScopeGraph;
+    protected IScopeGraph.Immutable<S, EdgeOrEps<L>, D> givenScopeGraph;
 
     private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
     StaticScopeGraphUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels, List<S> givenRootScopes, Set<S> givenOwnScopes,
-            IScopeGraph.Immutable<S, L, D> givenScopeGraph) {
+            IScopeGraph.Immutable<S, EdgeOrEps<L>, D> givenScopeGraph) {
         super(self, parent, context, edgeLabels);
 
         // these are replaced once started
@@ -124,7 +124,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
             for(L label : edgeLabels) {
                 final EdgeOrData<L> l = EdgeOrData.edge(label);
-                for(S libTarget : givenScopeGraph.getEdges(libScope, label)) {
+                for(S libTarget : givenScopeGraph.getEdges(libScope, EdgeOrEps.edge(label))) {
                     final S target = scopeMap.get(libTarget);
                     doAddEdge(self, scope, label, target);
                 }
@@ -141,9 +141,9 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             }
 
             for(L label : edgeLabels) {
-                for(S libTarget : givenScopeGraph.getEdges(libScope, label)) {
+                for(S libTarget : givenScopeGraph.getEdges(libScope, EdgeOrEps.edge(label))) {
                     final S target = scopeMap.get(libTarget);
-                    scopeGraph.set(scopeGraph.get().addEdge(scope, label, target));
+                    scopeGraph.set(scopeGraph.get().addEdge(scope, EdgeOrEps.edge(label), target));
                 }
             }
         }
@@ -211,7 +211,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
         StaticScopeGraphWorker(IActor<? extends IUnit<S, L, D, Unit>> self,
                 IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context, Iterable<L> edgeLabels,
-                List<S> rootScopes, Set<S> ownScopes, Immutable<S, L, D> scopeGraph) {
+                List<S> rootScopes, Set<S> ownScopes, Immutable<S, EdgeOrEps<L>, D> scopeGraph) {
             super(self, parent, context, edgeLabels, rootScopes, ownScopes, scopeGraph);
         }
 
