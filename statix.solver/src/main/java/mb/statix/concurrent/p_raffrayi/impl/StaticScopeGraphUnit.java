@@ -167,7 +167,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @SuppressWarnings("unused") @Override public void _initShare(S scope, Optional<S> childRepOpt) {
+    @SuppressWarnings("unused") @Override public void _initShare(S scope, S childRep) {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 

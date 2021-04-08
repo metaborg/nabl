@@ -1,6 +1,5 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
-import java.util.Optional;
 import java.util.Set;
 
 import mb.statix.concurrent.actors.IActorRef;
@@ -17,7 +16,7 @@ import mb.statix.scopegraph.terms.newPath.ScopePath;
  */
 public interface IUnit2UnitProtocol<S, L, D, R> {
 
-    void _initShare(S scope, Optional<S> childRepOpt);
+    void _initShare(S scope, S childRepOpt);
 
     IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);

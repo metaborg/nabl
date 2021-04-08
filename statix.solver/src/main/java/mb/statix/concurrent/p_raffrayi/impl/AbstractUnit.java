@@ -2,6 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -129,8 +130,8 @@ public abstract class AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _initShare(S scope, Optional<S> childRepOpt) {
-        doChildInit(self.sender(TYPE), scope, childRepOpt);
+    @Override public void _initShare(S scope, S childRep) {
+        doChildInit(self.sender(TYPE), scope, childRep);
     }
 
     @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
@@ -230,14 +231,14 @@ public abstract class AbstractUnit<S, L, D, R>
         waitFor(InitScope.of(self, scope), sender);
     }
 
-    protected final void doChildInit(IActorRef<? extends IUnit<S, L, D, ?>> sender, S root, Optional<S> childRepOpt) {
+    protected final void doChildInit(IActorRef<? extends IUnit<S, L, D, ?>> sender, S root, S childRep) {
         final S localRep = findRep(root);
         if(!context.owner(localRep).equals(self)) {
             logger.error("Cannot set child representative for non-owned local rep {} (orig: {}).", localRep, root);
             throw new IllegalStateException("Cannot set child representative for " + localRep);
         }
 
-        childRepOpt.ifPresent(cRep -> scopeGraph.set(scopeGraph.get().addEdge(localRep, EdgeOrEps.eps(), cRep)));
+        scopeGraph.set(scopeGraph.get().addEdge(localRep, EdgeOrEps.eps(), childRep));
         granted(InitScope.of(self, localRep), sender);
     }
 
@@ -252,16 +253,11 @@ public abstract class AbstractUnit<S, L, D, R>
             if(data) {
                 throw new IllegalStateException("Cannot set data for shared scope " + scope);
             }
-            if(labels.isEmpty() && !sharing) {
-                self.async(parent)._initShare(scope, Optional.empty());
-                localRep = scope;
-            } else {
-                localRep = doFreshScope(context.name(scope) + "-rep", edgeLabels, true, sharing);
-                waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), self);
-                doSetDatum(localRep, context.embed(scope)); // Set representative as datum.
-                reps.put(scope, localRep);
-                self.async(parent)._initShare(scope, Optional.of(localRep));
-            }
+            localRep = doFreshScope(context.name(scope) + "-rep", edgeLabels, true, sharing);
+            waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), self);
+            doSetDatum(localRep, context.embed(scope)); // Set representative as datum.
+            reps.put(scope, localRep);
+            self.async(parent)._initShare(scope, localRep);
         }
 
         granted(InitScope.of(self, scope), sender);
@@ -386,6 +382,8 @@ public abstract class AbstractUnit<S, L, D, R>
                 return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, EdgeOrEps.edge(label));
                 });
+
+                // TODO: compose with getEdges of epsilon edge targets.
             }
 
             @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
@@ -746,7 +744,8 @@ public abstract class AbstractUnit<S, L, D, R>
                     failures.add(new DeadlockException(initScope.toString()));
                     granted(initScope, self);
                     if(!isOwner(initScope.scope())) {
-                        self.async(parent)._initShare(initScope.scope(), Optional.empty());
+                        S rep = doFreshScope(context.name(initScope.scope()), Arrays.asList(), false, false);
+                        self.async(parent)._initShare(initScope.scope(), rep);
                     }
                     releaseDelays(initScope.scope());
                 },
