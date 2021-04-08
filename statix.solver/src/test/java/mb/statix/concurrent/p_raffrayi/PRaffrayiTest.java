@@ -1,13 +1,16 @@
 package mb.statix.concurrent.p_raffrayi;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,11 +22,14 @@ import org.spoofax.terms.util.NotImplementedException;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.regexp.IRegExp;
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.terms.ITerm;
+import static mb.nabl2.terms.build.TermBuild.B;
+import mb.nabl2.util.CapsuleUtil;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
@@ -34,6 +40,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
+import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.terms.Scope;
 
 public class PRaffrayiTest {
@@ -742,6 +749,36 @@ public class PRaffrayiTest {
         final IUnitResult<Scope, Object, ITerm, Object> result = future.asJavaCompletion().get();
     }
 
+    @Test(timeout = 10000) public void testResolveSibling() throws InterruptedException, ExecutionException {
+        final ITerm datum = B.newTuple();
+        final Integer lbl = 1;
+
+        final IFuture<IUnitResult<Scope, Integer, ITerm, Set<ITerm>>> future =
+                run(".", new ITypeChecker<Scope, Integer, ITerm, Set<ITerm>>() {
+
+                    @Override public IFuture<Set<ITerm>> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+
+                        IFuture<IUnitResult<Scope, Integer, ITerm, Object>> declResult =
+                                unit.add("decl", new SingleDeclInRootUnit(lbl, datum), Collections.singletonList(s));
+                        IFuture<IUnitResult<Scope, Integer, ITerm, Set<ITerm>>> queryResult =
+                                unit.add("query", new SingleQueryUnit(lbl), Collections.singletonList(s));
+
+                        unit.closeScope(s);
+
+                        return declResult.thenCompose(__ -> queryResult.thenApply(IUnitResult::analysis));
+                    }
+
+                }, CapsuleUtil.toSet(1));
+
+        final IUnitResult<Scope, Integer, ITerm, Set<ITerm>> result = future.asJavaCompletion().get();
+        assertNotNull(result.analysis());
+        assertFalse("No query result found.", result.analysis().isEmpty());
+        assertTrue("Query result did not contain expected result.", result.analysis().contains(datum));
+        assertEquals("Query result contains superfluous results.", 1, result.analysis().size());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     private final class ResolveBeforeCloseEdgeUnit implements ITypeChecker<Scope, Integer, ITerm, Object> {
@@ -1040,4 +1077,53 @@ public class PRaffrayiTest {
 
     }
 
+    private final class SingleDeclInRootUnit implements ITypeChecker<Scope, Integer, ITerm, Object> {
+
+        private Integer label;
+        private ITerm datum;
+
+        public SingleDeclInRootUnit(Integer label, ITerm datum) {
+            this.label = label;
+            this.datum = datum;
+        }
+
+        @Override public IFuture<Object> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes) {
+            Scope root = rootScopes.get(0);
+            unit.initScope(root, Arrays.asList(label), false);
+
+            Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+            unit.setDatum(d, datum);
+
+            unit.addEdge(root, label, d);
+            unit.closeEdge(root, label);
+
+            return CompletableFuture.completedFuture(Unit.unit);
+        }
+
+    }
+
+    private final class SingleQueryUnit implements ITypeChecker<Scope, Integer, ITerm, Set<ITerm>> {
+
+        private Integer label;
+
+        public SingleQueryUnit(Integer label) {
+            this.label = label;
+        }
+
+        @Override public IFuture<Set<ITerm>> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                List<Scope> rootScopes) {
+
+            Scope root = rootScopes.get(0);
+            unit.initScope(root, Arrays.asList(), false);
+
+            final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
+            final IRegExp<Integer> re = reb.and(reb.symbol(label), reb.complement(reb.emptySet()));
+            final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
+            return unit.query(root, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.any())
+                    .thenApply(envs -> {
+                        return envs.stream().map(IResolutionPath::getDatum).collect(CapsuleCollectors.toSet());
+                    });
+        }
+
+    }
 }
