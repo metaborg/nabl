@@ -19,7 +19,6 @@ import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.util.CapsuleUtil;
@@ -126,9 +125,9 @@ public abstract class AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing) {
+    @Override public void _initShare(S scope, Iterable<L> labels, boolean data, boolean sharing) {
         resume();
-        doInitShare(self.sender(TYPE), scope, edges, sharing);
+        doInitShare(self.sender(TYPE), scope, labels, data, sharing);
     }
 
     @Override public void _addShare(S scope) {
@@ -234,17 +233,9 @@ public abstract class AbstractUnit<S, L, D, R>
     protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final S scope = makeScope(baseName);
 
-        final List<EdgeOrData<L>> labels = Lists.newArrayList();
-        for(L l : edgeLabels) {
-            labels.add(EdgeOrData.edge(l));
-        }
-        if(data) {
-            labels.add(EdgeOrData.data());
-        }
-
         scopes.__insert(scope);
         doAddLocalShare(self, scope);
-        doInitShare(self, scope, labels, sharing);
+        doInitShare(self, scope, edgeLabels, data, sharing);
 
         return scope;
     }
@@ -264,12 +255,15 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
-            Iterable<EdgeOrData<L>> edges, boolean sharing) {
+            Iterable<L> labels, boolean data, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
         granted(InitScope.of(self, scope), sender);
-        for(EdgeOrData<L> edge : edges) {
-            waitFor(CloseLabel.of(self, scope, edge), sender);
+        for(L label : labels) {
+            waitFor(CloseLabel.of(self, scope, EdgeOrData.edge(label)), sender);
+        }
+        if(data) {
+            waitFor(CloseLabel.of(self, scope, EdgeOrData.data()), sender);
         }
         if(sharing) {
             waitFor(CloseScope.of(self, scope), sender);
@@ -280,7 +274,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 releaseDelays(scope);
             }
         } else {
-            self.async(parent)._initShare(scope, edges, sharing);
+            self.async(parent)._initShare(scope, labels, data, sharing);
         }
     }
 
@@ -757,7 +751,7 @@ public abstract class AbstractUnit<S, L, D, R>
                     failures.add(new DeadlockException(initScope.toString()));
                     granted(initScope, self);
                     if(!isOwner(initScope.scope())) {
-                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false);
+                        self.async(parent)._initShare(initScope.scope(), CapsuleUtil.immutableSet(), false, false);
                     }
                     releaseDelays(initScope.scope());
                 },

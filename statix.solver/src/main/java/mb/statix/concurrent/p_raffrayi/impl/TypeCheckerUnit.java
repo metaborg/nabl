@@ -1,9 +1,6 @@
 package mb.statix.concurrent.p_raffrayi.impl;
 
-import static com.google.common.collect.Streams.stream;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -114,9 +111,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
-        final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
-
-        doInitShare(self, root, edges, sharing);
+        doInitShare(self, root, labels, false, sharing);
     }
 
     @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {

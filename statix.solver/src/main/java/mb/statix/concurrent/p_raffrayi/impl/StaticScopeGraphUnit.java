@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -89,8 +88,6 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     private Set<S> buildScopeGraph(List<S> rootScopes) {
         final long t0 = System.currentTimeMillis();
 
-        final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
-
         final Map<S, S> scopeMap = new HashMap<>();
         final Set<S> ownScopes = new HashSet<>();
 
@@ -106,7 +103,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             }
             final S rootScope = rootScopes.get(i);
             scopeMap.put(libRootScope, rootScope);
-            doInitShare(self, rootScope, edges, false);
+            doInitShare(self, rootScope, edgeLabels, false, false);
         }
         for(S libScope : givenOwnScopes) {
             if(scopeMap.containsKey(libScope)) {
@@ -169,7 +166,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @SuppressWarnings("unused") @Override public void _initShare(S scope, Iterable<EdgeOrData<L>> edges,
+    @SuppressWarnings("unused") @Override public void _initShare(S scope, Iterable<L> edges, boolean data,
             boolean sharing) {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }

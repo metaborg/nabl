@@ -17,7 +17,7 @@ import mb.statix.scopegraph.terms.newPath.ScopePath;
  */
 public interface IUnit2UnitProtocol<S, L, D, R> {
 
-    void _initShare(S scope, Iterable<EdgeOrData<L>> edges, boolean sharing);
+    void _initShare(S scope, Iterable<L> labels, boolean data, boolean sharing);
 
     void _addShare(S scope);
 

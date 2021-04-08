@@ -73,7 +73,7 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
      */
@@ -84,10 +84,10 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
-     * 
+     *
      * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
      * type checker state safely.
      */
