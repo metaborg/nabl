@@ -216,7 +216,7 @@ public abstract class AbstractUnit<S, L, D, R>
         return Tuple2.of(subunit, ret);
     }
 
-    protected final S doFreshScope(String baseName, Collection<L> edgeLabels, boolean data, boolean sharing) {
+    protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final S scope = makeScope(baseName);
 
         scopes.__insert(scope);
@@ -242,7 +242,7 @@ public abstract class AbstractUnit<S, L, D, R>
         doCloseLabel(sender, localRep, EdgeKind.eps());
     }
 
-    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, Collection<L> labels,
+    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, Iterable<L> labels,
             boolean data, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
@@ -293,6 +293,7 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeKind<L> edge) {
+        assertLabelOpen(scope, edge);
         granted(CloseLabel.of(self, scope, edge), sender);
 
         if(isEdgeClosed(scope, edge)) {
@@ -461,11 +462,11 @@ public abstract class AbstractUnit<S, L, D, R>
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
-        @SuppressWarnings("unused") @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
+        @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
-        @SuppressWarnings("unused") @Override public S freshScope(String baseName, Collection<L> edgeLabels,
+        @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels,
                 boolean data, boolean sharing) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }

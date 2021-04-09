@@ -109,13 +109,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return ifActive(result);
     }
 
-    @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
+    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         doInitShare(self, root, labels, false, sharing);
     }
 
-    @Override public S freshScope(String baseName, Collection<L> edgeLabels, boolean data, boolean sharing) {
+    @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         assertInState(UnitState.ACTIVE);
 
         final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
