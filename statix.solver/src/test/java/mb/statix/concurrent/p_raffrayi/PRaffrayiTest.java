@@ -794,10 +794,10 @@ public class PRaffrayiTest {
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), false, true);
 
-                        IFuture<IUnitResult<Scope, Integer, ITerm, Object>> declResult =
-                                unit.add("decl", new SingleDeclInRootUnit(lbl, datum), Collections.singletonList(s));
+                        IFuture<IUnitResult<Scope, Integer, ITerm, Object>> declResult = unit.add("decl",
+                                new RelayUnit<>(new SingleDeclInRootUnit(lbl, datum)), Collections.singletonList(s));
                         IFuture<IUnitResult<Scope, Integer, ITerm, Set<ITerm>>> queryResult =
-                                unit.add("query", new RelayUnit<>(new SingleQueryUnit(lbl)), Collections.singletonList(s));
+                                unit.add("query", new SingleQueryUnit(lbl), Collections.singletonList(s));
 
                         unit.closeScope(s);
 
@@ -1170,8 +1170,7 @@ public class PRaffrayiTest {
             this.sub = sub;
         }
 
-        @Override public IFuture<T> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
-                List<Scope> rootScopes) {
+        @Override public IFuture<T> run(ITypeCheckerContext<Scope, Integer, ITerm> unit, List<Scope> rootScopes) {
 
             Scope root = rootScopes.get(0);
             unit.initScope(root, Arrays.asList(), true);

@@ -25,7 +25,7 @@ public interface IUnitContext<S, L, D> {
 
     IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope);
 
-    String name(S s);
+    String name(S scope);
 
     <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> add(String id,
             Function2<IActor<IUnit<S, L, D, R>>, IUnitContext<S, L, D>, IUnit<S, L, D, R>> unitProvider,

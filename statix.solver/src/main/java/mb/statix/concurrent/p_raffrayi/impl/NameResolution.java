@@ -243,7 +243,7 @@ abstract class NameResolution<S, L, D> {
         });
     }
 
-    private IFuture<Env<S, L, D>> env_aggregate(AggregateFuture<Env<S, L, D>> listEnv) {
+    private IFuture<Env<S, L, D>> env_aggregate(IFuture<List<Env<S, L, D>>> listEnv) {
         final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {
             final Env.Builder<S, L, D> envBuilder = Env.builder();
             es.forEach(envBuilder::addAll);
