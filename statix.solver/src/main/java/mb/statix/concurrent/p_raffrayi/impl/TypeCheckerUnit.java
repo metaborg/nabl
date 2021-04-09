@@ -160,7 +160,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<Env<S, L, D>> result =
-                doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                doQuery(self, scope, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final IFuture<Env<S, L, D>> ret;
         if(result.isDone()) {
             ret = result;

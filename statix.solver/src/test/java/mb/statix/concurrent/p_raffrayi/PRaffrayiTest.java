@@ -783,6 +783,37 @@ public class PRaffrayiTest {
         assertEquals("Query result contains superfluous results.", 1, result.analysis().size());
     }
 
+    @Test(timeout = 10000) public void testResolveGrandChild() throws InterruptedException, ExecutionException {
+        final ITerm datum = B.newTuple();
+        final Integer lbl = 1;
+
+        final IFuture<IUnitResult<Scope, Integer, ITerm, Set<ITerm>>> future =
+                run(".", new ITypeChecker<Scope, Integer, ITerm, Set<ITerm>>() {
+
+                    @Override public IFuture<Set<ITerm>> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                            List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), false, true);
+
+                        IFuture<IUnitResult<Scope, Integer, ITerm, Object>> declResult =
+                                unit.add("decl", new SingleDeclInRootUnit(lbl, datum), Collections.singletonList(s));
+                        IFuture<IUnitResult<Scope, Integer, ITerm, Set<ITerm>>> queryResult =
+                                unit.add("query", new RelayUnit<>(new SingleQueryUnit(lbl)), Collections.singletonList(s));
+
+                        unit.closeScope(s);
+
+                        return declResult.thenCompose(__ -> queryResult.thenApply(IUnitResult::analysis));
+                    }
+
+                }, CapsuleUtil.toSet(1));
+
+        final IUnitResult<Scope, Integer, ITerm, Set<ITerm>> result = future.asJavaCompletion().get();
+        assertNotNull("No analysis provided.", result.analysis());
+        assertTrue("Unexpected failures.", result.failures().isEmpty());
+        assertFalse("No query result found.", result.analysis().isEmpty());
+        assertTrue("Query result did not contain expected result.", result.analysis().contains(datum));
+        assertEquals("Query result contains superfluous results.", 1, result.analysis().size());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     private final class ResolveBeforeCloseEdgeUnit implements ITypeChecker<Scope, Integer, ITerm, Object> {
@@ -1127,6 +1158,28 @@ public class PRaffrayiTest {
                     .thenApply(envs -> {
                         return envs.stream().map(IResolutionPath::getDatum).collect(CapsuleCollectors.toSet());
                     });
+        }
+
+    }
+
+    private final class RelayUnit<T> implements ITypeChecker<Scope, Integer, ITerm, T> {
+
+        private ITypeChecker<Scope, Integer, ITerm, T> sub;
+
+        public RelayUnit(ITypeChecker<Scope, Integer, ITerm, T> sub) {
+            this.sub = sub;
+        }
+
+        @Override public IFuture<T> run(ITypeCheckerContext<Scope, Integer, ITerm> unit,
+                List<Scope> rootScopes) {
+
+            Scope root = rootScopes.get(0);
+            unit.initScope(root, Arrays.asList(), true);
+
+            final IFuture<IUnitResult<Scope, Integer, ITerm, T>> result = unit.add("sub", sub, rootScopes);
+            unit.closeScope(root);
+
+            return result.thenApply(IUnitResult::analysis);
         }
 
     }

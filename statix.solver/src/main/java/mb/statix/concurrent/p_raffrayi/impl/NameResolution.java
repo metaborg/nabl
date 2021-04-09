@@ -42,12 +42,12 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
+    protected abstract Optional<IFuture<Env<S, L, D>>> externalEnv(S scope, ScopePath<S, L> path, LabelWf<L> re,
             LabelOrder<L> labelOrder);
 
     protected abstract IFuture<Optional<D>> getDatum(S scope);
 
-    protected abstract IFuture<Iterable<S>> getEdges(S scope, L label);
+    protected abstract IFuture<Iterable<S>> getEdges(S scope, EdgeOrEps<L> label);
 
     protected abstract IFuture<Boolean> dataWf(D datum, ICancel cancel) throws InterruptedException;
 
@@ -57,10 +57,10 @@ abstract class NameResolution<S, L, D> {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public ICompletableFuture<Env<S, L, D>> env(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
+    public ICompletableFuture<Env<S, L, D>> env(S scope, ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         final ICompletableFuture<Env<S, L, D>> result = new CompletableFuture<>();
-        logger.trace("env {}", path);
-        externalEnv(path, re, labelOrder).orElseGet(() -> {
+        logger.trace("env {} ~ {}", scope, path);
+        externalEnv(scope, path, re, labelOrder).orElseGet(() -> {
             final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
             if(re.accepting()) {
                 labels.__insert(dataLabel);
@@ -70,51 +70,52 @@ abstract class NameResolution<S, L, D> {
                     labels.__insert(EdgeOrData.edge(l));
                 }
             }
-            return env_L(path, re, labels.freeze(), cancel);
+            return env_L(scope, path, re, labels.freeze(), cancel);
         }).whenComplete(result::complete);
         return result;
     }
 
-    private IFuture<Env<S, L, D>> env_L(ScopePath<S, L> path, LabelWf<L> re, Set.Immutable<EdgeOrData<L>> L,
+    private IFuture<Env<S, L, D>> env_L(S scope, ScopePath<S, L> path, LabelWf<L> re, Set.Immutable<EdgeOrData<L>> L,
             ICancel cancel) {
-        logger.trace("env_L {} {} {}", path, re, L);
+        logger.trace("env_L {} ~ {} {} {}", scope, path, re, L);
         if(cancel.cancelled()) {
             return CompletableFuture.completedExceptionally(new InterruptedException());
         }
         final Set<EdgeOrData<L>> max_L = max(L);
         final List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
         for(EdgeOrData<L> l : max_L) {
-            envs.add(env_lL(path, re, l, smaller(L, l), cancel));
+            envs.add(env_lL(scope, path, re, l, smaller(L, l), cancel));
         }
         final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
-        logger.trace("env_L {} {} {}: listEnv: {}", path, re, L, listEnv);
-        listEnv.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: listResult {}", path, re, L, listEnv));
+        logger.trace("env_L {} ~ {} {} {}: listEnv: {}", scope, path, re, L, listEnv);
+        listEnv.whenComplete(
+                (r, ex) -> logger.trace("env_L {} ~ {} {} {}: listResult {}", scope, path, re, L, listEnv));
         final IFuture<Env<S, L, D>> env = listEnv.thenApply((es) -> {
             final Env.Builder<S, L, D> envBuilder = Env.builder();
             es.forEach(envBuilder::addAll);
             return envBuilder.build();
         });
-        logger.trace("env_L {} {} {}: env: {}", path, re, L, env);
-        env.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result {}", path, re, L, env));
+        logger.trace("env_L {} ~ {} {} {}: env: {}", scope, path, re, L, env);
+        env.whenComplete((r, ex) -> logger.trace("env_L {} ~ {} {} {}: result {}", scope, path, re, L, env));
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_lL(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
+    private IFuture<Env<S, L, D>> env_lL(S scope, ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
             Set.Immutable<EdgeOrData<L>> L, ICancel cancel) {
-        final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
-        logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
-        env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
+        final IFuture<Env<S, L, D>> env1 = env_L(scope, path, re, L, cancel);
+        logger.trace("env_L {} ~ {} {} {}: env1: {}", scope, path, re, L, env1);
+        env1.whenComplete((r, ex) -> logger.trace("env_L {} ~ {} {} {}: result1: {}", scope, path, re, L, env1));
         return env1.thenCompose(e1 -> {
             final IFuture<Boolean> envComplete =
                     e1.isEmpty() ? CompletableFuture.completedFuture(false) : dataLeqAlwaysTrue(cancel);
             return envComplete.thenCompose(complete -> {
                 if(complete) {
-                    logger.trace("env_L {} {} {}: env2 fully shadowed", path, re, L);
+                    logger.trace("env_L {} ~ {} {} {}: env2 fully shadowed", scope, path, re, L);
                     return CompletableFuture.completedFuture(e1);
                 }
-                final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
+                final IFuture<Env<S, L, D>> env2 = env_l(scope, path, re, l, cancel);
                 logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
-                env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
+                env2.whenComplete((r, ex) -> logger.trace("env_L {} ~ {} {} {}: result2 {}", scope, path, re, L, env2));
                 return env2.thenCompose(e2 -> {
                     return shadows(e1, e2, cancel);
                 });
@@ -150,18 +151,19 @@ abstract class NameResolution<S, L, D> {
         return smaller.freeze();
     }
 
-    private IFuture<Env<S, L, D>> env_l(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
+    private IFuture<Env<S, L, D>> env_l(S scope, ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
         try {
-            return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
+            return l.matchInResolution(() -> env_data(scope, path, re, cancel),
+                    lbl -> env_edges(scope, path, re, lbl, cancel));
         } catch(Exception e) {
             throw new IllegalStateException("Should not happen.");
         }
     }
 
-    private IFuture<Env<S, L, D>> env_data(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
-        logger.trace("env_data {} {}", path, re);
+    private IFuture<Env<S, L, D>> env_data(S scope, ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
+        logger.trace("env_data {} ~ {} {}", scope, path, re);
         final IFuture<Optional<D>> datum = getDatum(path.getTarget());
-        logger.trace("env_data {} {}: datum {}", path, re, datum);
+        logger.trace("env_data {} ~ {} {}: datum {}", scope, path, re, datum);
         final IFuture<Env<S, L, D>> env = datum.thenCompose(_d -> {
             D d;
             if((d = _d.orElse(null)) == null) {
@@ -171,43 +173,83 @@ abstract class NameResolution<S, L, D> {
                 if(!wf) {
                     return Env.empty();
                 }
-                logger.trace("env_data {} {}: datum {}", path, re, d);
+                logger.trace("env_data {} ~ {} {}: datum {}", scope, path, re, d);
                 final ResolutionPath<S, L, D> resPath = path.resolve(d);
                 return Env.of(resPath);
             });
         });
-        logger.trace("env_data {} {}: env {}", path, re, env);
-        env.whenComplete((r, ex) -> logger.trace("env_data {} {}: result {}", path, re, env));
+        logger.trace("env_data {} ~ {} {}: env {}", scope, path, re, env);
+        env.whenComplete((r, ex) -> logger.trace("env_data {} ~ {} {}: result {}", scope, path, re, env));
         return env;
     }
 
-    private IFuture<Env<S, L, D>> env_edges(ScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
-        logger.trace("env_edges {} {} {}", path, re, l);
+    private IFuture<Env<S, L, D>> env_edges(S scope, ScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
+        logger.trace("env_edges {} ~ {} {} {}", scope, path, re, l);
+        final IFuture<Env<S, L, D>> env_direct = env_direct_edges(scope, path, re, l, cancel);
+        final IFuture<Env<S, L, D>> env_indirect = env_indirect_edges(scope, path, re, l, cancel);
+
+        final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(env_direct, env_indirect);
+        logger.trace("env_edges {} ~ {} {} {}: listEnv {}", scope, path, re, l, listEnv);
+        listEnv.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: listResult {}", path, re, l, listEnv));
+
+        final IFuture<Env<S, L, D>> env = env_aggregate(listEnv);
+        logger.trace("env_edges {} ~ {} {} {}: env {}", scope, path, re, l, env);
+        env.whenComplete((r, ex) -> logger.trace("env_edges {} ~ {} {} {}: result {}", scope, path, re, l, env));
+        return env;
+    }
+
+    private IFuture<Env<S, L, D>> env_direct_edges(S scope, ScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
+        logger.trace("direct_edges {} ~ {} {} {}", scope, path, re, l);
         final LabelWf<L> newRe = re.step(l).get();
-        final IFuture<Iterable<S>> scopes = getEdges(path.getTarget(), l);
-        logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
+        final IFuture<Iterable<S>> scopes = getEdges(scope, EdgeOrEps.edge(l));
+        logger.trace("direct_edges {} ~ {} {} {}: edge scopes {}", scope, path, re, l, scopes);
         return scopes.thenCompose(ss -> {
             List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
             for(S nextScope : ss) {
                 final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
                 if(p.isPresent()) {
-                    envs.add(env(p.get(), newRe, cancel));
+                    envs.add(env(nextScope, p.get(), newRe, cancel));
                 } else {
                     // cycle
                 }
             }
             final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
-            logger.trace("env_edges {} {} {}: listEnv {}", path, re, l, listEnv);
-            listEnv.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: listResult {}", path, re, l, listEnv));
-            final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {
-                final Env.Builder<S, L, D> envBuilder = Env.builder();
-                es.forEach(envBuilder::addAll);
-                return envBuilder.build();
-            });
-            logger.trace("env_edges {} {} {}: env {}", path, re, l, env);
-            env.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: result {}", path, re, l, env));
+            logger.trace("direct_edges {} ~ {} {} {}: listEnv {}", scope, path, re, l, listEnv);
+            listEnv.whenComplete((r, ex) -> logger.trace("direct_edges {} {} {}: listResult {}", path, re, l, listEnv));
+            final IFuture<Env<S, L, D>> env = env_aggregate(listEnv);
+            logger.trace("direct_edges {} ~ {} {} {}: env {}", scope, path, re, l, env);
+            env.whenComplete((r, ex) -> logger.trace("direct_edges {} ~ {} {} {}: result {}", scope, path, re, l, env));
             return env;
         });
+    }
+
+    private IFuture<Env<S, L, D>> env_indirect_edges(S scope, ScopePath<S, L> path, LabelWf<L> re, L l,
+            ICancel cancel) {
+        logger.trace("indirect_edges {} {} {}", path, re, l);
+        final IFuture<Iterable<S>> scopes = getEdges(scope, EdgeOrEps.eps());
+        logger.trace("indirect_edges {} {} {}: edge scopes {}", path, re, l, scopes);
+        return scopes.thenCompose(ss -> {
+            List<IFuture<Env<S, L, D>>> envs = Lists.newArrayList();
+            for(S nextScope : ss) {
+                envs.add(env(nextScope, path, re, cancel));
+            }
+            final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
+            logger.trace("indirect_edges {} {} {}: listEnv {}", path, re, l, listEnv);
+            listEnv.whenComplete((r, ex) -> logger.trace("indirect_edges {} {} {}: listResult {}", path, re, l, listEnv));
+            final IFuture<Env<S, L, D>> env = env_aggregate(listEnv);
+            logger.trace("indirect_edges {} {} {}: env {}", path, re, l, env);
+            env.whenComplete((r, ex) -> logger.trace("indirect_edges {} {} {}: result {}", path, re, l, env));
+            return env;
+        });
+    }
+
+    private IFuture<Env<S, L, D>> env_aggregate(AggregateFuture<Env<S, L, D>> listEnv) {
+        final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {
+            final Env.Builder<S, L, D> envBuilder = Env.builder();
+            es.forEach(envBuilder::addAll);
+            return envBuilder.build();
+        });
+        return env;
     }
 
     ///////////////////////////////////////////////////////////////////////////

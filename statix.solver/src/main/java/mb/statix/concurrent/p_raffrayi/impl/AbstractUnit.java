@@ -133,11 +133,11 @@ public abstract class AbstractUnit<S, L, D, R>
         doChildInit(self.sender(TYPE), scope, childRep);
     }
 
-    @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<Env<S, L, D>> _query(S scope, ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), scope, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -310,17 +310,16 @@ public abstract class AbstractUnit<S, L, D, R>
         scopeGraph.set(scopeGraph.get().addEdge(source, EdgeOrEps.edge(label), target));
     }
 
-    protected final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, ScopePath<S, L> path,
-            LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+    protected final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
+            ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
+            DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
 
         final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
 
-            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
+            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(S scope, ScopePath<S, L> path, LabelWf<L> re,
                     LabelOrder<L> labelOrder) {
-                final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
                     return Optional.empty();
@@ -329,7 +328,7 @@ public abstract class AbstractUnit<S, L, D, R>
                     logger.debug("remote env {} at {}", scope, owner);
                     // this code mirrors query(...)
                     final IFuture<Env<S, L, D>> result =
-                            self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                            self.async(owner)._query(scope, path, re, dataWF, labelOrder, dataEquiv);
                     final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                     waitFor(wf, owner);
                     if(external) {
@@ -378,12 +377,10 @@ public abstract class AbstractUnit<S, L, D, R>
                 });
             }
 
-            @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
-                return isComplete(scope, EdgeKind.edge(label), sender).thenApply(__ -> {
-                    return scopeGraph.get().getEdges(scope, EdgeOrEps.edge(label));
+            @Override protected IFuture<Iterable<S>> getEdges(S scope, EdgeOrEps<L> label) {
+                return isComplete(scope, EdgeKind.from(label), sender).thenApply(__ -> {
+                    return scopeGraph.get().getEdges(scope, label);
                 });
-
-                // TODO: compose with getEdges of epsilon edge targets.
             }
 
             @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
@@ -438,7 +435,12 @@ public abstract class AbstractUnit<S, L, D, R>
 
         };
 
-        final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
+        // Note that scope == path.getTarget() does not necessarily hold
+        // when epsilon edges are traversed, because the epsilon edges are
+        // not included in the path.
+        // In general, local representatives of a shared scope should never be
+        // exposed to a type checker, and hence never be included in a path.
+        final IFuture<Env<S, L, D>> result = nr.env(scope, path, labelWF, context.cancel());
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
@@ -498,8 +500,8 @@ public abstract class AbstractUnit<S, L, D, R>
             // does not require the Unit to be ACTIVE
 
             final ScopePath<S, L> path = new ScopePath<>(scope);
-            final IFuture<Env<S, L, D>> result =
-                    doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+            final IFuture<Env<S, L, D>> result = doQuery(self, scope, path, labelWF, labelOrder, dataWF, dataEquiv,
+                    dataWfInternal, dataEquivInternal);
             final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
             waitFor(wf, self);
             stats.localQueries += 1;

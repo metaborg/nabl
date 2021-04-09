@@ -16,9 +16,9 @@ import mb.statix.scopegraph.terms.newPath.ScopePath;
  */
 public interface IUnit2UnitProtocol<S, L, D, R> {
 
-    void _initShare(S scope, S childRepOpt);
+    void _initShare(S scope, S childRep);
 
-    IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    IFuture<Env<S, L, D>> _query(S scope, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
 
