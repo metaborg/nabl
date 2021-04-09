@@ -33,6 +33,4 @@ public interface IUnitContext<S, L, D> {
 
     int parallelism();
 
-    D embed(S scope);
-
 }

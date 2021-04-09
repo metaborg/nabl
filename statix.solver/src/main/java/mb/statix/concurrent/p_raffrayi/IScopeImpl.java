@@ -15,6 +15,4 @@ public interface IScopeImpl<S, D> {
 
     D subtituteScopes(D datum, Map<S, S> substitution);
 
-    D embed(S scope);
-
 }

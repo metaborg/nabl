@@ -256,10 +256,6 @@ public abstract class AbstractUnit<S, L, D, R>
             localRep = makeScope(context.name(scope) + "-rep");
             scopes.__insert(localRep);
 
-            // Set representative as datum.
-            waitFor(CloseLabel.of(self, localRep, EdgeKind.data()), sender);
-            doSetDatum(localRep, context.embed(scope));
-
             reps.put(scope, localRep);
             self.async(parent)._initShare(scope, localRep);
         }
