@@ -239,6 +239,10 @@ public abstract class AbstractUnit<S, L, D, R>
 
         scopeGraph.set(scopeGraph.get().addEdge(localRep, EdgeOrEps.eps(), childRep));
         granted(InitScope.of(self, localRep), sender);
+
+        if(isScopeInitialized(localRep)) {
+            releaseDelays(localRep);
+        }
     }
 
     protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, Collection<L> labels,
@@ -252,9 +256,13 @@ public abstract class AbstractUnit<S, L, D, R>
             if(data) {
                 throw new IllegalStateException("Cannot set data for shared scope " + scope);
             }
-            localRep = doFreshScope(context.name(scope) + "-rep", edgeLabels, true, sharing);
-            waitFor(CloseLabel.of(self, localRep, EdgeKind.data()), self);
-            doSetDatum(localRep, context.embed(scope)); // Set representative as datum.
+            localRep = makeScope(context.name(scope) + "-rep");
+            scopes.__insert(localRep);
+
+            // Set representative as datum.
+            waitFor(CloseLabel.of(self, localRep, EdgeKind.data()), sender);
+            doSetDatum(localRep, context.embed(scope));
+
             reps.put(scope, localRep);
             self.async(parent)._initShare(scope, localRep);
         }
@@ -558,6 +566,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
         waitFors = waitFors.remove(token);
         waitForsByActor = waitForsByActor.remove(actor, token);
+        logger.debug("{} granted {}/{}", self, actor, token);
     }
 
     /**
