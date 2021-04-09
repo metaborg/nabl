@@ -118,7 +118,7 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // add data and edges to actual scopes
 
         for(S libScope : givenRootScopes) {
-            final S scope = scopeMap.get(libScope);
+            final S scope = findRep(scopeMap.get(libScope));
 
             for(L label : edgeLabels) {
                 final EdgeOrEps<L> l = EdgeOrEps.edge(label);

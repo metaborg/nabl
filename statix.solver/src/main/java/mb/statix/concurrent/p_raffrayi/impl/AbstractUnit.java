@@ -154,7 +154,7 @@ public abstract class AbstractUnit<S, L, D, R>
     protected final void doStart(List<S> rootScopes) {
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
             scopes.__insert(rootScope);
-            doAddLocalShare(self, rootScope);
+            doAddLocalShare(rootScope);
         }
     }
 
@@ -186,6 +186,7 @@ public abstract class AbstractUnit<S, L, D, R>
             List<S> rootScopes) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
+            assertScopeOpen(findRep(rootScope));
         }
 
         final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
@@ -198,7 +199,7 @@ public abstract class AbstractUnit<S, L, D, R>
         result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
 
         for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
-            doAddLocalShare(subunit, rootScope);
+            waitFor(CloseLabel.of(self, findRep(rootScope), EdgeKind.eps()), subunit);
         }
 
         final IFuture<IUnitResult<S, L, D, Q>> ret = internalResult.whenComplete((r, ex) -> {
@@ -219,15 +220,15 @@ public abstract class AbstractUnit<S, L, D, R>
         final S scope = makeScope(baseName);
 
         scopes.__insert(scope);
-        doAddLocalShare(self, scope);
+        doAddLocalShare(scope);
         doInitShare(self, scope, edgeLabels, data, sharing);
 
         return scope;
     }
 
-    protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
+    protected final void doAddLocalShare(S scope) {
         assertOwnOrSharedScope(scope);
-        waitFor(InitScope.of(self, scope), sender);
+        waitFor(InitScope.of(self, scope), self);
     }
 
     protected final void doChildInit(IActorRef<? extends IUnit<S, L, D, ?>> sender, S root, S childRep) {
@@ -238,11 +239,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         scopeGraph.set(scopeGraph.get().addEdge(localRep, EdgeOrEps.eps(), childRep));
-        granted(InitScope.of(self, localRep), sender);
-
-        if(isScopeInitialized(localRep)) {
-            releaseDelays(localRep);
-        }
+        doCloseLabel(sender, localRep, EdgeKind.eps());
     }
 
     protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, Collection<L> labels,
@@ -291,30 +288,26 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
-        S rep = findRep(scope);
-        granted(CloseScope.of(self, rep), sender);
+        assertOwnScope(scope);
+        granted(CloseScope.of(self, scope), sender);
 
-        if(isScopeInitialized(rep)) {
-            releaseDelays(rep);
+        if(isScopeInitialized(scope)) {
+            releaseDelays(scope);
         }
     }
 
     protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeKind<L> edge) {
-        S rep = findRep(scope);
+        granted(CloseLabel.of(self, scope, edge), sender);
 
-        granted(CloseLabel.of(self, rep, edge), sender);
-
-        if(isEdgeClosed(rep, edge)) {
-            releaseDelays(rep, edge);
+        if(isEdgeClosed(scope, edge)) {
+            releaseDelays(scope, edge);
         }
     }
 
     protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
             L label, S target) {
-        S rep = findRep(source);
-
-        assertLabelOpen(rep, EdgeKind.edge(label));
-        scopeGraph.set(scopeGraph.get().addEdge(rep, EdgeOrEps.edge(label), target));
+        assertLabelOpen(source, EdgeKind.edge(label));
+        scopeGraph.set(scopeGraph.get().addEdge(source, EdgeOrEps.edge(label), target));
     }
 
     protected final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, ScopePath<S, L> path,
@@ -916,8 +909,16 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
+    protected void assertScopeOpen(S scope) {
+        assertOwnScope(scope);
+        if(isScopeInitialized(scope)) {
+            logger.error("Scope {} is not open on {}.", scope, self);
+            throw new IllegalArgumentException("Scope " + scope + " is not open on " + self + ".");
+        }
+    }
+
     protected void assertLabelOpen(S scope, EdgeKind<L> edge) {
-        assertOwnOrSharedScope(scope);
+        assertOwnScope(scope);
         if(isEdgeClosed(scope, edge)) {
             logger.error("Label {}/{} is not open on {}.", scope, edge, self);
             throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");

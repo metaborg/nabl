@@ -126,7 +126,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     @Override public void shareLocal(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        doAddLocalShare(self, scope);
+        doAddLocalShare(scope);
     }
 
     @Override public void setDatum(S scope, D datum) {
@@ -138,19 +138,19 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     @Override public void addEdge(S source, L label, S target) {
         assertInState(UnitState.ACTIVE);
 
-        doAddEdge(self, source, label, target);
+        doAddEdge(self, findRep(source), label, target);
     }
 
     @Override public void closeEdge(S source, L label) {
         assertInState(UnitState.ACTIVE);
 
-        doCloseLabel(self, source, EdgeKind.edge(label));
+        doCloseLabel(self, findRep(source), EdgeKind.edge(label));
     }
 
     @Override public void closeScope(S scope) {
         assertInState(UnitState.ACTIVE);
 
-        doCloseScope(self, scope);
+        doCloseScope(self, findRep(scope));
     }
 
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
