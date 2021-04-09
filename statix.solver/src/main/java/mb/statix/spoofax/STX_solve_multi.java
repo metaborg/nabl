@@ -156,25 +156,9 @@ public class STX_solve_multi extends StatixPrimitive {
 
     private SolverResult flatSolverResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult> result) {
         final IStatixResult unitResult = result.analysis();
-        final SolverResult tmpSolveResult =
-                Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
+        SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
 
-        IScopeGraph.Transient<Scope, ITerm, ITerm> _scopeGraph = ScopeGraph.Transient.of();
-        result.scopeGraph().getEdges().forEach((src_lbl, tgts) -> {
-            Scope src = src_lbl.getKey();
-            ITerm repTerm =
-                    tmpSolveResult.state().unifier().findRecursive(result.scopeGraph().getData(src).orElse(src));
-            Scope rep = repTerm instanceof Scope ? (Scope) repTerm : Scope.matcher().match(repTerm).orElse(src);
-            // @formatter:off
-            src_lbl.getValue().accept(() -> {}, l -> {
-                tgts.forEach(tgt -> _scopeGraph.addEdge(rep, l, tgt));
-            });
-            // @formatter:on
-        });
-        result.scopeGraph().getData().forEach(_scopeGraph::setDatum);
-
-        SolverResult solveResult =
-                tmpSolveResult.withState(tmpSolveResult.state().withScopeGraph(_scopeGraph.freeze()));
+        solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages =
                 ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());

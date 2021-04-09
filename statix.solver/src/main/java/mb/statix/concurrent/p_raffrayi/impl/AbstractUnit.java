@@ -528,6 +528,13 @@ public abstract class AbstractUnit<S, L, D, R>
         return rep;
     }
 
+    protected S findCanon(S scope) {
+        assertOwnScope(scope);
+        final S rep = reps.getKeyOrDefault(scope, scope);
+        assertOwnOrSharedScope(rep);
+        return rep;
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
@@ -573,8 +580,20 @@ public abstract class AbstractUnit<S, L, D, R>
         logger.debug("{} tryFinish", this);
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
+
+            // Flatten scope graph by discarding epsilon edges and setting source
+            // scope to the canonical scope, instead of local representative.
+            final IScopeGraph.Transient<S, L, D> _sg = ScopeGraph.Transient.of();
+            scopeGraph.get().getData().forEach(_sg::setDatum);
+            scopeGraph.get().getEdges().forEach((src_lbl, tgts) -> {
+                final S src = findCanon(src_lbl.getKey());
+                src_lbl.getValue().accept(() -> {}, l -> {
+                    tgts.forEach(tgt -> _sg.addEdge(src, l, tgt));
+                });
+            });
+
             unitResult.complete(
-                    UnitResult.of(self.id(), scopeGraph.get(), analysis.get(), failures, subUnitResults, stats));
+                    UnitResult.of(self.id(), _sg.freeze(), analysis.get(), failures, subUnitResults, stats));
         }
     }
 

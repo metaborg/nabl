@@ -131,6 +131,10 @@ public abstract class BiMap<E> {
             entries.forEach(e -> put(e.getKey(), e.getValue()));
         }
 
+        public E getKeyOrDefault(E value, E defaultValue) {
+            return bwd.getOrDefault(value, defaultValue);
+        }
+
         public E getValueOrDefault(E key, E defaultValue) {
             return fwd.getOrDefault(key, defaultValue);
         }

@@ -7,7 +7,7 @@ import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-public abstract class EdgeOrEps<L> implements Serializable {
+abstract class EdgeOrEps<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
