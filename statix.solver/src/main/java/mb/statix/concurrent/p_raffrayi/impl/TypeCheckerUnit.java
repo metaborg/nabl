@@ -144,7 +144,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     @Override public void closeEdge(S source, L label) {
         assertInState(UnitState.ACTIVE);
 
-        doCloseLabel(self, source, EdgeOrData.edge(label));
+        doCloseLabel(self, source, EdgeKind.edge(label));
     }
 
     @Override public void closeScope(S scope) {

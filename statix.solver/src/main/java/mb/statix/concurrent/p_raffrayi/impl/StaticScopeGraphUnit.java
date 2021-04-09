@@ -121,12 +121,12 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             final S scope = scopeMap.get(libScope);
 
             for(L label : edgeLabels) {
-                final EdgeOrData<L> l = EdgeOrData.edge(label);
-                for(S libTarget : givenScopeGraph.getEdges(libScope, EdgeOrEps.edge(label))) {
+                final EdgeOrEps<L> l = EdgeOrEps.edge(label);
+                for(S libTarget : givenScopeGraph.getEdges(libScope, l)) {
                     final S target = scopeMap.get(libTarget);
                     doAddEdge(self, scope, label, target);
                 }
-                doCloseLabel(self, scope, l);
+                doCloseLabel(self, scope, EdgeKind.from(l));
             }
         }
         for(S libScope : givenOwnScopes) {

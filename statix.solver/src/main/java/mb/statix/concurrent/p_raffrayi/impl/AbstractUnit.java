@@ -60,7 +60,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.diff.BiMap;
 import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.reference.ScopeGraph;
 import mb.statix.scopegraph.terms.newPath.ScopePath;
@@ -87,7 +86,7 @@ public abstract class AbstractUnit<S, L, D, R>
     protected final Ref<IScopeGraph.Immutable<S, EdgeOrEps<L>, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
-    private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
+    private final IRelation3.Transient<S, EdgeKind<L>, Delay> delays;
 
     private final BiMap.Transient<S> reps = BiMap.Transient.of();
 
@@ -254,7 +253,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 throw new IllegalStateException("Cannot set data for shared scope " + scope);
             }
             localRep = doFreshScope(context.name(scope) + "-rep", edgeLabels, true, sharing);
-            waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), self);
+            waitFor(CloseLabel.of(self, localRep, EdgeKind.data()), self);
             doSetDatum(localRep, context.embed(scope)); // Set representative as datum.
             reps.put(scope, localRep);
             self.async(parent)._initShare(scope, localRep);
@@ -262,10 +261,10 @@ public abstract class AbstractUnit<S, L, D, R>
 
         granted(InitScope.of(self, scope), sender);
         for(L label : labels) {
-            waitFor(CloseLabel.of(self, localRep, EdgeOrData.edge(label)), sender);
+            waitFor(CloseLabel.of(self, localRep, EdgeKind.edge(label)), sender);
         }
         if(data) {
-            waitFor(CloseLabel.of(self, localRep, EdgeOrData.data()), sender);
+            waitFor(CloseLabel.of(self, localRep, EdgeKind.data()), sender);
         }
         if(sharing) {
             waitFor(CloseScope.of(self, localRep), sender);
@@ -276,7 +275,7 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected final void doSetDatum(S scope, D datum) {
-        final EdgeOrData<L> edge = EdgeOrData.data();
+        final EdgeKind<L> edge = EdgeKind.data();
         assertLabelOpen(scope, edge);
 
         scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
@@ -292,7 +291,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeOrData<L> edge) {
+    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeKind<L> edge) {
         S rep = findRep(scope);
 
         granted(CloseLabel.of(self, rep, edge), sender);
@@ -306,7 +305,7 @@ public abstract class AbstractUnit<S, L, D, R>
             L label, S target) {
         S rep = findRep(source);
 
-        assertLabelOpen(rep, EdgeOrData.edge(label));
+        assertLabelOpen(rep, EdgeKind.edge(label));
         scopeGraph.set(scopeGraph.get().addEdge(rep, EdgeOrEps.edge(label), target));
     }
 
@@ -346,7 +345,7 @@ public abstract class AbstractUnit<S, L, D, R>
             }
 
             @Override protected IFuture<Optional<D>> getDatum(S scope) {
-                return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
+                return isComplete(scope, EdgeKind.data(), sender).thenCompose(__ -> {
                     final Optional<D> datum;
                     if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
                         return CompletableFuture.completedFuture(Optional.empty());
@@ -379,7 +378,7 @@ public abstract class AbstractUnit<S, L, D, R>
             }
 
             @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
-                return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
+                return isComplete(scope, EdgeKind.edge(label), sender).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, EdgeOrEps.edge(label));
                 });
 
@@ -580,8 +579,8 @@ public abstract class AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     private void releaseDelays(S scope) {
-        for(Map.Entry<EdgeOrData<L>, Delay> entry : delays.get(scope)) {
-            final EdgeOrData<L> edge = entry.getKey();
+        for(Map.Entry<EdgeKind<L>, Delay> entry : delays.get(scope)) {
+            final EdgeKind<L> edge = entry.getKey();
             if(!isWaitingFor(CloseLabel.of(self, scope, edge))) {
                 final Delay delay = entry.getValue();
                 logger.debug("released {} on {}(/{})", delay, scope, edge);
@@ -591,7 +590,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    private void releaseDelays(S scope, EdgeOrData<L> edge) {
+    private void releaseDelays(S scope, EdgeKind<L> edge) {
         for(Delay delay : delays.get(scope, edge)) {
             logger.debug("released {} on {}/{}", delay, scope, edge);
             delays.remove(scope, edge, delay);
@@ -603,11 +602,11 @@ public abstract class AbstractUnit<S, L, D, R>
         return !isWaitingFor(InitScope.of(self, scope)) && !isWaitingFor(CloseScope.of(self, scope));
     }
 
-    private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
+    private boolean isEdgeClosed(S scope, EdgeKind<L> edge) {
         return isScopeInitialized(scope) && !isWaitingFor(CloseLabel.of(self, scope, edge));
     }
 
-    private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
+    private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeKind<L> edge,
             IActorRef<? extends IUnit<S, L, D, ?>> sender) {
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
@@ -908,7 +907,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    protected void assertLabelOpen(S scope, EdgeOrData<L> edge) {
+    protected void assertLabelOpen(S scope, EdgeKind<L> edge) {
         assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             logger.error("Label {}/{} is not open on {}.", scope, edge, self);
