@@ -18,6 +18,7 @@ imports
   statix/runtime/pp
   pp/statix/lang/-
   pp
+  renaming
 
 signature
   sorts CustomAnalysis constructors
@@ -81,4 +82,11 @@ rules // Analysis
 
   nabl2-prettyprint-hook   = prettyprint-Statix-TType
   prettyprint-Statix-TType = nabl2-prettyprint-term
+
+rules // Renaming
+  rename-menu-action : menu-terms -> <rename-action-2(construct-textual-change, editor-analyze, id)> menu-terms
+
+  rename-test(|selected-term, new-name) = rename-2(editor-analyze, id|selected-term, new-name);get-ast
+
+  get-ast: [(_, _, ast) | _] -> ast
 

@@ -3,27 +3,26 @@ module renaming
 imports
   signatures/-
   nabl2/api
-  statix/lang/pp
-  statix/lang/analysis
   libspoofax/stratego/debug
   libspoofax/term/origin
   libspoofax/ui/dialogs
-    libspoofax/analysis/constraint
+  libspoofax/analysis/constraint
+  nabl2/runtime/analysis/constraint-compat
 
   signatures/nabl2/shared/common/-
-    signatures/nabl2/runtime/common/-
+  signatures/nabl2/runtime/common/-
 
 rules // menu action strategies
-  rename-action-2 :
+  rename-action-2(construct-textual-change, analyze, multi) :
     (selected-term, _, selected-ast, _, _) -> renamed-program
     where
       {| ErrorMessage:
         new-name := <read-new-name>
-        ; renamed-asts := <rename-2(editor-analyze|selected-term, new-name)> selected-ast
-          ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
+        ; renamed-asts := <rename-2(analyze, multi|selected-term, new-name)> selected-ast
+        ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
         <+ show-errors |}
 
-    rename-2(analyze|selected-term, new-name): selected-ast -> renamed-asts
+    rename-2(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
         asts := <get-analysed-asts>
         ; analysis := <get-project-analysis>
@@ -33,12 +32,8 @@ rules // menu action strategies
       ; (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
       ; <ppdebug(|"target-indices: ")> target-indices
       ; <ppdebug(|"target-paths: ")> target-paths
-    ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
-      ; check-capture(analyze|renamed-asts, res-rel)
-
-  rename-test(|selected-term, new-name) = rename-2(editor-analyze|selected-term, new-name);get-ast
-
-  get-ast: [(_, _, ast) | _] -> ast
+      ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
+      ; check-capture(analyze, multi|renamed-asts, res-rel)
 
    get-analysis: ast -> analysis
    where
@@ -144,8 +139,8 @@ rules //Step 4: Rename terms
       ; <elem> (term-index, target-indices)
 
 rules //Step 5: Checking for capture
-check-capture(analyze|renamed-asts, resolution-relation) =
-    new-analysis := <rerun-analysis(analyze)> renamed-asts
+check-capture(analyze, multi|renamed-asts, resolution-relation) =
+    new-analysis := <rerun-analysis(analyze, multi)> renamed-asts
     ; new-resolution-relation := <calc-resolution-relation-2; qsort(res-pair-gt)> new-analysis
     ; <ppdebug(|"new-resolution-relation: ")> new-resolution-relation
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
@@ -153,13 +148,32 @@ check-capture(analyze|renamed-asts, resolution-relation) =
     ; <eq>(old-resolution-relation, new-resolution-relation)
       <+ add-error(|"Capture detected", "This renaming leads to name capture")
 
-  rerun-analysis(analyze): renamed-asts -> new-analysis
+  rerun-analysis(analyze, multi): renamed-asts -> new-analysis
     where
-      input := <make-analysis-input> renamed-asts
+      if multi then
+        new-analysis := <rerun-analysis-multi(analyze)> renamed-asts
+      else
+        new-analysis := <rerun-analysis-single(analyze)> renamed-asts
+      end
+
+  rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> new-analysis
+    where
+      input := <make-analysis-input-single> (path, renamed-ast)
+      ; AnalysisResult(analyses) := <analyze> input
+      ; (_, Full(_, CompatUnitAnalysis(_, new-analysis), _, _,_)) := <fetch-elem(?(path, _))> analyses
+
+  make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
+    where
+      old-analysis := <nabl2-get-ast-analysis> renamed-ast
+      ; change := Changed(renamed-ast,old-analysis)
+
+  rerun-analysis-multi(analyze): renamed-asts -> new-analysis
+    where
+      input := <make-analysis-input-multi> renamed-asts
       ; analysis-result := <analyze> input
       ; new-analysis := <get-new-analysis> analysis-result
 
-  make-analysis-input: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
+  make-analysis-input-multi: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
@@ -226,7 +240,7 @@ rules // Utility strategies
   get-project-analysis: _ -> analysis-object
     where
       project-analyses := <get-project-constraint-analyses>
-      ; analysis := <get-project-entry> project-analyses
+      ; analysis := <get-project-entry <+ get-single-file-entry> project-analyses
       ; analysis-object := <get-analysis-object> analysis
 
   get-project-entry: entries -> project-analysis
@@ -243,7 +257,7 @@ rules // Utility strategies
 
   get-analysis-object: CompatProjectAnalysis(_, analysis-object) -> analysis-object
 
-  get-analysis-object: FileAnalysis(_, analysis-object) -> analysis-object
+  get-analysis-object: CompatUnitAnalysis(_, analysis-object) -> analysis-object
 
   get-analysed-asts: _ -> asts
     where
