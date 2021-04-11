@@ -41,8 +41,10 @@ rules
 rules // Step 1: Calculate resolution relation
   calc-resolution-relation: analysis -> user-defined-relation
     where
-      refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)>
-      ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)>
+      refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)> analysis
+      ; <ppdebug(|"refs")> refs
+      ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)> analysis
+      ; <ppdebug(|"decs")> decs
       ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
       ; <ppdebug(|"ref-dec-pairs")> ref-dec-pairs
       ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(make-reflexive-pair)> decs
