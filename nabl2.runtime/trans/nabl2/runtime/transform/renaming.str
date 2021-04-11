@@ -72,9 +72,7 @@ rules // Step 1: Calculate resolution relation
 
   resolves-to-term-index: Occurrence(_, term, TermIndex(_,_)) -> <id>
 
-  get-term-index-from-occ: Occurrence(_, name, _) -> term-index
-    where
-      term-index := <nabl2-get-ast-index> name
+  get-term-index-from-occ: Occurrence(_, _, term-index) -> term-index
 
 rules // Step 2: Find name index in selection
   nabl2-find-name-index(|ast, res-rel): term -> occ-index
