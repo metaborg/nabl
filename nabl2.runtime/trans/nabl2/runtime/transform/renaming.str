@@ -8,7 +8,6 @@ imports
   nabl2/runtime/analysis/constraint-compat
   libspoofax/analysis/constraint
   libspoofax/ui/dialogs
-  libspoofax/stratego/debug
 
 rules
   nabl2-rename-action(construct-textual-change, analyze, multi|) :
@@ -16,7 +15,6 @@ rules
     with
       {| ErrorMessage:
         new-name := <read-new-name> path
-        ; <ppdebug0> "start nabl2 renaming"
         ; renamed-asts := <nabl2-rename(analyze, multi|selected-term, new-name)> selected-ast
         ; renamed-program := <nabl2-construct-renamed-program(construct-textual-change)> renamed-asts
       <+ show-errors |}
@@ -24,31 +22,20 @@ rules
   nabl2-rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
       asts := <get-analysed-asts>
-      ; <ppdebug(|"asts")> asts
       ; analysis := <get-project-analysis>
-      ; <ppdebug(|"analysis")> analysis
       ; res-rel := <nabl2-calc-resolution-relation> analysis
-      ; <ppdebug(|"res-rel")> res-rel
       ; selected-index := <nabl2-find-name-index(|selected-ast, res-rel)> selected-term
-      ; <ppdebug(|"selected-index")> selected-index
       ; (target-paths, target-indices) := <nabl2-find-rename-target> (selected-index, res-rel)
-      ; <ppdebug(|"target-paths")> target-paths
-      ; <ppdebug(|"ttarget-indices")> target-indices
       ; renamed-asts := <nabl2-rename-asts(|target-indices, target-paths, new-name)> asts
-      ; <ppdebug(|"renamed-asts")> renamed-asts
       ; nabl2-check-capture(analyze, multi|renamed-asts, res-rel)
 
 rules // Step 1: Calculate resolution relation
   nabl2-calc-resolution-relation: analysis -> user-defined-relation
     where
       refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)> analysis
-      ; <ppdebug(|"refs")> refs
       ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)> analysis
-      ; <ppdebug(|"decs")> decs
       ; ref-dec-pairs := <map(nabl2-make-resolution-pair(|analysis))> refs
-      ; <ppdebug(|"ref-dec-pairs")> ref-dec-pairs
       ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(nabl2-make-reflexive-pair)> decs
-      ; <ppdebug(|"decs-reflexive-pairs")> decs-reflexive-pairs
       ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
       ; user-defined-relation := <filter(is-user-defined)> relation
 
@@ -155,9 +142,7 @@ rules //Step 5: Checking for capture
   nabl2-rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> new-analysis
     where
       input := <nabl2-make-analysis-input-single> (path, renamed-ast)
-      ; <ppdebug(|"input")> input
       ; AnalysisResult(analyses) := <analyze> input
-      ; <ppdebug(|"analyses")> analyses
       ; (_, Full(_, CompatUnitAnalysis(_, new-analysis), _, _,_)) := <fetch-elem(?(path, _))> analyses
 
   nabl2-make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
