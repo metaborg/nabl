@@ -6,8 +6,8 @@ imports
  statix/lang/pp
 
 rules
-	rename-menu-action : menu-terms -> <rename-action(construct-textual-change, editor-analyze, id|)> menu-terms
+	rename-menu-action : menu-terms -> <nabl2-rename-action(construct-textual-change, editor-analyze, id|)> menu-terms
 	
-    rename-test(|selected-term, new-name) = rename(editor-analyze, id|selected-term, new-name);get-ast  
+    rename-test(|selected-term, new-name) = nabl2-rename(editor-analyze, id|selected-term, new-name);get-ast  
 
     get-ast: [(_, _, ast) | _] -> ast
