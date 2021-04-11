@@ -11,54 +11,54 @@ imports
   libspoofax/stratego/debug
 
 rules
-  rename-action(construct-textual-change, analyze, multi|) :
+  nabl2-rename-action(construct-textual-change, analyze, multi|) :
     (selected-term, _, selected-ast, path, _) -> renamed-program
     with
       {| ErrorMessage:
         new-name := <read-new-name> path
         ; <ppdebug0> "start nabl2 renaming"
-        ; renamed-asts := <rename(analyze, multi|selected-term, new-name)> selected-ast
-        ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
+        ; renamed-asts := <nabl2-rename(analyze, multi|selected-term, new-name)> selected-ast
+        ; renamed-program := <nabl2-construct-renamed-program(construct-textual-change)> renamed-asts
       <+ show-errors |}
 
-  rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
+  nabl2-rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
       asts := <get-analysed-asts>
       ; <ppdebug(|"asts")> asts
       ; analysis := <get-project-analysis>
       ; <ppdebug(|"analysis")> analysis
-      ; res-rel := <calc-resolution-relation> analysis
+      ; res-rel := <nabl2-calc-resolution-relation> analysis
       ; <ppdebug(|"res-rel")> res-rel
-      ; selected-index := <find-name-index(|selected-ast, res-rel)> selected-term
+      ; selected-index := <nabl2-find-name-index(|selected-ast, res-rel)> selected-term
       ; <ppdebug(|"selected-index")> selected-index
-      ; (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
+      ; (target-paths, target-indices) := <nabl2-find-rename-target> (selected-index, res-rel)
       ; <ppdebug(|"target-paths")> target-paths
       ; <ppdebug(|"ttarget-indices")> target-indices
-      ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
+      ; renamed-asts := <nabl2-rename-asts(|target-indices, target-paths, new-name)> asts
       ; <ppdebug(|"renamed-asts")> renamed-asts
-      ; check-capture(analyze, multi|renamed-asts, res-rel)
+      ; nabl2-check-capture(analyze, multi|renamed-asts, res-rel)
 
 rules // Step 1: Calculate resolution relation
-  calc-resolution-relation: analysis -> user-defined-relation
+  nabl2-calc-resolution-relation: analysis -> user-defined-relation
     where
       refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)> analysis
       ; <ppdebug(|"refs")> refs
       ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)> analysis
       ; <ppdebug(|"decs")> decs
-      ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
+      ; ref-dec-pairs := <map(nabl2-make-resolution-pair(|analysis))> refs
       ; <ppdebug(|"ref-dec-pairs")> ref-dec-pairs
-      ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(make-reflexive-pair)> decs
+      ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(nabl2-make-reflexive-pair)> decs
       ; <ppdebug(|"decs-reflexive-pairs")> decs-reflexive-pairs
       ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
       ; user-defined-relation := <filter(is-user-defined)> relation
 
-  make-resolution-pair(|analysis) : ref -> (ref-index, dec-index)
+  nabl2-make-resolution-pair(|analysis) : ref -> (ref-index, dec-index)
     where
       (dec, _) := <nabl2-get-resolved-name(|analysis)> ref
       ; ref-index := <get-term-index-from-occ> ref
       ; dec-index := <get-term-index-from-occ> dec
 
-  make-reflexive-pair: dec -> (term-index, term-index)
+  nabl2-make-reflexive-pair: dec -> (term-index, term-index)
     where
       term-index := <get-term-index-from-occ> dec
 
@@ -77,18 +77,18 @@ rules // Step 1: Calculate resolution relation
       term-index := <nabl2-get-ast-index> name
 
 rules // Step 2: Find name index in selection
-  find-name-index(|ast, res-rel): term -> occ-index
+  nabl2-find-name-index(|ast, res-rel): term -> occ-index
     where
       <check-selection(|term, ast)> ast
-      ; occ-index := <collect-one(get-name-index(|res-rel))> term
+      ; occ-index := <collect-one(nabl2-get-name-index(|res-rel))> term
         <+  term-string := <write-to-string> term
         ; error-msg := <conc-strings> ("The selected name cannot be renamed:\n", term-string)
         ; add-error(|"Renaming impossible", error-msg)
 
-  get-name-index(|res-rel): term -> occurrence
+  nabl2-get-name-index(|res-rel): term -> occurrence
     where
       if (<is-list> term) then
-        <map(get-name-index(|res-rel))> term
+        <map(nabl2-get-name-index(|res-rel))> term
       else
         <is-string> term
         ; term-index := <nabl2-get-ast-index> term
@@ -104,7 +104,7 @@ rules // Step 2: Find name index in selection
     <+ add-error(|"Invalid selection", "Please select a name")
 
 rules //Step 3: Find occurrences to rename
-  find-rename-target: (selected-occ, resolution-relation) -> (target-paths, target-indices)
+  nabl2-find-rename-target: (selected-occ, resolution-relation) -> (target-paths, target-indices)
     where
       target-indices := <find-all-related-occs> (selected-occ, resolution-relation)
       ; target-paths := <get-paths-to-rename> target-indices
@@ -116,14 +116,14 @@ rules //Step 3: Find occurrences to rename
   get-paths: TermIndex(path, _) -> path
 
 rules //Step 4: Rename terms
-  rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
+  nabl2-rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
     where
-      renamed-asts := <map(rename-ast(|target-indices, target-paths, new-name))> asts
+      renamed-asts := <map(nabl2-rename-ast(|target-indices, target-paths, new-name))> asts
 
-  rename-ast(|target-indices, target-paths, new-name): (path, ast) -> (path, ast, renamed-ast)
+  nabl2-rename-ast(|target-indices, target-paths, new-name): (path, ast) -> (path, ast, renamed-ast)
     where
       if (<path-in(|target-paths)> path) then
-        renamed-ast := <bottomup(try(rename-term(|target-indices, new-name)))> ast
+        renamed-ast := <bottomup(try(nabl2-rename-term(|target-indices, new-name)))> ast
       else
         renamed-ast := ()
       end
@@ -132,55 +132,55 @@ rules //Step 4: Rename terms
     where
       <elem> (path, paths)
 
-  rename-term(|target-indices, new-name): term -> new-name
+  nabl2-rename-term(|target-indices, new-name): term -> new-name
     where
       <is-string> term
       ; term-index := <nabl2-get-ast-index> term
       ; <elem> (term-index, target-indices)
 
 rules //Step 5: Checking for capture
-  check-capture(analyze, multi|renamed-asts, resolution-relation) =
-    new-analysis := <rerun-analysis(analyze, multi)> renamed-asts
-    ; new-resolution-relation := <calc-resolution-relation; qsort(res-pair-gt)> new-analysis
+  nabl2-check-capture(analyze, multi|renamed-asts, resolution-relation) =
+    new-analysis := <nabl2-rerun-analysis(analyze, multi)> renamed-asts
+    ; new-resolution-relation := <nabl2-calc-resolution-relation; qsort(res-pair-gt)> new-analysis
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
     ; <eq>(old-resolution-relation, new-resolution-relation)
       <+ add-error(|"Capture detected", "This renaming leads to name capture")
 
-  rerun-analysis(analyze, multi): renamed-asts -> new-analysis
+  nabl2-rerun-analysis(analyze, multi): renamed-asts -> new-analysis
     where
       if multi then
-        new-analysis := <rerun-analysis-multi(analyze)> renamed-asts
+        new-analysis := <nabl2-rerun-analysis-multi(analyze)> renamed-asts
       else
-        new-analysis := <rerun-analysis-single(analyze)> renamed-asts
+        new-analysis := <nabl2-rerun-analysis-single(analyze)> renamed-asts
       end
 
-  rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> new-analysis
+  nabl2-rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> new-analysis
     where
-      input := <make-analysis-input-single> (path, renamed-ast)
+      input := <nabl2-make-analysis-input-single> (path, renamed-ast)
       ; <ppdebug(|"input")> input
       ; AnalysisResult(analyses) := <analyze> input
       ; <ppdebug(|"analyses")> analyses
       ; (_, Full(_, CompatUnitAnalysis(_, new-analysis), _, _,_)) := <fetch-elem(?(path, _))> analyses
 
-  make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
+  nabl2-make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
     where
       old-analysis := <nabl2-get-ast-analysis> renamed-ast
       ; change := Changed(renamed-ast,old-analysis)
 
-  rerun-analysis-multi(analyze): renamed-asts -> new-analysis
+  nabl2-rerun-analysis-multi(analyze): renamed-asts -> new-analysis
     where
-      input := <make-analysis-input-multi> renamed-asts
+      input := <nabl2-make-analysis-input-multi> renamed-asts
       ; analysis-result := <analyze> input
       ; new-analysis := <get-new-analysis> analysis-result
 
-  make-analysis-input-multi: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
+  nabl2-make-analysis-input-multi: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
       ; project-changes := (".", Cached(analysis))
-      ; file-changes := <map(make-file-change(|project-analyses))> renamed-asts
+      ; file-changes := <map(nabl2-make-file-change(|project-analyses))> renamed-asts
 
-  make-file-change(|project-analyses): (path, ast, renamed-ast) -> (path, file-change)
+  nabl2-make-file-change(|project-analyses): (path, ast, renamed-ast) -> (path, file-change)
     where
       (_, analysis) := <fetch-elem(get-entry(|path))> project-analyses;
       if (<eq> (renamed-ast, ())) then
@@ -207,7 +207,7 @@ rules //Step 5: Checking for capture
       end
 
 rules // Step 6: Reconstruct Program
-  construct-renamed-program(construct-textual-change): asts -> renamed-program
+  nabl2-construct-renamed-program(construct-textual-change): asts -> renamed-program
     where
       changed-asts := <filter(has-changed)> asts
       ; renamed-program := <map(construct-renamed-file(construct-textual-change));unzip> changed-asts
