@@ -26,7 +26,7 @@ signature
 
 rules // Analysis
 
-  editor-analyze = ppdebug0;nabl2-analyze(desugar-all)
+  editor-analyze = nabl2-analyze(desugar-all)
 
   nabl2-custom-analysis-unit-hook:
       (resource, ast, _) -> CustomUnitAnalysis(e*, w*, ext-c*)

@@ -15,15 +15,15 @@ imports
 
 rules // menu action strategies
   rename-action-2 :
-    (selected-term, _, ast, path, _) -> (path, result)
+    (selected-term, _, selected-ast, _, _) -> renamed-program
     where
     	{| ErrorMessage:
-    	  new-name := <read-new-name> path
-	      ; renamed-ast := <rename-2(|selected-term, new-name, path)> ast
-	      ; (_, _, result) := <construct-textual-change> (ast, renamed-ast)
+    	  new-name := <read-new-name>
+	      ; renamed-asts := <rename-2(|selected-term, new-name)> selected-ast
+          ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
         <+ show-errors |}
 
-    rename-2(|selected-term, new-name, path): selected-ast -> renamed-asts
+    rename-2(|selected-term, new-name): selected-ast -> renamed-asts
     where
         asts := <get-analysed-asts>
         ; analysis := <get-project-analysis>
@@ -48,12 +48,10 @@ rules // Step 1: Find all terms to rename
   calc-resolution-relation-2: analysis -> user-defined-relation
     where
       refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)>
-      ; <ppdebug(|"refs: ")> refs
       ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)>
       ; <ppdebug(|"decs: ")> refs
       ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
-      ; <ppdebug(|"ref-dec-pairs: ")> ref-dec-pairs
-      ; decs-reflexive-pairs := <filter(is-string-occ);map(make-reflexive-pair)> decs
+      ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(make-reflexive-pair)> decs
       ; <ppdebug(|"decs-reflexive-pairs: ")> decs-reflexive-pairs
       ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
       ; user-defined-relation := <filter(is-user-defined)> relation
@@ -61,6 +59,8 @@ rules // Step 1: Find all terms to rename
   is-string-occ: Occurrence(_, term, _) -> <id>
     where
       <is-string> term
+
+  resolves-to-term-index: Occurrence(_, term, TermIndex(_,_)) -> <id>
 
   make-resolution-pair(|analysis) : ref -> (ref-index, dec-index)
     where
@@ -147,7 +147,6 @@ rules //Step 4: Rename terms
 rules //Step 5: Checking for capture
 check-capture(analyze|renamed-asts, resolution-relation) =
     new-analysis := <rerun-analysis(analyze)> renamed-asts
-    ; <ppdebug(|"new-analysis: ")> new-analysis
     ; new-resolution-relation := <calc-resolution-relation-2; qsort(res-pair-gt)> new-analysis
     ; <ppdebug(|"new-resolution-relation: ")> new-resolution-relation
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
@@ -158,16 +157,13 @@ check-capture(analyze|renamed-asts, resolution-relation) =
   rerun-analysis(analyze): renamed-asts -> new-analysis
     where
       input := <make-analysis-input> renamed-asts
-      ; <ppdebug(|"input: ")> input
       ; analysis-result := <analyze> input
-      ; <ppdebug(|"analysis-result: ")> analysis-result
       ; new-analysis := <get-new-analysis> analysis-result
 
   make-analysis-input: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
-      ; <ppdebug(|"project-entry: ")> analysis
       ; project-changes := (".", Cached(analysis))
       ; file-changes := <map(make-file-change(|project-analyses))> renamed-asts
 
