@@ -2,7 +2,8 @@ module nabl2/runtime/transform/renaming
 
 imports
   signatures/-
-  signatures/nabl2/-
+  signatures/nabl2/shared/common/-
+  signatures/nabl2/runtime/common/-
   nabl2/api
   nabl2/runtime/analysis/constraint-compat
   libspoofax/analysis/constraint
@@ -34,7 +35,7 @@ rules // Step 1: Calculate resolution relation
       refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)>
       ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)>
       ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
-      ; decs-reflexive-pairs := <map(filter(resolves-to-term-index);make-reflexive-pair)> decs
+      ; decs-reflexive-pairs := <filter(resolves-to-term-index);map(make-reflexive-pair)> decs
       ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
       ; user-defined-relation := <filter(is-user-defined)> relation
 
