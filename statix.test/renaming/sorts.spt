@@ -1,0 +1,361 @@
+module renaming/sorts
+
+language StatixLang
+
+test rename sort from dec [[
+resolve
+  busybeaver(A(), ([], Zero(), []))
+signature
+
+  sorts [[State]] constructors
+    A    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : State * Tape
+]] run rename-test(|#1, "Status") to [[
+resolve
+
+  busybeaver(A(), ([], Zero(), []))
+
+signature
+
+  sorts Status constructors
+    A    : Status
+    B    : Status
+    C    : Status
+    HALT : Status
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : Status * Tape
+]]
+
+test rename sort from ref [[
+resolve
+  busybeaver(A(), ([], Zero(), []))
+signature
+
+  sorts State constructors
+    A    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : [[State]] * Tape
+]] run rename-test(|#1, "Status") to [[
+resolve
+
+  busybeaver(A(), ([], Zero(), []))
+
+signature
+
+  sorts Status constructors
+    A    : Status
+    B    : Status
+    C    : Status
+    HALT : Status
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : Status * Tape
+]]
+
+test rename constructor from dec [[
+resolve
+
+  busybeaver(A(), ([], Zero(), []))
+
+signature
+
+  sorts State constructors
+    [[A]]    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : State * Tape
+
+  busybeaver(A(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), R())).
+
+  busybeaver(A(), (left, One(), right)) :-
+    busybeaver(C(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, Zero(), right)) :-
+    busybeaver(A(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, One(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, One(), right)) :-
+    busybeaver(HALT(), move((left, One(), right), R())).
+
+  busybeaver(HALT(), (left, s, right)).
+
+rules
+
+  move : Tape * Move -> Tape
+
+  move((left, s, [s'|right]), R()) = ([s|left], s', right).
+
+  move((left, s, []), R()) = ([s|left], Zero(), []).
+
+  move(([s'|left], s, right), L()) = (left, s', [s|right]).
+
+  move(([], s, right), L()) = ([], Zero(), [s|right]).
+
+  move(T, N()) = T.
+
+]] run rename-test(|#1, "X") to [[
+resolve
+
+  busybeaver(X(), ([], Zero(), []))
+
+signature
+
+  sorts State constructors
+    X    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : State * Tape
+
+  busybeaver(X(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), R())).
+
+  busybeaver(X(), (left, One(), right)) :-
+    busybeaver(C(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, Zero(), right)) :-
+    busybeaver(X(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, One(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, One(), right)) :-
+    busybeaver(HALT(), move((left, One(), right), R())).
+
+  busybeaver(HALT(), (left, s, right)).
+
+rules
+
+  move : Tape * Move -> Tape
+
+  move((left, s, [s'|right]), R()) = ([s|left], s', right).
+
+  move((left, s, []), R()) = ([s|left], Zero(), []).
+
+  move(([s'|left], s, right), L()) = (left, s', [s|right]).
+
+  move(([], s, right), L()) = ([], Zero(), [s|right]).
+
+  move(T, N()) = T.
+]]
+
+test rename constructor from ref [[
+resolve
+
+  busybeaver(A(), ([], Zero(), []))
+
+signature
+
+  sorts State constructors
+    A    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : State * Tape
+
+  busybeaver(A(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), R())).
+
+  busybeaver(A(), (left, One(), right)) :-
+    busybeaver(C(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, Zero(), right)) :-
+    busybeaver([[A()]], move((left, One(), right), L())).
+
+  busybeaver(B(), (left, One(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, One(), right)) :-
+    busybeaver(HALT(), move((left, One(), right), R())).
+
+  busybeaver(HALT(), (left, s, right)).
+
+rules
+
+  move : Tape * Move -> Tape
+
+  move((left, s, [s'|right]), R()) = ([s|left], s', right).
+
+  move((left, s, []), R()) = ([s|left], Zero(), []).
+
+  move(([s'|left], s, right), L()) = (left, s', [s|right]).
+
+  move(([], s, right), L()) = ([], Zero(), [s|right]).
+
+  move(T, N()) = T.
+
+]] run rename-test(|#1, "X") to [[
+resolve
+
+  busybeaver(X(), ([], Zero(), []))
+
+signature
+
+  sorts State constructors
+    X    : State
+    B    : State
+    C    : State
+    HALT : State
+
+  sorts Symbol constructors
+    Zero : Symbol
+    One  : Symbol
+
+  sorts Move constructors
+    R : Move
+    L : Move
+    N : Move
+
+  sorts Tape = (list(Symbol) * Symbol * list(Symbol))
+
+rules
+
+  busybeaver : State * Tape
+
+  busybeaver(X(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), R())).
+
+  busybeaver(X(), (left, One(), right)) :-
+    busybeaver(C(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, Zero(), right)) :-
+    busybeaver(X(), move((left, One(), right), L())).
+
+  busybeaver(B(), (left, One(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, Zero(), right)) :-
+    busybeaver(B(), move((left, One(), right), L())).
+
+  busybeaver(C(), (left, One(), right)) :-
+    busybeaver(HALT(), move((left, One(), right), R())).
+
+  busybeaver(HALT(), (left, s, right)).
+
+rules
+
+  move : Tape * Move -> Tape
+
+  move((left, s, [s'|right]), R()) = ([s|left], s', right).
+
+  move((left, s, []), R()) = ([s|left], Zero(), []).
+
+  move(([s'|left], s, right), L()) = (left, s', [s|right]).
+
+  move(([], s, right), L()) = ([], Zero(), [s|right]).
+
+  move(T, N()) = T.
+]]
