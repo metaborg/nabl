@@ -169,8 +169,8 @@ public class IndexedRuleApplication {
         }
 
         final IConstraint bodyAsConstraint = applyResult.body();
-        final SolverResult solveResult = Solver.solve(spec, newState, bodyAsConstraint,
-                new NullDebugContext(), new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
+        final SolverResult solveResult = Solver.solve(spec, newState, bodyAsConstraint, new NullDebugContext(),
+                new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
         if(solveResult.hasErrors()) {
             return Optional.empty();
         }

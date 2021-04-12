@@ -89,7 +89,8 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         }
 
         // construct result
-        final ApplyResult applyResult = ApplyResult.of(diseq, newBody, newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
+        final ApplyResult applyResult = ApplyResult.of(diseq, newBody,
+                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
 
         return Optional.of(applyResult);
     }
