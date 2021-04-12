@@ -7,12 +7,16 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -26,10 +30,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 

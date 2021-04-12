@@ -1,8 +1,9 @@
 package mb.nabl2.scopegraph;
 
+import org.metaborg.util.collection.IFunction;
+import org.metaborg.util.collection.IRelation3;
+
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.IFunction;
-import mb.nabl2.util.collections.IRelation3;
 
 public interface IScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence> {
 

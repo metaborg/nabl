@@ -5,8 +5,8 @@ import java.util.Map;
 
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.task.ICancel;
+import org.metaborg.util.tuple.Tuple2;
 
-import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.IFuture;

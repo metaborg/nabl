@@ -6,6 +6,9 @@ import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
+
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
@@ -14,8 +17,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.collections.MultiSet;
 
 public abstract class PersistentSubstitution implements ISubstitution {
 

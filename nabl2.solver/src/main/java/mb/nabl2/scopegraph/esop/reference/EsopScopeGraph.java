@@ -5,9 +5,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.HashTrieFunction;
+import org.metaborg.util.collection.HashTrieRelation3;
+import org.metaborg.util.collection.IFunction;
+import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -20,12 +26,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.esop.CriticalEdge;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.HashTrieFunction;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IFunction;
-import mb.nabl2.util.collections.IRelation3;
 import mb.nabl2.util.collections.IndexedBagMultimap;
 import mb.nabl2.util.collections.IndexedBagMultimap.RemovalPolicy;
 

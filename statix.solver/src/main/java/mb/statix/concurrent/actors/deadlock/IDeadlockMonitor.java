@@ -1,6 +1,7 @@
 package mb.statix.concurrent.actors.deadlock;
 
-import mb.nabl2.util.collections.MultiSet;
+import org.metaborg.util.collection.MultiSet;
+
 import mb.statix.concurrent.actors.IActorRef;
 
 public interface IDeadlockMonitor<N> {

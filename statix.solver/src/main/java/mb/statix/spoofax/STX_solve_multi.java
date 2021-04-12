@@ -40,7 +40,7 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.TextPart;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;

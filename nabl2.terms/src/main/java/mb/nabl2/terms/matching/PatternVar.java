@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -17,7 +18,6 @@ import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;

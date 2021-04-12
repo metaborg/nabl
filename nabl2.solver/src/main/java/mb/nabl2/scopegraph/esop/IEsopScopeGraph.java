@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.annotations.Beta;
 
@@ -13,7 +14,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.IScopeGraph;
 import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
-import mb.nabl2.util.Tuple2;
 
 @Beta
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>

@@ -2,12 +2,13 @@ package mb.statix.solver;
 
 import java.util.Collection;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import com.google.common.collect.ImmutableSet;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.CapsuleUtil;
 
 public class Delay extends Throwable {
 

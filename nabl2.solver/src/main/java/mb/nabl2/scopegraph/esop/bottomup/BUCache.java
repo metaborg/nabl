@@ -3,8 +3,15 @@ package mb.nabl2.scopegraph.esop.bottomup;
 import java.io.IOException;
 import java.io.Serializable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.HashTrieRelation2;
+import org.metaborg.util.collection.HashTrieRelation3;
+import org.metaborg.util.collection.IRelation2;
+import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -18,13 +25,6 @@ import mb.nabl2.scopegraph.esop.IEsopNameResolution;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.scopegraph.terms.SpacedName;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
-import mb.nabl2.util.collections.HashTrieRelation2;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation2;
-import mb.nabl2.util.collections.IRelation3;
 
 class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
         implements IEsopNameResolution.IResolutionCache<S, L, O>, Serializable {

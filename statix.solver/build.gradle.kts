@@ -15,6 +15,8 @@ dependencies {
   api("org.metaborg:org.spoofax.terms:$version")
   api("org.metaborg:org.spoofax.interpreter.core:$version")
   api(project(":nabl2.terms"))
+  api(project(":scopegraph"))
+  api(project(":p_raffrayi"))
 
   api("com.google.guava:guava")
   api("io.usethesource:capsule")

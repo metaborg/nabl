@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.HashMultimap;

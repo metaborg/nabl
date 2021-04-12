@@ -11,10 +11,16 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.HashTrieRelation3;
+import org.metaborg.util.collection.IRelation3;
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
+import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
@@ -22,12 +28,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
-import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSetMap;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorMonitor;
 import mb.statix.concurrent.actors.IActorRef;
@@ -57,12 +63,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 public abstract class AbstractUnit<S, L, D, R>
         implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {

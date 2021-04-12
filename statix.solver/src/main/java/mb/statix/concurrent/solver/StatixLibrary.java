@@ -5,20 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Transform.T;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.IScopeGraph.Immutable;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 
 public class StatixLibrary implements IStatixLibrary, IScopeGraphLibrary<Scope, ITerm, ITerm> {
 

@@ -1,6 +1,6 @@
 package mb.statix.concurrent.p_raffrayi.nameresolution;
 
-import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 
 public interface LabelOrder<L> {
 

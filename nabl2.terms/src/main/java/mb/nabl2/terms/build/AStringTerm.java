@@ -4,13 +4,13 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

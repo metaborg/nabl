@@ -1,5 +1,6 @@
 package mb.statix.concurrent.actors.deadlock;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -7,7 +8,6 @@ import org.metaborg.util.log.LoggerUtils;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
-import mb.nabl2.util.collections.MultiSet;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).

@@ -2,15 +2,15 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import java.util.Set;
 
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 /**
  * Protocol accepted by clients, from other clients

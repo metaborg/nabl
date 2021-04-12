@@ -2,9 +2,10 @@ package mb.nabl2.scopegraph.esop.bottomup;
 
 import java.util.Set;
 
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
+
 import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 
 @SuppressWarnings("rawtypes")
 public class BUStuckException extends StuckException {

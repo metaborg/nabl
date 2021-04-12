@@ -1,10 +1,10 @@
 package mb.statix.concurrent.actors.deadlock;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.nabl2.util.collections.MultiSet;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;

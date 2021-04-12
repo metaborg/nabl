@@ -2,6 +2,8 @@ package mb.statix.solver.completeness;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
@@ -11,10 +13,8 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.collections.MultiSet;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;

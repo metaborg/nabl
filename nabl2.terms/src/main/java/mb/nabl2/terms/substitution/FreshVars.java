@@ -5,11 +5,12 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.CapsuleUtil;
 
 /**
  * Class to generate fresh names, possibly relative to an already existing set of names. Generated fresh names are

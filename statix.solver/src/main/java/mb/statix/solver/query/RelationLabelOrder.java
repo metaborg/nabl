@@ -2,9 +2,9 @@ package mb.statix.solver.query;
 
 import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.LabelOrder;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 
 public class RelationLabelOrder implements LabelOrder<ITerm> {
 

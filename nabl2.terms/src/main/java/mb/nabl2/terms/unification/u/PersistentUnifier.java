@@ -10,7 +10,10 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
@@ -29,9 +32,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.MultiSet;
 
 public abstract class PersistentUnifier extends BaseUnifier implements IUnifier, Serializable {
 

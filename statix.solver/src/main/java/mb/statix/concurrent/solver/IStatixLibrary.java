@@ -9,9 +9,9 @@ import java.util.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
+import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.spoofax.StatixTerms;
 
 public interface IStatixLibrary extends IScopeGraphLibrary<Scope, ITerm, ITerm> {

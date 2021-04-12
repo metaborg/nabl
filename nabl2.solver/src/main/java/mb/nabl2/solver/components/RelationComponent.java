@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -38,7 +39,6 @@ import mb.nabl2.solver.exceptions.FunctionUndefinedException;
 import mb.nabl2.solver.exceptions.RelationDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
 
 
 public class RelationComponent extends ASolver {

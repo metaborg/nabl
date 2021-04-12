@@ -13,9 +13,11 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -33,9 +35,7 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
-import mb.nabl2.util.Tuple2;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.Constraints;

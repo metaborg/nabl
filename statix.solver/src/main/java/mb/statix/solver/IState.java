@@ -1,5 +1,7 @@
 package mb.statix.solver;
 
+import org.metaborg.util.tuple.Tuple2;
+
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -8,9 +10,8 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.Renaming;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.statix.scopegraph.Scope;
 
 public interface IState {
 

@@ -3,6 +3,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -11,7 +12,10 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.Futures;
@@ -19,10 +23,6 @@ import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.terms.newPath.ResolutionPath;
-import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 abstract class NameResolution<S, L, D> {
 

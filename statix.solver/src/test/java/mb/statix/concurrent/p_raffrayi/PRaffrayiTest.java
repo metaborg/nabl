@@ -34,7 +34,7 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 
 public class PRaffrayiTest {
 

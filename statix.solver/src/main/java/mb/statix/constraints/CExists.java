@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
@@ -14,7 +15,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;

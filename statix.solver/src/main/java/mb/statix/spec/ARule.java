@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 
 import com.google.common.collect.ImmutableList;
@@ -23,7 +24,6 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;

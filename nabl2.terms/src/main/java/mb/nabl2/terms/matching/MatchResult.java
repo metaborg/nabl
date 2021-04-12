@@ -4,11 +4,12 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
+import org.metaborg.util.tuple.Tuple2;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
-import mb.nabl2.util.Tuple2;
 
 public class MatchResult implements Serializable {
     private static final long serialVersionUID = 1L;

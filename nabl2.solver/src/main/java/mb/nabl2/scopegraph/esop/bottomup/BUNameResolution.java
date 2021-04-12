@@ -6,11 +6,18 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.HashTrieRelation2;
+import org.metaborg.util.collection.HashTrieRelation3;
+import org.metaborg.util.collection.IRelation2;
+import org.metaborg.util.collection.IRelation3;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -42,13 +49,6 @@ import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IStep;
 import mb.nabl2.scopegraph.terms.SpacedName;
 import mb.nabl2.scopegraph.terms.path.Paths;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
-import mb.nabl2.util.collections.HashTrieRelation2;
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation2;
-import mb.nabl2.util.collections.IRelation3;
-import mb.nabl2.util.collections.MultiSet;
 import mb.nabl2.util.graph.alg.incscc.IncSCCAlg;
 import mb.nabl2.util.graph.graphimpl.Graph;
 

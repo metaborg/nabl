@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.statix.scopegraph.path.IResolutionPath;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
 
 public class Env<S, L, D, X> {
 

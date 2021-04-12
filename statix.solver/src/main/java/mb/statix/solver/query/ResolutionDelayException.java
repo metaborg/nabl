@@ -1,6 +1,6 @@
 package mb.statix.solver.query;
 
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.solver.Delay;
 
 public class ResolutionDelayException extends ResolutionException {

@@ -12,7 +12,7 @@ import mb.statix.concurrent.actors.futures.AggregateFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;

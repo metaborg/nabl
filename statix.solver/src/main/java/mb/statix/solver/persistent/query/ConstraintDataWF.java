@@ -8,9 +8,9 @@ import org.metaborg.util.task.NullProgress;
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.oopsla20.reference.DataWF;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.Constraints;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.ResolutionException;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;

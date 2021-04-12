@@ -15,9 +15,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph extends StatixPrimitive {

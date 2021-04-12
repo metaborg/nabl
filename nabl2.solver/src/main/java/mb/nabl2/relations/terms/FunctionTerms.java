@@ -8,16 +8,17 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.PartialFunction1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import mb.nabl2.relations.terms.FunctionTerms.Eval;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.TermPattern;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.Tuple2;
 
 public class FunctionTerms {
 

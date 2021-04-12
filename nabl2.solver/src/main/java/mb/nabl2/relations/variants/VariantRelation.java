@@ -5,8 +5,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Lists;
 
@@ -15,8 +17,6 @@ import mb.nabl2.relations.IRelation;
 import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation2;
 
 public abstract class VariantRelation<T> implements IVariantRelation<T> {
 

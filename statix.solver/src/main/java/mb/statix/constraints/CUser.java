@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 
 import com.google.common.collect.ImmutableList;
@@ -16,7 +17,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;

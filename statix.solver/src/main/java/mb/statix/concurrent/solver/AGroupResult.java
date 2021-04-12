@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
 @Value.Immutable

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.HashMultimap;

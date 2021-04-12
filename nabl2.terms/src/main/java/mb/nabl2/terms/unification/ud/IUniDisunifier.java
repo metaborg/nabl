@@ -3,6 +3,7 @@ package mb.nabl2.terms.unification.ud;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate1;
 
 import io.usethesource.capsule.Set;
@@ -13,7 +14,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 /**
  * Unification

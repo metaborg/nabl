@@ -4,8 +4,12 @@ import java.io.Serializable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.HashTrieRelation2;
+import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Sets;
 
@@ -19,10 +23,6 @@ import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.SymmetryException;
 import mb.nabl2.relations.TransitivityException;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.HashTrieRelation2;
-import mb.nabl2.util.collections.IRelation2;
 
 public abstract class Relation<T> implements IRelation<T> {
     private static final ILogger logger = LoggerUtils.logger(Relation.class);

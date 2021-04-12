@@ -2,8 +2,9 @@ package mb.statix.concurrent.actors.deadlock;
 
 import java.util.Set;
 
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.MultiSetMap;
+import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.tuple.Tuple2;
+
 import mb.nabl2.util.graph.alg.misc.memory.IMemoryView;
 import mb.nabl2.util.graph.graphimpl.Graph;
 import mb.nabl2.util.graph.igraph.IBiDirectionalGraphDataSource;

@@ -3,6 +3,7 @@ package mb.nabl2.scopegraph.esop.bottomup;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -20,7 +21,6 @@ import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.CapsuleUtil;
 
 public class BUVerifier {
 

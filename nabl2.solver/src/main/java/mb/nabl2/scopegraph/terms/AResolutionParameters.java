@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.base.Preconditions;
 
@@ -19,7 +20,6 @@ import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.scopegraph.IResolutionParameters;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.Tuple2;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

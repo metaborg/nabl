@@ -11,6 +11,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +33,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.Unifiers;
-import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
 

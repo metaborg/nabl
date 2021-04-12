@@ -4,13 +4,13 @@ import java.util.Collection;
 
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.tuple.Tuple2;
 
 import mb.nabl2.scopegraph.ILabel;
 import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.terms.SpacedName;
-import mb.nabl2.util.Tuple2;
 
 public class BUChanges<S extends IScope, L extends ILabel, O extends IOccurrence, P extends IDeclPath<S, L, O>> {
 

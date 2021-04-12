@@ -4,13 +4,13 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple3;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -25,8 +25,6 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.IUnifier.Immutable;
 import mb.nabl2.terms.unification.u.IUnifier.Result;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple3;
 
 public class Diseq {
 

@@ -9,12 +9,11 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.CheckedFunction2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
+import org.metaborg.util.tuple.Tuple4;
 
 import com.google.common.collect.Lists;
-
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
-import mb.nabl2.util.Tuple4;
 
 public class AggregateFuture<T> implements IFuture<List<T>> {
 

@@ -2,12 +2,12 @@ package mb.statix.concurrent.actors.deadlock;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.collections.MultiSet;
 
 /**
  * Set which maintains a set of communicating nodes. Nodes are only part of the set if they are explicitly added, and no

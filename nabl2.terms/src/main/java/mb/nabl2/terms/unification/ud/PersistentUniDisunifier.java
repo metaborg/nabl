@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Predicate1;
 
@@ -24,7 +25,6 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.BaseUnifier;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class PersistentUniDisunifier extends BaseUniDisunifier implements Serializable {
 

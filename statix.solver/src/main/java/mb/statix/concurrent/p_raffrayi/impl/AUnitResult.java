@@ -8,9 +8,9 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.IUnitStats;
-import mb.statix.scopegraph.IScopeGraph;
 
 @Value.Immutable
 @Serial.Version(42L)

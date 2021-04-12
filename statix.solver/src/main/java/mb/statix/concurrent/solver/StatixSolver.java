@@ -19,12 +19,14 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.CheckedAction0;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
@@ -48,8 +50,8 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
@@ -78,10 +80,8 @@ import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.AScope;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.AScope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;

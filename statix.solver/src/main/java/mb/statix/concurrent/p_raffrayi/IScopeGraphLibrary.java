@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
-import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph;
 
 public interface IScopeGraphLibrary<S, L, D> {
 

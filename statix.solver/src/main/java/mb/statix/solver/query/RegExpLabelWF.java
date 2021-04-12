@@ -4,8 +4,8 @@ import java.util.Optional;
 
 import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 
 public class RegExpLabelWF implements LabelWF<ITerm> {
 

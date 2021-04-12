@@ -5,6 +5,10 @@ import java.util.Set;
 
 import org.metaborg.util.unit.Unit;
 
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
@@ -14,10 +18,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.IScopeGraph.Immutable;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 

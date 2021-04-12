@@ -6,7 +6,7 @@ import java.util.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 
 public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
 

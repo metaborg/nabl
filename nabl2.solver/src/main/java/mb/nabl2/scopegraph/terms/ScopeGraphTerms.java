@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.tuple.Tuple2;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -15,7 +17,6 @@ import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.Tuple2;
 import mb.nabl2.util.collections.IProperties;
 
 public final class ScopeGraphTerms {

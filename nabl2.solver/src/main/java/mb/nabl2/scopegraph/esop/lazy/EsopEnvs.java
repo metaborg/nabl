@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.NullCancel;
 
@@ -23,7 +24,6 @@ import mb.nabl2.scopegraph.path.IDeclPath;
 import mb.nabl2.scopegraph.path.IPath;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.terms.path.Paths;
-import mb.nabl2.util.CapsuleUtil;
 
 // TODO: Support garbage collection of sub-envs
 // * lambda's must be separate classes not to capture arguments

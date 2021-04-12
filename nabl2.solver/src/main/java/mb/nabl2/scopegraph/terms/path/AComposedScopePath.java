@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ConsList;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -15,7 +16,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IScopePath;
-import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

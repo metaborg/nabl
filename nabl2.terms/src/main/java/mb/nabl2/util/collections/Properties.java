@@ -5,12 +5,12 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
 
 public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
 

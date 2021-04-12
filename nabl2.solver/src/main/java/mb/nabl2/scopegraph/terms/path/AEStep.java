@@ -2,6 +2,7 @@ package mb.nabl2.scopegraph.terms.path;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
@@ -10,7 +11,6 @@ import mb.nabl2.scopegraph.IOccurrence;
 import mb.nabl2.scopegraph.IScope;
 import mb.nabl2.scopegraph.path.IResolutionPath;
 import mb.nabl2.scopegraph.path.IStep;
-import mb.nabl2.util.collections.ConsList;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

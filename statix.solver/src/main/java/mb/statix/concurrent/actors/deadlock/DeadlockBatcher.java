@@ -2,11 +2,11 @@ package mb.statix.concurrent.actors.deadlock;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSetMap;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 

@@ -3,9 +3,10 @@ package mb.nabl2.relations;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.IRelation2;
+import org.metaborg.util.tuple.Tuple2;
+
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation2;
 
 public interface IRelation<T> {
 

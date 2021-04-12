@@ -3,8 +3,8 @@ package mb.statix.concurrent.actors.deadlock;
 import java.util.Objects;
 import java.util.Optional;
 
-import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSet.Immutable;
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSet.Immutable;
 
 public class Clock<N> {
 

@@ -5,7 +5,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import mb.statix.scopegraph.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph;
 
 public interface IUnitResult<S, L, D, R> {
 

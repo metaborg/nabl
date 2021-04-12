@@ -1,12 +1,13 @@
 package mb.nabl2.spoofax.primitives;
 
+import org.metaborg.util.collection.IRelation3;
+
 import mb.nabl2.scopegraph.IScopeGraph;
 import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.collections.IRelation3;
 
 public class SG_get_import_edges extends ScopeGraphEdgePrimitive<Scope> {
 

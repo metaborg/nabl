@@ -9,11 +9,10 @@ import java.util.stream.Collectors;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 
 import com.google.common.collect.Lists;
-
-import mb.nabl2.util.collections.MultiSet;
 
 public class WaitForGraphTest {
 
