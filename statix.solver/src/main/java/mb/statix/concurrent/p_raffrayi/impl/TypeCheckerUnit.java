@@ -17,6 +17,7 @@ import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -25,7 +26,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.path.IResolutionPath;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
@@ -90,13 +90,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return ifActive(result);
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, List<S> givenRootScopes,
-            java.util.Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph, List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
+            List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new StaticScopeGraphUnit<>(subself, self, subcontext, edgeLabels, givenRootScopes, givenOwnScopes,
-                    givenScopeGraph);
+            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
         }, rootScopes)._2();
 
         return ifActive(result);

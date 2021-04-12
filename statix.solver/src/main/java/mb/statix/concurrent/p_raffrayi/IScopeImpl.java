@@ -11,6 +11,6 @@ public interface IScopeImpl<S, D> {
 
     Collection<S> getAllScopes(D datum);
 
-    D subtituteScopes(D datum, Map<S, S> substitution);
+    D substituteScopes(D datum, Map<S, S> substitution);
 
 }

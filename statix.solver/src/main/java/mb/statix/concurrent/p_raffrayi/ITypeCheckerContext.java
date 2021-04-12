@@ -10,8 +10,6 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.path.IResolutionPath;
 
 /**
@@ -32,8 +30,7 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub unit with the given static scope graph and root scopes.
      */
-    IFuture<IUnitResult<S, L, D, Unit>> add(String id, List<S> givenRootScopes, Set<S> givenOwnScopes,
-            IScopeGraph.Immutable<S, L, D> givenScopeGraph, List<S> rootScopes);
+    IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes);
 
     /**
      * Initialize root scope.
@@ -111,8 +108,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                    List<S> givenRootScopes, Set<S> givenOwnScopes, Immutable<S, L, D> givenScopeGraph,
-                    List<S> rootScopes) {
+                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

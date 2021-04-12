@@ -40,6 +40,7 @@ import mb.statix.concurrent.actors.futures.ICompletable;
 import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
+import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
@@ -476,10 +477,8 @@ public abstract class AbstractUnit<S, L, D, R>
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
-
         @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                List<S> givenRootScopes, java.util.Set<S> givenOwnScopes,
-                IScopeGraph.Immutable<S, L, D> givenScopeGraph, List<S> rootScopes) {
+                IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 

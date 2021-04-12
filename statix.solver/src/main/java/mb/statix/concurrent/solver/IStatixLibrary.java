@@ -9,11 +9,12 @@ import java.util.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
+import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.scopegraph.IScopeGraph;
 import mb.statix.scopegraph.terms.Scope;
 import mb.statix.spoofax.StatixTerms;
 
-public interface IStatixLibrary {
+public interface IStatixLibrary extends IScopeGraphLibrary<Scope, ITerm, ITerm> {
 
     List<Scope> rootScopes();
 
@@ -23,7 +24,7 @@ public interface IStatixLibrary {
 
     static IMatcher<IStatixLibrary> matcher() {
         return M.appl3("Library", M.listElems(Scope.matcher()), M.listElems(Scope.matcher()), StatixTerms.scopeGraph(),
-                (t, rootScopes, ownScopes, scopeGraph) -> StatixLibrary.of(rootScopes, ownScopes, scopeGraph));
+                (t, rootScopes, ownScopes, scopeGraph) -> new StatixLibrary(rootScopes, ownScopes, scopeGraph));
     }
 
     static ITerm toTerm(IStatixLibrary library) {

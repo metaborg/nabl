@@ -140,7 +140,7 @@ public class Broker<S, L, D, R> {
         }
 
         @Override public D substituteScopes(D datum, Map<S, S> substitution) {
-            return scopeImpl.subtituteScopes(datum, substitution);
+            return scopeImpl.substituteScopes(datum, substitution);
         }
 
         @Override public IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope) {

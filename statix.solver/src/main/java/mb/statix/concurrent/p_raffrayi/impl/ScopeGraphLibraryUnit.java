@@ -2,10 +2,7 @@ package mb.statix.concurrent.p_raffrayi.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -16,14 +13,12 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
 import mb.nabl2.util.Tuple2;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.futures.CompletableFuture;
 import mb.statix.concurrent.actors.futures.IFuture;
+import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
@@ -31,39 +26,31 @@ import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.IScopeGraph.Immutable;
 import mb.statix.scopegraph.reference.EdgeOrData;
 import mb.statix.scopegraph.reference.Env;
 import mb.statix.scopegraph.terms.newPath.ScopePath;
 
-class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
+class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
-    private static final ILogger logger = LoggerUtils.logger(StaticScopeGraphUnit.class);
+    private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryUnit.class);
 
-    protected List<S> givenRootScopes;
-    protected Set<S> givenOwnScopes;
-    protected IScopeGraph.Immutable<S, L, D> givenScopeGraph;
+    private IScopeGraphLibrary<S, L, D> library;
 
     private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
-    StaticScopeGraphUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
+    ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, List<S> givenRootScopes, Set<S> givenOwnScopes,
-            IScopeGraph.Immutable<S, L, D> givenScopeGraph) {
+            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library) {
         super(self, parent, context, edgeLabels);
 
         // these are replaced once started
-        this.givenRootScopes = ImmutableList.copyOf(givenRootScopes);
-        this.givenOwnScopes = ImmutableSet.copyOf(givenOwnScopes);
-        this.givenScopeGraph = givenScopeGraph;
+        this.library = library;
 
         this.workers = new ArrayList<>();
     }
 
-    protected void clearGiven() {
-        this.givenRootScopes = null;
-        this.givenOwnScopes = null;
-        this.givenScopeGraph = null;
+    protected void clearLibrary() {
+        this.library = null;
     }
 
     @SuppressWarnings("unused") @Override protected IFuture<D> getExternalDatum(D datum) {
@@ -76,90 +63,49 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
-
-        final Set<S> ownScopes = buildScopeGraph(rootScopes);
-
-        clearGiven();
-
-        startWorkers(rootScopes, ownScopes);
-
+        buildScopeGraph(rootScopes);
+        clearLibrary();
+        startWorkers();
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
-    private Set<S> buildScopeGraph(List<S> rootScopes) {
+    private void buildScopeGraph(List<S> rootScopes) {
         final long t0 = System.currentTimeMillis();
 
         final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
 
-        final Map<S, S> scopeMap = new HashMap<>();
-        final Set<S> ownScopes = new HashSet<>();
-
-        // map given scopes to actual scopes
-
-        if(givenRootScopes.size() != rootScopes.size()) {
-            throw new IllegalArgumentException("Number of root scopes does not match.");
-        }
-        for(int i = 0; i < rootScopes.size(); i++) {
-            final S libRootScope = givenRootScopes.get(i);
-            if(scopeMap.containsKey(libRootScope)) {
-                continue;
-            }
-            final S rootScope = rootScopes.get(i);
-            scopeMap.put(libRootScope, rootScope);
+        // initialize root scopes
+        for(S rootScope : rootScopes) {
             doInitShare(self, rootScope, edges, false);
         }
-        for(S libScope : givenOwnScopes) {
-            if(scopeMap.containsKey(libScope)) {
-                throw new IllegalStateException("Scope already initialized.");
-            }
-            final S scope = makeScope("s"/*libScope.getName()*/);
-            ownScopes.add(scope);
-            scopeMap.put(libScope, scope);
-        }
 
-        // add data and edges to actual scopes
+        // initialize library
+        final Tuple2<? extends Set<S>, IScopeGraph.Immutable<S, L, D>> libraryResult =
+                library.initialize(rootScopes, this::makeScope);
+        this.scopes.__insertAll(libraryResult._1());
+        this.scopeGraph.set(libraryResult._2());
 
-        for(S libScope : givenRootScopes) {
-            final S scope = scopeMap.get(libScope);
-
+        // add root scope edges and close root scopes
+        for(S rootScope : rootScopes) {
             for(L label : edgeLabels) {
                 final EdgeOrData<L> l = EdgeOrData.edge(label);
-                for(S libTarget : givenScopeGraph.getEdges(libScope, label)) {
-                    final S target = scopeMap.get(libTarget);
-                    doAddEdge(self, scope, label, target);
+                for(S target : scopeGraph.get().getEdges(rootScope, label)) {
+                    doAddEdge(self, rootScope, label, target);
                 }
-                doCloseLabel(self, scope, l);
-            }
-        }
-        for(S libScope : givenOwnScopes) {
-            final S scope = scopeMap.get(libScope);
-
-            final D libDatum;
-            if((libDatum = givenScopeGraph.getData(libScope).orElse(null)) != null) {
-                final D datum = context.substituteScopes(libDatum, scopeMap);
-                scopeGraph.set(scopeGraph.get().setDatum(scope, datum));
-            }
-
-            for(L label : edgeLabels) {
-                for(S libTarget : givenScopeGraph.getEdges(libScope, label)) {
-                    final S target = scopeMap.get(libTarget);
-                    scopeGraph.set(scopeGraph.get().addEdge(scope, label, target));
-                }
+                doCloseLabel(self, rootScope, l);
             }
         }
 
         final long dt = System.currentTimeMillis() - t0;
         logger.info("Initialized {} in {} s", self.id(), TimeUnit.SECONDS.convert(dt, TimeUnit.MILLISECONDS));
-
-        return ownScopes;
     }
 
-    private void startWorkers(List<S> rootScopes, final Set<S> ownScopes) {
+    private void startWorkers() {
         for(int i = 0; i < context.parallelism(); i++) {
             final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit>>, IFuture<IUnitResult<S, L, D, Unit>>> worker =
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
-                        return new StaticScopeGraphWorker<>(subself, self, subcontext, edgeLabels, rootScopes,
-                                ownScopes, scopeGraph.get());
+                        return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
+                                scopeGraph.get());
                     }, Collections.emptyList());
             workers.add(worker._1());
         }
@@ -207,44 +153,6 @@ class StaticScopeGraphUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     // Worker
     ///////////////////////////////////////////////////////////////////////////
 
-    private static class StaticScopeGraphWorker<S, L, D> extends StaticScopeGraphUnit<S, L, D> {
-
-        StaticScopeGraphWorker(IActor<? extends IUnit<S, L, D, Unit>> self,
-                IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context, Iterable<L> edgeLabels,
-                List<S> rootScopes, Set<S> ownScopes, Immutable<S, L, D> scopeGraph) {
-            super(self, parent, context, edgeLabels, rootScopes, ownScopes, scopeGraph);
-        }
-
-        @Override protected IFuture<D> getExternalDatum(D datum) {
-            return CompletableFuture.completedFuture(datum);
-        }
-
-        @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-            doStart(rootScopes);
-
-            this.givenRootScopes.forEach(scopes::__insert);
-            this.givenOwnScopes.forEach(scopes::__insert);
-            this.scopeGraph.set(this.givenScopeGraph);
-
-            clearGiven();
-
-            return doFinish(CompletableFuture.completedFuture(Unit.unit));
-        }
-
-        @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-                LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-            // duplicate of AbstractUnit::_query
-            // resume(); // FIXME necessary?
-            stats.incomingQueries += 1;
-            return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
-        }
-
-        @Override protected boolean canAnswer(S scope) {
-            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-            return owner.equals(parent);
-        }
-
-    }
 
     ///////////////////////////////////////////////////////////////////////////
     // toString
