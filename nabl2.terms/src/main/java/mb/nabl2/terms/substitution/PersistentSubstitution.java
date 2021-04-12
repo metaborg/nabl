@@ -3,7 +3,6 @@ package mb.nabl2.terms.substitution;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -51,12 +50,11 @@ public abstract class PersistentSubstitution implements ISubstitution {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final List<ITerm> args = appl.getArgs();
-                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
-                for(ITerm arg : args) {
-                    newArgs.add(apply(arg));
+                final ImmutableList<ITerm> newArgs;
+                if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
+                    return appl;
                 }
-                return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
+                return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
             },
             list -> apply(list),
             string -> string,
@@ -73,7 +71,14 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
         // @formatter:off
         return list.<IListTerm>match(ListTerms.cases(
-            cons -> B.newCons(apply(cons.getHead()), apply(cons.getTail()), cons.getAttachments()),
+            cons -> {
+                final ITerm newHead = apply(cons.getHead());
+                final IListTerm newTail = apply(cons.getTail());
+                if(newHead == cons.getHead() && newTail == cons.getTail()) {
+                    return cons;
+                }
+                return B.newCons(newHead, newTail, cons.getAttachments());
+            },
             nil -> nil,
             var -> (IListTerm) apply(var)
         ));
