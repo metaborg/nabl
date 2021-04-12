@@ -2,8 +2,8 @@ package mb.statix.concurrent.p_raffrayi;
 
 import java.util.List;
 
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 
 /**
  * Represents the user-implemented type checker for a specific unit.

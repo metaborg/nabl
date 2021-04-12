@@ -3,14 +3,14 @@ package mb.statix.concurrent.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
+import mb.scopegraph.ecoop21.LabelOrder;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 
 /**
  * The interface from the system to the type checkers.

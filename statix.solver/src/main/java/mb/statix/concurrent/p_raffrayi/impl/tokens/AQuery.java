@@ -1,16 +1,16 @@
 package mb.statix.concurrent.p_raffrayi.impl.tokens;
 
 import org.immutables.value.Value;
+import org.metaborg.util.future.IFuture;
 
+import mb.scopegraph.ecoop21.LabelOrder;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.path.IScopePath;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.impl.IUnit;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 
 @Value.Immutable(prehash = false)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {

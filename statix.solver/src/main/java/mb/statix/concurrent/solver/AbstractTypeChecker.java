@@ -9,6 +9,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
@@ -18,9 +21,6 @@ import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;

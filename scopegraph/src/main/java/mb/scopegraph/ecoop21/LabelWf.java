@@ -1,4 +1,4 @@
-package mb.statix.concurrent.p_raffrayi.nameresolution;
+package mb.scopegraph.ecoop21;
 
 import java.util.Optional;
 

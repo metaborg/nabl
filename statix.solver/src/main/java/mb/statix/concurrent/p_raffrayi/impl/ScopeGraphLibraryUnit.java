@@ -9,26 +9,26 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
+import mb.scopegraph.ecoop21.LabelOrder;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.Query;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 
 class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 

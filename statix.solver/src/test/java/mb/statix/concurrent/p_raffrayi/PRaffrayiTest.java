@@ -11,6 +11,9 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.unit.Unit;
@@ -24,15 +27,12 @@ import mb.nabl2.regexp.IRegExpMatcher;
 import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.regexp.impl.RegExpBuilder;
 import mb.nabl2.terms.ITerm;
-import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
+import mb.scopegraph.ecoop21.LabelOrder;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.p_raffrayi.impl.ScopeImpl;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 import mb.statix.concurrent.p_raffrayi.nameresolution.RegExpLabelWf;
 import mb.statix.scopegraph.Scope;
 

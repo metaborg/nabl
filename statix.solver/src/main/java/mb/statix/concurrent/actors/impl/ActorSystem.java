@@ -6,6 +6,10 @@ import java.text.StringCharacterIterator;
 import java.util.Set;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletable;
+import org.metaborg.util.future.ICompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
@@ -16,10 +20,6 @@ import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.IActorSystem;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletable;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 
 public class ActorSystem implements IActorSystem, IActorInternal<Void> {
 

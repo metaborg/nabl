@@ -1,9 +1,14 @@
-package mb.statix.concurrent.p_raffrayi.impl;
+package mb.scopegraph.ecoop21;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
+import org.metaborg.util.future.ICompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -16,15 +21,8 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
-import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.Futures;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 
-abstract class NameResolution<S, L, D> {
+public abstract class NameResolution<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(NameResolution.class);
 

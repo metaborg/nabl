@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
+import org.metaborg.util.future.CompletableFuture;
 
 public class CompletableFutureTest {
 

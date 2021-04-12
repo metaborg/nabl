@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -18,8 +20,6 @@ import com.google.common.collect.ImmutableSet;
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
 import mb.statix.concurrent.actors.TypeTag;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 import mb.statix.concurrent.actors.impl.IActorScheduler;
 import mb.statix.concurrent.actors.impl.WonkyScheduler;

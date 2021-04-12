@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import mb.nabl2.regexp.IRegExpMatcher;
+import mb.scopegraph.ecoop21.LabelWf;
 
 public class RegExpLabelWf<L> implements LabelWf<L> {
 

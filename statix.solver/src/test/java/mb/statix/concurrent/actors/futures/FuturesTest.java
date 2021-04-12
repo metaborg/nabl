@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
+import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set;
 

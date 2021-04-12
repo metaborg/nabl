@@ -2,11 +2,11 @@ package mb.statix.concurrent.actors;
 
 import java.util.concurrent.ExecutionException;
 
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 
 public class FutureTest {

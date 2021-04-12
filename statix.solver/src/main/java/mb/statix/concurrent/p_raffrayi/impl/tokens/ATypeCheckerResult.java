@@ -1,9 +1,9 @@
 package mb.statix.concurrent.p_raffrayi.impl.tokens;
 
 import org.immutables.value.Value;
+import org.metaborg.util.future.ICompletableFuture;
 
 import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
 import mb.statix.concurrent.p_raffrayi.impl.IUnit;
 
 @Value.Immutable(prehash = false)

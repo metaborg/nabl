@@ -1,8 +1,8 @@
-package mb.statix.concurrent.p_raffrayi.impl;
+package mb.statix.concurrent.p_raffrayi.nameresolution;
 
 import mb.nabl2.relations.IRelation;
+import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
 
 public class RelationLabelOrder<L> implements LabelOrder<L> {
 

@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.concurrent.actors.futures.AggregateFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.Scope;

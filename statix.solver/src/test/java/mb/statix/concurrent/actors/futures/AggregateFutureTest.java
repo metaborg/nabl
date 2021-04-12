@@ -1,13 +1,15 @@
 package mb.statix.concurrent.actors.futures;
 
-import static mb.statix.concurrent.actors.futures.CompletableFuture.completedExceptionally;
-import static mb.statix.concurrent.actors.futures.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.metaborg.util.future.CompletableFuture.completedExceptionally;
+import static org.metaborg.util.future.CompletableFuture.completedFuture;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.CompletableFuture;
 
 public class AggregateFutureTest {
 

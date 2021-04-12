@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -24,7 +25,6 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.IScopeImpl;
 import mb.statix.concurrent.p_raffrayi.IUnitResult;
 import mb.statix.concurrent.p_raffrayi.impl.Broker;

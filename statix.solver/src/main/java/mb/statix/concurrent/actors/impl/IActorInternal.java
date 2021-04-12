@@ -3,10 +3,10 @@ package mb.statix.concurrent.actors.impl;
 import java.lang.reflect.Method;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.future.ICompletable;
 
 import mb.statix.concurrent.actors.IActor;
 import mb.statix.concurrent.actors.IActorRef;
-import mb.statix.concurrent.actors.futures.ICompletable;
 
 /**
  * Interface through which actors interact with each other.

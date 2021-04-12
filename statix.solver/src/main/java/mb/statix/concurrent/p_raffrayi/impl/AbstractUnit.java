@@ -17,6 +17,10 @@ import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletable;
+import org.metaborg.util.future.ICompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
@@ -28,6 +32,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
+import mb.scopegraph.ecoop21.LabelOrder;
+import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -41,10 +48,6 @@ import mb.statix.concurrent.actors.IActorStats;
 import mb.statix.concurrent.actors.TypeTag;
 import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas;
 import mb.statix.concurrent.actors.deadlock.ChandyMisraHaas.Host;
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletable;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.DeadlockException;
 import mb.statix.concurrent.p_raffrayi.IScopeGraphLibrary;
 import mb.statix.concurrent.p_raffrayi.ITypeChecker;
@@ -61,8 +64,6 @@ import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.statix.concurrent.p_raffrayi.impl.tokens.TypeCheckerState;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataLeq;
 import mb.statix.concurrent.p_raffrayi.nameresolution.DataWf;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelOrder;
-import mb.statix.concurrent.p_raffrayi.nameresolution.LabelWf;
 
 public abstract class AbstractUnit<S, L, D, R>
         implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {

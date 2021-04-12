@@ -3,9 +3,8 @@ package mb.statix.concurrent.actors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Function1;
-
-import mb.statix.concurrent.actors.futures.ICompletable;
-import mb.statix.concurrent.actors.futures.IFuture;
+import org.metaborg.util.future.ICompletable;
+import org.metaborg.util.future.IFuture;
 
 /**
  * Interface through which an actor implementation interacts with the underlying actor.

@@ -1,9 +1,8 @@
 package mb.statix.concurrent.actors;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
-
-import mb.statix.concurrent.actors.futures.IFuture;
 
 
 public interface IActorSystem {

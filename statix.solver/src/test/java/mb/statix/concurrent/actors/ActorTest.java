@@ -7,11 +7,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletableFuture;
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.statix.concurrent.actors.futures.CompletableFuture;
-import mb.statix.concurrent.actors.futures.ICompletableFuture;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.actors.impl.ActorSystem;
 
 public class ActorTest {

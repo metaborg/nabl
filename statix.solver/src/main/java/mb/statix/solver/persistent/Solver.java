@@ -13,6 +13,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -25,7 +26,6 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.scopegraph.oopsla20.INameResolution;
 import mb.scopegraph.oopsla20.reference.FastNameResolution;
-import mb.statix.concurrent.actors.futures.IFuture;
 import mb.statix.concurrent.p_raffrayi.ITypeCheckerContext;
 import mb.statix.concurrent.solver.StatixSolver;
 import mb.statix.constraints.Constraints;
