@@ -55,7 +55,7 @@ public abstract class ARule {
         if(params().stream().anyMatch(p -> p.isConstructed())) {
             return Optional.empty();
         }
-        return Constraints.trivial(body()); // FIXME
+        return Constraints.trivial(body());
     }
 
 

@@ -119,7 +119,7 @@ public class StatixSolver {
         NONE, RULE, CONTEXT
     }
 
-    private static final ShadowOptimization SHADOW_OPTIMIZATION = ShadowOptimization.NONE;
+    private static final ShadowOptimization SHADOW_OPTIMIZATION = ShadowOptimization.RULE;
 
     private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
     private static final ImmutableList<IConstraint> NO_NEW_CONSTRAINTS = ImmutableList.of();

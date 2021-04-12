@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -469,19 +470,34 @@ class GreedySolver {
                     return delay(c, Delay.ofVars(unifier.getVars(scopeTerm)));
                 }
                 final Scope scope;
+                // @formatter:off
+                final Set<ITermVar> freeVars = Streams.concat(
+                        unifier.getVars(scopeTerm).stream(),
+                        filter.getDataWF().freeVars().stream().flatMap(v -> unifier.getVars(v).stream()),
+                        min.getDataEquiv().freeVars().stream().flatMap(v -> unifier.getVars(v).stream())
+                ).collect(CapsuleCollectors.toSet());
+                // @formatter:on
+                if(!freeVars.isEmpty()) {
+                    return delay(c, Delay.ofVars(freeVars));
+                }
+                final Rule dataWfRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(filter.getDataWF(), state.unifier(), Safety.UNSAFE));
+                final Rule dataLeqRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(min.getDataEquiv(), state.unifier(), Safety.UNSAFE));
+
                 if((scope = AScope.matcher().match(scopeTerm, unifier).orElse(null)) == null) {
                     debug.error("Expected scope, got {}", unifier.toString(scopeTerm));
                     fail(constraint);
                 }
 
                 try {
-                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params, progress, cancel);
+                    final ConstraintQueries cq = new ConstraintQueries(spec);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                                 .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
-                                .withDataWF(cq.getDataWF(filter.getDataWF()))
+                                .withDataWF(cq.getDataWF(dataWfRule))
                                 .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
-                                .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
+                                .withDataEquiv(cq.getDataEquiv(dataLeqRule))
                                 .withIsComplete((s, l) -> params.isComplete(s, l, state))
                                 .build(state.scopeGraph(), spec.allLabels());
                     // @formatter:on
