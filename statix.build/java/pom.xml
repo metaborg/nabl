@@ -16,7 +16,9 @@
 
   <modules>
     <module>../../nabl2.terms</module>
+    <module>../../scopegraph</module>
     <module>../../renaming.java</module>
+    <module>../../p_raffrayi</module>
     <module>../../statix.solver</module>
     <module>../../statix.generator</module>
     <module>../../statix.cli</module>

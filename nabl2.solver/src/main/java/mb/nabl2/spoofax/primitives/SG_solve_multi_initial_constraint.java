@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
@@ -33,6 +32,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.Unifiers;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
 

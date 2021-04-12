@@ -5,7 +5,6 @@ import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
 import mb.nabl2.constraints.relations.CEvalFunction;
 import mb.nabl2.constraints.relations.IRelationConstraint;
-import mb.nabl2.relations.IFunctionName;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
@@ -13,6 +12,7 @@ import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.relations.IFunctionName;
 
 
 public class ExternalRelationComponent extends ASolver {

@@ -7,6 +7,8 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.LabelOrder;
 import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.RegExpLabelWF;
+import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
 import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
@@ -20,8 +22,6 @@ import mb.statix.generator.scopegraph.NameResolution;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.query.RegExpLabelWF;
-import mb.statix.solver.query.RelationLabelOrder;
 
 public final class CanResolve
         extends SearchStrategy<FocusedSearchState<CResolveQuery>, FocusedSearchState<CResolveQuery>> {
@@ -51,7 +51,7 @@ public final class CanResolve
 
         final ICompleteness.Immutable completeness = input.completeness();
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
-        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
+        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder<>(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
         final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
                 (s, l) -> completeness.isComplete(s, l, state.unifier());

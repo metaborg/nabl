@@ -12,15 +12,15 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.scopegraph.path.IResolutionPath;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
+import mb.scopegraph.pepm16.path.IResolutionPath;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
+import mb.scopegraph.pepm16.terms.path.Paths;
 
 public class SG_get_ref_resolution extends AnalysisPrimitive {
 

@@ -358,7 +358,6 @@ public class PreSolvedConstraint implements Serializable {
             subst = subst.put(var, _unifier.findRecursive(var));
         }
         final java.util.Set<ITermVar> externTermVars = subst.rangeSet();
-        final Set.Immutable<ITermVar> freedVars = vars.__retainAll(externTermVars);
         vars = vars.__removeAll(externTermVars);
 
         // reintroduce externalized variables that appear free in the body

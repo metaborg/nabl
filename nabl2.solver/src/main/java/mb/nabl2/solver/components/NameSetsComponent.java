@@ -5,17 +5,17 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Namespace;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolverCore;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.scopegraph.pepm16.esop15.IEsopNameResolution;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Namespace;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class NameSetsComponent extends ASolver {
 
