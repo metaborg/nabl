@@ -1,11 +1,13 @@
 package mb.statix.spec;
 
+import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
 
@@ -24,10 +26,13 @@ import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
+import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.spec.ApplyMode.Safety;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -52,7 +57,18 @@ public abstract class ARule {
     }
 
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
-        if(params().stream().anyMatch(p -> p.isConstructed())) {
+        final List<ITermVar> args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
+                .collect(Collectors.toList());
+        final ApplyResult applyResult;
+        try {
+            if((applyResult = RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null,
+                    ApplyMode.STRICT, Safety.SAFE).orElse(null)) == null) {
+                return Optional.empty();
+            }
+        } catch(Delay d) {
+            return Optional.empty();
+        }
+        if(applyResult.guard().isPresent()) {
             return Optional.empty();
         }
         return Constraints.trivial(body());
