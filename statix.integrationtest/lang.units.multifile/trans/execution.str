@@ -11,7 +11,7 @@ imports
   statix/api
 
   signatures/-
-  injections/Units-injections
+  injections/units/Units-injections
   signatures/UnitsMultifile-sig
   signatures/ChangeSets-sig
 
