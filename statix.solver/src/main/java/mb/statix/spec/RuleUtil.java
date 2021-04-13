@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
@@ -304,8 +305,8 @@ public class RuleUtil {
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {
-        final Set.Immutable<ITermVar> ruleParamVars = rule.paramVars();
-        final FreshVars fresh = new FreshVars(rule.freeVars(), ruleParamVars);
+        final Set.Immutable<ITermVar> paramVars = rule.paramVars();
+        final FreshVars fresh = new FreshVars(rule.freeVars(), paramVars);
 
         final List<ITerm> paramTerms = new ArrayList<>();
         final IUniDisunifier.Transient _paramsUnifier = PersistentUniDisunifier.Immutable.of().melt();
@@ -321,9 +322,8 @@ public class RuleUtil {
                 return rule; // skip, unmatchable pattern
             }
         }
-        fresh.fix().__insertAll(ruleParamVars);
+        fresh.fix();
         final IUniDisunifier.Immutable paramsUnifier = _paramsUnifier.freeze();
-        final Set.Immutable<ITermVar> paramVars = rule.paramVars();
 
         final PreSolvedConstraint body = PreSolvedConstraint.of(rule.body());
         final PreSolvedConstraint internedBody = body.intern(CapsuleUtil.immutableSet(), paramsUnifier);
@@ -332,8 +332,16 @@ public class RuleUtil {
         final PreSolvedConstraint externedBody = externResult._2();
         final PreSolvedConstraint finalBody = externedBody.cleanup();
 
-        final List<Pattern> params = paramTerms.stream().map(externResult._1()::apply)
-                .map(t -> P.fromTerm(t, v -> !finalBody.freeVars().contains(v)))
+        final List<ITerm> newParamTerms = new ArrayList<>();
+        final MultiSet.Transient<ITermVar> newParamVars = MultiSet.Transient.of();
+        for(ITerm paramTerm : paramTerms) {
+            final ITerm newParamTerm = externResult._1().apply(paramTerm);
+            newParamTerms.add(newParamTerm);
+            newParamTerm.visitVars(newParamVars::add);
+        }
+
+        final List<Pattern> params = newParamTerms.stream()
+                .map(t -> P.fromTerm(t, v -> !finalBody.freeVars().contains(v) && newParamVars.count(v) <= 1))
                 .collect(ImmutableList.toImmutableList());
 
         return Rule.builder().from(rule).params(params).body(finalBody.toConstraint()).build();

@@ -190,6 +190,7 @@ public class RuleUtilTest {
         , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))
 
         , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, B.newAppl("ID", y)))
+        , Rule.of("", Arrays.asList(P.newVar(x), P.newVar(x)), new CTrue())
 
         , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CExists(Arrays.asList(y),
                 new CConj(new CUser("p", Arrays.asList(z, y)), new CExists(Arrays.asList(z),

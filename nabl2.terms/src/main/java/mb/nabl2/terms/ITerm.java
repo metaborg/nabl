@@ -8,8 +8,14 @@ public interface ITerm {
 
     boolean isGround();
 
+    /**
+     * Return the set of variables that appear in this term.
+     */
     Set.Immutable<ITermVar> getVars();
 
+    /**
+     * Visit every variable in this term exactly as many times as it occurs in this term.
+     */
     void visitVars(Action1<ITermVar> onVar);
 
     IAttachments getAttachments();
