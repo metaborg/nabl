@@ -19,10 +19,13 @@ rules // analysis
 
   stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id ,  id  |spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre,  id  |spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
-  
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                               < cstx--editor-analyze(pre, stx--no-grouping, post|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
+                                                                               + stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
+
   stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                                                        ; cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
+                                                                                                        < cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
+                                                                                                        + fatal-err-msg(|"Grouping is only supported by concurrent Statix solver.")
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
