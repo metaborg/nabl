@@ -1015,7 +1015,7 @@ public class StatixSolver {
             // assume constraint.freeVars().isEmpty()
             this.spec = spec;
             this.constraint = constraint;
-            this.state = State.of();
+            this.state = State.of(); // outer solver state unnecessary, because only applied to ground terms
         }
 
         @Override public IFuture<Boolean> wf(ITerm datum, ITypeCheckerContext<Scope, ITerm, ITerm> context,
@@ -1042,6 +1042,10 @@ public class StatixSolver {
     }
 
     private class ConstraintDataWFInternal implements DataWf<Scope, ITerm, ITerm> {
+
+        // Non-static class that is only used on the unit of the type checker
+        // that started the query, and on data from that unit. Implicitly uses 
+        // solver state from the surrounding object .
 
         private final Rule constraint;
 
@@ -1084,7 +1088,7 @@ public class StatixSolver {
             // assume constraint.freeVars().isEmpty()
             this.spec = spec;
             this.constraint = constraint;
-            this.state = State.of();
+            this.state = State.of(); // outer solver state unnecessary, because only applied to ground terms
         }
 
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2,
@@ -1158,6 +1162,10 @@ public class StatixSolver {
     }
 
     private class ConstraintDataEquivInternal implements DataLeq<Scope, ITerm, ITerm> {
+
+        // Non-static class that is only used on the unit of the type checker
+        // that started the query, and on data from that unit. Implicitly uses 
+        // solver state from the surrounding object .
 
         private final Rule constraint;
 

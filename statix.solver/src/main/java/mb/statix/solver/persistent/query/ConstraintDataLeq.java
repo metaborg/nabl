@@ -16,7 +16,6 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
-import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
@@ -32,10 +31,10 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
 
     private final IState.Immutable state;
 
-    public ConstraintDataLeq(Spec spec, Rule constraint) {
+    public ConstraintDataLeq(Spec spec, IState.Immutable state, Rule constraint) {
         this.spec = spec;
         this.constraint = constraint;
-        this.state = State.of();
+        this.state = state;
     }
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {

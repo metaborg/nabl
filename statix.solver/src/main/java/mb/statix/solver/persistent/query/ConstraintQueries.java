@@ -10,6 +10,7 @@ import mb.scopegraph.oopsla20.reference.RegExpLabelWF;
 import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
 import mb.scopegraph.regexp.IRegExpMatcher;
 import mb.scopegraph.relations.IRelation;
+import mb.statix.solver.IState;
 import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -17,9 +18,11 @@ import mb.statix.spec.Spec;
 public class ConstraintQueries implements IConstraintQueries {
 
     private final Spec spec;
+    private final IState.Immutable state;
 
-    public ConstraintQueries(Spec spec) {
+    public ConstraintQueries(Spec spec, IState.Immutable state) {
         this.spec = spec;
+        this.state = state;
     }
 
     @Override public LabelWF<ITerm> getLabelWF(IRegExpMatcher<ITerm> pathWf) throws InterruptedException {
@@ -27,7 +30,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataWF<ITerm> getDataWF(Rule dataWf) {
-        return new ConstraintDataWF(spec, dataWf);
+        return new ConstraintDataWF(spec, state, dataWf);
     }
 
     @Override public LabelOrder<ITerm> getLabelOrder(IRelation<EdgeOrData<ITerm>> labelOrd)
@@ -36,7 +39,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataLeq<ITerm> getDataEquiv(Rule dataLeq) {
-        return new ConstraintDataLeq(spec, dataLeq);
+        return new ConstraintDataLeq(spec, state, dataLeq);
     }
 
 }
