@@ -29,6 +29,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
@@ -765,27 +766,26 @@ public class StatixSolver {
 
                 final List<Rule> rules = spec.rules().getRules(name);
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE);
-                if(results.isEmpty()) {
+                final Tuple3<Rule, ApplyResult, Boolean> result;
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                        .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return fail(c);
-                } else if(results.size() == 1) {
-                    final ApplyResult applyResult = results.get(0)._2();
-                    proxyDebug.debug("Rule accepted");
-                    proxyDebug.commit();
-                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
-                        throw new IllegalArgumentException(
-                                "Solver only accepts specs with pre-computed critical edges.");
-                    }
-                    return success(c, state, NO_UPDATED_VARS, Collections.singletonList(applyResult.body()),
-                            applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
-                } else {
-                    final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
+                }
+                final ApplyResult applyResult = result._2();
+                if(!result._3()) {
+                    final Set<ITermVar> stuckVars = Streams.stream(applyResult.guard())
                             .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return delay(c, Delay.ofVars(stuckVars));
                 }
+                proxyDebug.debug("Rule accepted");
+                proxyDebug.commit();
+                if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
+                    throw new IllegalArgumentException("Solver only accepts specs with pre-computed critical edges.");
+                }
+                return success(c, state, NO_UPDATED_VARS, Collections.singletonList(applyResult.body()),
+                        applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
             }
 
         });

@@ -28,7 +28,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.SetMultimap;
 
 import io.usethesource.capsule.Set;
@@ -70,14 +69,19 @@ public class RuleUtil {
      * @param cause
      *            Cause of this rule application, null if none
      *
-     * @return Some application result if one rule applies, some empty if no rules apply, and empty if multiple rules
-     *         apply.
+     * @return Empty if no rules apply, or the first application if multiple rules apply. The third component of the
+     *         tuple is true if this is the only match.
      */
-    public static <E extends Throwable> Optional<Optional<Tuple2<Rule, ApplyResult>>> applyOrderedOne(
+    public static <E extends Throwable> Optional<Tuple3<Rule, ApplyResult, Boolean>> applyOrderedOne(
             IUniDisunifier.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
             ApplyMode<E> mode, Safety safety) throws E {
-        return applyOrdered(state, rules, args, cause, true, mode, safety)
-                .map(rs -> rs.stream().collect(MoreCollectors.toOptional()));
+        final List<Tuple2<Rule, ApplyResult>> results = applyOrdered(state, rules, args, cause, mode, safety, true);
+        if(results.size() == 0) {
+            return Optional.empty();
+        } else {
+            final Tuple2<Rule, ApplyResult> result = results.get(0);
+            return Optional.of(Tuple3.of(result._1(), result._2(), results.size() == 1));
+        }
     }
 
     /**
@@ -99,16 +103,16 @@ public class RuleUtil {
     public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
             List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety)
             throws E {
-        return applyOrdered(state, rules, args, cause, false, mode, safety).get();
+        return applyOrdered(state, rules, args, cause, mode, safety, false);
     }
 
     /**
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
-     * rules that could be applied, or empty if onlyOne is true, and multiple matches were found.
+     * rules that could be applied. If onlyOne is true, returns at most two results.
      */
-    private static <E extends Throwable> Optional<List<Tuple2<Rule, ApplyResult>>> applyOrdered(
-            IUniDisunifier.Immutable unifier, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
-            boolean onlyOne, ApplyMode<E> mode, Safety safety) throws E {
+    private static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrdered(IUniDisunifier.Immutable unifier,
+            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety,
+            boolean onlyOne) throws E {
         final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
@@ -118,11 +122,11 @@ public class RuleUtil {
                 // this rule does not apply, continue to next rules
                 continue;
             }
+            results.add(Tuple2.of(rule, applyResult));
             if(onlyOne && foundOne.getAndSet(true)) {
                 // we require exactly one, but found multiple
-                return Optional.empty();
+                break;
             }
-            results.add(Tuple2.of(rule, applyResult));
 
             // stop or add guard to state for next rule
             final Tuple3<Set<ITermVar>, ITerm, ITerm> guard;
@@ -138,7 +142,7 @@ public class RuleUtil {
             }
             unifier = newUnifier.get();
         }
-        return Optional.of(results.build());
+        return results.build();
     }
 
     /**
