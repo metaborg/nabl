@@ -1,6 +1,8 @@
 package mb.p_raffrayi.actors.impl;
 
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -16,7 +18,14 @@ public class WorkStealingScheduler implements IActorScheduler {
 
     public WorkStealingScheduler(int parallelism) {
         this.parallelism = parallelism;
-        this.executor = new ForkJoinPool(parallelism, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
+        final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
+            @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+                final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+                worker.setName("PRaffrayiWorker-" + worker.getPoolIndex());
+                return worker;
+            }
+        };
+        this.executor = new ForkJoinPool(parallelism, factory, null, true);
     }
 
     @Override public int parallelism() {
