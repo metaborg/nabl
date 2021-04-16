@@ -177,7 +177,7 @@ public class Solver {
                 return false;
             } else {
                 debug.debug("Cannot decide constraint entailment: unsolved constraints");
-                throw delay;
+                throw _delay;
             }
         }
 
