@@ -3,6 +3,7 @@ package mb.statix.constraints.messages;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -14,7 +15,7 @@ public interface IMessage {
 
     MessageKind kind();
 
-    String toString(TermFormatter formatter);
+    String toString(TermFormatter formatter, Function0<String> getDefaultMessage);
 
     Optional<ITerm> origin();
 

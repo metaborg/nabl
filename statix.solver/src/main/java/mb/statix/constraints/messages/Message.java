@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableList;
 
@@ -41,8 +42,9 @@ public class Message implements IMessage, Serializable {
         return kind;
     }
 
-    @Override public String toString(TermFormatter formatter) {
-        return content.stream().map(p -> p.toString(formatter)).collect(Collectors.joining());
+    @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage) {
+        return content.isEmpty() ? getDefaultMessage.apply()
+                : content.stream().map(p -> p.toString(formatter)).collect(Collectors.joining());
     }
 
     @Override public Optional<ITerm> origin() {

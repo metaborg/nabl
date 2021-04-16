@@ -165,7 +165,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
 
         // add constraint message
-        trace.addFirst(message.toString(formatter));
+        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
 
         final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
                 .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
@@ -180,6 +180,8 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
                 break;
             case NOTE:
                 notes.add(messageTerm);
+                break;
+            case IGNORE:
                 break;
         }
 

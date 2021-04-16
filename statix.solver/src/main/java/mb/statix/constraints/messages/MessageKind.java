@@ -20,6 +20,12 @@ public enum MessageKind implements Serializable {
         @Override public String toString() {
             return "Note";
         }
+    },
+
+    IGNORE {
+        @Override public String toString() {
+            return "Ignore";
+        }
     };
 
     boolean isWorseThan(MessageKind other) {

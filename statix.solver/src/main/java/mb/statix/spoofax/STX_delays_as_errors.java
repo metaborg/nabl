@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -59,9 +60,9 @@ public class STX_delays_as_errors extends StatixPrimitive {
             return message.kind();
         }
 
-        @Override public String toString(TermFormatter formatter) {
-            final String msg = message.toString(formatter);
-            return msg + (msg.isEmpty() ? "" : " ") + "(unsolved)";
+        @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage) {
+            final String msg = message.toString(formatter, getDefaultMessage);
+            return "(unsolved)" + (msg.isEmpty() ? "" : " ") + msg;
         }
 
         @Override public Optional<ITerm> origin() {
