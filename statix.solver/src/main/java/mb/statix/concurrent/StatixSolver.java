@@ -122,6 +122,8 @@ public class StatixSolver {
 
     private static final ShadowOptimization SHADOW_OPTIMIZATION = ShadowOptimization.RULE;
 
+    private static final boolean LOCAL_INFERENCE = true;
+
     private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
     private static final ImmutableList<IConstraint> NO_NEW_CONSTRAINTS = ImmutableList.of();
     private static final mb.statix.solver.completeness.Completeness.Immutable NO_NEW_CRITICAL_EDGES =
@@ -586,8 +588,10 @@ public class StatixSolver {
                 final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
                 final DataWf<Scope, ITerm, ITerm> dataWF = new ConstraintDataWF(spec, dataWfRule);
                 final DataLeq<Scope, ITerm, ITerm> dataEquiv = new ConstraintDataEquiv(spec, dataLeqRule);
-                final DataWf<Scope, ITerm, ITerm> dataWFInternal = new ConstraintDataWFInternal(dataWfRule);
-                final DataLeq<Scope, ITerm, ITerm> dataEquivInternal = new ConstraintDataEquivInternal(dataLeqRule);
+                final DataWf<Scope, ITerm, ITerm> dataWFInternal =
+                        LOCAL_INFERENCE ? new ConstraintDataWFInternal(dataWfRule) : null;
+                final DataLeq<Scope, ITerm, ITerm> dataEquivInternal =
+                        LOCAL_INFERENCE ? new ConstraintDataEquivInternal(dataLeqRule) : null;
 
                 final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future = scopeGraph
                         .query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
