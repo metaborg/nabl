@@ -375,7 +375,7 @@ public abstract class AbstractUnit<S, L, D, R>
                     if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
                         return CompletableFuture.completedFuture(Optional.empty());
                     }
-                    if(external) {
+                    if(external || dataWfInternal == null) {
                         logger.debug("require external rep for {}", datum.get());
                         final IFuture<D> result = getExternalDatum(datum.get());
                         final IFuture<D> ret;
