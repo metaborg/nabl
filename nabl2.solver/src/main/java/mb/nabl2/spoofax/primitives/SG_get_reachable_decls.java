@@ -9,11 +9,11 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class SG_get_reachable_decls extends AnalysisPrimitive {
 

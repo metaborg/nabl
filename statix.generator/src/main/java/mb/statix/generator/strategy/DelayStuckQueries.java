@@ -8,6 +8,13 @@ import com.google.common.collect.Maps;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.IncompleteException;
+import mb.scopegraph.oopsla20.reference.LabelOrder;
+import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.RegExpLabelWF;
+import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.generator.SearchContext;
@@ -17,19 +24,12 @@ import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.scopegraph.DataWF;
 import mb.statix.generator.scopegraph.NameResolution;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.IncompleteException;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.query.RegExpLabelWF;
-import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.Spec;
 
 public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchState> {
@@ -62,7 +62,7 @@ public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchS
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(spec).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways().orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -71,7 +71,7 @@ public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchS
         }
 
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
-        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
+        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder<>(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
         final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
                 (s, l) -> completeness.isComplete(s, l, state.unifier());

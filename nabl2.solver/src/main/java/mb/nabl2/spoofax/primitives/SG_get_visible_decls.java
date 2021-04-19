@@ -9,11 +9,11 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class SG_get_visible_decls extends AnalysisPrimitive {
 
@@ -25,7 +25,8 @@ public class SG_get_visible_decls extends AnalysisPrimitive {
             throws InterpreterException {
         return Scope.matcher().match(term, solution.unifier()).<ITerm>flatMap(scope -> {
             try {
-                return Optional.of(B.newList(solution.nameResolution().visible(scope, new ThreadCancel(), new NullProgress())));
+                return Optional.of(
+                        B.newList(solution.nameResolution().visible(scope, new ThreadCancel(), new NullProgress())));
             } catch(CriticalEdgeException | StuckException | InterruptedException e) {
                 return Optional.empty();
             }

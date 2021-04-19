@@ -7,7 +7,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.base.IBaseConstraint;
 import mb.nabl2.constraints.relations.IRelationConstraint;
-import mb.nabl2.relations.IRelationName;
+import mb.scopegraph.relations.IRelationName;
 
 public class HasRelationBuildConstraints {
 

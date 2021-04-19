@@ -27,7 +27,7 @@ public class SingletonTermProperty implements ITermProperty, Serializable {
         throw new UnsupportedOperationException("Singleton property does not support multiple values.");
     }
 
-    @Override public ITermProperty addValue(ITerm value) {
+    @Override public ITermProperty addValue(@SuppressWarnings("unused") ITerm value) {
         throw new UnsupportedOperationException("Cannot add value to singleton property.");
     }
 

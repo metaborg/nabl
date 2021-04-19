@@ -1,35 +1,36 @@
 module statix/runtime/renaming
 
 imports
-    libstratego-lib 
-	signatures/-
+    libstratego-lib
+  signatures/-
     libspoofax/analysis/constraint
-  	libspoofax/ui/dialogs
+    libspoofax/ui/dialogs
     statix/runtime/analysis
     statix/runtime/ast
     statix/api
     signatures/statix/runtime/-
 
 rules
-	    
-  rename-action(construct-textual-change, analyze):
+
+  rename-action(construct-textual-change, analyze, multi):
     (selected-term, _, selected-ast, _, _) -> renamed-program
     where
       {| ErrorMessage:
         new-name := <read-new-name>
-        ; renamed-asts := <rename(analyze|selected-term, new-name)> selected-ast
+        ; renamed-asts := <rename(analyze, multi|selected-term, new-name)> selected-ast
         ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
       <+ show-errors |}
-    
-  rename(analyze|selected-term, new-name): selected-ast -> renamed-asts
+
+  rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
-      asts := <get-analysed-asts> 
+      asts := <get-analysed-asts>
       ; analysis := <get-project-analysis>
       ; resolution-relation :=  <calc-resolution-relation-project(|analysis)> asts
       ; selected-index := <find-name-index(|selected-ast, resolution-relation)> selected-term
       ; (target-paths, target-indices) := <find-rename-target> (selected-index, resolution-relation)
       ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
-      ; check-capture(analyze|renamed-asts, resolution-relation)     
+      ; check-capture(analyze, multi|renamed-asts, resolution-relation)
+
 
 rules // Step 1: Calculate Resolution Relation
   calc-resolution-relation-project(|analysis): asts -> res-rels
@@ -38,26 +39,26 @@ rules // Step 1: Calculate Resolution Relation
 
   calc-resolution-relation-file(|analysis): (_, ast) -> relation
     where
-  	  relation := <collect(get-dec-ref-pair(|analysis) <+ get-dec-reflexive-pair(|analysis))> ast
-  	
+      relation := <collect(get-dec-ref-pair(|analysis) <+ get-dec-reflexive-pair(|analysis))> ast
+
   get-dec-ref-pair(|analysis): t -> (ref-index, dec-index)
     where
-  	  <is-string> t
-  	  ; dec := <stx--get-ast-property(|analysis, Ref())> t
-  	  ; ref-index := <stx--get-ast-index> t
-  	  ; dec-index := <stx--get-ast-index> dec
+      <is-string> t
+      ; dec := <stx--get-ast-property(|analysis, Ref())> t
+      ; ref-index := <stx--get-ast-index> t
+      ; dec-index := <stx--get-ast-index> dec
 
   get-dec-reflexive-pair(|analysis): t -> (dec-index, dec-index)
     where
-  	  <is-string> t
-  	  ; dec := <stx--get-ast-property(|analysis, Prop("decl"))> 
-  	  ; dec-index := <stx--get-ast-index> dec
-  	    
+      <is-string> t
+      ; dec := <stx--get-ast-property(|analysis, Prop("decl"))>
+      ; dec-index := <stx--get-ast-index> dec
+
 rules // Step 2: Find name index in selection
   find-name-index(|ast, res-rel): term -> occ-index
     where
       <check-selection(|term, ast)> ast
-      ; occ-index := <collect-one(get-name-index(|res-rel))> term  
+      ; occ-index := <collect-one(get-name-index(|res-rel))> term
         <+ add-error(|"Renaming impossible", "The selected term cannot be renamed.")
 
   get-name-index(|res-rel): term -> occurrence
@@ -68,37 +69,37 @@ rules // Step 2: Find name index in selection
         <is-string> term
         ; term-index := <stx--get-ast-index> term
         ; occurrence := <fetch-elem(res-pair-contains(|term-index))> res-rel
-      end	
-			
-  res-pair-contains(|term-index): (ref-index, dec-index) -> term-index 
-    where
-      <eq> (term-index, ref-index) <+ <eq> (term-index, dec-index)   
+      end
 
-rules //Step 3: Find occurrences to rename	 	
+  res-pair-contains(|term-index): (ref-index, dec-index) -> term-index
+    where
+      <eq> (term-index, ref-index) <+ <eq> (term-index, dec-index)
+
+rules //Step 3: Find occurrences to rename
  find-rename-target: (selected-occ, resolution-relation) -> (target-paths, target-indices)
     where
       target-indices := <find-all-related-occs> (selected-occ, resolution-relation)
       ; target-paths := <get-paths-to-rename> target-indices
-      
+
   get-paths-to-rename: target-indices -> paths
     where
-      paths := <map(get-paths);nub> target-indices      
-      
+      paths := <map(get-paths);nub> target-indices
+
   get-paths: TermIndex(path, _) -> path
 
-rules //Step 4: Rename terms	 	
+rules //Step 4: Rename terms
   rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
     where
       renamed-asts := <map(rename-ast(|target-indices, target-paths, new-name))> asts
-      
+
   rename-ast(|target-indices, target-paths, new-name): (path, ast) -> (path, ast, renamed-ast)
     where
       if (<path-in(|target-paths)> path) then
         renamed-ast := <bottomup(try(rename-term(|target-indices, new-name)))> ast
       else
         renamed-ast := ()
-      end       
-  
+      end
+
   path-in(|paths): path -> <id>
     where
       <elem> (path, paths)
@@ -110,27 +111,46 @@ rules //Step 4: Rename terms
       ; <elem> (term-index, target-indices)
 
 rules //Step 5: Checking for capture
-  check-capture(analyze|renamed-asts, resolution-relation) =
-    (new-asts, new-analysis) := <rerun-analysis(analyze)> renamed-asts
+  check-capture(analyze, multi|renamed-asts, resolution-relation) =
+    (new-asts, new-analysis) := <rerun-analysis(analyze, multi)> renamed-asts
     ; new-resolution-relation := <calc-resolution-relation-project(|new-analysis); qsort(res-pair-gt)> new-asts
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
-    ; <eq>(old-resolution-relation, new-resolution-relation) 
-      <+ add-error(|"Capture detected", "This renaming leads to name capture") 
+    ; <eq>(old-resolution-relation, new-resolution-relation)
+      <+ add-error(|"Capture detected", "This renaming leads to name capture")
 
-  rerun-analysis(analyze): renamed-asts -> (new-asts, new-analysis)
+  rerun-analysis(analyze, multi): renamed-asts -> reanalyzed-program
     where
-      input := <make-analysis-input> renamed-asts
+      if multi then
+        reanalyzed-program := <rerun-analysis-multi(analyze)> renamed-asts
+      else
+        reanalyzed-program := <rerun-analysis-single(analyze)> renamed-asts
+      end
+
+  rerun-analysis-single(analyze): [(path, _,  renamed-ast)] -> ([(path, new-ast)], new-analysis)
+    where
+      input := <make-analysis-input-single> (path, renamed-ast)
+      ; AnalysisResult(analyses) := <analyze> input
+      ; (_, Full(new-ast, FileAnalysis(_, new-analysis), _, _,_)) := <fetch-elem(?(path, _))> analyses
+
+  make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
+    where
+      old-analysis := <stx--get-ast-analysis> renamed-ast
+      ; change := Changed(renamed-ast,old-analysis)
+
+  rerun-analysis-multi(analyze): renamed-asts -> (new-asts, new-analysis)
+    where
+      input := <make-analysis-input-multi> renamed-asts
       ; analysis-result := <analyze> input
       ; new-asts := <get-new-asts(|renamed-asts)> analysis-result
       ; new-analysis := <get-new-analysis> analysis-result
-      
-  make-analysis-input: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
+
+  make-analysis-input-multi: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
       ; project-changes := (".", Cached(analysis))
       ; file-changes := <map(make-file-change(|project-analyses))> renamed-asts
-       
+
   make-file-change(|project-analyses): (path, ast, renamed-ast) -> (path, file-change)
     where
       (_, analysis) := <fetch-elem(get-entry(|path))> project-analyses;
@@ -138,28 +158,28 @@ rules //Step 5: Checking for capture
         file-change := Cached(analysis)
       else
         file-change := Changed(renamed-ast, analysis)
-      end                                        
-      
+      end
+
   get-new-analysis:  AnalysisResult(analysis-list) -> analysis-object
     where
       (Update(project-analysis, _, _, _)) := <get-project-entry> analysis-list
-      ; analysis-object := <get-analysis-object> project-analysis 
-		
+      ; analysis-object := <get-analysis-object> project-analysis
+
   get-new-asts(|renamed-asts):  AnalysisResult(analysis-list) -> analyzed-asts
     where
-		analyses := <filter(not(is-project-entry))> analysis-list
-		; changed-asts := <map(get-analyzed-ast)> analyses
-		; unchanged-asts := <filter(not(has-changed)); map(get-old-ast)> renamed-asts
-		; analyzed-asts:= <conc> (changed-asts, unchanged-asts)
-		
+    analyses := <filter(not(is-project-entry))> analysis-list
+    ; changed-asts := <map(get-analyzed-ast)> analyses
+    ; unchanged-asts := <filter(not(has-changed)); map(get-old-ast)> renamed-asts
+    ; analyzed-asts:= <conc> (changed-asts, unchanged-asts)
+
   get-analyzed-ast : (path, Full(ast, _, _, _,_)) -> (path, ast)
-  
-  get-old-ast : (path, ast, renamed-ast) -> (path, ast)		  		
-      
+
+  get-old-ast : (path, ast, renamed-ast) -> (path, ast)
+
   res-pair-gt: ((ref-1, dec-1), (ref-2, dec-2)) -> <id>
     where
-      <term-index-gt> (ref-1, ref-2) 
-													
+      <term-index-gt> (ref-1, ref-2)
+
   term-index-gt: (TermIndex(path-1, num-index-1), TermIndex(path-2, num-index-2)) -> <id>
     where
       if <eq> (path-1, path-2) then
@@ -167,64 +187,65 @@ rules //Step 5: Checking for capture
       else
          <string-gt> (path-1, path-2)
       end
-    
+
 rules // Step 6: Reconstruct Program
   construct-renamed-program(construct-textual-change): asts -> renamed-program
     where
       changed-asts := <filter(has-changed)> asts
       ; renamed-program := <map(construct-renamed-file(construct-textual-change));unzip> changed-asts
-      
+
   construct-renamed-file(construct-textual-change): (path, ast, renamed-ast) -> (path, text)
     where
       (_, _, text) := <construct-textual-change> (ast, renamed-ast)
-      
+
   has-changed: (_, _, renamed-ast) -> <id>
     where
       <not(eq)> (renamed-ast, ())
 
 rules // Utility strategies
   read-new-name: _ -> new-name
-    where 	
+    where
       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
-      
+
   get-project-analysis: _ -> analysis-object
-    where 	
+    where
       project-analyses := <get-project-constraint-analyses>
-      ; analysis := <get-project-entry> project-analyses
+      ; analysis := <get-project-entry <+ get-single-file-entry> project-analyses
       ; analysis-object := <get-analysis-object> analysis
-      ; <not(stx-analysis-has-errors)> analysis-object
-        <+ add-error(|"Renaming impossible", "The program contains errors.") 	
-      
+
   get-project-entry: entries -> project-analysis
     where
       (_, project-analysis) := <fetch-elem(is-project-entry)> entries
-  	
+
+  get-single-file-entry: [(_, file-analysis)] -> file-analysis
+
   is-project-entry = get-entry(|".")
 
   get-entry(|search-path): (path, _) -> <id>
     where
-      <eq> (path, search-path)    
-    
+      <eq> (path, search-path)
+
   get-analysis-object: ProjectAnalysis(_, _, _, analysis-object) -> analysis-object
-      
+
+  get-analysis-object: FileAnalysis(_, analysis-object) -> analysis-object
+
   get-analysed-asts: _ -> asts
     where
       project-asts := <get-project-analyzed-asts>
-      ; asts := <filter(not(is-project-entry))> project-asts	       
+      ; asts := <filter(not(is-project-entry))> project-asts
 
   check-selection(|selected-term, ast) =
     <not(eq)> (selected-term, ast)
-  	<+ add-error(|"Invalid selection", "Please select a name")
-  	
+    <+ add-error(|"Invalid selection", "Please select a name")
+
   add-error(|title, message) =
     rules(
       ErrorMessage :+ () -> (title, message)
     ); fail
-      
-  show-errors =    
+
+  show-errors =
     [(title, message) | _] := <bagof-ErrorMessage> ()
     ; <show-dialog(|title, "ERROR")> message
-					  
+
 rules // primitives
   find-all-related-occs =  prim("FindAllRelatedOccurrences")
-	

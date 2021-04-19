@@ -5,17 +5,18 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.util.tuple.Tuple3;
+
 import com.google.common.collect.ImmutableMap;
 
-import mb.nabl2.relations.ARelationDescription.Reflexivity;
-import mb.nabl2.relations.ARelationDescription.Symmetry;
-import mb.nabl2.relations.ARelationDescription.Transitivity;
-import mb.nabl2.relations.RelationDescription;
 import mb.nabl2.relations.variants.IVariantMatcher;
 import mb.nabl2.relations.variants.VariantRelationDescription;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.Tuple3;
+import mb.scopegraph.relations.ARelationDescription.Reflexivity;
+import mb.scopegraph.relations.ARelationDescription.Symmetry;
+import mb.scopegraph.relations.ARelationDescription.Transitivity;
+import mb.scopegraph.relations.RelationDescription;
 
 public class RelationTerms {
 

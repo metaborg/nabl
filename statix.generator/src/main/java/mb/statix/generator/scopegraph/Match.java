@@ -2,7 +2,7 @@ package mb.statix.generator.scopegraph;
 
 import java.util.Optional;
 
-import mb.statix.scopegraph.path.IResolutionPath;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
 
 public class Match<S, L, D, X> {
 

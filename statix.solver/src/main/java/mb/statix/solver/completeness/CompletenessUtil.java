@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 
 import org.metaborg.util.functions.Action2;
+import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
@@ -16,17 +17,15 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
-import mb.nabl2.util.Tuple2;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.statix.constraints.CConj;
-import mb.statix.constraints.CExists;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
@@ -161,7 +160,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return new CExists(cexists.vars(), newBody, cexists.cause().orElse(null), bodyCriticalEdges.freeze());
+                return cexists.withConstraint(newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
             },
             cfalse -> cfalse,
             cinequal -> cinequal,

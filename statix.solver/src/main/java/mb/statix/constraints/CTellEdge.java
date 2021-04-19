@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -74,8 +77,19 @@ public class CTellEdge implements IConstraint, Serializable {
         return cases.caseTellEdge(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(sourceTerm.getVars(), targetTerm.getVars());
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        sourceTerm.getVars().forEach(onFreeVar::apply);
+        targetTerm.getVars().forEach(onFreeVar::apply);
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
@@ -83,9 +97,14 @@ public class CTellEdge implements IConstraint, Serializable {
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
+        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
     @Override public CTellEdge apply(IRenaming subst) {
         return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges.apply(subst));
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }
 
     @Override public String toString(TermFormatter termToString) {

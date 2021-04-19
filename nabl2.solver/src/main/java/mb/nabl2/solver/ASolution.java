@@ -12,13 +12,6 @@ import com.google.common.collect.Multimap;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
-import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.esop.reference.EsopScopeGraph;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.OccurrenceIndex;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.symbolic.ISymbolicConstraints;
@@ -28,6 +21,13 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
 import mb.nabl2.util.collections.Properties;
+import mb.scopegraph.pepm16.esop15.IEsopNameResolution;
+import mb.scopegraph.pepm16.esop15.IEsopScopeGraph;
+import mb.scopegraph.pepm16.esop15.reference.EsopScopeGraph;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.OccurrenceIndex;
+import mb.scopegraph.pepm16.terms.Scope;
 
 @Value.Immutable(builder = true)
 @Serial.Version(value = 42L)

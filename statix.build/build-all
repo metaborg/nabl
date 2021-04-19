@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eu
+
+(cd java && mvn clean install) && (cd lang && mvn clean install) && (cd test && mvn clean install)

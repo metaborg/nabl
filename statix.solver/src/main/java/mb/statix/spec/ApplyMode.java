@@ -13,6 +13,10 @@ import mb.statix.solver.IConstraint;
 
 public abstract class ApplyMode<E extends Throwable> {
 
+    public enum Safety {
+        SAFE, UNSAFE
+    }
+
     /**
      * Strict application mode, which throws a Delay exception if the match cannot be decided because of external
      * variables. In the result, {@link ApplyResult#guard()} is always empty.
@@ -26,6 +30,6 @@ public abstract class ApplyMode<E extends Throwable> {
     public static final ApplyMode<VoidException> RELAXED = new ApplyRelaxed();
 
     abstract Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            @Nullable IConstraint cause) throws E;
+            @Nullable IConstraint cause, Safety safety) throws E;
 
 }

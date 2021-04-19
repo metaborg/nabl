@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,7 +29,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.Tuple2;
 
 public abstract class Pattern implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -44,6 +44,8 @@ public abstract class Pattern implements Serializable {
     }
 
     public abstract Set<ITermVar> getVars();
+
+    public abstract boolean isConstructed();
 
     public Optional<ISubstitution.Immutable> match(ITerm term) {
         return match(term, Unifiers.Immutable.of()).match(t -> t, v -> Optional.empty());
@@ -122,7 +124,7 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
-            }, (v) -> v.orElse(fresh.freshWld()));
+            }, (v) -> v.orElseGet(() -> fresh.freshWld()));
             stuckVars.add(leftVar);
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }

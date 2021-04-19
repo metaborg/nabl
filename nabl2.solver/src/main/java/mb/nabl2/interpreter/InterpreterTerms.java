@@ -18,20 +18,20 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import mb.nabl2.constraints.namebinding.DeclProperties;
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.IScopeGraph;
-import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.path.IResolutionPath;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.IScopeGraph;
+import mb.scopegraph.pepm16.StuckException;
+import mb.scopegraph.pepm16.esop15.IEsopNameResolution;
+import mb.scopegraph.pepm16.path.IResolutionPath;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
+import mb.scopegraph.pepm16.terms.path.Paths;
 
 public class InterpreterTerms {
 

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -18,7 +19,6 @@ import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 class PatternAs extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -63,6 +63,10 @@ class PatternAs extends Pattern {
         return vars.freeze();
     }
 
+    @Override public boolean isConstructed() {
+        return pattern.isConstructed();
+    }
+
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }
@@ -78,10 +82,11 @@ class PatternAs extends Pattern {
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
         final ITerm term = pattern.asTerm(equalities, fresh);
-        if(!var.isWildcard()) {
-            equalities.apply(var.getVar(), term);
+        if(var.isWildcard()) {
+            return term;
         }
-        return term;
+        equalities.apply(var.getVar(), term);
+        return var.getVar();
     }
 
     @Override public String toString() {

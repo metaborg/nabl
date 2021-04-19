@@ -24,8 +24,8 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
 

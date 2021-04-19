@@ -12,7 +12,7 @@ imports
 rules // Analysis
 
   // multi-file analysis
-  editor-analyze = stx-editor-analyze(explicate-injections-Units, implicate-injections-Units | "statics", "projectOk", "fileOk")
+  editor-analyze = stx-editor-analyze(explicate-injections-Units, implicate-injections-Units | "units/statics", "projectOk", "fileOk")
 
 rules // Editor Services
 

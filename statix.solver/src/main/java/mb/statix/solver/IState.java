@@ -1,14 +1,17 @@
 package mb.statix.solver;
 
+import org.metaborg.util.tuple.Tuple2;
+
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.Renaming;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.statix.scopegraph.Scope;
 
 public interface IState {
 
@@ -112,6 +115,15 @@ public interface IState {
             final Tuple2<ITermVar, Immutable> result = state.freshVar(var);
             state = result._2();
             return result._1();
+        }
+
+        public IRenaming freshVars(java.util.Set<ITermVar> vars) {
+            freezeTwiceShameOnYou();
+            Renaming.Builder renaming = Renaming.builder();
+            for(ITermVar var : vars) {
+                renaming.put(var, freshVar(var));
+            }
+            return renaming.build();
         }
 
         public ITermVar freshWld() {

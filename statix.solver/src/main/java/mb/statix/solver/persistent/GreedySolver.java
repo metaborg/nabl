@@ -7,16 +7,18 @@ import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.RateLimitedCancel;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -25,18 +27,23 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.nabl2.terms.substitution.Renaming;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.Diseq;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.Tuple2;
+import mb.scopegraph.oopsla20.INameResolution;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.reference.IncompleteException;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -53,13 +60,8 @@ import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageUtil;
-import mb.statix.scopegraph.INameResolution;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.Env;
-import mb.statix.scopegraph.reference.IncompleteException;
-import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.scopegraph.terms.AScope;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.AScope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.ConstraintContext;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
@@ -81,6 +83,7 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -384,16 +387,17 @@ class GreedySolver {
             }
 
             @Override public Boolean caseExists(CExists c) throws InterruptedException {
-                final ImmutableMap.Builder<ITermVar, ITermVar> existentialsBuilder = ImmutableMap.builder();
+                final Renaming.Builder _existentials = Renaming.builder();
                 IState.Immutable newState = state;
                 for(ITermVar var : c.vars()) {
                     final Tuple2<ITermVar, IState.Immutable> varAndState = newState.freshVar(var);
                     final ITermVar freshVar = varAndState._1();
                     newState = varAndState._2();
-                    existentialsBuilder.put(var, freshVar);
+                    _existentials.put(var, freshVar);
                 }
-                final Map<ITermVar, ITermVar> existentials = existentialsBuilder.build();
-                final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(existentials);
+                final Renaming existentials = _existentials.build();
+
+                final ISubstitution.Immutable subst = existentials.asSubstitution();
                 final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
@@ -401,8 +405,8 @@ class GreedySolver {
                 }
                 final ICompleteness.Immutable newCriticalEdges =
                         c.bodyCriticalEdges().orElse(NO_NEW_CRITICAL_EDGES).apply(subst);
-                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges, existentials,
-                        fuel);
+                return success(c, newState, NO_UPDATED_VARS, disjoin(newConstraint), newCriticalEdges,
+                        existentials.asMap(), fuel);
             }
 
             @Override public Boolean caseFalse(CFalse c) {
@@ -466,19 +470,34 @@ class GreedySolver {
                     return delay(c, Delay.ofVars(unifier.getVars(scopeTerm)));
                 }
                 final Scope scope;
+                // @formatter:off
+                final Set<ITermVar> freeVars = Streams.concat(
+                        unifier.getVars(scopeTerm).stream(),
+                        filter.getDataWF().freeVars().stream().flatMap(v -> unifier.getVars(v).stream()),
+                        min.getDataEquiv().freeVars().stream().flatMap(v -> unifier.getVars(v).stream())
+                ).collect(CapsuleCollectors.toSet());
+                // @formatter:on
+                if(!freeVars.isEmpty()) {
+                    return delay(c, Delay.ofVars(freeVars));
+                }
+                final Rule dataWfRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(filter.getDataWF(), state.unifier(), Safety.UNSAFE));
+                final Rule dataLeqRule = RuleUtil.instantiateHeadPatterns(
+                        RuleUtil.closeInUnifier(min.getDataEquiv(), state.unifier(), Safety.UNSAFE));
+
                 if((scope = AScope.matcher().match(scopeTerm, unifier).orElse(null)) == null) {
                     debug.error("Expected scope, got {}", unifier.toString(scopeTerm));
                     fail(constraint);
                 }
 
                 try {
-                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params, progress, cancel);
+                    final ConstraintQueries cq = new ConstraintQueries(spec, state);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                                 .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
-                                .withDataWF(cq.getDataWF(filter.getDataWF()))
+                                .withDataWF(cq.getDataWF(dataWfRule))
                                 .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
-                                .withDataEquiv(cq.getDataEquiv(min.getDataEquiv()))
+                                .withDataEquiv(cq.getDataEquiv(dataLeqRule))
                                 .withIsComplete((s, l) -> params.isComplete(s, l, state))
                                 .build(state.scopeGraph(), spec.allLabels());
                     // @formatter:on
@@ -631,33 +650,32 @@ class GreedySolver {
                 final IDebugContext debug = params.debug();
 
                 final List<Rule> rules = spec.rules().getRules(name);
-                final List<Tuple2<Rule, ApplyResult>> results =
-                        RuleUtil.applyOrderedAll(state.unifier(), rules, args, c, ApplyMode.RELAXED);
-                if(results.isEmpty()) {
+                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                final Tuple3<Rule, ApplyResult, Boolean> result;
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                        .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return fail(c);
-                } else if(results.size() == 1) {
-                    final ApplyResult applyResult = results.get(0)._2();
-                    proxyDebug.debug("Rule accepted");
-                    proxyDebug.commit();
-                    if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
-                        throw new IllegalArgumentException(
-                                "Solver only accepts specs with pre-computed critical edges.");
-                    }
-                    final ICompleteness.Immutable newCriticalEdges =
-                            Optional.ofNullable(applyResult.criticalEdges()).orElse(NO_NEW_CRITICAL_EDGES);
-                    return success(c, state, NO_UPDATED_VARS, disjoin(applyResult.body()), newCriticalEdges,
-                            NO_EXISTENTIALS, fuel);
-                } else {
-                    final Set<ITermVar> stuckVars = results.stream().flatMap(r -> Streams.stream(r._2().guard()))
-                            .flatMap(g -> g.domainSet().stream()).collect(Collectors.toSet());
+                }
+                final ApplyResult applyResult = result._2();
+                if(!result._3()) {
+                    final Set<ITermVar> stuckVars = Streams.stream(applyResult.guard())
+                            .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return delay(c, Delay.ofVars(stuckVars));
                 }
+                proxyDebug.debug("Rule accepted");
+                proxyDebug.commit();
+                if(INCREMENTAL_CRITICAL_EDGES && applyResult.criticalEdges() == null) {
+                    throw new IllegalArgumentException("Solver only accepts specs with pre-computed critical edges.");
+                }
+                return success(c, state, NO_UPDATED_VARS, Collections.singletonList(applyResult.body()),
+                        applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
             }
 
         });
 
     }
+
 
 }

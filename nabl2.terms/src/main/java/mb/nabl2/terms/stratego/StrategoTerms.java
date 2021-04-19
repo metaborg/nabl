@@ -3,13 +3,10 @@ package mb.nabl2.terms.stratego;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import mb.nabl2.terms.matching.VarProvider;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -20,6 +17,7 @@ import org.spoofax.interpreter.terms.IStrategoString;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.StrategoPlaceholder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -30,7 +28,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
-import org.spoofax.terms.StrategoPlaceholder;
+import mb.nabl2.terms.matching.VarProvider;
 
 public class StrategoTerms {
 

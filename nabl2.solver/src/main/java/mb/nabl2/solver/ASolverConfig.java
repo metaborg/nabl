@@ -11,9 +11,9 @@ import org.metaborg.util.functions.PartialFunction1;
 import mb.nabl2.relations.terms.FunctionTerms;
 import mb.nabl2.relations.terms.RelationTerms;
 import mb.nabl2.relations.variants.VariantRelationDescription;
-import mb.nabl2.scopegraph.terms.ResolutionParameters;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.scopegraph.pepm16.terms.ResolutionParameters;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

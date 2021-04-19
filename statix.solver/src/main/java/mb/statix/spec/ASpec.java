@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -12,7 +13,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
