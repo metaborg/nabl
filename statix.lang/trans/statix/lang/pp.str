@@ -46,7 +46,7 @@ rules
 
 rules
 
-  construct-textual-change = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)
+  construct-textual-change-statix = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)
 
 rules
 
