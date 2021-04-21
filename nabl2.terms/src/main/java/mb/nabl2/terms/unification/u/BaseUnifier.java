@@ -415,8 +415,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
+        int remaining = maxDepth;
         sb.append("[");
         while(list != null) {
+            if(remaining == 0) {
+                if(list.match(ListTerms.<Boolean>cases().nil(nil -> false).otherwise(l -> true))) {
+                    sb.append("|…");
+                }
+                break;
+            }
             list = list.match(ListTerms.cases(
             // @formatter:off
                 cons -> {
@@ -436,6 +443,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
                 }
                 // @formatter:on
             ));
+            remaining--;
         }
         sb.append("]");
         return sb.toString();
