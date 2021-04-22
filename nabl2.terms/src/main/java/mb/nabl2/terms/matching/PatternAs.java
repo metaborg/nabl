@@ -17,7 +17,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.ISubstitution.Transient;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 class PatternAs extends Pattern {
@@ -67,7 +67,8 @@ class PatternAs extends Pattern {
         return pattern.isConstructed();
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
+            Eqs eqs) {
         return matchTerms(Iterables2.from(var, pattern), Iterables2.from(term, term), subst, unifier, eqs);
     }
 

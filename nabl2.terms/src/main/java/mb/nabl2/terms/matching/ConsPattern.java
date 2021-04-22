@@ -19,7 +19,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.ISubstitution.Transient;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 class ConsPattern extends Pattern {
@@ -53,7 +53,8 @@ class ConsPattern extends Pattern {
         return true;
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term,
+            ISubstitution.Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
         // @formatter:off
         return M.list(listTerm -> {
             return listTerm.match(ListTerms.<Boolean>cases()
@@ -68,6 +69,7 @@ class ConsPattern extends Pattern {
                 })
             );
         }).match(unifier.findTerm(term)).orElse(false);
+        // @formatter:on
     }
 
     @Override public ConsPattern apply(IRenaming subst) {
@@ -78,26 +80,25 @@ class ConsPattern extends Pattern {
         return new ConsPattern(head.eliminateWld(fresh), tail.eliminateWld(fresh), getAttachments());
     }
 
-    @Override
-    protected ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh) {
-        return B.newCons(head.asTerm(equalities, fresh), (IListTerm)tail.asTerm(equalities, fresh), getAttachments());
+    @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
+            Function1<Optional<ITermVar>, ITermVar> fresh) {
+        return B.newCons(head.asTerm(equalities, fresh), (IListTerm) tail.asTerm(equalities, fresh), getAttachments());
     }
 
     @Override public String toString() {
         return "[" + head.toString() + "|" + tail.toString() + "]";
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
         ConsPattern that = (ConsPattern) o;
-        return Objects.equals(head, that.head) &&
-            Objects.equals(tail, that.tail);
+        return Objects.equals(head, that.head) && Objects.equals(tail, that.tail);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(head, tail);
     }
 }

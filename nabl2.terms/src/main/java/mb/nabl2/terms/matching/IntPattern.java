@@ -16,7 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.ISubstitution.Transient;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 class IntPattern extends Pattern {
@@ -41,7 +41,8 @@ class IntPattern extends Pattern {
         return true;
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
+            Eqs eqs) {
         // @formatter:off
         return unifier.findTerm(term).match(Terms.<Boolean>cases()
             .integer(intTerm -> {

@@ -50,8 +50,6 @@ import mb.statix.spec.Spec;
 public abstract class StatixPrimitive extends AbstractPrimitive {
     private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
 
-    private static final int MAX_TRACE = 5;
-
     final protected int tvars;
 
     public StatixPrimitive(String name) {
@@ -139,8 +137,12 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ////////////////////////////////////////////////
 
     protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
-            final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
-        final TermFormatter formatter = Solver.shallowTermFormatter(unifier, Solver.TERM_FORMAT_DEPTH);
+            IStatixProjectConfig config, final Collection<ITerm> errors, final Collection<ITerm> warnings,
+            final Collection<ITerm> notes) {
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier,
+                config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH));
+        final int maxTraceLength =
+                config.messageTraceLength(IStatixProjectConfig.DEFAULT_MESSAGE_TRACE_LENGTH);
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
@@ -150,12 +152,12 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             if(originTerm == null) {
                 originTerm = findOriginArgument(current, unifier).orElse(null);
             }
-            if(traceCount++ < MAX_TRACE) {
+            if(maxTraceLength < 0 || ++traceCount <= maxTraceLength) {
                 trace.addLast(current.toString(formatter));
             }
             current = current.cause().orElse(null);
         }
-        if(traceCount >= MAX_TRACE) {
+        if(maxTraceLength > 0 && traceCount > maxTraceLength) {
             trace.addLast("... trace truncated ...");
         }
 

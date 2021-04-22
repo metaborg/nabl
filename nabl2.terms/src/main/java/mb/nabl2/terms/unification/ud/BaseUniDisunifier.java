@@ -118,8 +118,8 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         return unifier().toString(term, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-        return unifier().toString(term, n, specializedTermFormatter);
+    @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, depth, specializedTermFormatter);
     }
 
     ///////////////////////////////////////////
@@ -222,8 +222,8 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-            return unifier.toString(term, n, specializedTermFormatter);
+        @Override public String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, depth, specializedTermFormatter);
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {

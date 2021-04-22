@@ -379,11 +379,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-        if(n <= 0) {
-            throw new IllegalArgumentException("Depth must be positive, but is " + n);
-        }
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), n, specializedTermFormatter);
+    @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), depth, specializedTermFormatter);
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
@@ -599,8 +596,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-            return unifier.toString(term, n, specializedTermFormatter);
+        @Override public String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, depth, specializedTermFormatter);
         }
 
         @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2,
