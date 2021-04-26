@@ -140,9 +140,9 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             IStatixProjectConfig config, final Collection<ITerm> errors, final Collection<ITerm> warnings,
             final Collection<ITerm> notes) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier,
-                config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH));
+                config.messageTermDepth(config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH)));
         final int maxTraceLength =
-                config.messageTraceLength(IStatixProjectConfig.DEFAULT_MESSAGE_TRACE_LENGTH);
+                config.messageTraceLength(config.messageTraceLength(IStatixProjectConfig.DEFAULT_MESSAGE_TRACE_LENGTH));
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
         final Deque<String> trace = Lists.newLinkedList();
