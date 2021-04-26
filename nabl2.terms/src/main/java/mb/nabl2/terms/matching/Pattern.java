@@ -226,7 +226,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -251,7 +251,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -269,7 +269,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -289,7 +289,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -309,7 +309,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -327,17 +327,17 @@ public abstract class Pattern implements Serializable {
                 if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     final int i2 = boundAt(var2, vars2);
-                    if(i1 < 0 && i2 < 0) {
+                    if(i1 < 0 && i2 < 0) { // neither are bound
                         bind(var1.getVar(), vars1, var2.getVar(), vars2, pos.getAndIncrement());
                         return 0;
-                    } else if(i1 < 0 && i2 >= 0) {
+                    } else if(i1 < 0 && i2 >= 0) { // p2 is bound
                         bind(var2.getVar(), vars1, pos.getAndIncrement());
                         return 1;
-                    } else if(i1 >= 0 && i2 < 0) {
+                    } else if(i1 >= 0 && i2 < 0) { // p1 is bound
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
-                    } else {
-                        return 0; // FIXME What does this case mean? Are they equal, incomparable?
+                    } else { // both are bound, the left-most takes precedence
+                        return i1 - i2;
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
@@ -348,7 +348,7 @@ public abstract class Pattern implements Serializable {
                 }
             } else if(p1 instanceof PatternAs) {
                 final PatternAs as1 = (PatternAs) p1;
-                bind(as1.getVar(), vars1, pos.get());
+                bind(as1.getVar(), vars1, pos.get()); // FIXME what if this is already bound?
                 return compare(as1.getPattern(), p2, pos, vars1, vars2);
             } else {
                 return null;
