@@ -5,18 +5,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.relations.IRelation;
-import mb.nabl2.relations.RelationDescription;
-import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.impl.Relation;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.collections.IRelation2;
+import mb.scopegraph.relations.IRelation;
+import mb.scopegraph.relations.RelationDescription;
+import mb.scopegraph.relations.RelationException;
+import mb.scopegraph.relations.impl.Relation;
 
 public abstract class VariantRelation<T> implements IVariantRelation<T> {
 
@@ -157,17 +157,17 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
                     Relation.Immutable.of(description.relationDescription()));
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        @Override public boolean equals(Object o) {
+            if(this == o)
+                return true;
+            if(o == null || getClass() != o.getClass())
+                return false;
             VariantRelation.Immutable<?> immutable = (VariantRelation.Immutable<?>) o;
-            return Objects.equals(description, immutable.description) &&
-                    Objects.equals(baseRelation, immutable.baseRelation);
+            return Objects.equals(description, immutable.description)
+                    && Objects.equals(baseRelation, immutable.baseRelation);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(description, baseRelation);
         }
     }
@@ -214,15 +214,15 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
         }
 
         @Override public boolean equals(Object o) {
-            if(this == o) return true;
-            if(o == null || getClass() != o.getClass()) return false;
-            VariantRelation.Transient<?> that = (VariantRelation.Transient<?>)o;
-            return Objects.equals(description, that.description) &&
-                Objects.equals(baseRelation, that.baseRelation);
+            if(this == o)
+                return true;
+            if(o == null || getClass() != o.getClass())
+                return false;
+            VariantRelation.Transient<?> that = (VariantRelation.Transient<?>) o;
+            return Objects.equals(description, that.description) && Objects.equals(baseRelation, that.baseRelation);
         }
 
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             return Objects.hash(description, baseRelation);
         }
     }

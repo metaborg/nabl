@@ -1,5 +1,7 @@
 package mb.statix.concurrent.util;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -7,7 +9,6 @@ import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 public class VarIndexedCollection<V> {
 

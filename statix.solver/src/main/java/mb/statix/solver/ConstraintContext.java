@@ -2,8 +2,8 @@ package mb.statix.solver;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 

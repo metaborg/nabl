@@ -1,9 +1,14 @@
 package mb.statix.solver;
 
+import java.util.Collection;
+
+import org.metaborg.util.collection.CapsuleUtil;
+
+import com.google.common.collect.ImmutableSet;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.CapsuleUtil;
 
 public class Delay extends Throwable {
 
@@ -73,6 +78,16 @@ public class Delay extends Throwable {
 
     public static Delay ofCriticalEdge(CriticalEdge edge) {
         return new Delay(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(edge));
+    }
+
+    public static Delay of(Collection<Delay> delays) {
+        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
+        ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
+        delays.stream().forEach(d -> {
+            vars.addAll(d.vars());
+            scopes.addAll(d.criticalEdges());
+        });
+        return new Delay(vars.build(), scopes.build());
     }
 
 }

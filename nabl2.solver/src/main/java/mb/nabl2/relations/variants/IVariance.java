@@ -3,7 +3,7 @@ package mb.nabl2.relations.variants;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
-import mb.nabl2.relations.IRelationName;
+import mb.scopegraph.relations.IRelationName;
 
 public interface IVariance {
 

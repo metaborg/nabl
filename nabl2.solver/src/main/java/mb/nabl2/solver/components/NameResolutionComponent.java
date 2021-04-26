@@ -20,15 +20,6 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
-import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.path.IResolutionPath;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
-import mb.nabl2.scopegraph.terms.path.Paths;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -40,6 +31,15 @@ import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.collections.IProperties;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
+import mb.scopegraph.pepm16.esop15.IEsopNameResolution;
+import mb.scopegraph.pepm16.esop15.IEsopScopeGraph;
+import mb.scopegraph.pepm16.path.IResolutionPath;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
+import mb.scopegraph.pepm16.terms.path.Paths;
 
 public class NameResolutionComponent extends ASolver {
 

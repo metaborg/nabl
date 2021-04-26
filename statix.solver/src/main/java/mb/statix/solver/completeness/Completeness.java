@@ -5,6 +5,10 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSetMap;
+
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -12,13 +16,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.collections.MultiSet;
-import mb.nabl2.util.collections.MultiSetMap;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.Scope;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.nabl2.terms.unification.u.PersistentUnifier;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 
 public abstract class Completeness implements ICompleteness {
@@ -36,13 +37,13 @@ public abstract class Completeness implements ICompleteness {
         return asMap().isEmpty();
     }
 
-    @Override public MultiSet<EdgeOrData<ITerm>> get(ITerm scopeOrVar, IUniDisunifier unifier) {
+    @Override public MultiSet<EdgeOrData<ITerm>> get(ITerm scopeOrVar, IUnifier unifier) {
         return getVarOrScope(scopeOrVar, unifier).map(sOV -> {
             return asMap().get(sOV);
         }).orElse(MultiSet.Immutable.of());
     }
 
-    @Override public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
+    @Override public boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUnifier unifier) {
         if(!label.match(() -> true, lbl -> lbl.isGround())) {
             throw new IllegalArgumentException("Label must be ground, got " + label);
         }
@@ -51,13 +52,12 @@ public abstract class Completeness implements ICompleteness {
         }).orElse(true);
     }
 
-    protected static java.util.Set<ITerm> getVarsOrScopes(Iterable<? extends ITerm> varOrScopes,
-            IUniDisunifier unifier) {
+    protected static java.util.Set<ITerm> getVarsOrScopes(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
         return Streams.stream(varOrScopes).flatMap(t -> Streams.stream(getVarOrScope(t, unifier)))
                 .collect(Collectors.toSet());
     }
 
-    protected static Optional<ITerm> getVarOrScope(ITerm scopeOrVar, IUniDisunifier unifier) {
+    protected static Optional<ITerm> getVarOrScope(ITerm scopeOrVar, IUnifier unifier) {
         return CompletenessUtil.scopeOrVar().match(scopeOrVar, unifier);
     }
 
@@ -76,7 +76,7 @@ public abstract class Completeness implements ICompleteness {
         }
 
         @Override public mb.statix.solver.completeness.ICompleteness.Immutable
-                addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier) {
+                addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier) {
             final Completeness.Transient _completeness = melt();
             _completeness.addAll(criticalEdges, unifier);
             return _completeness.freeze();
@@ -94,14 +94,18 @@ public abstract class Completeness implements ICompleteness {
             return _completeness.freeze();
         }
 
-        @Override public ICompleteness.Immutable removeAll(Iterable<? extends ITerm> varOrScopes,
-                IUniDisunifier unifier) {
+        @Override public ICompleteness.Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
             return new Completeness.Immutable(incomplete.removeAll(getVarsOrScopes(varOrScopes, unifier)));
         }
 
-        @Override public ICompleteness.Immutable retainAll(Iterable<? extends ITerm> varOrScopes,
-                IUniDisunifier unifier) {
+        @Override public ICompleteness.Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
             return new Completeness.Immutable(incomplete.retainAll(getVarsOrScopes(varOrScopes, unifier)));
+        }
+
+        @Override public ICompleteness.Immutable updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
+            final Completeness.Transient _completeness = melt();
+            _completeness.updateAll(vars, unifier);
+            return _completeness.freeze();
         }
 
         @Override public Completeness.Transient melt() {
@@ -139,13 +143,13 @@ public abstract class Completeness implements ICompleteness {
             return incomplete;
         }
 
-        @Override public void add(ITerm scopeTerm, EdgeOrData<ITerm> label, IUniDisunifier unifier) {
+        @Override public void add(ITerm scopeTerm, EdgeOrData<ITerm> label, IUnifier unifier) {
             getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                 incomplete.put(scopeOrVar, label);
             });
         }
 
-        @Override public void addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier) {
+        @Override public void addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier) {
             for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varLabel : criticalEdges.entrySet()) {
                 getVarOrScope(varLabel.getKey(), unifier).ifPresent(scopeOrVar -> {
                     incomplete.putAll(scopeOrVar, varLabel.getValue());
@@ -154,7 +158,7 @@ public abstract class Completeness implements ICompleteness {
         }
 
         @Override public Set.Immutable<CriticalEdge> remove(ITerm scopeTerm, EdgeOrData<ITerm> label,
-                IUniDisunifier unifier) {
+                IUnifier unifier) {
             final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             getVarOrScope(scopeTerm, unifier).ifPresent(scopeOrVar -> {
                 final int n = incomplete.remove(scopeOrVar, label);
@@ -169,7 +173,7 @@ public abstract class Completeness implements ICompleteness {
         }
 
         @Override public Set.Immutable<CriticalEdge> removeAll(ICompleteness.Immutable criticalEdges,
-                IUniDisunifier unifier) {
+                IUnifier unifier) {
             final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> varLabel : criticalEdges.entrySet()) {
                 getVarOrScope(varLabel.getKey(), unifier).ifPresent(scopeOrVar -> {
@@ -188,7 +192,7 @@ public abstract class Completeness implements ICompleteness {
             return removedEdges.freeze();
         }
 
-        @Override public void update(ITermVar var, IUniDisunifier unifier) {
+        @Override public void update(ITermVar var, IUnifier unifier) {
             if(!incomplete.containsKey(var)) {
                 return;
             }
@@ -203,7 +207,7 @@ public abstract class Completeness implements ICompleteness {
             for(Entry<ITermVar, ITerm> varTerm : subst.entrySet()) {
                 final MultiSet.Immutable<EdgeOrData<ITerm>> updatedLabels = incomplete.removeKey(varTerm.getKey());
                 if(!updatedLabels.isEmpty()) {
-                    getVarOrScope(varTerm.getValue(), PersistentUniDisunifier.Immutable.of()).ifPresent(scopeOrVar -> {
+                    getVarOrScope(varTerm.getValue(), PersistentUnifier.Immutable.of()).ifPresent(scopeOrVar -> {
                         newEntries.putAll(scopeOrVar, updatedLabels);
                     });
                 }

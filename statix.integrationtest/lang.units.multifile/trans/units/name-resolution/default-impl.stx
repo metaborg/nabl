@@ -39,6 +39,16 @@ rules
       min $ < EXT and true
       in s_mod |-> [(_, (x', T))].
 
+  resolveSuperVars(s, x) = xTs :- {ps}
+    query var
+      filter LEX* EXT+
+        and { x' :- x' == x }
+      min $ < LEX, $ < EXT,
+          EXT < LEX
+        and true
+      in s |-> ps,
+    xTs == typesOf(ps).
+
 
 rules
 
@@ -63,6 +73,17 @@ rules
       filter EXT* and { x' :- x' == x }
       min $ < EXT and true
       in s_mod |-> [(_, (x', T))].
+
+
+  resolveSuperTypes(s, x) = xTs :- {ps}
+    query type
+      filter LEX* EXT+
+        and { x' :- x' == x }
+      min $ < LEX, $ < EXT,
+          EXT < LEX
+        and true
+      in s |-> ps,
+    xTs == typesOf(ps).
 
 
 rules
@@ -139,3 +160,12 @@ rules
   composePkg(s_pkg, (_, (x', s_pkg')), x) :- @x.ref := x',
     s_pkg -PKG-> s_pkg'.
 
+
+rules
+
+  typesOf : list((path * (ID * TYPE))) -> list((ID * TYPE))
+  
+  typesOf([]) = [].
+
+  typesOf([(_, (x, T))|ps]) = [(x, T)|typesOf(ps)].
+  

@@ -3,7 +3,10 @@ package mb.statix.constraints.messages;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.metaborg.util.functions.Action1;
+
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -19,6 +22,10 @@ public class TermPart implements IMessagePart, Serializable {
 
     @Override public String toString(TermFormatter formatter) {
         return formatter.format(term);
+    }
+
+    @Override public void visitVars(Action1<ITermVar> onVar) {
+        term.getVars().forEach(onVar::apply);
     }
 
     @Override public IMessagePart apply(ISubstitution.Immutable subst) {
@@ -37,16 +44,16 @@ public class TermPart implements IMessagePart, Serializable {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        TermPart termPart = (TermPart)o;
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        TermPart termPart = (TermPart) o;
         return Objects.equals(term, termPart.term);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(term);
     }
 }

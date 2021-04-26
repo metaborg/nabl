@@ -4,7 +4,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 
 @Value.Immutable
 @Serial.Version(42L)

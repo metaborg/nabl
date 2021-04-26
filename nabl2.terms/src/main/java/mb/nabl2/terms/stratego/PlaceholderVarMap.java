@@ -5,13 +5,8 @@ import java.util.HashMap;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.IApplTerm;
-import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
-import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.jsglr.client.imploder.IToken;
-import org.spoofax.jsglr.client.imploder.ImploderAttachment;
-import org.spoofax.terms.attachments.OriginAttachment;
 
 /**
  * A mapping between placeholders and term variables.

@@ -11,14 +11,14 @@ import org.metaborg.util.functions.Predicate2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.IncompleteException;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.scopegraph.terms.path.Paths;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.path.IScopePath;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.IncompleteException;
+import mb.scopegraph.oopsla20.reference.LabelOrder;
+import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
+import mb.scopegraph.oopsla20.terms.path.Paths;
 import mb.statix.spec.Spec;
 
 public class NameResolution<S extends D, L, D, X> {

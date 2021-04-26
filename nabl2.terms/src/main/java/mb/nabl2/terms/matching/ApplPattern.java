@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -21,7 +22,6 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Transient;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 class ApplPattern extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -49,6 +49,10 @@ class ApplPattern extends Pattern {
             vars.__insertAll(arg.getVars());
         }
         return vars.freeze();
+    }
+
+    @Override public boolean isConstructed() {
+        return true;
     }
 
     @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {

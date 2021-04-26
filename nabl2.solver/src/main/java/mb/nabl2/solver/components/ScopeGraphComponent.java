@@ -11,10 +11,6 @@ import mb.nabl2.constraints.scopegraph.CGExportEdge;
 import mb.nabl2.constraints.scopegraph.CGImportEdge;
 import mb.nabl2.constraints.scopegraph.CGRef;
 import mb.nabl2.constraints.scopegraph.IScopeGraphConstraint;
-import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -23,6 +19,10 @@ import mb.nabl2.solver.TypeException;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.esop15.IEsopScopeGraph;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class ScopeGraphComponent extends ASolver {
 

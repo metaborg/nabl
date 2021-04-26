@@ -8,11 +8,11 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
+import mb.scopegraph.pepm16.terms.Scope;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

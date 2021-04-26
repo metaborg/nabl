@@ -2,10 +2,10 @@ package mb.nabl2.relations.terms;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import mb.nabl2.relations.ARelationDescription.Reflexivity;
-import mb.nabl2.relations.ARelationDescription.Symmetry;
-import mb.nabl2.relations.ARelationDescription.Transitivity;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.scopegraph.relations.ARelationDescription.Reflexivity;
+import mb.scopegraph.relations.ARelationDescription.Symmetry;
+import mb.scopegraph.relations.ARelationDescription.Transitivity;
 
 public class RelationOptions {
 

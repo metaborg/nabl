@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
 

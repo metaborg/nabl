@@ -15,7 +15,6 @@ import mb.nabl2.constraints.base.CNew;
 import mb.nabl2.constraints.base.IBaseConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
@@ -23,6 +22,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseComponent extends ASolver {
 

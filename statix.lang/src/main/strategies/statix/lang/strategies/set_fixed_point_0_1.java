@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -20,7 +21,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
 
 public class set_fixed_point_0_1 extends Strategy {
 

@@ -4,13 +4,14 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IBlobTerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.CapsuleUtil;
 
-@Value.Immutable(builder = true, copy = true, prehash = false)
+@Value.Immutable
 @Serial.Version(value = 42L)
 abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
 
@@ -24,6 +25,9 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return CapsuleUtil.immutableSet();
     }
 
+    @Override public void visitVars(@SuppressWarnings("unused") Action1<ITermVar> onVar) {
+    }
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseBlob(this);
     }
@@ -32,15 +36,8 @@ abstract class ABlobTerm extends AbstractTerm implements IBlobTerm {
         return cases.caseBlob(this);
     }
 
-    private volatile int hashCode;
-
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(getValue());
-            hashCode = result;
-        }
-        return result;
+        return Objects.hash(getValue());
     }
 
     @Override public boolean equals(Object other) {

@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -81,11 +84,26 @@ public class CAstProperty implements IConstraint, Serializable {
         return cases.caseTermProperty(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(idTerm.getVars(), value.getVars());
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        idTerm.getVars().forEach(onFreeVar::apply);
+        value.getVars().forEach(onFreeVar::apply);
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {
+        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+    }
+
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
         return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
     }
 

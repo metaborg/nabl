@@ -39,8 +39,18 @@ public interface ISubstitution {
 
         Immutable removeAll(Iterable<ITermVar> var);
 
+        Immutable retainAll(Iterable<ITermVar> var);
+
+        /**
+         * Compose this substitution with another, resulting in the substitution that has the same effect as applying
+         * this substitution first, and then the other.
+         */
         Immutable compose(ISubstitution.Immutable other);
 
+        /**
+         * Compose this substitution with another, resulting in the substitution that has the same effect as applying
+         * this substitution first, and then the other.
+         */
         Immutable compose(ITermVar var, ITerm term);
 
         ISubstitution.Transient melt();
@@ -55,8 +65,18 @@ public interface ISubstitution {
 
         void removeAll(Iterable<ITermVar> var);
 
+        void retainAll(Iterable<ITermVar> var);
+
+        /**
+         * Compose this substitution with another, resulting in the substitution that has the same effect as applying
+         * this substitution first, and then the other.
+         */
         void compose(ISubstitution.Immutable other);
 
+        /**
+         * Compose this substitution with another, resulting in the substitution that has the same effect as applying
+         * this substitution first, and then the other.
+         */
         void compose(ITermVar var, ITerm term);
 
         ISubstitution.Immutable freeze();

@@ -15,8 +15,8 @@ public class MessageUtil {
     // @formatter:off
     private static Map<Class<? extends IConstraint>, MessageKind> KINDS =
         ImmutableMap.<Class<? extends IConstraint>, MessageKind>builder()
-            .put(CAstId.class, MessageKind.WARNING)
-            .put(CAstProperty.class, MessageKind.WARNING)
+            .put(CAstId.class, MessageKind.IGNORE)
+            .put(CAstProperty.class, MessageKind.IGNORE)
             .build();
     // @formatter:on
 

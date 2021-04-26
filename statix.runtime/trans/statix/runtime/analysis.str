@@ -86,6 +86,8 @@ rules // single file elaboration
 
 rules // multi file analysis (new)
 
+  stx--no-grouping: (resource, ast) -> [<current-language-relative-source-or-include-path> resource]
+
   cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
@@ -428,6 +430,12 @@ rules
    */
   stx--is-analysis =
     prim("STX_is_analysis")
+    
+  /**
+   * @type : Analysis -> Analysis
+   */
+  stx--analysis-has-errors =
+    prim("STX_analysis_has_errors")    
 
   /**
    * @type : Analysis -> ScopeGraph

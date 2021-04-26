@@ -9,7 +9,6 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.MatchResult;
@@ -24,22 +23,23 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.StateUtil;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
 class ApplyRelaxed extends ApplyMode<VoidException> {
 
     @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            IConstraint cause) throws VoidException {
-        Immutable<ITermVar> freeVars = rule.freeVars();
+            IConstraint cause, Safety safety) throws VoidException {
+        Set.Immutable<ITermVar> freeVars = rule.freeVars();
         for(ITerm arg : args) {
             freeVars = freeVars.__insertAll(arg.getVars());
         }
 
         // match and create equality constraints
         final FreshVars fresh = new FreshVars(freeVars);
-        final VarProvider fresh_ = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
+        final VarProvider freshProvider = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
         final MatchResult matchResult;
-        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, fresh_).orElse(null)) == null) {
+        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, freshProvider).orElse(null)) == null) {
             return Optional.empty();
         }
 
@@ -49,7 +49,12 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         // non-generated variables that are constrained by the match
         final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), generatedVars);
 
-        final IConstraint appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+        final IConstraint appliedBody;
+        if(safety.equals(Safety.UNSAFE)) {
+            appliedBody = rule.body().unsafeApply(matchResult.substitution()).withCause(cause);
+        } else {
+            appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+        }
         final ICompleteness.Immutable appliedCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(matchResult.substitution());
 
@@ -65,26 +70,27 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         final IUnifier.Immutable diff = unifyResult.result();
 
         // construct guard
-        final IConstraint newConstraint;
+        final IConstraint newBody;
         final ICompleteness.Immutable newCriticalEdges;
         final Optional<Diseq> diseq;
         final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
         if(guard.isEmpty()) {
-            newConstraint = appliedBody;
+            newBody = appliedBody;
             newCriticalEdges = appliedCriticalEdges;
             diseq = Optional.empty();
         } else {
-            final ICompleteness.Immutable newConstraintCriticalEdges =
+            final ICompleteness.Immutable newBodyCriticalEdges =
                     appliedCriticalEdges == null ? null : appliedCriticalEdges.retainAll(generatedVars, unifier);
-            newConstraint = new CExists(generatedVars, Constraints.conjoin(StateUtil.asEqualities(diff), appliedBody),
-                    cause, newConstraintCriticalEdges);
+            newBody = new CExists(generatedVars, Constraints.conjoin(StateUtil.asEqualities(diff), appliedBody), cause,
+                    newBodyCriticalEdges);
             newCriticalEdges =
                     appliedCriticalEdges == null ? null : appliedCriticalEdges.removeAll(generatedVars, unifier);
             diseq = Optional.of(Diseq.of(generatedVars, guard));
         }
 
         // construct result
-        final ApplyResult applyResult = ApplyResult.of(diseq, newConstraint, newCriticalEdges);
+        final ApplyResult applyResult = ApplyResult.of(diseq, newBody,
+                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
 
         return Optional.of(applyResult);
     }

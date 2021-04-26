@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Map;
@@ -17,7 +18,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
-import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UniDisunifierFiniteTest {
