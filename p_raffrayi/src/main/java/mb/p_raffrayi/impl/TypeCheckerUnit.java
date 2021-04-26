@@ -31,9 +31,11 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
@@ -179,11 +181,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
             });
         }
         stats.localQueries += 1;
-        return ifActive(ret).thenApply(CapsuleUtil::toSet);
+        return ifActive(afterCapture(ret)).thenApply(CapsuleUtil::toSet);
     }
 
     private void capture() {
-        IScopeGraph.Transient<S, L, D> snapshot = scopeGraph.get().melt();
+        IScopeGraph.Transient<S, L, D> snapshot = ScopeGraph.Transient.of();
+        scopeGraph.get().getEdges().forEach((src_lbl, tgts) -> {
+            final S src = src_lbl.getKey();
+            final L lbl = src_lbl.getValue();
+            if(isEdgeClosed(src, EdgeOrData.edge(lbl))) {
+                tgts.forEach(tgt -> snapshot.addEdge(src, lbl, tgt));
+            }
+        });
         scopeGraph.get().getData().forEach((s, d) -> {
             snapshot.setDatum(s, typeChecker.explicate(d));
         });
@@ -192,8 +201,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         resume();
     }
 
-    @Override protected <Q> IFuture<Q> afterCapture(IFuture<Q> result) {
+    private <Q> IFuture<Q> afterCapture(IFuture<Q> result) {
         return localScopeGraphCapture.thenCompose(__ -> result);
+    }
+
+    @Override protected IFuture<Immutable<S, L, D>> localCapture() {
+        return localScopeGraphCapture;
     }
 
     ///////////////////////////////////////////////////////////////////////////

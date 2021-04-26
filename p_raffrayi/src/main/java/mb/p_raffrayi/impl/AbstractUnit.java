@@ -349,7 +349,7 @@ public abstract class AbstractUnit<S, L, D, R>
                     logger.debug("local env {}", scope);
                     return Optional.empty();
                 } else {
-                    return Optional.of(afterCapture(CompletableFuture.completedFuture(Unit.unit)).thenCompose(__ -> {
+                    return Optional.of(CompletableFuture.completedFuture(Unit.unit).thenCompose(__ -> {
                         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
@@ -470,10 +470,6 @@ public abstract class AbstractUnit<S, L, D, R>
         return result;
     }
 
-    protected <Q> IFuture<Q> afterCapture(IFuture<Q> result) {
-        return result;
-    }
-
     private final ITypeCheckerContext<S, L, D> queryContext = new ITypeCheckerContext<S, L, D>() {
 
         @Override public String id() {
@@ -544,6 +540,10 @@ public abstract class AbstractUnit<S, L, D, R>
 
     protected boolean canAnswer(S scope) {
         return isOwner(scope);
+    }
+
+    protected IFuture<IScopeGraph.Immutable<S, L, D>> localCapture() {
+       return unitResult.thenApply(IUnitResult::scopeGraph);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -623,7 +623,7 @@ public abstract class AbstractUnit<S, L, D, R>
         return !isWaitingFor(InitScope.of(self, scope)) && !isWaitingFor(CloseScope.of(self, scope));
     }
 
-    private boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
+    protected boolean isEdgeClosed(S scope, EdgeOrData<L> edge) {
         return isScopeInitialized(scope) && !isWaitingFor(CloseLabel.of(self, scope, edge));
     }
 
@@ -711,7 +711,7 @@ public abstract class AbstractUnit<S, L, D, R>
     /**
      * Fail delays that are part of the deadlock. If any delays can be failed, computations should be able to continue
      * (or fail following the exception).
-     * 
+     *
      * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
     private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
@@ -752,7 +752,7 @@ public abstract class AbstractUnit<S, L, D, R>
      * If there are no delays to fail, the type checker has no way to make progress. In this case, everything is failed,
      * and the state cleaned such that all scopes and labels are closed and these closures properly reported to the
      * parent.
-     * 
+     *
      * After this, it is not safe if the type checker is ever called again, as it may then try to close scopes and
      * labels that were cleaned up. Therefore, local delays are not failed, as this would trigger their completion and
      * trigger the type checker. Delays resulting from remote queries must still be cancelled, or the remote unit waits
