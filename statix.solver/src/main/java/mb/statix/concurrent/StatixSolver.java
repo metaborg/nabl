@@ -269,6 +269,11 @@ public class StatixSolver {
             }
         }
 
+        // cleanup open edges
+        for(IConstraint delay : delayed.keySet()) {
+            removeCompleteness(delay);
+        }
+
         final Map<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
         final java.util.Set<CriticalEdge> removedEdges = ImmutableSet.of();
         final ICompleteness.Immutable completeness = Completeness.Immutable.of();
@@ -977,6 +982,11 @@ public class StatixSolver {
 
     private void delayAction(CheckedAction0<InterruptedException> action, Iterable<ITermVar> vars)
             throws InterruptedException {
+        final Set.Immutable<ITermVar> foreignVars =
+                Streams.stream(vars).filter(v -> !state.vars().contains(v)).collect(CapsuleCollectors.toSet());
+        if(!foreignVars.isEmpty()) {
+            throw new IllegalStateException("Cannot delay on foreign variables: " + foreignVars);
+        }
         if(!delayedActions.put(action, vars, state.unifier())) {
             action.apply();
         }
