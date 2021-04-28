@@ -542,15 +542,15 @@ public abstract class AbstractUnit<S, L, D, R>
         return isOwner(scope);
     }
 
-    protected IFuture<IScopeGraph.Immutable<S, L, D>> localCapture() {
-       return unitResult.thenApply(IUnitResult::scopeGraph);
+    protected IFuture<IScopeGraphSnapshot<S, L, D>> localCapture() {
+       return unitResult.thenApply(res -> ScopeGraphSnapshot.<S, L, D>builder().scopeGraph(res.scopeGraph()).build());
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
+    protected MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
     private MultiSetMap.Immutable<IActorRef<? extends IUnit<S, L, D, ?>>, IWaitFor<S, L, D>> waitForsByActor =
             MultiSetMap.Immutable.of();
 

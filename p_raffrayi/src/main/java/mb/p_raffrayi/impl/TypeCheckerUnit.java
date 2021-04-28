@@ -24,6 +24,7 @@ import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.impl.tokens.Snapshot;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -47,7 +48,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
 
     private volatile UnitState state;
 
-    private final ICompletableFuture<IScopeGraph.Immutable<S, L, D>> localScopeGraphCapture = new CompletableFuture<>();
+    private final ICompletableFuture<IScopeGraphSnapshot<S, L, D>> localScopeGraphCapture = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
@@ -185,18 +186,47 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
     }
 
     private void capture() {
+        final ScopeGraphSnapshot.Builder<S, L, D> builder = ScopeGraphSnapshot.builder();
         IScopeGraph.Transient<S, L, D> snapshot = ScopeGraph.Transient.of();
         scopeGraph.get().getEdges().forEach((src_lbl, tgts) -> {
             final S src = src_lbl.getKey();
             final L lbl = src_lbl.getValue();
             if(isEdgeClosed(src, EdgeOrData.edge(lbl))) {
-                tgts.forEach(tgt -> snapshot.addEdge(src, lbl, tgt));
+                tgts.forEach(tgt -> {
+                    snapshot.addEdge(src, lbl, tgt);
+                });
             }
         });
         scopeGraph.get().getData().forEach((s, d) -> {
             snapshot.setDatum(s, typeChecker.explicate(d));
         });
-        localScopeGraphCapture.complete(snapshot.freeze());
+
+        for(IWaitFor<S, L, D> token : waitFors) {
+            // @formatter:off
+            token.visit(IWaitFor.cases(
+                initScope -> {
+                    for(L lbl : edgeLabels) {
+                       builder.putOpenEdges(initScope.scope(), EdgeOrData.edge(lbl));
+                    }
+                },
+                closeScope -> {
+                    for(L lbl : edgeLabels) {
+                        builder.putOpenEdges(closeScope.scope(), EdgeOrData.edge(lbl));
+                    }
+                },
+                closeLabel -> {
+                    builder.putOpenEdges(closeLabel.scope(), closeLabel.label());
+                },
+                query -> {},
+                typeCheckerResult -> {},
+                typeCheckerState -> {}
+            ));
+            // @formatter:on
+        }
+
+        builder.scopeGraph(snapshot.freeze());
+        localScopeGraphCapture.complete(builder.build());
+
         granted(Snapshot.of(self), self);
         resume();
     }
@@ -205,7 +235,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return localScopeGraphCapture.thenCompose(__ -> result);
     }
 
-    @Override protected IFuture<Immutable<S, L, D>> localCapture() {
+    @Override protected IFuture<IScopeGraphSnapshot<S, L, D>> localCapture() {
         return localScopeGraphCapture;
     }
 
