@@ -116,12 +116,6 @@ import mb.statix.spoofax.StatixTerms;
 
 public class StatixSolver {
 
-    private enum ShadowOptimization {
-        NONE, RULE, CONTEXT
-    }
-
-    private static final ShadowOptimization SHADOW_OPTIMIZATION = ShadowOptimization.RULE;
-
     private static final boolean LOCAL_INFERENCE = true;
 
     private static final ImmutableSet<ITermVar> NO_UPDATED_VARS = ImmutableSet.of();
@@ -1058,7 +1052,7 @@ public class StatixSolver {
     private class ConstraintDataWFInternal implements DataWf<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;
@@ -1127,40 +1121,29 @@ public class StatixSolver {
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
                 try {
-                    switch(SHADOW_OPTIMIZATION) {
-                        case CONTEXT:
-                            final Boolean isAlways;
-                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
-                                alwaysTrue = CompletableFuture.completedFuture(isAlways);
+                    final Boolean isAlways;
+                    if((isAlways = constraint.isAlways().orElse(null)) != null) {
+                        alwaysTrue = CompletableFuture.completedFuture(isAlways);
+                    } else {
+                        final ApplyResult result;
+                        final Tuple2<ITermVar, IState.Immutable> d1_state =
+                                state.freshVar(B.newVar(state.resource(), "d1"));
+                        final Tuple2<ITermVar, IState.Immutable> d2_state =
+                                d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
+                        try {
+                            // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                            if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
+                                    ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
+                                    Safety.UNSAFE).orElse(null)) == null) {
+                                alwaysTrue = CompletableFuture.completedFuture(false);
                             } else {
-                                final ApplyResult result;
-                                final Tuple2<ITermVar, IState.Immutable> d1_state =
-                                        state.freshVar(B.newVar(state.resource(), "d1"));
-                                final Tuple2<ITermVar, IState.Immutable> d2_state =
-                                        d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
-                                try {
-                                    // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                                    if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                            ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
-                                            Safety.UNSAFE).orElse(null)) == null) {
-                                        alwaysTrue = CompletableFuture.completedFuture(false);
-                                    } else {
-                                        alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
-                                                result.criticalEdges(), new NullDebugContext(), cancel,
-                                                new NullProgress());
-                                    }
-                                } catch(Delay e) {
-                                    throw new IllegalStateException("Unexpected delay.", e);
-                                }
+                                alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
+                                        result.criticalEdges(), new NullDebugContext(), cancel,
+                                        new NullProgress());
                             }
-                            break;
-                        case RULE:
-                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways().orElse(false));
-                            break;
-                        case NONE:
-                        default:
-                            alwaysTrue = CompletableFuture.completedFuture(false);
-                            break;
+                        } catch(Delay e) {
+                            throw new IllegalStateException("Unexpected delay.", e);
+                        }
                     }
                 } catch(InterruptedException e) {
                     return CompletableFuture.completedExceptionally(e);
@@ -1178,7 +1161,7 @@ public class StatixSolver {
     private class ConstraintDataEquivInternal implements DataLeq<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;
@@ -1210,40 +1193,29 @@ public class StatixSolver {
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
                 try {
-                    switch(SHADOW_OPTIMIZATION) {
-                        case CONTEXT:
-                            final Boolean isAlways;
-                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
-                                alwaysTrue = CompletableFuture.completedFuture(isAlways);
-                            } else {
-                                alwaysTrue = absorbDelays(() -> {
-                                    try {
-                                        final ApplyResult result;
-                                        final Tuple2<ITermVar, IState.Immutable> d1_state =
-                                                state.freshVar(B.newVar(state.resource(), "d1"));
-                                        final Tuple2<ITermVar, IState.Immutable> d2_state =
-                                                d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
-                                        // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                                        if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                                ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
-                                                Safety.UNSAFE).orElse(null)) == null) {
-                                            return CompletableFuture.completedFuture(false);
-                                        }
-                                        return entails(context, spec, state, result.body(), result.criticalEdges(),
-                                                new NullDebugContext(), cancel, new NullProgress());
-                                    } catch(Delay delay) {
-                                        return CompletableFuture.completedExceptionally(delay);
-                                    }
-                                });
+                    final Boolean isAlways;
+                    if((isAlways = constraint.isAlways().orElse(null)) != null) {
+                        alwaysTrue = CompletableFuture.completedFuture(isAlways);
+                    } else {
+                        alwaysTrue = absorbDelays(() -> {
+                            try {
+                                final ApplyResult result;
+                                final Tuple2<ITermVar, IState.Immutable> d1_state =
+                                        state.freshVar(B.newVar(state.resource(), "d1"));
+                                final Tuple2<ITermVar, IState.Immutable> d2_state =
+                                        d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
+                                // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+                                if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
+                                        ImmutableList.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
+                                        Safety.UNSAFE).orElse(null)) == null) {
+                                    return CompletableFuture.completedFuture(false);
+                                }
+                                return entails(context, spec, state, result.body(), result.criticalEdges(),
+                                        new NullDebugContext(), cancel, new NullProgress());
+                            } catch(Delay delay) {
+                                return CompletableFuture.completedExceptionally(delay);
                             }
-                            break;
-                        case RULE:
-                            alwaysTrue = CompletableFuture.completedFuture(constraint.isAlways().orElse(false));
-                            break;
-                        case NONE:
-                        default:
-                            alwaysTrue = CompletableFuture.completedFuture(false);
-                            break;
+                        });
                     }
                 } catch(InterruptedException e) {
                     return CompletableFuture.completedExceptionally(e);
