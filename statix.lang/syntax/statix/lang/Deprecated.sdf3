@@ -68,6 +68,10 @@ context-free syntax
 
 syntax
 
+  Term = Occurrence
+
+  Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
+
   OccurrencePosition-CF.NoId   =
   OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
   OccurrencePosition-CF.NoId   = "@-"

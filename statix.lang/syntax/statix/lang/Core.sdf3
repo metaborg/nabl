@@ -222,10 +222,8 @@ context-free priorities
 
 context-free syntax
 
-  Term = Occurrence
   Term = Path
 
-  Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
   Path       = PathLit
 
   // little duplication to fix ambiguity between
