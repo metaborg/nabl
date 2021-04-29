@@ -66,11 +66,17 @@ context-free syntax
   Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term][Message]]             {deprecated("Occurrences might be removed in a future version. Use `query` syntax instead.")}
   Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term][Message]] {deprecated("Occurrences might be removed in a future version. Use `query` syntax instead.")}
 
-syntax
+  // little duplication to fix ambiguity between
+  // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
+  OccurrenceTerm  = Term {longest-match}
+  OccurrenceTerm  = <<Var>@<Term>> {reject}
+  OccurrenceTerms = <<{OccurrenceTerm " "}*>>
 
   Term = Occurrence
 
   Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
+
+syntax
 
   OccurrencePosition-CF.NoId   =
   OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
