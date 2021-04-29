@@ -105,23 +105,6 @@ lexical syntax
 
 context-free syntax
 
-  // default resolution policies
-  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><NamespaceFilter><NamespaceMin>>
-
-  ResolutionParam = NamespaceQuery
-  Rule            = NamespaceQuery
-
-  NamespaceFilter.NamespaceFilter   = < filter <LabelRE>>
-  NamespaceFilter.NoNamespaceFilter = 
-
-  NamespaceMin.NamespaceMin   = < min <LabelPairs>>
-  NamespaceMin.NoNamespaceMin = 
-
-  Constraint.CTellDecl         = [[Term] -> [Occurrence]]
-  Constraint.CTellDeclWithRels = [[Term] -> [Occurrence] with [{RelData " and "}+]]
-
-  RelData = [[RelRef] [Term]]
-
   LabelRE.ZeroOrOne = <<LabelRE>?>
   LabelRE.OneOrMore = <<LabelRE>+>
 
@@ -149,17 +132,6 @@ context-free syntax
 
   QueryMin.NoMin =
   QueryMin.Min   = < min <LabelOrd>>
-
-  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term][Message]]
-  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term][Message]]
-
-syntax
-
-  LabelRE-CF.ResolveMatch = "resolveMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF  "]"
-
-  LabelOrd-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
-
-  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"
 
 lexical syntax
 
