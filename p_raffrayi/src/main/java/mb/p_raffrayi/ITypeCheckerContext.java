@@ -25,7 +25,7 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub unit with the given type-checker and root scopes.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R, ?> unitChecker, List<S> rootScopes);
 
     /**
      * Start sub unit with the given static scope graph and root scopes.
@@ -70,7 +70,7 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
      */
@@ -81,10 +81,10 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
-     * 
+     *
      * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
      * type checker state safely.
      */
@@ -103,7 +103,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
-                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
+                    ITypeChecker<S, L, D, R, ?> unitChecker, List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

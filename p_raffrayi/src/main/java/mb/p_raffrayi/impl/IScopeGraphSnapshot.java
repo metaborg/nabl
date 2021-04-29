@@ -8,10 +8,12 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 
 @Value.Immutable
-public interface IScopeGraphSnapshot<S, L, D> {
+public interface IScopeGraphSnapshot<S, L, D, TCS> {
 
     @Value.Parameter IScopeGraph.Immutable<S, L, D> scopeGraph();
 
     @Value.Parameter Multimap<S, EdgeOrData<L>> openEdges();
+
+    @Value.Parameter TCS typeCheckerState();
 
 }

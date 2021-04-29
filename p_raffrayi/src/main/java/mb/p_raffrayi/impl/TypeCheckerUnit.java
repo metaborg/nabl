@@ -39,19 +39,19 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
+class TypeCheckerUnit<S, L, D, R, TCS> extends AbstractUnit<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
 
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
 
-    private final ITypeChecker<S, L, D, R> typeChecker;
+    private final ITypeChecker<S, L, D, R, TCS> typeChecker;
 
     private volatile UnitState state;
 
-    private final ICompletableFuture<IScopeGraphSnapshot<S, L, D>> localScopeGraphCapture = new CompletableFuture<>();
+    private final ICompletableFuture<IScopeGraphSnapshot<S, L, D, TCS>> localScopeGraphCapture = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R, TCS> unitChecker, Iterable<L> edgeLabels) {
         super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
         this.state = UnitState.INIT;
@@ -94,7 +94,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return self.id();
     }
 
-    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
+    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q, ?> unitChecker,
             List<S> rootScopes) {
         assertInState(UnitState.ACTIVE);
 
@@ -235,7 +235,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IT
         return localScopeGraphCapture.thenCompose(__ -> result);
     }
 
-    @Override protected IFuture<IScopeGraphSnapshot<S, L, D>> localCapture() {
+    @Override protected IFuture<IScopeGraphSnapshot<S, L, D, TCS>> localCapture() {
         return localScopeGraphCapture;
     }
 

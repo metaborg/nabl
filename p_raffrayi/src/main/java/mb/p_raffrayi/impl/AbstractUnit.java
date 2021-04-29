@@ -65,7 +65,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R>
+public abstract class AbstractUnit<S, L, D, R, TCS>
         implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractUnit.class);
@@ -477,7 +477,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-                ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes) {
+                ITypeChecker<S, L, D, Q, ?> unitChecker, List<S> rootScopes) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 
@@ -542,8 +542,8 @@ public abstract class AbstractUnit<S, L, D, R>
         return isOwner(scope);
     }
 
-    protected IFuture<IScopeGraphSnapshot<S, L, D>> localCapture() {
-       return unitResult.thenApply(res -> ScopeGraphSnapshot.<S, L, D>builder().scopeGraph(res.scopeGraph()).build());
+    protected IFuture<IScopeGraphSnapshot<S, L, D, TCS>> localCapture() {
+       return unitResult.thenApply(res -> ScopeGraphSnapshot.<S, L, D, TCS>builder().scopeGraph(res.scopeGraph()).build());
     }
 
     ///////////////////////////////////////////////////////////////////////////
