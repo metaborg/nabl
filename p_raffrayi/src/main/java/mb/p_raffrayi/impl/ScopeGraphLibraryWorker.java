@@ -74,6 +74,18 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
+    @Override public IFuture<Boolean> _requireRestart() {
+        return CompletableFuture.completedFuture(false);
+    }
+
+    @Override public void _release() {
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
+    @Override public void _restart() {
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
     @Override protected boolean canAnswer(S scope) {
         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         return owner.equals(parent);

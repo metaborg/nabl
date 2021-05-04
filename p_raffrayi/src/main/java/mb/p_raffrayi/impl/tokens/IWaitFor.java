@@ -33,6 +33,8 @@ public interface IWaitFor<S, L, D> {
 
         void on(DifferResult<S, L, D> differResult);
 
+        void on(Activate<S, L, D> activate);
+
     }
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
@@ -40,7 +42,7 @@ public interface IWaitFor<S, L, D> {
             Action1<Query<S, L, D>> onQuery, Action1<Complete<S, L, D>> onComplete,
             Action1<Datum<S, L, D>> onDatum, Action1<Match<S, L, D>> onMatch,
             Action1<TypeCheckerResult<S, L, D>> onResult, Action1<TypeCheckerState<S, L, D>> onTypeCheckerState,
-            Action1<DifferResult<S, L, D>> onDifferResult) {
+            Action1<DifferResult<S, L, D>> onDifferResult, Action1<Activate<S, L, D>> onActivate) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -81,6 +83,10 @@ public interface IWaitFor<S, L, D> {
 
             @Override public void on(DifferResult<S, L, D> differResult) {
                 onDifferResult.apply(differResult);
+            }
+
+            @Override public void on(Activate<S, L, D> activate) {
+                onActivate.apply(activate);
             }
         };
     }

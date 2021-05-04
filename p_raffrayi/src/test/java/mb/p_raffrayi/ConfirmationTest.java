@@ -36,6 +36,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 public class ConfirmationTest extends PRaffrayiTestBase {
@@ -66,7 +67,7 @@ public class ConfirmationTest extends PRaffrayiTestBase {
                     IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> unit1Result = unit.add("one", new FalseUnit(), Arrays.asList(s), AInitialState.cached(emptyResult("one", true)));
 
                     IUnitResult<Scope, IDatum, IDatum, Boolean> previousResult = ConfirmationTest.<Boolean>resultWithQueries("two", false, Collections.singleton(
-                        RecordedQuery.<Scope, IDatum, IDatum>of(s, new ConstantClosureWf<IDatum>(l1), new TrueDataWf(), new HashcodeLabelOrder(), new FalseDataOrder())));
+                        RecordedQuery.<Scope, IDatum, IDatum>of(s, new ConstantClosureWf<IDatum>(l1), new TrueDataWf(), new HashcodeLabelOrder(), new FalseDataOrder(), Env.empty())));
 
                     IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> unit2Result = unit.add("two", new EmptyUnit(), Arrays.asList(s), AInitialState.cached(previousResult));
 

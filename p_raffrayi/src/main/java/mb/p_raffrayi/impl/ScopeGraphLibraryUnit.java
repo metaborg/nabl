@@ -152,10 +152,17 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         });
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Worker
-    ///////////////////////////////////////////////////////////////////////////
+    @Override public IFuture<Boolean> _requireRestart() {
+        return CompletableFuture.completedFuture(false);
+    }
 
+    @Override public void _release() {
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
+    @Override public void _restart() {
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // toString

@@ -791,7 +791,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    private void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+    protected void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
         if(!nodes.contains(self)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
@@ -849,7 +849,8 @@ public abstract class AbstractUnit<S, L, D, R>
                             logger.debug("{} fail {}", self, differResult);
                             deadlocked.__insert(differResult.future());
                         }
-                    }
+                    },
+                    activate -> {}
                 ));
                 // @formatter:on
             }
@@ -929,6 +930,10 @@ public abstract class AbstractUnit<S, L, D, R>
                 differResult -> {
                     logger.error("Differ could not complete.");
                     self.complete(differResult.future(), null, new DeadlockException("Type checker deadlocked."));
+                },
+                activate -> {
+                    logger.error("Unit neither activated nor released.");
+                    self.complete(activate.future(), null, new DeadlockException("Type checker deadlocked."));
                 }
             ));
             // @formatter:on

@@ -2,9 +2,8 @@ package mb.p_raffrayi.impl;
 
 import static com.google.common.collect.Streams.stream;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -12,22 +11,16 @@ import javax.annotation.Nullable;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
-import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IScopeImpl;
@@ -36,6 +29,7 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -48,7 +42,8 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements IIncrementalTypeCheckerContext<S, L, D, R> {
+class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
+        implements IIncrementalTypeCheckerContext<S, L, D, R> {
 
 
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
@@ -60,6 +55,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     private final IScopeImpl<S, D> scopeImpl; // TODO: remove field, and move methods to IUnitContext?
     private final IScopeGraphDifferOps<S, D> differOps;
 
+    private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
+    private final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
+
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
             IInitialState<S, L, D, R> initialState, IScopeImpl<S, D> scopeImpl, IScopeGraphDifferOps<S, D> differOps) {
@@ -67,7 +65,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
         this.typeChecker = unitChecker;
         this.differOps = differOps;
         this.scopeImpl = scopeImpl;
-        this.state = UnitState.INIT;
+        this.state = UnitState.INIT_UNIT;
+
+        final Activate<S, L, D> activate = Activate.of(self, whenActive);
+        waitFor(activate, self);
+        whenActive.whenComplete((u, ex) -> {
+            granted(activate, self);
+            resume();
+        });
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
@@ -79,16 +84,44 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, R>> _start(List<S> rootScopes) {
-        assertInState(UnitState.INIT);
+        assertInState(UnitState.INIT_UNIT);
         resume();
 
-        state = UnitState.ACTIVE;
         doStart(rootScopes);
+        state = UnitState.INIT_TC;
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             state = UnitState.DONE;
         });
 
+        if(state == UnitState.INIT_TC) {
+            // runIncremental not called, so start eagerly
+            doRestart();
+        }
+
         return doFinish(result);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IUnit2UnitProtocol interface, called by IUnit implementations
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        return whenActive.thenCompose(__ -> super._query(path, labelWF, dataWF, labelOrder, dataEquiv));
+    }
+
+    @Override public IFuture<Boolean> _requireRestart() {
+        return CompletableFuture.completedFuture(state.equals(UnitState.ACTIVE));
+    }
+
+    @Override public void _restart() {
+        doRestart();
+    }
+
+    @Override public void _release() {
+        // TODO: collect patches (as part of _waitForLocalState???)
+        // TODO: what if message received, but not part of 'real' deadlock cluster?
+        doRelease(CapsuleUtil.immutableMap());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -104,10 +137,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
 
     @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
             List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
-            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeImpl, differOps);
+            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeImpl,
+                    differOps);
         }, rootScopes)._2();
 
         return ifActive(result);
@@ -115,7 +149,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
             List<S> rootScopes) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
             return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, differOps);
@@ -125,7 +159,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     }
 
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
 
@@ -133,7 +167,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     }
 
     @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
 
@@ -141,31 +175,31 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     }
 
     @Override public void shareLocal(S scope) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         doAddShare(self, scope);
     }
 
     @Override public void setDatum(S scope, D datum) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         doSetDatum(scope, datum);
     }
 
     @Override public void addEdge(S source, L label, S target) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         doAddEdge(self, source, label, target);
     }
 
     @Override public void closeEdge(S source, L label) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         doCloseLabel(self, source, EdgeOrData.edge(label));
     }
 
     @Override public void closeScope(S scope) {
-        assertInState(UnitState.ACTIVE);
+        assertActive();
 
         doCloseScope(self, scope);
     }
@@ -173,7 +207,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, @Nullable DataWf<S, L, D> dataWfInternal,
             @Nullable DataLeq<S, L, D> dataEquivInternal) {
-        assertInState(UnitState.ACTIVE);
+        // TODO: After doing a query, runIncremental may not be used anymore
+        assertActive();
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<Env<S, L, D>> result =
@@ -194,16 +229,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
 
     @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
             Function1<R, Q> extractLocal, Function2<Q, Throwable, IFuture<R>> combine) {
+        state = UnitState.UNKNOWN;
         if(initialState.changed()) {
             logger.debug("Unit changed or no previous result was available.");
+            doRestart();
             return runLocalTypeChecker.apply(false).compose(combine::apply);
         }
+
+        doConfirmQueries();
 
         // Invariant: added units are marked as changed.
         // Therefore, if unit is not changed, a previous result must be given.
         IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
-
-        final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
 
         return confirmationResult.thenCompose(validated -> {
             if(validated) {
@@ -215,78 +252,115 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
         });
     }
 
-    @SuppressWarnings("unused") private void confirmQueries(List<S> rootScopes) {
-        // assertInState(UnitState.INIT, /* or */ UnitState.UNKNOWN);
+    ///////////////////////////////////////////////////////////////////////////
+    // Implementation -- confirmation, restart and reuse
+    ///////////////////////////////////////////////////////////////////////////
+
+    private void doConfirmQueries() {
+        assertInState(UnitState.UNKNOWN);
         resume();
 
-        // state = UnitState.UNKNOWN;
-        ICompletableFuture<Tuple2<Boolean, io.usethesource.capsule.Map.Immutable<S, S>>> confirmationsComplete = new CompletableFuture<>();
-        // TODO deadlock handling
-        confirmationsComplete.whenComplete((v, ex) -> {
-            if (ex != null) {
-                logger.error("{} confirmation failed: {}", this, ex);
+        final List<IFuture<Boolean>> futures = new ArrayList<>();
+        initialState.previousResult().get().queries().forEach(rq -> {
+            final ICompletableFuture<Boolean> future = new CompletableFuture<>();
+            future.thenAccept(res -> {
+                // Immediately restart when a query is invalidated
+                if(!res) {
+                    doRestart();
+                }
+            });
+            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(rq.scope());
+            self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
+                if(ex != null) {
+                    future.completeExceptionally(ex);
+                } else if(!m.isPresent()) {
+                    // No match, so result is the same iff previous environment was empty.
+                    future.complete(rq.result().isEmpty());
+                } else {
+                    self.async(owner)
+                            ._query(new ScopePath<>(m.get()), rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                            .thenAccept(env -> {
+                                // Query is valid iff environments are equal
+                                // TODO: compare environments with scope patches.
+                                future.complete(env.equals(rq.result()));
+                            });
+                }
+            });
+        });
+
+        Futures.noneMatch(futures, p -> p.thenApply(v -> !v)).whenComplete((r, ex) -> {
+            if(ex != null) {
                 failures.add(ex);
-                tryFinish();
-            } else if(!v._1()) {
-                logger.info("{} confirmations denied, restarting", this);
-                assertInState(UnitState.UNKNOWN);
-                // startTypeChecker(rootScopes); // TODO: check proper starting
+                doRestart();
             } else {
-                logger.info("{} confirmations confirmed", this);
-                release(v._2());
+                // TODO: collect patches
+                doRelease(CapsuleUtil.immutableMap());
             }
         });
+    }
 
-        // @formatter:off
-        new AggregateFuture<Tuple2<Boolean, io.usethesource.capsule.Map.Immutable<S, S>>>(initialState.previousResult()
-            .orElseThrow(() -> new IllegalStateException("Cannot confirm queries when no previous result is provided"))
-            .queries()
-            .stream()
-            .map(recordedQuery -> confirmation.confirm(recordedQuery)
-                .whenComplete((v, ex) -> {
-                    // When confirmation denied, eagerly restart type-checker
-                    if(ex == null && (v == null || !v._1())) {
-                        confirmationsComplete.complete(v, ex);
+    private void doRelease(Map.Immutable<S, S> patches) {
+        if(state == UnitState.UNKNOWN) {
+            IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+
+            final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
+            previousResult.scopeGraph().getEdges().forEach((entry, targets) -> {
+                S oldSource = entry.getKey();
+                S newSource = patches.getOrDefault(oldSource, oldSource);
+                targets.forEach(targetScope -> {
+                    newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
+                });
+            });
+            previousResult.scopeGraph().getData().forEach((oldScope, datum) -> {
+                S newScope = patches.getOrDefault(oldScope, oldScope);
+                newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
+            });
+
+            scopeGraph.set(newScopeGraph.freeze());
+            analysis.set(initialState.previousResult().get().analysis());
+            confirmationResult.complete(true);
+
+            // Cancel all futures waiting for activation
+            whenActive.completeExceptionally(new Exception()); // TODO ReleasedException
+
+            tryFinish();
+        }
+    }
+
+    private void doRestart() {
+        if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
+            state = UnitState.ACTIVE;
+            whenActive.complete(Unit.unit);
+            confirmationResult.complete(false);
+            tryFinish(); // FIXME needed?
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Deadlock handling
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+        if(state.equals(UnitState.UNKNOWN)) {
+            Futures.noneMatch(nodes, node -> {
+                return self.async(node)._requireRestart();
+            }).whenComplete((w, ex) -> {
+                if(ex == null && w) {
+                    nodes.forEach(node -> self.async(node)._release());
+                } else {
+                    if(ex != null) {
+                        failures.add(ex);
                     }
-                }))
-            .collect(Collectors.toSet()))
-            .whenComplete((v, ex) -> {
-                if(ex != null) {
-                    confirmationsComplete.complete(Tuple2.of(false, CapsuleUtil.immutableMap()), ex);
-                } else if(v.stream().allMatch(x -> x != null && x._1())) {
-                    // All queries confirmed, aggregate patches and complete
-                    io.usethesource.capsule.Map.Transient<S, S> patches = CapsuleUtil.transientMap();
-                    // TODO: optimize for duplicates?
-                    v.forEach(result -> patches.__putAll(result._2()));
-                    confirmationsComplete.complete(Tuple2.of(true, patches.freeze()), ex);
+                    nodes.forEach(node -> self.async(node)._restart());
                 }
-                // in the else case, one of the futures has restarted the type checker, so we don't handle that case here.
+                resume();
             });
-        // @formatter:on
+            resume();
+        } else {
+            super.handleDeadlock(nodes);
+            resume();
+        }
     }
-
-    private void release(io.usethesource.capsule.Map.Immutable<S, S> patches) {
-        IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
-
-        IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
-        previousResult.scopeGraph().getEdges().forEach((entry, targets) -> {
-            S oldSource = entry.getKey();
-            S newSource = patches.getOrDefault(oldSource, oldSource);
-            targets.forEach(targetScope -> {
-                newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
-            });
-        });
-        previousResult.scopeGraph().getData().forEach((oldScope, datum) -> {
-            S newScope = patches.getOrDefault(oldScope, oldScope);
-            newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
-        });
-
-        scopeGraph.set(newScopeGraph.freeze());
-        analysis.set(initialState.previousResult().get().analysis());
-        tryFinish();
-    }
-
-
 
     ///////////////////////////////////////////////////////////////////////////
     // Assertions
@@ -299,6 +373,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
         }
     }
 
+    private void assertActive() {
+        if(!state.active()) {
+            logger.error("Expected active state, was {}", state);
+            throw new IllegalStateException("Expected active state, but was " + state);
+        }
+    }
+
+
     private <Q> IFuture<Q> ifActive(IFuture<Q> result) {
         return result.compose((r, ex) -> {
             if(state.equals(UnitState.ACTIVE)) {
@@ -308,6 +390,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R> implements II
             }
         });
     }
+
+    ///////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////
     // toString

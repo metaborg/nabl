@@ -44,4 +44,10 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     void _deadlocked(Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes);
 
+    IFuture<Boolean> _requireRestart();
+
+    void _release();
+
+    void _restart();
+
 }

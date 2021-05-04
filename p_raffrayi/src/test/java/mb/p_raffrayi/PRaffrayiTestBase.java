@@ -47,13 +47,6 @@ public abstract class PRaffrayiTestBase {
         //return Broker.run(id, typeChecker, scopeImpl, edgeLabels, initialState, new NullCancel());
     }
 
-    @BeforeClass public static void setupTest() {
-        for(String lname : Arrays.asList(Logger.ROOT_LOGGER_NAME, "mb.statix", "mb.statix.concurrent")) {
-            Logger logger = (Logger) LoggerFactory.getLogger(lname);
-            logger.setLevel(ch.qos.logback.classic.Level.TRACE);
-        }
-    }
-
     ///////////////////////////////////////////////////////////////////////////
 
     protected final static class Scope implements IDatum {
