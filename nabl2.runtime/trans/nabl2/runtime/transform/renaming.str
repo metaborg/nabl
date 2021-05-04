@@ -21,8 +21,8 @@ rules
 
   nabl2-rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
-      asts := <get-analysed-asts>
-      ; analysis := <get-project-analysis>
+      asts := <nabl2-get-analysed-asts(multi)> selected-ast
+      ; analysis := <nabl2-get-project-analysis(multi)> selected-ast
       ; res-rel := <nabl2-calc-resolution-relation> analysis
       ; selected-index := <nabl2-find-name-index(|selected-ast, res-rel)> selected-term
       ; (target-paths, target-indices) := <nabl2-find-rename-target> (selected-index, res-rel)
@@ -208,17 +208,18 @@ rules // Utility strategies
     where
       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
 
-  get-project-analysis: _ -> analysis-object
+  nabl2-get-project-analysis(multi): ast -> analysis
     where
       project-analyses := <get-project-constraint-analyses>
-      ; analysis := <get-project-entry <+ get-single-file-entry> project-analyses
-      ; analysis-object := <get-analysis-object> analysis
+      ; if multi then
+          analysis := <get-project-entry;get-analysis-object> project-analyses
+        else
+          analysis := <nabl2-get-ast-analysis> ast
+        end
 
   get-project-entry: entries -> project-analysis
     where
       (_, project-analysis) := <fetch-elem(is-project-entry)> entries
-
-  get-single-file-entry: [(_, file-analysis)] -> file-analysis
 
   is-project-entry = get-entry(|".")
 
@@ -230,10 +231,22 @@ rules // Utility strategies
 
   get-analysis-object: CompatUnitAnalysis(_, analysis-object) -> analysis-object
 
-  get-analysed-asts: _ -> asts
+  nabl2-get-analysed-asts(multi): selected-ast -> asts
+    where
+      if multi then
+        asts := <nabl2-get-analysed-asts-multi>
+      else
+        asts := <nabl2-get-analysed-asts-single> selected-ast
+      end
+
+  nabl2-get-analysed-asts-multi: _ -> asts
     where
       project-asts := <get-project-analyzed-asts>
       ; asts := <filter(not(is-project-entry))> project-asts
+
+  nabl2-get-analysed-asts-single: selected-ast -> [(path, selected-ast)]
+    where
+      TermIndex(path,_) := <nabl2-get-ast-index> selected-ast
 
 rules // error handling
   add-error(|title, message) =
