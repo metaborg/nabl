@@ -8,6 +8,7 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.oopsla20.reference.Env;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -22,4 +23,6 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
     @Override @Value.Parameter public abstract LabelOrder<L> labelOrder();
 
     @Override @Value.Parameter public abstract DataLeq<S, L, D> dataLeq();
+
+    @Override @Value.Parameter public abstract Env<S, L, D> result();
 }

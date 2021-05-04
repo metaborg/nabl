@@ -471,6 +471,9 @@ public abstract class AbstractUnit<S, L, D, R>
                     }
                     return Optional.of(result.whenComplete((r, ex) -> {
                         logger.debug("got answer from {}", sender);
+                        if(!external && ex == null) {
+                            recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, r));
+                        }
                         resume();
                         granted(wf, owner);
                     }));

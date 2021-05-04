@@ -4,6 +4,7 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.oopsla20.reference.Env;
 
 public interface IRecordedQuery<S, L, D> {
 
@@ -16,5 +17,7 @@ public interface IRecordedQuery<S, L, D> {
     LabelOrder<L> labelOrder();
 
     DataLeq<S, L, D> dataLeq();
+
+    Env<S, L, D> result();
 
 }
