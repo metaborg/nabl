@@ -9,8 +9,10 @@ public interface IAttachments {
     /**
      * Gets the attachment of the specified class.
      *
-     * @param cls the class of the attachment
-     * @param <T> the type of attachment
+     * @param cls
+     *            the class of the attachment
+     * @param <T>
+     *            the type of attachment
      * @return the attachment, if found; otherwise, {@code null}
      */
     @Nullable <T> T get(Class<T> cls);
@@ -22,8 +24,6 @@ public interface IAttachments {
         <T> void put(Class<T> cls, T value);
 
         IAttachments build();
-
-        boolean isEmpty();
 
     }
 

@@ -6,12 +6,14 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -59,11 +61,27 @@ public class CFalse implements IConstraint, Serializable {
         return cases.caseFalse(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return CapsuleUtil.immutableSet();
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        if(message != null) {
+            message.visitVars(onFreeVar);
+        }
     }
 
     @Override public CFalse apply(ISubstitution.Immutable subst) {
+        return new CFalse(cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
         return new CFalse(cause, message == null ? null : message.apply(subst));
     }
 
@@ -71,7 +89,7 @@ public class CFalse implements IConstraint, Serializable {
         return new CFalse(cause, message == null ? null : message.apply(subst));
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {
         return "false";
     }
 

@@ -1,10 +1,11 @@
 package mb.nabl2.util.graph.graphimpl;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.graph.alg.misc.memory.EmptyMemory;
 import mb.nabl2.util.graph.alg.misc.memory.IMemoryView;
 import mb.nabl2.util.graph.alg.misc.memory.MapBackedMemoryView;

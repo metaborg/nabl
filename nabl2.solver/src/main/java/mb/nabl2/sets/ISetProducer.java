@@ -1,8 +1,8 @@
 package mb.nabl2.sets;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
 
 @FunctionalInterface
 public interface ISetProducer<T> {

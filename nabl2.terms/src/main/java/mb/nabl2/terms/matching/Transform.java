@@ -31,12 +31,11 @@ public class Transform {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
-                    final List<ITerm> args = appl.getArgs();
-                    final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
-                    for(ITerm arg : args) {
-                        newArgs.add(sometd(m).apply(arg));
+                    final ImmutableList<ITerm> newArgs;
+                    if((newArgs = Terms.applyLazy(appl.getArgs(), sometd(m)::apply)) == null) {
+                        return appl;
                     }
-                    return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
+                    return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
                 },
                 (list) -> list.match(ListTerms.<IListTerm> cases(
                     (cons) -> B.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
@@ -56,12 +55,11 @@ public class Transform {
                 // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(
                     (appl) -> {
-                        final List<ITerm> args = appl.getArgs();
-                        final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
-                        for(ITerm arg : args) {
-                            newArgs.add(somebu(m).apply(arg));
+                        final ImmutableList<ITerm> newArgs;
+                        if((newArgs = Terms.applyLazy(appl.getArgs(), somebu(m)::apply)) == null) {
+                            return appl;
                         }
-                        return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
+                        return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
                     },
                     (list) -> list.match(ListTerms.<IListTerm> cases(
                         (cons) -> B.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),

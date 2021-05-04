@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -68,11 +71,27 @@ public class CNew implements IConstraint, Serializable {
         return new CNew(scopeTerm, datumTerm, cause, criticalEdges);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.union(scopeTerm.getVars(), datumTerm.getVars());
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        scopeTerm.getVars().stream().forEach(onFreeVar::apply);
+        datumTerm.getVars().stream().forEach(onFreeVar::apply);
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
+        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
+    @Override public CNew unsafeApply(ISubstitution.Immutable subst) {
         return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }

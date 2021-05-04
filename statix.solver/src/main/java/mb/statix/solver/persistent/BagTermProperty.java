@@ -2,8 +2,9 @@ package mb.statix.solver.persistent;
 
 import java.io.Serializable;
 
+import org.metaborg.util.collection.ConsList;
+
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.collections.ConsList;
 import mb.statix.solver.ITermProperty;
 
 public class BagTermProperty implements ITermProperty, Serializable {

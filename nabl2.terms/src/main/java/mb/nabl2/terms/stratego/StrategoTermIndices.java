@@ -50,7 +50,8 @@ public final class StrategoTermIndices {
                     integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
                     real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
                     string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                    blob -> new StrategoBlob(blob.value())
+                    blob -> new StrategoBlob(blob.value()),
+                    plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
                 ));
             // @formatter:on
             termFactory.copyAttachments(term, result);
@@ -105,7 +106,8 @@ public final class StrategoTermIndices {
                             integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
                             real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
                             string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                            blob -> new StrategoBlob(blob.value())
+                            blob -> new StrategoBlob(blob.value()),
+                            plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
                     // @formatter:on
             ));
             termFactory.copyAttachments(term, result);

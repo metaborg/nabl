@@ -4,9 +4,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-
-import mb.nabl2.util.collections.HashTrieRelation3;
-import mb.nabl2.util.collections.IRelation3;
+import org.metaborg.util.collection.HashTrieRelation3;
+import org.metaborg.util.collection.IRelation3;
 
 public class HashTrieRelation3Test {
 

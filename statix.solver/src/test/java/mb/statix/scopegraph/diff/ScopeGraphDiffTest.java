@@ -14,11 +14,17 @@ import com.google.common.collect.Multimap;
 import mb.nabl2.terms.ITerm;
 import static mb.nabl2.terms.build.TermBuild.B;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
-import mb.statix.scopegraph.terms.StatixDifferOps;
+import mb.statix.scopegraph.Scope;
+import mb.statix.scopegraph.StatixDifferOps;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.diff.DifferState;
+import mb.scopegraph.oopsla20.diff.Edge;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDiffer;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDifferOps;
+import mb.scopegraph.oopsla20.diff.ScopeGraphStatusOps;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 public class ScopeGraphDiffTest {
 

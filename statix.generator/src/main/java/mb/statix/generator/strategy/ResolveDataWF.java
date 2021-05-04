@@ -30,6 +30,7 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -53,8 +54,10 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // apply rule
         final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED)
-                .orElse(null)) == null) {
+        // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+        if((applyResult =
+                RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
+                        .orElse(null)) == null) {
             return Optional.empty();
         }
         final IState.Immutable applyState = state;
@@ -70,7 +73,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // no substate is used here, as we allow variables from the context to be unified
         final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
                 Map.Immutable.of(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
-                new NullProgress(), new NullCancel());
+                new NullProgress(), new NullCancel(), Solver.RETURN_ON_FIRST_ERROR);
 
         // NOTE This part is almost a duplicate of Solver::entailed and should be
         //      kept in sync

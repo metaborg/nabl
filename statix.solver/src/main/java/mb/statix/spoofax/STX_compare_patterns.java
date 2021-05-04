@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -13,7 +14,6 @@ import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.util.Tuple2;
 
 public class STX_compare_patterns extends StatixPrimitive {
 

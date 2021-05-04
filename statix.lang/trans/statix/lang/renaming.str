@@ -1,0 +1,13 @@
+module renaming
+
+imports
+  nabl2/runtime/transform/renaming
+  statix/lang/analysis
+  statix/lang/pp
+
+rules
+  rename-menu-action : menu-terms -> <nabl2-rename-action(construct-textual-change-statix, editor-analyze, id|)> menu-terms
+	
+  rename-test(|selected-term, new-name) = nabl2-rename(editor-analyze, id|selected-term, new-name);get-ast  
+
+  get-ast: [(_, _, ast) | _] -> ast

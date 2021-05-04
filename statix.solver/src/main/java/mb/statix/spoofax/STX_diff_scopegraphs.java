@@ -5,15 +5,15 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.diff.ScopeGraphDiff;
-import mb.statix.scopegraph.diff.ScopeGraphDiffer;
-import mb.statix.scopegraph.terms.Scope;
-import mb.statix.scopegraph.terms.StatixDifferOps;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDiffer;
+import mb.statix.scopegraph.Scope;
+import mb.statix.scopegraph.StatixDifferOps;
 import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
 

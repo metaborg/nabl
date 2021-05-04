@@ -2,6 +2,8 @@ package mb.statix.solver.completeness;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
@@ -10,11 +12,9 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.collections.MultiSet;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.terms.Scope;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Spec;
@@ -23,23 +23,25 @@ public interface ICompleteness {
 
     boolean isEmpty();
 
-    MultiSet<EdgeOrData<ITerm>> get(ITerm varOrScope, IUniDisunifier unifier);
+    MultiSet<EdgeOrData<ITerm>> get(ITerm varOrScope, IUnifier unifier);
 
-    boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUniDisunifier unifier);
+    boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUnifier unifier);
 
     java.util.Set<Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>>> entrySet();
 
     interface Immutable extends ICompleteness {
 
-        Immutable addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier);
+        Immutable addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier);
 
         Immutable apply(ISubstitution.Immutable subst);
 
         Immutable apply(IRenaming renaming);
 
-        Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUniDisunifier unifier);
+        Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier);
 
-        Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUniDisunifier unifier);
+        Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier);
+
+        Immutable updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier);
 
         ICompleteness.Transient melt();
 
@@ -47,24 +49,24 @@ public interface ICompleteness {
 
     interface Transient extends ICompleteness {
 
-        void add(ITerm varOrScope, EdgeOrData<ITerm> label, IUniDisunifier unifier);
+        void add(ITerm varOrScope, EdgeOrData<ITerm> label, IUnifier unifier);
 
-        default void add(IConstraint constraint, Spec spec, IUniDisunifier unifier) {
+        default void add(IConstraint constraint, Spec spec, IUnifier unifier) {
             CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
                 add(scopeTerm, label, unifier);
             });
         }
 
-        default void addAll(Iterable<? extends IConstraint> constraints, Spec spec, IUniDisunifier unifier) {
+        default void addAll(Iterable<? extends IConstraint> constraints, Spec spec, IUnifier unifier) {
             Iterables2.stream(constraints).forEach(c -> add(c, spec, unifier));
         }
 
-        void addAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier);
+        void addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier);
 
 
-        Set.Immutable<CriticalEdge> remove(ITerm varOrScope, EdgeOrData<ITerm> label, IUniDisunifier unifier);
+        Set.Immutable<CriticalEdge> remove(ITerm varOrScope, EdgeOrData<ITerm> label, IUnifier unifier);
 
-        default Set.Immutable<CriticalEdge> remove(IConstraint constraint, Spec spec, IUniDisunifier unifier) {
+        default Set.Immutable<CriticalEdge> remove(IConstraint constraint, Spec spec, IUnifier unifier) {
             final Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
             CompletenessUtil.criticalEdges(constraint, spec, (scopeTerm, label) -> {
                 removedEdges.__insertAll(remove(scopeTerm, label, unifier));
@@ -73,17 +75,17 @@ public interface ICompleteness {
         }
 
         default Set.Immutable<CriticalEdge> removeAll(Iterable<? extends IConstraint> constraints, Spec spec,
-                IUniDisunifier unifier) {
+                IUnifier unifier) {
             return Iterables2.stream(constraints).flatMap(c -> remove(c, spec, unifier).stream())
                     .collect(CapsuleCollectors.toSet());
         }
 
-        Set.Immutable<CriticalEdge> removeAll(ICompleteness.Immutable criticalEdges, IUniDisunifier unifier);
+        Set.Immutable<CriticalEdge> removeAll(ICompleteness.Immutable criticalEdges, IUnifier unifier);
 
 
-        void update(ITermVar var, IUniDisunifier unifier);
+        void update(ITermVar var, IUnifier unifier);
 
-        default void updateAll(Iterable<? extends ITermVar> vars, IUniDisunifier unifier) {
+        default void updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier) {
             Iterables2.stream(vars).forEach(c -> update(c, unifier));
         }
 

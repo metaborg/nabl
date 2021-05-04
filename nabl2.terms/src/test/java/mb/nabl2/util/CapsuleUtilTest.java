@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import java.util.Map.Entry;
 
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;

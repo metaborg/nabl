@@ -8,11 +8,11 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.OccurrenceIndex;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.OccurrenceIndex;
 
 public class SG_get_ast_decls extends AnalysisPrimitive {
 

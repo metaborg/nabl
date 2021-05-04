@@ -7,10 +7,10 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.terms.NameResolutionTerms;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.terms.NameResolutionTerms;
 
 public class SG_debug_name_resolution extends AnalysisPrimitive {
 

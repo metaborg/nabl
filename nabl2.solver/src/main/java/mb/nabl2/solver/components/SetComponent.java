@@ -25,8 +25,6 @@ import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
 import mb.nabl2.constraints.sets.ISetConstraint;
-import mb.nabl2.scopegraph.CriticalEdgeException;
-import mb.nabl2.scopegraph.StuckException;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
@@ -40,6 +38,8 @@ import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.matching.Transform.T;
+import mb.scopegraph.pepm16.CriticalEdgeException;
+import mb.scopegraph.pepm16.StuckException;
 
 public class SetComponent extends ASolver {
 

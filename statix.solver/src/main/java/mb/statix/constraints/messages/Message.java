@@ -8,9 +8,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
@@ -38,12 +42,17 @@ public class Message implements IMessage, Serializable {
         return kind;
     }
 
-    @Override public String toString(TermFormatter formatter) {
-        return content.stream().map(p -> p.toString(formatter)).collect(Collectors.joining());
+    @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage) {
+        return content.isEmpty() ? getDefaultMessage.apply()
+                : content.stream().map(p -> p.toString(formatter)).collect(Collectors.joining());
     }
 
     @Override public Optional<ITerm> origin() {
         return Optional.ofNullable(origin);
+    }
+
+    @Override public void visitVars(Action1<ITermVar> onVar) {
+        content.forEach(p -> p.visitVars(onVar));
     }
 
     @Override public IMessage apply(ISubstitution.Immutable subst) {
@@ -69,18 +78,17 @@ public class Message implements IMessage, Serializable {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null || getClass() != o.getClass()) return false;
-        Message message = (Message)o;
-        return kind == message.kind &&
-            Objects.equals(content, message.content) &&
-            Objects.equals(origin, message.origin);
+    @Override public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(o == null || getClass() != o.getClass())
+            return false;
+        Message message = (Message) o;
+        return kind == message.kind && Objects.equals(content, message.content)
+                && Objects.equals(origin, message.origin);
     }
 
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         return Objects.hash(kind, content, origin);
     }
 }

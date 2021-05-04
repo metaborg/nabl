@@ -1,0 +1,200 @@
+module renaming/rules
+
+language StatixLang
+
+test rename rule from dec [[
+module test
+  rules
+    [[d]] : int -> int
+    d(i) = j :- i == j.
+]] run rename-test(|#1, "e") to [[
+module test
+  rules
+    e : int -> int
+    e(i) = j :- i == j.
+]]
+
+test rename rule from ref [[
+module test
+  rules
+    d : int -> int
+    [[d]](i) = j :- i == j.
+]] run rename-test(|#1, "e") to [[
+module test
+  rules
+    e : int -> int
+    e(i) = j :- i == j.
+]]
+
+test rename rule complex apply [[
+resolve {d}
+
+  [[concat]](["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    concat : list(string) * list(string) -> list(string)
+
+rules
+
+  concat([], ys) = zs :- ys == zs.
+  concat([x|xs], ys) = [x|concat(xs, ys)].
+
+]] run rename-test(|#1, "conc") to [[
+resolve {d}
+
+  conc(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    conc : list(string) * list(string) -> list(string)
+
+rules
+
+  conc([], ys) = zs :- ys == zs.
+  conc([x|xs], ys) = [x|conc(xs, ys)].
+
+]]
+
+test rename rule complex constraints [[
+resolve {d}
+
+  concat(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    [[concat]] : list(string) * list(string) -> list(string)
+
+rules
+
+  concat([], ys) = zs :- ys == zs.
+  concat([x|xs], ys) = [x|concat(xs, ys)].
+
+]] run rename-test(|#1, "conc") to [[
+resolve {d}
+
+  conc(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    conc : list(string) * list(string) -> list(string)
+
+rules
+
+  conc([], ys) = zs :- ys == zs.
+  conc([x|xs], ys) = [x|conc(xs, ys)].
+
+]]
+
+test rename rule complex lhs [[
+resolve {d}
+
+  concat(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    concat : list(string) * list(string) -> list(string)
+
+rules
+
+  [[concat]]([], ys) = zs :- ys == zs.
+  concat([x|xs], ys) = [x|concat(xs, ys)].
+
+]] run rename-test(|#1, "conc") to [[
+resolve {d}
+
+  conc(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    conc : list(string) * list(string) -> list(string)
+
+rules
+
+  conc([], ys) = zs :- ys == zs.
+  conc([x|xs], ys) = [x|conc(xs, ys)].
+]]
+
+test rename rule complex rhs [[
+resolve {d}
+
+  concat(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    concat : list(string) * list(string) -> list(string)
+
+rules
+
+  concat([], ys) = zs :- ys == zs.
+  concat([x|xs], ys) = [x|[[concat]](xs, ys)].
+
+]] run rename-test(|#1, "conc") to [[
+resolve {d}
+
+  conc(["I'm", "afraid", "I"], ["cannot", "do", "that", "Dave"]) == d
+
+signature
+  constraints
+    conc : list(string) * list(string) -> list(string)
+
+rules
+
+  conc([], ys) = zs :- ys == zs.
+  conc([x|xs], ys) = [x|conc(xs, ys)].
+]]
+
+test rename dynamic dec [[
+  resolve f(1) == ()
+  rules
+    f : int -> ()
+    [[f]](i) = ().
+]] run rename-test(|#1, "g") to [[
+  resolve g(1) == ()
+  rules
+    g : int -> ()
+    g(i) = ().
+]]
+
+test rename dynamic signature [[
+  resolve f(1) == ()
+  rules
+    [[f]] : int -> ()
+    f(i) = ().
+]] run rename-test(|#1, "g") to [[
+  resolve g(1) == ()
+  rules
+    g : int -> ()
+    g(i) = ().
+]]
+
+test rename dynamic application [[
+  resolve [[f]](1) == ()
+  rules
+    f : int -> ()
+    f(i) = ().
+]] run rename-test(|#1, "g") to [[
+  resolve g(1) == ()
+  rules
+    g : int -> ()
+    g(i) = ().
+]]
+
+test overlapping rules [[
+  module test
+  rules
+    [[f]] : int * int
+    f(_, 2).
+    f(1, _).
+    f(_, _).
+    f(1, 2).
+]] run rename-test(|#1, "g") to [[
+  module test
+  rules
+    g : int * int
+    g(_, 2).
+    g(1, _).
+    g(_, _).
+    g(1, 2).
+]]
+

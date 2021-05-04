@@ -118,8 +118,8 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
         return unifier().toString(term, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-        return unifier().toString(term, n, specializedTermFormatter);
+    @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+        return unifier().toString(term, depth, specializedTermFormatter);
     }
 
     ///////////////////////////////////////////
@@ -222,8 +222,8 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-            return unifier.toString(term, n, specializedTermFormatter);
+        @Override public String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, depth, specializedTermFormatter);
         }
 
         @Override public Set.Immutable<Diseq> disequalities() {
@@ -250,7 +250,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
 
         @Override public Optional<IUnifier.Immutable> unify(IUniDisunifier other, Predicate1<ITermVar> isRigid)
                 throws OccursException, RigidException {
-            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.unify(other, isRigid);
+            final Optional<IUniDisunifier.Result<IUnifier.Immutable>> result = unifier.uniDisunify(other, isRigid);
             return result.map(r -> {
                 unifier = r.unifier();
                 return r.result();
@@ -271,6 +271,16 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
                 Predicate1<ITermVar> isRigid) throws RigidException {
             final Optional<IUniDisunifier.Result<Optional<Diseq>>> result =
                     unifier.disunify(universal, term1, term2, isRigid);
+            return result.map(ud -> {
+                unifier = ud.unifier();
+                return ud.result();
+            });
+        }
+
+        @Override public Optional<Optional<Diseq>> disunify(Iterable<ITermVar> universal, IUnifier.Immutable diseqs,
+                Predicate1<ITermVar> isRigid) throws RigidException {
+            final Optional<IUniDisunifier.Result<Optional<Diseq>>> result =
+                    unifier.disunify(universal, diseqs, isRigid);
             return result.map(ud -> {
                 unifier = ud.unifier();
                 return ud.result();

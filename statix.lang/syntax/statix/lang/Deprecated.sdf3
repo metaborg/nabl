@@ -9,6 +9,10 @@ template options
 
   keyword -/- [a-zA-Z0-9\_\-\']
 
+/******************************************************************
+ * Filtering
+ ******************************************************************/
+
 context-free syntax
 
   QueryFilter.Filter_dep = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
@@ -19,3 +23,69 @@ context-free syntax
 
   NamespaceFilter.NamespaceFilter_dep = < filter pathMatch[<LabelRE>]> {deprecated("Use 'filter RE' instead of 'filter pathMatch[RE]'")}
   NamespaceMin.NamespaceMin_dep       = < min pathLt[<LabelPairs>]>    {deprecated("Use 'min LT' instead of 'min pathLt[LT]'")}
+
+/******************************************************************
+ * Scope Graph creation
+ ******************************************************************/
+
+context-free syntax
+
+  // namespaces
+  Signature.Namespaces = <
+    namespaces
+      <{NsDecl "\n"}*>
+  > {longest-match, deprecated("Usage of namespaces is strongly discouraged.")}
+
+  NsDecl.NsDecl = <<NamespaceId> : <{SortRef " * "}*>> {deprecated("Usage of namespaces is strongly discouraged.")}
+
+  Rule = <namespace <NsDecl>>
+
+  // default resolution policies
+  NamespaceQuery.NamespaceQuery = <resolve <NamespaceId><NamespaceFilter><NamespaceMin>> {deprecated("Namespaces might be removed in a future version.")}
+
+  ResolutionParam = NamespaceQuery
+  Rule            = NamespaceQuery
+
+  NamespaceFilter.NamespaceFilter   = < filter <LabelRE>>
+  NamespaceFilter.NoNamespaceFilter =
+
+  NamespaceMin.NamespaceMin   = < min <LabelPairs>>
+  NamespaceMin.NoNamespaceMin =
+
+  Constraint.CTellDecl         = [[Term] -> [Occurrence]] {deprecated("Occurrences might be removed in a future version. Use `!rel[...]` syntax instead.")}
+  Constraint.CTellDeclWithRels = [[Term] -> [Occurrence] with [{RelData " and "}+]] {deprecated("Occurrences might be removed in a future version. Use `!rel[...]` syntax instead.")}
+
+  RelData = [[RelRef] [Term]]
+
+/******************************************************************
+ * Resolve & Query
+ ******************************************************************/
+
+context-free syntax
+
+  Constraint.CResolveRef        = [[Occurrence] in [Term] |-> [Term][Message]]             {deprecated("Occurrences might be removed in a future version. Use `query` syntax instead.")}
+  Constraint.CResolveRefWithRel = [[RelRef] of [Occurrence] in [Term] |-> [Term][Message]] {deprecated("Occurrences might be removed in a future version. Use `query` syntax instead.")}
+
+  // little duplication to fix ambiguity between
+  // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
+  OccurrenceTerm  = Term {longest-match}
+  OccurrenceTerm  = <<Var>@<Term>> {reject}
+  OccurrenceTerms = <<{OccurrenceTerm " "}*>>
+
+  Term = Occurrence
+
+  Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
+
+syntax
+
+  OccurrencePosition-CF.NoId   =
+  OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
+  OccurrencePosition-CF.NoId   = "@-"
+
+  OccurrenceLit-CF.StxOccurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}" {deprecated("Usage of occurrences is strongly discouraged.")}
+
+  LabelRE-CF.ResolveMatch = "resolveMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF  "]"           {deprecated("Occurrences might be removed in a future version.")}
+
+  LabelOrd-CF.ResolveLt = "resolveLt" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]"                 {deprecated("Occurrences might be removed in a future version.")}
+
+  HoConstraint-CF.OccurrenceMatch = "occurrenceMatch" "[" LAYOUT?-CF Occurrence-CF LAYOUT?-CF "]" {deprecated("Occurrences might be removed in a future version.")}

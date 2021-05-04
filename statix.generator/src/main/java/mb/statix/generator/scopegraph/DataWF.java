@@ -2,7 +2,7 @@ package mb.statix.generator.scopegraph;
 
 import java.util.Optional;
 
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.spec.Spec;
 
 

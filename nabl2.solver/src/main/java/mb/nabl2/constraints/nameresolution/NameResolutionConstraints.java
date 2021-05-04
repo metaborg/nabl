@@ -7,10 +7,10 @@ import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
-import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.substitution.ISubstitution;
+import mb.scopegraph.pepm16.terms.Label;
 
 public final class NameResolutionConstraints {
 

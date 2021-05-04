@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,7 +29,6 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.Tuple2;
 
 public abstract class Pattern implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -44,6 +44,8 @@ public abstract class Pattern implements Serializable {
     }
 
     public abstract Set<ITermVar> getVars();
+
+    public abstract boolean isConstructed();
 
     public Optional<ISubstitution.Immutable> match(ITerm term) {
         return match(term, Unifiers.Immutable.of()).match(t -> t, v -> Optional.empty());
@@ -122,7 +124,7 @@ public abstract class Pattern implements Serializable {
             final ITermVar leftVar = patternEq._1();
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
-            }, (v) -> v.orElse(fresh.freshWld()));
+            }, (v) -> v.orElseGet(() -> fresh.freshWld()));
             stuckVars.add(leftVar);
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }
@@ -224,7 +226,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -249,7 +251,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -267,7 +269,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -287,7 +289,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -307,7 +309,7 @@ public abstract class Pattern implements Serializable {
                 } else if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     if(boundAt(var2, vars2) >= 0) {
-                        return 0;
+                        return 1;
                     } else {
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
@@ -325,17 +327,17 @@ public abstract class Pattern implements Serializable {
                 if(p2 instanceof PatternVar) {
                     final PatternVar var2 = (PatternVar) p2;
                     final int i2 = boundAt(var2, vars2);
-                    if(i1 < 0 && i2 < 0) {
+                    if(i1 < 0 && i2 < 0) { // neither are bound
                         bind(var1.getVar(), vars1, var2.getVar(), vars2, pos.getAndIncrement());
                         return 0;
-                    } else if(i1 < 0 && i2 >= 0) {
+                    } else if(i1 < 0 && i2 >= 0) { // p2 is bound
                         bind(var2.getVar(), vars1, pos.getAndIncrement());
                         return 1;
-                    } else if(i1 >= 0 && i2 < 0) {
+                    } else if(i1 >= 0 && i2 < 0) { // p1 is bound
                         bind(var2.getVar(), vars2, pos.getAndIncrement());
                         return -1;
-                    } else {
-                        return 0; // FIXME What does this case mean? Are they equal, incomparable?
+                    } else { // both are bound, the left-most takes precedence
+                        return i1 - i2;
                     }
                 } else if(p2 instanceof PatternAs) {
                     final PatternAs as2 = (PatternAs) p2;
@@ -346,7 +348,7 @@ public abstract class Pattern implements Serializable {
                 }
             } else if(p1 instanceof PatternAs) {
                 final PatternAs as1 = (PatternAs) p1;
-                bind(as1.getVar(), vars1, pos.get());
+                bind(as1.getVar(), vars1, pos.get()); // FIXME what if this is already bound?
                 return compare(as1.getPattern(), p2, pos, vars1, vars2);
             } else {
                 return null;

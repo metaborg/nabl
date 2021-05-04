@@ -2,6 +2,7 @@ package mb.statix.solver.log;
 
 import org.metaborg.util.log.Level;
 
+@SuppressWarnings("unused")
 public class NullDebugContext implements IDebugContext {
 
     private final int depth;
