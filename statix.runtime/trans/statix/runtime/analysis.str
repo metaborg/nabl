@@ -231,9 +231,8 @@ rules // multi file analysis (new)
   cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, Added(), groups, units))
     where <filter(?([], _, _, _))> group-task* => []
     with s-proj        := Var("s_proj")
-       ; s-parent-grp  := Var("s_parentGrp")
        ; s-this-grp    := Var("s_thisGrp")
-       ; rule := LLam([s-proj, s-parent-grp, s-this-grp], C(grp-c-name, [s-proj, s-parent-grp, <stx--explode> key, s-this-grp], NoMessage()))
+       ; rule := LLam([s-proj, s-this-grp], C(grp-c-name, [s-proj, <stx--explode> key, s-this-grp], NoMessage()))
        ; (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
 
   // @param spec  : Spec

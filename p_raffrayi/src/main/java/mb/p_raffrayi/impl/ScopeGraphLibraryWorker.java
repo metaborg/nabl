@@ -5,6 +5,8 @@ import java.util.Set;
 
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
 import mb.p_raffrayi.IUnitResult;
@@ -21,6 +23,8 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
+
+    private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
     ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph,
@@ -89,6 +93,13 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     @Override protected boolean canAnswer(S scope) {
         final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
         return owner.equals(parent);
+    }
+
+    @Override protected void assertOwnScope(S scope) {
+        if(!context.owner(scope).equals(parent)) {
+            logger.error("Scope {} is not owned {}", scope, this);
+            throw new IllegalArgumentException("Scope " + scope + " is not owned " + this);
+        }
     }
 
 }

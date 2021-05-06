@@ -1058,7 +1058,7 @@ public class StatixSolver {
     private class ConstraintDataWFInternal implements DataWf<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;
@@ -1178,7 +1178,7 @@ public class StatixSolver {
     private class ConstraintDataEquivInternal implements DataLeq<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;

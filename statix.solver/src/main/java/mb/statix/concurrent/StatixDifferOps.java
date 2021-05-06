@@ -3,6 +3,7 @@ package mb.statix.concurrent;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -13,7 +14,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Transform.T;
-import mb.nabl2.util.CapsuleUtil;
 import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
 import mb.statix.scopegraph.Scope;
 

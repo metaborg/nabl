@@ -249,7 +249,7 @@ public abstract class AbstractUnit<S, L, D, R>
             logger.debug("{} scope graph differ finished", this);
             resume(); // FIXME necessary
             if(ex != null) {
-                logger.error("scope graph differ errored: {}", ex);
+                logger.error("scope graph differ errored.", ex);
                 failures.add(ex);
             } else {
                 diffResult.set(r);
@@ -844,12 +844,7 @@ public abstract class AbstractUnit<S, L, D, R>
                             deadlocked.__insert(typeCheckerState.future());
                         }
                     },
-                    differResult -> {
-                        if(nodes.contains(differResult.origin())) {
-                            logger.debug("{} fail {}", self, differResult);
-                            deadlocked.__insert(differResult.future());
-                        }
-                    },
+                    differResult -> {},
                     activate -> {}
                 ));
                 // @formatter:on
@@ -1146,7 +1141,7 @@ public abstract class AbstractUnit<S, L, D, R>
     // Assertions
     ///////////////////////////////////////////////////////////////////////////
 
-    private void assertOwnScope(S scope) {
+    protected void assertOwnScope(S scope) {
         if(!context.owner(scope).equals(self)) {
             logger.error("Scope {} is not owned {}", scope, this);
             throw new IllegalArgumentException("Scope " + scope + " is not owned " + this);

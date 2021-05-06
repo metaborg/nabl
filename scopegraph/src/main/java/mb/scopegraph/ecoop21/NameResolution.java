@@ -152,7 +152,7 @@ public abstract class NameResolution<S, L, D> {
         try {
             return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
         } catch(Exception e) {
-            throw new IllegalStateException("Should not happen.");
+            throw new IllegalStateException("Should not happen.", e);
         }
     }
 

@@ -66,13 +66,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         this.differOps = differOps;
         this.scopeImpl = scopeImpl;
         this.state = UnitState.INIT_UNIT;
-
-        final Activate<S, L, D> activate = Activate.of(self, whenActive);
-        waitFor(activate, self);
-        whenActive.whenComplete((u, ex) -> {
-            granted(activate, self);
-            resume();
-        });
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
@@ -97,6 +90,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             // runIncremental not called, so start eagerly
             doRestart();
         }
+
+        final Activate<S, L, D> activate = Activate.of(self, whenActive);
+        waitFor(activate, self);
+        whenActive.whenComplete((u, ex) -> {
+            granted(activate, self);
+            resume();
+        });
 
         return doFinish(result);
     }

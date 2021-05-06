@@ -70,7 +70,7 @@ public abstract class ASolverResult {
     public SolverResult combine(SolverResult other) {
         final SolverResult.Builder combined = SolverResult.builder().from(this);
         combined.state(state().add(other.state()));
-        combined.putAllMessages(other.messages());
+        combined.messages(merge(messages(), other.messages()));
         combined.putAllDelays(other.delays());
         combined.putAllExistentials(other.existentials());
         combined.addAllUpdatedVars(other.updatedVars());
@@ -79,6 +79,13 @@ public abstract class ASolverResult {
         combined.totalSolved(totalSolved() + other.totalSolved());
         combined.totalCriticalEdges(totalCriticalEdges() + other.totalCriticalEdges());
         return combined.build();
+    }
+
+    private static <K, V> Map<K, V> merge(Map<K, V> map1, Map<K, V> map2) {
+        final ImmutableMap.Builder<K, V> builder = ImmutableMap.<K, V>builder();
+        builder.putAll(map1);
+        map2.forEach((k, v) -> { if (!map1.containsKey(k)) builder.put(k, v); });
+        return builder.build();
     }
 
 }
