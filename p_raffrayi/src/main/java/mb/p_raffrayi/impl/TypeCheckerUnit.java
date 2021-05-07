@@ -333,6 +333,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private void doRelease(Map.Immutable<S, S> patches) {
         if(state == UnitState.UNKNOWN) {
+            state = UnitState.RELEASED;
             final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
@@ -415,7 +416,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private <Q> IFuture<Q> ifActive(IFuture<Q> result) {
         return result.compose((r, ex) -> {
-            if(state.equals(UnitState.ACTIVE)) {
+            if(state.active()) {
                 return CompletableFuture.completed(r, ex);
             } else {
                 return CompletableFuture.noFuture();
