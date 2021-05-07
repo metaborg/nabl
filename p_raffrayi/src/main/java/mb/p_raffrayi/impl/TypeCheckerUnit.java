@@ -36,6 +36,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
@@ -144,6 +145,31 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
             List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
         assertActive();
+
+        initialState.previousResult().map(IUnitResult::rootScopes).ifPresent(previousRootScopes -> {
+            // When a scope is shared, the shares must be consistent.
+            // Also, it is not necessary that shared scopes are reachable from the root scopes
+            // (A unit started by the Broker does not even have root scopes)
+            // Therefore we enforce here that the current root scopes and the previous ones match.
+
+            int pSize = previousRootScopes.size();
+            int cSize = rootScopes.size();
+            if(cSize != pSize) {
+                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                throw new IllegalStateException("Different root scope count.");
+            }
+
+            BiMap.Transient<S> req = BiMap.Transient.of();
+            for(int i = 0; i < rootScopes.size(); i++) {
+                req.put(rootScopes.get(i), previousRootScopes.get(i));
+            }
+
+            if(!differ.matchScopes(req.freeze())) {
+                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                throw new IllegalStateException("Could not match.");
+            }
+
+        });
 
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
             return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeImpl,
@@ -307,18 +333,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private void doRelease(Map.Immutable<S, S> patches) {
         if(state == UnitState.UNKNOWN) {
-            IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+            final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
             previousResult.scopeGraph().getEdges().forEach((entry, targets) -> {
-                S oldSource = entry.getKey();
-                S newSource = patches.getOrDefault(oldSource, oldSource);
+                final S oldSource = entry.getKey();
+                final S newSource = patches.getOrDefault(oldSource, oldSource);
                 targets.forEach(targetScope -> {
                     newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
                 });
             });
             previousResult.scopeGraph().getData().forEach((oldScope, datum) -> {
-                S newScope = patches.getOrDefault(oldScope, oldScope);
+                final S newScope = patches.getOrDefault(oldScope, oldScope);
                 newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
             });
 
@@ -327,7 +353,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             confirmationResult.complete(true);
 
             // Cancel all futures waiting for activation
-            whenActive.completeExceptionally(new Exception()); // TODO ReleasedException
+            whenActive.completeExceptionally(new Release());
 
             tryFinish();
         }

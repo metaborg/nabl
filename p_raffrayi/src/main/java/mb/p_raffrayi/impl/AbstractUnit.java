@@ -109,7 +109,7 @@ public abstract class AbstractUnit<S, L, D, R>
     // TODO unwrap old scope graph(?)
     protected final IInitialState<S, L, D, R> initialState; // TODO: move to typecheckerunit
     protected final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
-    private final IScopeGraphDiffer<S, L, D> differ;
+    protected final IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
@@ -271,29 +271,6 @@ public abstract class AbstractUnit<S, L, D, R>
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
-
-        initialState.previousResult().map(IUnitResult::rootScopes).ifPresent(previousRootScopes -> {
-            // When a scope is shared, the shares must be consistent.
-            // Also, it is not necessary that shared scopes are reachable from the root scopes
-            // (A unit started by the Broker does not even have root scopes)
-            // Therefore we enforce here that the current root scopes and the previous ones match.
-
-            if(rootScopes.size() != previousRootScopes.size()) {
-                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
-                throw new IllegalStateException("Different root scope count.");
-            }
-
-            BiMap.Transient<S> req = BiMap.Transient.of();
-            for(int i = 0; i < rootScopes.size(); i++) {
-                req.put(rootScopes.get(i), previousRootScopes.get(i));
-            }
-
-            if(!differ.matchScopes(req.freeze())) {
-                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
-                throw new IllegalStateException("Could not match.");
-            }
-
-        });
 
         final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
                 context.add(id, unitProvider, rootScopes);
