@@ -108,7 +108,7 @@ public abstract class PRaffrayiTestBase {
         }
 
         @Override public IDatum substituteScopes(IDatum datum, Map<Scope, Scope> substitution) {
-            throw new RuntimeException("Not implemented for tests.");
+            return datum;
         }
 
     };

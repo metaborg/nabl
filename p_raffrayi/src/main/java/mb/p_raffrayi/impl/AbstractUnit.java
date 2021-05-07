@@ -631,8 +631,8 @@ public abstract class AbstractUnit<S, L, D, R>
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    private MultiSetMap.Immutable<IActorRef<? extends IUnit<S, L, D, ?>>, IWaitFor<S, L, D>> waitForsByActor =
+    protected MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
+    protected MultiSetMap.Immutable<IActorRef<? extends IUnit<S, L, D, ?>>, IWaitFor<S, L, D>> waitForsByActor =
             MultiSetMap.Immutable.of();
 
     protected boolean isWaiting() {

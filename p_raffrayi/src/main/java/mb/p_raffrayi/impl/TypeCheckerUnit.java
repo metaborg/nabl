@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -30,6 +31,7 @@ import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
 import mb.p_raffrayi.impl.tokens.Activate;
+import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -295,6 +297,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         final List<IFuture<Boolean>> futures = new ArrayList<>();
         initialState.previousResult().get().queries().forEach(rq -> {
             final ICompletableFuture<Boolean> future = new CompletableFuture<>();
+            futures.add(future);
             future.thenAccept(res -> {
                 // Immediately restart when a query is invalidated
                 if(!res) {
@@ -348,8 +351,28 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 final S newScope = patches.getOrDefault(oldScope, oldScope);
                 newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
             });
-
             scopeGraph.set(newScopeGraph.freeze());
+
+            // initialize all scopes that are pending, and close all open labels.
+            // these should be set by the now reused scopegraph.
+            waitForsByActor.get(self).forEach(wf -> {
+                wf.visit(IWaitFor.cases(
+                    initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
+                    closeScope -> {},
+                    closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
+                    query -> {},
+                    complete -> {},
+                    datum -> {},
+                    match -> {},
+                    result -> {},
+                    typeCheckerState -> {},
+                    differResult -> {},
+                    activate -> {}
+                ));
+            });
+
+            // TODO: patch result
+            // TODO: is this way of setting the result correct?
             analysis.set(initialState.previousResult().get().analysis());
             confirmationResult.complete(true);
 
