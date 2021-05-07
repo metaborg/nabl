@@ -361,4 +361,48 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
     }
 
+    @Test(timeout = 10000) public void testQueryInReleasedUnit() throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final IDatum lbl = new IDatum() {};
+        final Scope d = new Scope("/./sub", 1);
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> parentResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+                .id("/.")
+                .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+                .analysis(false)
+                .build();
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> subResult = unit.add("sub", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                            @Override public IFuture<Boolean> run(
+                                    IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                    List<Scope> rootScopes, IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                                final Scope s1 = rootScopes.get(0);
+                                unit.initScope(s1, Arrays.asList(), false);
+                                return unit.runIncremental(restarted -> {
+                                    return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.any()).thenApply(__ -> true);
+                                });
+                            }}, Arrays.asList(s), AInitialState.added());
+
+                        unit.closeScope(s);
+
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
+                                .thenCompose(res -> subResult.thenApply(sRes -> !res && sRes.analysis() && sRes.failures().isEmpty()));
+                    }
+
+                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+        assertTrue(result.analysis());
+        assertTrue(result.failures().isEmpty());
+    }
+
+
 }

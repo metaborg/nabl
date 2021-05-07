@@ -1069,6 +1069,7 @@ public abstract class AbstractUnit<S, L, D, R>
         protected int incomingQueries;
         protected int outgoingQueries;
         protected int forwardedQueries;
+        protected int incomingConfirmations;
         protected long runtimeNanos;
         protected int dataWfChecks;
         protected int dataLeqChecks;
@@ -1087,6 +1088,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 "incomingQueries",
                 "outgoingQueries",
                 "forwardedQueries",
+                "incomingConfirmations",
                 "dataWfChecks",
                 "dataLeqChecks"
             ), actorStats.csvHeaders());
@@ -1101,6 +1103,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 Integer.toString(incomingQueries),
                 Integer.toString(outgoingQueries),
                 Integer.toString(forwardedQueries),
+                Integer.toString(incomingConfirmations),
                 Integer.toString(dataWfChecks),
                 Integer.toString(dataLeqChecks)
             ), actorStats.csvRow());

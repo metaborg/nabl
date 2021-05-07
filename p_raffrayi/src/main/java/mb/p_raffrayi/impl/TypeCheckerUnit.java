@@ -114,9 +114,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return whenActive.thenCompose(__ -> super._query(path, labelWF, dataWF, labelOrder, dataEquiv));
+        stats.incomingConfirmations++;
+        return whenActive.thenCompose(__ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null));
     }
 
     @Override public IFuture<Boolean> _requireRestart() {
@@ -313,7 +314,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     future.complete(rq.result().isEmpty());
                 } else {
                     self.async(owner)
-                            ._query(new ScopePath<>(m.get()), rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                            ._confirm(new ScopePath<>(m.get()), rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
                             .thenAccept(env -> {
                                 // Query is valid iff environments are equal
                                 // TODO: compare environments with scope patches.
