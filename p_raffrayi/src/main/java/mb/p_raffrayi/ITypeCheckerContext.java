@@ -156,7 +156,7 @@ public interface ITypeCheckerContext<S, L, D> {
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                     LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                     @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
-                return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, null, null);
             }
 
         };

@@ -149,11 +149,7 @@ public abstract class NameResolution<S, L, D> {
     }
 
     private IFuture<Env<S, L, D>> env_l(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l, ICancel cancel) {
-        try {
-            return l.matchInResolution(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
-        } catch(Exception e) {
-            throw new IllegalStateException("Should not happen.", e);
-        }
+        return l.match(() -> env_data(path, re, cancel), lbl -> env_edges(path, re, lbl, cancel));
     }
 
     private IFuture<Env<S, L, D>> env_data(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {

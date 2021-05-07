@@ -89,14 +89,20 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(state == UnitState.INIT_TC) {
             // runIncremental not called, so start eagerly
             doRestart();
+        } else if (state == UnitState.DONE) {
+            // Completed synchronously
+            whenActive.complete(Unit.unit);
+            confirmationResult.complete(true);
         }
 
-        final Activate<S, L, D> activate = Activate.of(self, whenActive);
-        waitFor(activate, self);
-        whenActive.whenComplete((u, ex) -> {
-            granted(activate, self);
-            resume();
-        });
+        if(!whenActive.isDone()) {
+            final Activate<S, L, D> activate = Activate.of(self, whenActive);
+            waitFor(activate, self);
+            whenActive.whenComplete((u, ex) -> {
+                granted(activate, self);
+                resume();
+            });
+        }
 
         return doFinish(result);
     }

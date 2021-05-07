@@ -74,6 +74,10 @@ public abstract class PRaffrayiTestBase {
             return Objects.equals(id, other.id) && index == other.index;
         }
 
+        @Override public String toString() {
+            return String.format("%s-%d", id, index);
+        }
+
     }
 
     protected static interface IDatum {

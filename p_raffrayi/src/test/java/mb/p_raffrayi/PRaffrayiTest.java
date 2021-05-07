@@ -11,10 +11,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -30,6 +32,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.RegExpLabelWf;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.regexp.IRegExp;
 import mb.scopegraph.regexp.IRegExpMatcher;
 import mb.scopegraph.regexp.RegExpMatcher;
@@ -764,6 +767,95 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Object, IDatum, Object> result = future.asJavaCompletion().get();
     }
 
+    @Test(timeout = 10000) public void testExceptionalCompletionInDWF()
+            throws ExecutionException, InterruptedException {
+        final Integer lbl1 = 1;
+        final Integer lbl2 = 2;
+
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Object>> future =
+                run(".", new ITypeChecker<Scope, Integer, IDatum, Object>() {
+
+                    @Override public IFuture<Object> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Object> unit,
+                            List<Scope> roots, IInitialState<Scope, Integer, IDatum, Object> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
+
+                        final IFuture<?> subUnitResult = unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
+
+                            @Override public IFuture<Unit>
+                                    run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit, List<Scope> rootScopes,
+                                            IInitialState<Scope, Integer, IDatum, Unit> initialState) {
+                                final Scope s1 = rootScopes.get(0);
+                                unit.initScope(s1, Arrays.asList(lbl1, lbl2), false);
+
+                                final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d, d);
+
+                                unit.addEdge(s, lbl1, d);
+                                unit.closeEdge(s, lbl1);
+
+                                return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.none()).thenApply(env -> Unit.unit);
+                            }}, Arrays.asList(s));
+
+                        unit.closeScope(s);
+                        return unit.query(s, new SingleStepLabelWf(lbl1), LabelOrder.none(), new QueryDataWf(s, lbl2), DataLeq.none())
+                                .thenCompose(r -> subUnitResult).thenApply(__ -> Unit.unit);
+
+                    }
+
+                }, CapsuleUtil.toSet(lbl1, lbl2));
+
+        final IUnitResult<Scope, Integer, IDatum, Object> result = future.asJavaCompletion().get();
+    }
+
+
+    @Test(timeout = 10000) public void testExceptionalCompletionShadow()
+            throws ExecutionException, InterruptedException {
+        final Integer lbl1 = 1;
+        final Integer lbl2 = 2;
+        final Integer lbl3 = 3;
+
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Object>> future =
+                run(".", new ITypeChecker<Scope, Integer, IDatum, Object>() {
+
+                    @Override public IFuture<Object> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Object> unit,
+                            List<Scope> roots, IInitialState<Scope, Integer, IDatum, Object> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
+
+                        final IFuture<?> subUnitResult = unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
+
+                            @Override public IFuture<Unit>
+                                    run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit, List<Scope> rootScopes,
+                                            IInitialState<Scope, Integer, IDatum, Unit> initialState) {
+                                final Scope s = rootScopes.get(0);
+                                unit.initScope(s, Arrays.asList(lbl1, lbl2, lbl3), false);
+
+                                final Scope d1 = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d1, d1);
+
+                                final Scope d2 = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d2, d2);
+
+                                unit.addEdge(s, lbl1, d1);
+                                unit.addEdge(s, lbl2, d2);
+
+                                unit.closeEdge(s, lbl1);
+                                unit.closeEdge(s, lbl2);
+
+                                return unit.query(s, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.none()).thenApply(env -> Unit.unit);
+                            }}, Arrays.asList(s));
+
+                        unit.closeScope(s);
+                        return unit.query(s, LabelWf.any(), new IntegerLabelOrder(), DataWf.any(), new QueryDataLeq(s, lbl3))
+                                .thenCompose(r -> subUnitResult)
+                                .thenApply(__ -> Unit.unit);
+
+                    }
+
+                }, CapsuleUtil.toSet(lbl1, lbl2, lbl3));
+
+        final IUnitResult<Scope, Integer, IDatum, Object> result = future.asJavaCompletion().get();
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     private final class ResolveBeforeCloseEdgeDatum implements ITypeChecker<Scope, Integer, IDatum, Object> {
@@ -1070,6 +1162,101 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+
+    private class IntegerLabelOrder implements LabelOrder<Integer> {
+
+        @Override public boolean lt(EdgeOrData<Integer> lbl1, EdgeOrData<Integer> lbl2) {
+            return lbl1.match(
+                () -> lbl2.match(() -> false, __ -> true),
+                l1 -> lbl2.match(() -> false, l2 -> (l1 < l2))
+            );
+        }
+
+    }
+
+    private class SingleStepLabelWf implements LabelWf<Integer> {
+
+        private Integer label;
+
+        public SingleStepLabelWf(Integer label) {
+            this.label = label;
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return l.equals(label) ? Optional.of(new EOPLabelWf()) : Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return false;
+        }
+
+        @Override public String toString() {
+            return label.toString();
+        }
+
+    }
+
+    private class EOPLabelWf implements LabelWf<Integer> {
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return true;
+        }
+
+        @Override public String toString() {
+            return "$";
+        }
+
+    }
+
+    private class QueryDataWf implements DataWf<Scope, Integer, IDatum> {
+
+        private Scope scope;
+        private Integer label;
+
+        protected QueryDataWf(Scope scope, Integer label) {
+            this.scope = scope;
+            this.label = label;
+        }
+
+        @Override public IFuture<Boolean> wf(IDatum datum, ITypeCheckerContext<Scope, Integer, IDatum> context,
+                ICancel cancel) throws InterruptedException {
+            final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
+            final IRegExp<Integer> re = reb.and(reb.symbol(label), reb.complement(reb.emptySet()));
+            final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
+            return context
+                    .query(scope, new RegExpLabelWf<Integer>(rem), LabelOrder.none(),
+                            (d, ctx, c) -> CompletableFuture.completedFuture(d.equals(datum)), DataLeq.none())
+                    .thenApply(env -> !env.isEmpty());
+        }
+
+    }
+
+    private class QueryDataLeq implements DataLeq<Scope, Integer, IDatum> {
+
+        private Scope scope;
+        private Integer label;
+
+        protected QueryDataLeq(Scope scope, Integer label) {
+            this.scope = scope;
+            this.label = label;
+        }
+
+        @Override public IFuture<Boolean> leq(IDatum d1, IDatum d2, ITypeCheckerContext<Scope, Integer, IDatum> context,
+                ICancel cancel) throws InterruptedException {
+            final RegExpBuilder<Integer> reb = new RegExpBuilder<>();
+            final IRegExp<Integer> re = reb.and(reb.symbol(label), reb.complement(reb.emptySet()));
+            final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
+            return context
+                    .query(scope, new RegExpLabelWf<Integer>(rem), LabelOrder.none(),
+                            (d, ctx, c) -> CompletableFuture.completedFuture(d.equals(d1) || d.equals(d2)), DataLeq.none())
+                    .thenApply(env -> !env.isEmpty());
+        }
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
