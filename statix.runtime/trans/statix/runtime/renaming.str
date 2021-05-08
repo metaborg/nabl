@@ -209,12 +209,12 @@ rules // Utility strategies
 
   get-project-analysis(multi): ast -> analysis
     where
-      project-analyses := <get-project-constraint-analyses>
-      ; if multi then
-          analysis := <get-project-entry;get-analysis-object> project-analyses
-        else
-          analysis := <stx--get-ast-analysis> ast
-        end
+      if multi then
+        analysis := <get-project-entry;get-analysis-object> project-analyses
+        ;project-analyses := <get-project-constraint-analyses>
+      else
+        analysis := <stx--get-ast-analysis> ast
+      end
 
   get-project-entry: entries -> project-analysis
     where
