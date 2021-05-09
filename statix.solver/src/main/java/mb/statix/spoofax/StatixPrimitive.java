@@ -20,6 +20,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -139,6 +140,30 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
             IStatixProjectConfig config, final Collection<ITerm> errors, final Collection<ITerm> warnings,
             final Collection<ITerm> notes) {
+        Tuple2<Iterable<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
+
+        final String messageText = Streams.stream(message_origin._1()).filter(s -> !s.isEmpty())
+                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+
+        final ITerm messageTerm = B.newTuple(message_origin._2(), B.newString(messageText));
+        switch(message.kind()) {
+            case ERROR:
+                errors.add(messageTerm);
+                break;
+            case WARNING:
+                warnings.add(messageTerm);
+                break;
+            case NOTE:
+                notes.add(messageTerm);
+                break;
+            case IGNORE:
+                break;
+        }
+
+    }
+
+    public static Tuple2<Iterable<String>, ITerm> formatMessage(final IMessage message, final IConstraint constraint,
+            final IUniDisunifier unifier, IStatixProjectConfig config) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier,
                 config.messageTermDepth(config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH)));
         final int maxTraceLength =
@@ -161,35 +186,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             trace.addLast("... trace truncated ...");
         }
 
+        // add constraint message
+        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
+
         // use empty origin if none was found
         if(originTerm == null) {
             originTerm = B.newTuple();
         }
 
-        // add constraint message
-        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
-
-        final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
-                .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
-
-        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));
-        switch(message.kind()) {
-            case ERROR:
-                errors.add(messageTerm);
-                break;
-            case WARNING:
-                warnings.add(messageTerm);
-                break;
-            case NOTE:
-                notes.add(messageTerm);
-                break;
-            case IGNORE:
-                break;
-        }
-
+        return Tuple2.of(trace, originTerm);
     }
 
-    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
+    private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
             onArith -> Stream.empty(),
@@ -213,7 +221,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
+    private static Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
         // @formatter:off
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())
@@ -222,7 +230,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private String cleanupString(String string) {
+    private static String cleanupString(String string) {
         return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
