@@ -274,11 +274,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         // Invariant: added units are marked as changed.
         // Therefore, if unit is not changed, a previous result must be given.
-        IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
+        final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
 
         return confirmationResult.thenCompose(validated -> {
             if(validated) {
-                Q previousLocalResult = extractLocal.apply(previousResult.analysis());
+                final Q previousLocalResult = extractLocal.apply(previousResult.analysis());
                 return combine.apply(previousLocalResult, null);
             } else {
                 return runLocalTypeChecker.apply(true).compose(combine::apply);
@@ -296,9 +296,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         final List<IFuture<Boolean>> futures = new ArrayList<>();
         initialState.previousResult().get().queries().forEach(rq -> {
-            final ICompletableFuture<Boolean> future = new CompletableFuture<>();
-            futures.add(future);
-            future.thenAccept(res -> {
+            final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
+            futures.add(confirmationResult);
+            confirmationResult.thenAccept(res -> {
                 // Immediately restart when a query is invalidated
                 if(!res) {
                     doRestart();
@@ -307,25 +307,44 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(rq.scope());
             self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
                 if(ex != null) {
-                    future.completeExceptionally(ex);
+                    if(ex == Release.instance) {
+                        confirmationResult.complete(true);
+                    } else {
+                        confirmationResult.completeExceptionally(ex);
+                    }
                 } else if(!m.isPresent()) {
                     // No match, so result is the same iff previous environment was empty.
-                    future.complete(rq.result().isEmpty());
+                    confirmationResult.complete(rq.result().isEmpty());
                 } else {
+                    final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
+                    final ScopePath<S, L> path = new ScopePath<>(m.get());
+                    final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), queryResult);
+                    waitFor(query, owner);
                     self.async(owner)
-                            ._confirm(new ScopePath<>(m.get()), rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
-                            .thenAccept(env -> {
+                        ._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                        .whenComplete((env, ex2) -> {
+                            granted(query, owner);
+                            if(ex2 != null) {
+                                if(ex2 == Release.instance) {
+                                    confirmationResult.complete(true);
+                                } else {
+                                    confirmationResult.completeExceptionally(ex2);
+                                }
+                            } else {
                                 // Query is valid iff environments are equal
                                 // TODO: compare environments with scope patches.
-                                future.complete(env.equals(rq.result()));
-                            });
+                                confirmationResult.complete(env.equals(rq.result()));
+                            }
+                        });
                 }
             });
         });
 
         Futures.noneMatch(futures, p -> p.thenApply(v -> !v)).whenComplete((r, ex) -> {
             if(ex != null) {
-                failures.add(ex);
+                if(ex != Release.instance) {
+                    failures.add(ex);
+                }
                 doRestart();
             } else {
                 // TODO: collect patches
@@ -370,18 +389,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     activate -> {}
                 ));
             });
-
-            // TODO: patch result
-            // TODO: is this way of setting the result correct?
-            analysis.set(initialState.previousResult().get().analysis());
-            confirmationResult.complete(true);
-
             recordedQueries.addAll(previousResult.queries());
 
             // Cancel all futures waiting for activation
-            whenActive.completeExceptionally(new Release());
+            whenActive.completeExceptionally(Release.instance);
+            confirmationResult.complete(true);
 
-            tryFinish();
+            tryFinish(); // FIXME needed?
         }
     }
 
@@ -441,7 +455,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private <Q> IFuture<Q> ifActive(IFuture<Q> result) {
         return result.compose((r, ex) -> {
-            if(state.active()) {
+            if(state != UnitState.DONE) {
                 return CompletableFuture.completed(r, ex);
             } else {
                 return CompletableFuture.noFuture();

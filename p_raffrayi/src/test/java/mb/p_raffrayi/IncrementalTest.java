@@ -11,6 +11,8 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.AInitialState;
@@ -27,6 +29,8 @@ import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class IncrementalTest extends PRaffrayiTestBase {
+
+    private static final ILogger logger = LoggerUtils.logger(IncrementalTest.class);
 
     ///////////////////////////////////////////////////////////////////////////
     // Release conditions
@@ -95,13 +99,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         unit.closeScope(s);
 
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
-                                .thenCompose(res -> subResult.thenApply(sRes -> res || sRes.analysis()));
+                                .thenCompose(res -> subResult.thenApply(sRes -> !res && !sRes.analysis() && sRes.failures().isEmpty()));
                     }
 
                 }, Set.Immutable.of(), AInitialState.cached(parentResult));
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertFalse(result.analysis());
+        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
     }
 
@@ -280,6 +284,34 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Restart conditions
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Test(timeout = 10000) public void testSimpleRestart() throws InterruptedException, ExecutionException {
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> previousResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+                .id("/.")
+                .scopeGraph(ScopeGraph.Immutable.of())
+                .analysis(false)
+                .build();
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
+                    }
+
+                }, Set.Immutable.of(), AInitialState.changed(previousResult));
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+
+        assertTrue(result.analysis());
+        assertTrue(result.failures().isEmpty());
+    }
+
     @Test(timeout = 10000) public void testRelease_MutualDep_ChildChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
@@ -330,44 +362,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         unit.closeScope(s);
 
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
-                                .thenCompose(res -> subResult.thenApply(sRes -> {
-                                    return res && sRes.analysis() && sRes.failures().isEmpty();
-                                }));
+                            .thenCompose(res -> subResult.thenApply(sRes -> !res && sRes.analysis() && sRes.failures().isEmpty()));
                     }
 
                 }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Restart conditions
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Test(timeout = 10000) public void testSimpleRestart() throws InterruptedException, ExecutionException {
-        final IUnitResult<Scope, IDatum, IDatum, Boolean> previousResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
-                .id("/.")
-                .scopeGraph(ScopeGraph.Immutable.of())
-                .analysis(false)
-                .build();
-
-        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
-                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
-
-                    @Override public IFuture<Boolean> run(
-                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
-                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
-                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
-                    }
-
-                }, Set.Immutable.of(), AInitialState.changed(previousResult));
-
-        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-
         assertTrue(result.analysis());
-        assertTrue(result.failures().isEmpty());
     }
 
     ///////////////////////////////////////////////////////////////////////////

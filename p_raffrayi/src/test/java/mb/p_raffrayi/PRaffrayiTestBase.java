@@ -9,22 +9,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.junit.BeforeClass;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Streams;
 
-import ch.qos.logback.classic.Logger;
 import io.usethesource.capsule.Set.Immutable;
-import mb.p_raffrayi.IScopeImpl;
-import mb.p_raffrayi.ITypeChecker;
-import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
 import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
