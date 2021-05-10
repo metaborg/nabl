@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -376,6 +375,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             // TODO: is this way of setting the result correct?
             analysis.set(initialState.previousResult().get().analysis());
             confirmationResult.complete(true);
+
+            this.recordedQueries.addAll(previousResult.queries());
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(new Release());

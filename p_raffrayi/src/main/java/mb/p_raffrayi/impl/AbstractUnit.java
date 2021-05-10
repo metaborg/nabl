@@ -114,7 +114,7 @@ public abstract class AbstractUnit<S, L, D, R>
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
-    private final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
+    protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
     protected final Stats stats;
 
