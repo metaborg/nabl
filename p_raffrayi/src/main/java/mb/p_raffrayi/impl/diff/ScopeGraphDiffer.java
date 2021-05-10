@@ -549,8 +549,6 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private ScopeGraphDiff<S, L, D> finalizeDiff() {
-        logger.info("Differ reached termination condition. Finalizing.");
-
         Sets.difference(seenCurrentScopes, matchedScopes.keySet()).forEach(addedScopes::__insert);
         Sets.difference(seenPreviousScopes, matchedScopes.valueSet()).forEach(removedScopes::__insert);
 

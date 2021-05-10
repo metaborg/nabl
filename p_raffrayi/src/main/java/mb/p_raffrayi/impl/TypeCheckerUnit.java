@@ -351,7 +351,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 final S newScope = patches.getOrDefault(oldScope, oldScope);
                 newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
             });
-            scopeGraph.set(newScopeGraph.freeze());
+            scopeGraph.set(scopeGraph.get().addAll(newScopeGraph.freeze()));
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
@@ -376,7 +376,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             analysis.set(initialState.previousResult().get().analysis());
             confirmationResult.complete(true);
 
-            this.recordedQueries.addAll(previousResult.queries());
+            recordedQueries.addAll(previousResult.queries());
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(new Release());
