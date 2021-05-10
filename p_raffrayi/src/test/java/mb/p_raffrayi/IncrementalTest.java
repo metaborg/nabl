@@ -645,9 +645,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(d2, subResult.scopeGraph().getData(tgt).get());
 
         // Verify local part of scope graph is correct
-        final List<Scope> localTargets = Lists.newArrayList(result.localScopeGraph().getEdges(newRoot, lbl));
+        final List<Scope> parentTargets = Lists.newArrayList(result.localScopeGraph().getEdges(newRoot, lbl));
+        assertEquals(0, parentTargets.size());
 
-        assertEquals(0, localTargets.size());
+        final List<Scope> childTargets = Lists.newArrayList(subResult.localScopeGraph().getEdges(newRoot, lbl));
+        assertEquals(Arrays.asList(tgt), childTargets);
+
         assertEquals(d2, subResult.localScopeGraph().getData(tgt).get());
     }
 
