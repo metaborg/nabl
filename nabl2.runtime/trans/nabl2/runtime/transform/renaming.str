@@ -211,8 +211,8 @@ rules // Utility strategies
   nabl2-get-project-analysis(multi): ast -> analysis
     where
       if multi then
-        analysis := <get-project-entry;get-analysis-object> project-analyses
-        ; project-analyses := <get-project-constraint-analyses>
+          project-analyses := <get-project-constraint-analyses>
+        ; analysis := <get-project-entry;get-analysis-object> project-analyses
       else
         analysis := <nabl2-get-ast-analysis> ast
       end

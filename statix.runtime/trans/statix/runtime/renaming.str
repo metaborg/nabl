@@ -23,7 +23,7 @@ rules
 
   rename(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
     where
-      asts := <get-analysed-asts(multi)> selected-ast 
+      asts := <get-analysed-asts(multi)> selected-ast
       ; analysis := <get-project-analysis(multi)> selected-ast
       ; resolution-relation :=  <calc-resolution-relation-project(|analysis)> asts
       ; selected-index := <find-name-index(|selected-ast, resolution-relation)> selected-term
@@ -210,8 +210,8 @@ rules // Utility strategies
   get-project-analysis(multi): ast -> analysis
     where
       if multi then
-        analysis := <get-project-entry;get-analysis-object> project-analyses
-        ;project-analyses := <get-project-constraint-analyses>
+          project-analyses := <get-project-constraint-analyses>
+        ; analysis := <get-project-entry;get-analysis-object> project-analyses
       else
         analysis := <stx--get-ast-analysis> ast
       end
