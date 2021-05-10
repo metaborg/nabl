@@ -367,15 +367,30 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
                 final S oldSource = entry.getKey();
                 final S newSource = patches.getOrDefault(oldSource, oldSource);
+                final L label = entry.getValue();
+                final boolean local = isOwner(newSource);
                 targets.forEach(targetScope -> {
-                    newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
+                    final S target = patches.getOrDefault(targetScope, targetScope);
+                    if(local) {
+                        newScopeGraph.addEdge(newSource, label, target);
+                    } else {
+                        doAddEdge(self, newSource, label, target);
+                        localScopeGraph.addEdge(newSource, label, target);
+                    }
                 });
             });
             previousResult.localScopeGraph().getData().forEach((oldScope, datum) -> {
                 final S newScope = patches.getOrDefault(oldScope, oldScope);
-                newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
+                if(isOwner(newScope)) {
+                    newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
+                } else {
+                    doSetDatum(newScope, datum);
+                    localScopeGraph.setDatum(newScope, datum);
+                }
             });
+
             scopeGraph.set(scopeGraph.get().addAll(newScopeGraph.freeze()));
+            localScopeGraph.addAll(newScopeGraph);
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.

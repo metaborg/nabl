@@ -4,20 +4,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.AInitialState;
@@ -28,14 +24,13 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class IncrementalTest extends PRaffrayiTestBase {
-
-    private static final ILogger logger = LoggerUtils.logger(IncrementalTest.class);
 
     ///////////////////////////////////////////////////////////////////////////
     // Release conditions
@@ -568,6 +563,116 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue("Incorrect analysis", result.analysis());
         assertEquals("Invalid query count.", 1, result.queries().size());
         assertTrue("Query not recorded", result.queries().contains(query));
+    }
+
+    @Test(timeout = 10000) public void testReleasedUnit_ContainsLocalSG() throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final IDatum lbl = new IDatum() {};
+        final Scope d = new Scope("/.", 1);
+
+        final IScopeGraph.Immutable<Scope, IDatum, IDatum> sg = ScopeGraph.Immutable.<Scope, IDatum, IDatum>of()
+                .addEdge(root, lbl, d)
+                .setDatum(d, d);
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> previousResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+                .id("/.")
+                .scopeGraph(sg)
+                .localScopeGraph(sg)
+                .analysis(false)
+                .build();
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
+                    }
+
+                }, Set.Immutable.of(), AInitialState.cached(previousResult));
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+
+        assertFalse(result.analysis());
+        assertTrue(result.failures().isEmpty());
+
+        assertEquals(1, result.scopeGraph().getEdges().size());
+        assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.scopeGraph().getEdges(root, lbl)));
+        assertEquals(sg.getData(), result.scopeGraph().getData());
+
+        assertEquals(1, result.localScopeGraph().getEdges().size());
+        assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.localScopeGraph().getEdges(root, lbl)));
+        assertEquals(sg.getData(), result.localScopeGraph().getData());
+    }
+
+
+    @Test(timeout = 10000) public void testReleaseChild_ParentUpdateSG() throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final IDatum lbl = new IDatum() {};
+        final Scope d1 = new Scope("/./sub", 1);
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> parentResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+                .id("/.")
+                .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1))
+                .localScopeGraph(ScopeGraph.Immutable.of())
+                .analysis(false)
+                .build();
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> childResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+                .id("/./sub")
+                .addRootScopes(root)
+                .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+                .localScopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+                .analysis(false)
+                .build();
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> subResult = unit.add("sub", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                            @Override public IFuture<Boolean> run(
+                                    IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                    List<Scope> rootScopes, IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                                final Scope s1 = rootScopes.get(0);
+                                unit.initScope(s1, Arrays.asList(lbl), false);
+                                return unit.runIncremental(restarted -> {
+                                    final Scope dNew = unit.freshScope("d", Arrays.asList(), true, false);
+                                    unit.setDatum(dNew, d1);
+                                    unit.addEdge(s1, lbl, dNew);
+                                    unit.closeEdge(s1, lbl);
+                                    return CompletableFuture.completedFuture(true);
+                                });
+                            }}, Arrays.asList(s), AInitialState.cached(childResult));
+
+                        unit.closeScope(s);
+
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
+                                .thenCompose(res -> subResult.thenApply(sRes -> !res && !sRes.analysis() && sRes.failures().isEmpty()));
+                    }
+
+                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, IDatum, IDatum, ?> subResult = result.subUnitResults().get("sub");
+
+        assertTrue(result.analysis());
+        assertTrue(result.failures().isEmpty());
+
+        final Scope newRoot = subResult.rootScopes().get(0);
+
+        // Verify scope graph is correct
+        final List<Scope> allTargets = Lists.newArrayList(result.scopeGraph().getEdges(newRoot, lbl));
+
+        assertEquals(1, allTargets.size());
+        final Scope tgt = allTargets.get(0);
+
+        assertEquals(d1, subResult.scopeGraph().getData(tgt).get());
     }
 
     ///////////////////////////////////////////////////////////////////////////
