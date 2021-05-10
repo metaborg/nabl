@@ -19,4 +19,13 @@ public interface DataWf<S, L, D> {
         };
     }
 
+    static <S, L, D> DataWf<S, L, D> none() {
+        return new DataWf<S, L, D>() {
+            @SuppressWarnings("unused") @Override public IFuture<Boolean> wf(D d, ITypeCheckerContext<S, L, D> context,
+                    ICancel cancel) throws InterruptedException {
+                return CompletableFuture.completedFuture(false);
+            }
+        };
+    }
+
 }
