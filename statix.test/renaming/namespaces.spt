@@ -1,0 +1,229 @@
+module renaming/namespaces
+
+language StatixLang
+
+test rename namespace from dec [[
+resolve {}
+
+  programOk([
+    PartialClass("A", [
+      Field("x", Var("y"))
+    ]),
+    PartialClass("A", [
+      Field("y", Var("x"))
+    ])
+  ])
+
+signature
+
+  sorts ID = string
+
+  sorts Class constructors
+    PartialClass : ID * list(Member) -> Class
+
+  sorts Member constructors
+    Field : ID * Exp -> Member
+
+  sorts Exp constructors
+    Var : ID -> Exp
+
+  namespaces
+    [[Clazz]] : ID
+    Var   : ID
+
+  relations
+    class : occurrence -> scope
+
+  name-resolution
+    labels P E
+    resolve Clazz filter P* min $ < P
+    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
+
+rules
+
+  programOk : list(Class)
+
+  programOk(classes) :- {s}
+    new s,
+    classesOk(s, classes).
+
+rules
+
+  classesOk maps classOk(*, list(*))
+  classOk : scope * Class
+
+  classOk(s, PartialClass(x, members)) :- {s' pcs}
+    new s',
+    s' -P-> s,
+    !class[Clazz{x@x}, s'] in s,
+    class of Clazz{x@-} in s |-> pcs.
+
+]] run rename-test(|#1, "Class") to [[
+resolve {}
+
+  programOk([
+    PartialClass("A", [
+      Field("x", Var("y"))
+    ]),
+    PartialClass("A", [
+      Field("y", Var("x"))
+    ])
+  ])
+
+signature
+
+  sorts ID = string
+
+  sorts Class constructors
+    PartialClass : ID * list(Member) -> Class
+
+  sorts Member constructors
+    Field : ID * Exp -> Member
+
+  sorts Exp constructors
+    Var : ID -> Exp
+
+  namespaces
+    Class : ID
+    Var   : ID
+
+  relations
+    class : occurrence -> scope
+
+  name-resolution
+    labels P E
+    resolve Class filter P* min $ < P
+    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
+
+rules
+
+  programOk : list(Class)
+
+  programOk(classes) :- {s}
+    new s,
+    classesOk(s, classes).
+
+rules
+
+  classesOk maps classOk(*, list(*))
+  classOk : scope * Class
+
+  classOk(s, PartialClass(x, members)) :- {s' pcs}
+    new s',
+    s' -P-> s,
+    !class[Class{x@x}, s'] in s,
+    class of Class{x@-} in s |-> pcs.
+]]
+
+test rename namespace from ref [[
+resolve {}
+
+  programOk([
+    PartialClass("A", [
+      Field("x", Var("y"))
+    ]),
+    PartialClass("A", [
+      Field("y", Var("x"))
+    ])
+  ])
+
+signature
+
+  sorts ID = string
+
+  sorts Class constructors
+    PartialClass : ID * list(Member) -> Class
+
+  sorts Member constructors
+    Field : ID * Exp -> Member
+
+  sorts Exp constructors
+    Var : ID -> Exp
+
+  namespaces
+    Clazz : ID
+    Var   : ID
+
+  relations
+    class : occurrence -> scope
+
+  name-resolution
+    labels P E
+    resolve Clazz filter P* min $ < P
+    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
+
+rules
+
+  programOk : list(Class)
+
+  programOk(classes) :- {s}
+    new s,
+    classesOk(s, classes).
+
+rules
+
+  classesOk maps classOk(*, list(*))
+  classOk : scope * Class
+
+  classOk(s, PartialClass(x, members)) :- {s' pcs}
+    new s',
+    s' -P-> s,
+    !class[Clazz{x@x}, s'] in s,
+    class of [[Clazz]]{x@-} in s |-> pcs.
+
+]] run rename-test(|#1, "Class") to [[
+resolve {}
+
+  programOk([
+    PartialClass("A", [
+      Field("x", Var("y"))
+    ]),
+    PartialClass("A", [
+      Field("y", Var("x"))
+    ])
+  ])
+
+signature
+
+  sorts ID = string
+
+  sorts Class constructors
+    PartialClass : ID * list(Member) -> Class
+
+  sorts Member constructors
+    Field : ID * Exp -> Member
+
+  sorts Exp constructors
+    Var : ID -> Exp
+
+  namespaces
+    Class : ID
+    Var   : ID
+
+  relations
+    class : occurrence -> scope
+
+  name-resolution
+    labels P E
+    resolve Class filter P* min $ < P
+    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
+
+rules
+
+  programOk : list(Class)
+
+  programOk(classes) :- {s}
+    new s,
+    classesOk(s, classes).
+
+rules
+
+  classesOk maps classOk(*, list(*))
+  classOk : scope * Class
+
+  classOk(s, PartialClass(x, members)) :- {s' pcs}
+    new s',
+    s' -P-> s,
+    !class[Class{x@x}, s'] in s,
+    class of Class{x@-} in s |-> pcs.
+]]

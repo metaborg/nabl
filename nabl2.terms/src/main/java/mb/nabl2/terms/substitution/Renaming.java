@@ -2,7 +2,9 @@ package mb.nabl2.terms.substitution;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import java.util.List;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,10 @@ public class Renaming implements IRenaming {
         return renaming.values();
     }
 
+    @Override public Set<? extends Entry<ITermVar, ITermVar>> entrySet() {
+        return renaming.entrySet();
+    }
+
     @Override public ITermVar rename(ITermVar var) {
         return renaming.getOrDefault(var, var);
     }
@@ -44,12 +50,11 @@ public class Renaming implements IRenaming {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final List<ITerm> args = appl.getArgs();
-                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
-                for(ITerm arg : args) {
-                    newArgs.add(apply(arg));
+                final ImmutableList<ITerm> newArgs;
+                if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
+                    return appl;
                 }
-                return B.newAppl(appl.getOp(), newArgs.build(), appl.getAttachments());
+                return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
             },
             list -> apply(list),
             string -> string,
@@ -68,6 +73,14 @@ public class Renaming implements IRenaming {
             var -> (IListTerm) rename(var)
         ));
         // @formatter:on
+    }
+
+    @Override public Map<ITermVar, ITermVar> asMap() {
+        return Collections.unmodifiableMap(renaming);
+    }
+
+    @Override public ISubstitution.Immutable asSubstitution() {
+        return PersistentSubstitution.Immutable.of(renaming);
     }
 
     @Override public String toString() {

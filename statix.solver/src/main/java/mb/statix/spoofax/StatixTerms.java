@@ -6,7 +6,6 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,20 +19,19 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.optionals.Optionals;
+import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.tuple.Tuple3;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
-import mb.nabl2.regexp.IRegExp;
-import mb.nabl2.regexp.IRegExpBuilder;
-import mb.nabl2.regexp.impl.RegExpBuilder;
-import mb.nabl2.relations.IRelation;
-import mb.nabl2.relations.RelationDescription;
-import mb.nabl2.relations.RelationException;
-import mb.nabl2.relations.impl.Relation;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
@@ -44,10 +42,22 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.substitution.FreshVars;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.Tuple2;
-import mb.nabl2.util.Tuple3;
+import mb.nabl2.terms.unification.u.IUnifier;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
+import mb.scopegraph.oopsla20.path.IScopePath;
+import mb.scopegraph.oopsla20.path.IStep;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.scopegraph.regexp.IRegExp;
+import mb.scopegraph.regexp.IRegExpBuilder;
+import mb.scopegraph.regexp.impl.RegExpBuilder;
+import mb.scopegraph.relations.IRelation;
+import mb.scopegraph.relations.RelationDescription;
+import mb.scopegraph.relations.RelationException;
+import mb.scopegraph.relations.impl.Relation;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -71,13 +81,7 @@ import mb.statix.constraints.messages.Message;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.TermPart;
 import mb.statix.constraints.messages.TextPart;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.path.IResolutionPath;
-import mb.statix.scopegraph.path.IScopePath;
-import mb.statix.scopegraph.path.IStep;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
@@ -582,15 +586,51 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
-        return M.tuple3(Scope.matcher(), M.option(term()), M.map(label(), M.listElems(Scope.matcher())),
+        return M.tuple3(Scope.matcher(), M.option(M.term()), M.map(label(), M.listElems(Scope.matcher())),
                 (t, scope, maybeDatum, edges) -> {
                     return Tuple3.of(scope, maybeDatum, edges);
                 });
     }
 
+    public static ITerm toTerm(IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph, IUnifier.Immutable unifier) {
+        final Map<Scope, ITerm> dataEntries = Maps.newHashMap(); // Scope * ITerm
+        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = Maps.newHashMap(); // Scope * (Label * Scope)
+
+        scopeGraph.getData().forEach((s, d) -> {
+            d = unifier.findRecursive(d);
+            dataEntries.put(s, d);
+        });
+
+        scopeGraph.getEdges().forEach((src_lbl, tgt) -> {
+            ListMultimap<ITerm, Scope> edges = edgeEntries.getOrDefault(src_lbl.getKey(), LinkedListMultimap.create());
+            edges.putAll(src_lbl.getValue(), tgt);
+            edgeEntries.put(src_lbl.getKey(), edges);
+        });
+
+        final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * ITerm? * [Label * [Scope]]]
+        for(Scope scope : Sets.union(edgeEntries.keySet(), dataEntries.keySet())) {
+            final ITerm data = Optional.ofNullable(dataEntries.get(scope)).map(d -> B.newAppl("Some", d))
+                    .orElse(B.newAppl("None"));
+
+            final ITerm edges = Optional.ofNullable(edgeEntries.get(scope)).map(es -> {
+                final List<ITerm> lblTgts = Lists.newArrayList();
+                es.asMap().entrySet().forEach(ee -> {
+                    final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicateVars(ee.getValue())));
+                    lblTgts.add(lbl_tgt);
+                });
+                return B.newList(lblTgts);
+            }).orElse(B.newList());
+
+            scopeEntries.add(B.newTuple(explicateVars(scope), data, edges));
+        }
+
+        // @formatter:on
+        return B.newList(scopeEntries);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
-    public static ITerm explicate(ITerm term) {
+    public static ITerm explode(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
@@ -605,27 +645,27 @@ public class StatixTerms {
                     }
                     case OCCURRENCE_OP: {
                         final ITerm ns = appl.getArgs().get(0);
-                        final List<? extends ITerm> args = M.listElems().map(ts -> explicate(ts)).match(appl.getArgs().get(1))
+                        final List<? extends ITerm> args = M.listElems().map(ts -> explode(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
-                        final ITerm pos = explicatePosition(appl.getArgs().get(2));
+                        final ITerm pos = explodePosition(appl.getArgs().get(2));
                         return B.newAppl(appl.getOp(), ImmutableList.of(ns, B.newList(args), pos), term.getAttachments());
                     }
                     default: {
-                        final List<ITerm> args = explicate(appl.getArgs());
+                        final List<ITerm> args = explode(appl.getArgs());
                         return B.newAppl("Op", ImmutableList.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
                     }
                 }
             },
-            list -> explicate(list),
+            list -> explode(list),
             string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
             integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
             blob -> B.newString(blob.toString(), term.getAttachments()),
-            var -> explicate(var)
+            var -> explode(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
     }
 
-    private static ITerm explicate(IListTerm list) {
+    private static ITerm explode(IListTerm list) {
         // @formatter:off
         final List<ITerm> terms = Lists.newArrayList();
         final List<IAttachments> attachments = Lists.newArrayList();
@@ -633,7 +673,7 @@ public class StatixTerms {
         while(list != null) {
             list = list.match(ListTerms.cases(
                 cons -> {
-                    terms.add(explicate(cons.getHead()));
+                    terms.add(explode(cons.getHead()));
                     attachments.add(cons.getAttachments());
                     return cons.getTail();
                 },
@@ -642,7 +682,7 @@ public class StatixTerms {
                     return null;
                 },
                 var -> {
-                    varTail.set(explicate(var));
+                    varTail.set(explode(var));
                     attachments.add(Attachments.empty());
                     return null;
                 }
@@ -657,30 +697,48 @@ public class StatixTerms {
         }
     }
 
-    private static ITerm explicate(ITermVar var) {
-        return B.newAppl("Var", Arrays.asList(B.newString(var.getName())));
+    public static ITerm explode(ITermVar var) {
+        if(!var.getResource().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Exploding a variable with a resource is not possible. Exploding a unification variable instead of a syntax variable?");
+        }
+        return B.newAppl("Var", B.newString(var.getName()));
     }
 
-    public static List<ITerm> explicate(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicate).collect(ImmutableList.toImmutableList());
+    private static List<ITerm> explode(Iterable<? extends ITerm> terms) {
+        return Iterables2.stream(terms).map(StatixTerms::explode).collect(ImmutableList.toImmutableList());
     }
 
-    public static IListTerm explicateList(Iterable<? extends ITerm> terms) {
-        return B.newList(explicate(terms));
+    private static ITerm explodePosition(ITerm pos) {
+        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explode(pos)));
     }
 
-    public static IListTerm explicateMapEntries(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries,
-            IUniDisunifier unifier) {
-        return B.newList(Iterables2.stream(entries)
-                .map(e -> B.newTuple(explicate(e.getKey()), explicate(unifier.findRecursive(e.getValue()))))
-                .collect(ImmutableList.toImmutableList()));
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static ITerm explicateVars(ITerm term) {
+        // @formatter:off
+        return T.sometd(M.cases(
+            M.cons(M.term(), M.var(), (t, hd, tl) -> B.newAppl("Conc", explicateVars(hd), explicateVar(tl))),
+            M.var(StatixTerms::explicateVar)
+        )::match).apply(term);
+        // @formatter:on
     }
 
-    public static ITerm explicate(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
-        return B.newTuple(explicate(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    private static ITerm explicateVar(ITermVar var) {
+        return B.newAppl("Var", B.newString(var.getResource()), B.newString(var.getName()));
     }
 
-    public static ITerm explicate(IScopePath<Scope, ITerm> path, Set<ITerm> relationLabels) {
+    public static List<ITerm> explicateVars(Iterable<? extends ITerm> terms) {
+        return Iterables2.stream(terms).map(StatixTerms::explicateVars).collect(ImmutableList.toImmutableList());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static ITerm pathToTerm(IResolutionPath<Scope, ITerm, ITerm> path, Set<ITerm> relationLabels) {
+        return B.newTuple(pathToTerm(path.getPath(), relationLabels), /*path.getLabel(),*/ B.newTuple(path.getDatum()));
+    }
+
+    public static ITerm pathToTerm(IScopePath<Scope, ITerm> path, Set<ITerm> relationLabels) {
         ITerm pathTerm = B.newAppl(PATH_EMPTY_OP, path.getSource());
         final Iterator<IStep<Scope, ITerm>> it = path.iterator();
         while(it.hasNext()) {
@@ -695,10 +753,6 @@ public class StatixTerms {
             throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
-    }
-
-    private static ITerm explicatePosition(ITerm pos) {
-        return M.appl0(NOID_OP).match(pos).orElse(B.newAppl(WITHID_OP, explicate(pos)));
     }
 
 }

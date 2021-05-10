@@ -36,6 +36,7 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.spec.ApplyMode.Safety;
 
 /**
  * A special rule application that supports indexing in its parameters. The index allows grouping based on which
@@ -99,10 +100,10 @@ public class IndexedRuleApplication {
             return Optional.empty();
         }
         if(constraint != null) {
-            final State state = State.of(spec);
+            final State state = State.of();
             final NullDebugContext debug = new NullDebugContext();
-            final SolverResult solveResult =
-                    Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(), new NullProgress());
+            final SolverResult solveResult = Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(),
+                    new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
             try {
                 if(!Solver.entailed(state, solveResult, debug)) {
                     return Optional.empty();
@@ -132,7 +133,7 @@ public class IndexedRuleApplication {
     }
 
     public static Optional<IndexedRuleApplication> of(Spec spec, Rule rule) throws Delay, InterruptedException {
-        final IState.Transient state = State.of(spec).melt();
+        final IState.Transient state = State.of().melt();
         final Renaming.Builder _renaming = Renaming.builder();
         for(ITermVar freeVar : rule.freeVars()) {
             _renaming.put(freeVar, state.freshVar(freeVar));
@@ -162,13 +163,14 @@ public class IndexedRuleApplication {
         final IState.Immutable newState = _state.freeze();
 
         final ApplyResult applyResult;
-        if((applyResult =
-                RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED).orElse(null)) == null) {
+        if((applyResult = RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED, Safety.SAFE)
+                .orElse(null)) == null) {
             return Optional.empty();
         }
 
-        final SolverResult solveResult = Solver.solve(spec, newState, applyResult.body(), new NullDebugContext(),
-                new NullCancel(), new NullProgress());
+        final IConstraint bodyAsConstraint = applyResult.body();
+        final SolverResult solveResult = Solver.solve(spec, newState, bodyAsConstraint, new NullDebugContext(),
+                new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
         if(solveResult.hasErrors()) {
             return Optional.empty();
         }
@@ -192,7 +194,7 @@ public class IndexedRuleApplication {
             ira = new IndexedRuleApplication(spec, newParams, null, index);
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
-            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.getVars(), newParamVars);
+            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.freeVars(), newParamVars);
             if(!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }

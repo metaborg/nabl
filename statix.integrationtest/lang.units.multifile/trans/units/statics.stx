@@ -17,9 +17,17 @@ rules
   projectOk(s).
 
 
-  unitOk : scope * Mem
+  fileOk : scope * Unit
 
-  unitOk(s, mem) :-
+  fileOk(s, unit) :-
+    unitOk(s, unit).
+
+
+rules
+
+  unitOk : scope * Unit
+
+  unitOk(s, Mem2Unit(mem)) :-
     memOk(s, mem, s).
 
 

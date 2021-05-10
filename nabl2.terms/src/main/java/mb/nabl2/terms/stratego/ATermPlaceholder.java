@@ -1,17 +1,12 @@
 package mb.nabl2.terms.stratego;
 
-import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import mb.nabl2.terms.IAttachments;
-import mb.nabl2.terms.ITerm;
+import java.util.Optional;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.jsglr.client.imploder.IToken;
-import org.spoofax.jsglr.client.imploder.ImploderAttachment;
-import org.spoofax.terms.attachments.OriginAttachment;
 
-import java.util.Optional;
+import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.ITerm;
 
 /**
  * A term attachment for placeholders.

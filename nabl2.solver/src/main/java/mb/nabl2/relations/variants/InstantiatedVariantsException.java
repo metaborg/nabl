@@ -1,6 +1,6 @@
 package mb.nabl2.relations.variants;
 
-import mb.nabl2.relations.RelationException;
+import mb.scopegraph.relations.RelationException;
 
 public class InstantiatedVariantsException extends RelationException {
 

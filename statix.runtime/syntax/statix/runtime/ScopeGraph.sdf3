@@ -1,0 +1,67 @@
+module statix/runtime/ScopeGraph
+
+imports
+
+  statix/API
+
+  statix/runtime/ATerm
+
+
+context-free syntax
+
+  Stx-ScopeGraph = <
+    scope graph
+      <{Stx-ScopeEntry "\n"}*>
+  >
+
+  Stx-ScopeEntry = <
+    <Stx-Scope><Stx-DataEntry> {
+      <{Stx-EdgeEntry "\n"}*>
+    }
+  >
+
+  Stx-ScopeEntry.InlinedEntry = <
+    <Stx-Scope> {
+      relations {
+        <{Stx-EdgeEntry "\n"}*>
+      }
+      edges {
+        <{Stx-EdgeEntry "\n"}*>
+      }
+    }
+  >
+
+  Stx-DataEntry.None =
+  Stx-DataEntry.Some = < : <Stx-ATerm>>
+
+  Stx-EdgeEntry = <<Stx-Label> : <Stx-EntryValues>>
+
+  Stx-EntryValues = {Stx-ATerm "\n"}*
+
+  // duplicate of RelRef & Label in statix.lang
+  Stx-Label.Decl  = "decl"
+  Stx-Label.Label = Stx-STRING
+
+
+context-free syntax
+
+  Stx-Diff.Diff = <
+    scope graph diff {
+      matched scopes <{Stx-MatchEntry "; "}*>
+      added {
+        <Stx-Changes>
+      }
+      removed {
+        <Stx-Changes>
+      }
+    }
+  >
+
+  Stx-Changes.Changes = <
+    scopes <{Stx-ScopeEntry "\n"}*>
+    edges  <{Stx-EdgeEntry "\n"}*>
+  >
+
+  Stx-MatchEntry.MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-ScopeEntry.ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry.EdgeEntry   = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]

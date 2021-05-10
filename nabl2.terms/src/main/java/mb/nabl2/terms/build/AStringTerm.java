@@ -4,12 +4,13 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.util.CapsuleUtil;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -25,6 +26,9 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
         return CapsuleUtil.immutableSet();
     }
 
+    @Override public void visitVars(@SuppressWarnings("unused") Action1<ITermVar> onVar) {
+    }
+
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseString(this);
     }
@@ -33,15 +37,9 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
         return cases.caseString(this);
     }
 
-    private volatile int hashCode;
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(getValue());
-            hashCode = result;
-        }
-        return result;
+        return Objects.hash(getValue());
     }
 
     @Override public boolean equals(Object other) {
@@ -56,6 +54,7 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
         return Objects.equals(this.getValue(), that.getValue());
         // @formatter:on
     }
+
 
     @Override public String toString() {
         return "\"" + Terms.escapeString(getValue()) + "\"";

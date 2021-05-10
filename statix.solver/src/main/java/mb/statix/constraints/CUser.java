@@ -7,6 +7,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
@@ -14,7 +17,6 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -87,15 +89,29 @@ public class CUser implements IConstraint, Serializable {
         return cases.caseUser(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
-        for(ITerm a : args) {
-            vars.__insertAll(a.getVars());
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        args.forEach(t -> t.getVars().forEach(onFreeVar::apply));
+        if(message != null) {
+            message.visitVars(onFreeVar);
         }
-        return vars.freeze();
     }
 
     @Override public CUser apply(ISubstitution.Immutable subst) {
+        return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+    }
+
+    @Override public CUser unsafeApply(ISubstitution.Immutable subst) {
         return new CUser(name, subst.apply(args), cause, message == null ? null : message.apply(subst),
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
     }

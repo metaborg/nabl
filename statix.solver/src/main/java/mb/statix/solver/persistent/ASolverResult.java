@@ -26,6 +26,8 @@ import mb.statix.spec.Spec;
 @Serial.Version(42L)
 public abstract class ASolverResult {
 
+    @Value.Parameter public abstract Spec spec();
+
     @Value.Parameter public abstract IState.Immutable state();
 
     @Value.Parameter public abstract Map<IConstraint, IMessage> messages();
@@ -53,13 +55,7 @@ public abstract class ASolverResult {
     }
 
     public Delay delay() {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
-        delays().values().stream().forEach(d -> {
-            vars.addAll(d.vars());
-            scopes.addAll(d.criticalEdges());
-        });
-        return new Delay(vars.build(), scopes.build());
+        return Delay.of(delays().values());
     }
 
     public IConstraint delayed() {
@@ -67,7 +63,7 @@ public abstract class ASolverResult {
     }
 
     public static SolverResult of(Spec spec) {
-        return SolverResult.of(State.of(spec), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
+        return SolverResult.of(spec, State.of(), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
                 ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
     }
 

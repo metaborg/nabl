@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.Lists;
@@ -28,8 +30,8 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -373,50 +375,59 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     // toString(ITerm)
     ///////////////////////////////////////////
 
-    @Override public String toString(final ITerm term) {
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1);
+    @Override public String toString(final ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n) {
-        if(n < 0) {
-            throw new IllegalArgumentException("Depth must be positive, but is " + n);
-        }
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), n);
+    @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), depth, specializedTermFormatter);
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth,
+            final SpecializedTermFormatter specializedTermFormatter) {
         if(maxDepth == 0) {
             return "…";
         }
+        final PartialFunction1<ITerm, String> tf = t -> specializedTermFormatter.formatSpecialized(term, this, st -> {
+            return toString(st, stack, visited, maxDepth - 1, specializedTermFormatter);
+        });
         // @formatter:off
-        return term.match(Terms.cases(
-            appl -> appl.getOp() + (!appl.getArgs().isEmpty() ? "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1) + ")" : ""),
-            list -> toString(list, stack, visited, maxDepth),
-            string -> string.toString(),
-            integer -> integer.toString(),
-            blob -> blob.toString(),
-            var -> toString(var, stack, visited, maxDepth)
+        return term.<String>match(Terms.cases(
+            appl -> tf.apply(appl).orElseGet(() -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1, specializedTermFormatter) + ")"),
+            list -> tf.apply(list).orElseGet(() -> toString(list, stack, visited, maxDepth, specializedTermFormatter)),
+            string -> tf.apply(string).orElseGet(() -> string.toString()),
+            integer -> tf.apply(integer).orElseGet(() -> integer.toString()),
+            blob -> tf.apply(blob).orElseGet(() -> blob.toString()),
+            var -> toString(var, stack, visited, maxDepth, specializedTermFormatter)
         ));
         // @formatter:on
     }
 
     private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth,
+            final SpecializedTermFormatter specializedTermFormatter) {
         if(maxDepth == 0) {
             return "…";
         }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
+        int remaining = maxDepth;
         sb.append("[");
         while(list != null) {
+            if(remaining == 0) {
+                if(list.match(ListTerms.<Boolean>cases().nil(nil -> false).otherwise(l -> true))) {
+                    sb.append("|…");
+                }
+                break;
+            }
             list = list.match(ListTerms.cases(
             // @formatter:off
                 cons -> {
                     if(tail.getAndSet(true)) {
                         sb.append(",");
                     }
-                    sb.append(toString(cons.getHead(), stack, visited, maxDepth - 1));
+                    sb.append(toString(cons.getHead(), stack, visited, maxDepth - 1, specializedTermFormatter));
                     return cons.getTail();
                 },
                 nil -> {
@@ -424,18 +435,20 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
                 },
                 var -> {
                     sb.append("|");
-                    sb.append(toString(var, stack, visited, maxDepth - 1));
+                    sb.append(toString(var, stack, visited, maxDepth - 1, specializedTermFormatter));
                     return null;
                 }
                 // @formatter:on
             ));
+            remaining--;
         }
         sb.append("]");
         return sb.toString();
     }
 
     private String toString(final ITermVar var, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth,
+            final SpecializedTermFormatter specializedTermFormatter) {
         if(maxDepth == 0) {
             return "…";
         }
@@ -446,7 +459,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             visited.put(rep, null);
             final ITerm term = terms().get(rep);
             if(term != null) {
-                final String termString = toString(term, stack, visited, maxDepth);
+                final String termString = toString(term, stack, visited, maxDepth, specializedTermFormatter);
                 toString = (stack.get(rep) != null ? "μ" + stack.get(rep) + "." : "") + termString;
             } else {
                 toString = rep.toString();
@@ -470,14 +483,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     }
 
     private String toStrings(final Iterable<ITerm> terms, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth) {
+            final java.util.Map<ITermVar, String> visited, final int maxDepth,
+            final SpecializedTermFormatter specializedTermFormatter) {
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
         for(ITerm term : terms) {
             if(tail.getAndSet(true)) {
                 sb.append(",");
             }
-            sb.append(toString(term, stack, visited, maxDepth));
+            sb.append(toString(term, stack, visited, maxDepth, specializedTermFormatter));
         }
         return sb.toString();
     }
@@ -578,12 +592,12 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.size(term);
         }
 
-        @Override public String toString(ITerm term) {
-            return unifier.toString(term);
+        @Override public String toString(ITerm term, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n) {
-            return unifier.toString(term, n);
+        @Override public String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, depth, specializedTermFormatter);
         }
 
         @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2,

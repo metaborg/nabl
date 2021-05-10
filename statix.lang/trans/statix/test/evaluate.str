@@ -52,12 +52,17 @@ signature
   constructors
     SUCCEEDS : TestResult
     FAILS    : TestResult
+    WARNS    : TestResult
 
 rules
 
   evaluate-test: ast -> result
-    with if EvalResult(_, [], _, _) := <evaluate> ast then
-           result := SUCCEEDS()
+    with if EvalResult(_, [], w*, n*) := <evaluate> ast then
+           if [] := w* then
+             result := SUCCEEDS()
+           else
+             result := WARNS()
+           end
          else
            result := FAILS()
          end
@@ -70,7 +75,8 @@ rules
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
          spec'  := <stx--local-spec-from-spec> spec;
          level  := <stx--log-level>;
+         config := <stx--project-config>;
          body'  := <qualify-names(|a);eliminate-all;stx--index-ast(|""/*path*/)> body;
          s@Solution(_, a') := <stx--solve-constraint(|spec', level)> body';
-         (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages> a';
+         (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a';
          result := EvalResult(s, error*, warning*, note*)

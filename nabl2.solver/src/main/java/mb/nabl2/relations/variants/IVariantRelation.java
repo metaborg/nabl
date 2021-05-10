@@ -1,6 +1,6 @@
 package mb.nabl2.relations.variants;
 
-import mb.nabl2.relations.IRelation;
+import mb.scopegraph.relations.IRelation;
 
 public interface IVariantRelation<T> extends IRelation<T> {
 

@@ -2,8 +2,9 @@ package mb.nabl2.solver.exceptions;
 
 import java.util.Set;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.util.CapsuleUtil;
 
 public class VariableDelayException extends DelayException {
 

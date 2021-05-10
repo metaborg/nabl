@@ -1,0 +1,43 @@
+module statix/runtime/ATerm
+
+imports
+
+  statix/API
+
+// ATerm is a sort for any Stratego term. Pretty printing is generic, but specialized
+// for Statix specific constructors such as scopes. This is achieved by special pretty
+// printing strategies in statix/runtime/pp.str. The productions here and strategies
+// there must be kept in sync!
+
+/*context-free*/ sorts
+
+  Stx-Occurrence
+  Stx-OccurrencePosition
+  Stx-Scope
+  Stx-TermIndex
+  Stx-ATerm
+
+
+context-free syntax
+
+  Stx-Occurrence.StxOccurrence = <<Stx-STRING>{<{Stx-ATerm ", "}*> <Stx-TermIndex>}>
+
+  Stx-OccurrencePosition = Stx-TermIndex
+
+  Stx-Scope.Scope = <#<Stx-STRING>-<Stx-STRING>>
+
+  Stx-TermIndex.TermIndex = <@<Stx-STRING>-<Stx-INT>>
+  Stx-TermIndex.NoId      = <@->
+
+  Stx-Var.Var = <?<Stx-STRING>-<Stx-STRING>>
+
+
+context-free syntax
+
+  // Stx-ATerm should not have direct productions, only injections!
+
+  Stx-ATerm = Stx-Var
+  Stx-ATerm = Stx-Scope
+  Stx-ATerm = Stx-Occurrence
+  Stx-ATerm = Stx-TermIndex
+

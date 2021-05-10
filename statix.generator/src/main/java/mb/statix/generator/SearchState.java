@@ -2,6 +2,7 @@ package mb.statix.generator;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.log.ILogger;
@@ -15,16 +16,15 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
@@ -170,7 +170,7 @@ public class SearchState {
         final StringBuilder sb = new StringBuilder();
         print(ln -> {
             sb.append(ln).append("\n");
-        }, (t, u) -> new UnifierFormatter(u, 2).format(t));
+        }, (t, u) -> Solver.shallowTermFormatter(u, 2).format(t));
         return sb.toString();
     }
 

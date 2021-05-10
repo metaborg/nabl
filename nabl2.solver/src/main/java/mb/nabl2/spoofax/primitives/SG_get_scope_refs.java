@@ -7,9 +7,9 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class SG_get_scope_refs extends AnalysisPrimitive {
 

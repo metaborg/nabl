@@ -17,13 +17,6 @@ import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
-import mb.nabl2.scopegraph.ScopeGraphReducer;
-import mb.nabl2.scopegraph.esop.CriticalEdge;
-import mb.nabl2.scopegraph.esop.IEsopNameResolution;
-import mb.nabl2.scopegraph.esop.IEsopScopeGraph;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.Solution;
@@ -49,6 +42,13 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.util.collections.IProperties;
+import mb.scopegraph.pepm16.ScopeGraphReducer;
+import mb.scopegraph.pepm16.esop15.CriticalEdge;
+import mb.scopegraph.pepm16.esop15.IEsopNameResolution;
+import mb.scopegraph.pepm16.esop15.IEsopScopeGraph;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 

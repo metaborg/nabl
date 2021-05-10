@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Map;
@@ -17,7 +18,6 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.TermSize;
-import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UniDisunifierFiniteTest {
@@ -440,6 +440,29 @@ public class UniDisunifierFiniteTest {
         assertEquals(CapsuleUtil.toSet(a, b), phi.varSet());
         assertEquals(CapsuleUtil.toSet(), phi.domainSet());
         assertEquals(CapsuleUtil.toSet(a, b), phi.rangeSet());
+    }
+
+    @Test(timeout = 10000) public void testUnifyWithUnrelatedExistingRigidDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.unify(b, y, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyRigidImpliedByExistingDiseq()
+            throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, x));
+        assertPresent(phi.disunify(a, x, v -> v.equals(a)));
+    }
+
+    @Test(timeout = 10000) public void testDisunifyVariableTwice() throws OccursException, RigidException {
+        IUniDisunifier.Transient phi = PersistentUniDisunifier.Immutable.of().melt();
+        assertPresent(phi.disunify(a, b));
+        assertPresent(phi.disunify(a, B.newList(c)));
+        assertAbsent(phi.unify(a, b));
+        assertAbsent(phi.unify(a, B.newList(c)));
+        assertPresent(phi.unify(b, B.newList(c)));
     }
 
 }

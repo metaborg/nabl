@@ -6,6 +6,8 @@ import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -16,14 +18,11 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
-import mb.statix.scopegraph.IScopeGraph;
-import mb.statix.scopegraph.reference.ScopeGraph;
-import mb.statix.scopegraph.terms.Scope;
+import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.ITermProperty;
-import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
@@ -38,7 +37,7 @@ public abstract class AState implements IState.Immutable {
         final Set.Immutable<Scope> scopes = scopes().union(other.scopes());
         final IUniDisunifier.Immutable unifier;
         try {
-            unifier = unifier().unify(other.unifier()).map(IUniDisunifier.Result::unifier)
+            unifier = unifier().uniDisunify(other.unifier()).map(IUniDisunifier.Result::unifier)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot merge unifiers."));
         } catch(OccursException e) {
             throw new IllegalArgumentException("Cannot merge unifiers.");
@@ -122,7 +121,7 @@ public abstract class AState implements IState.Immutable {
 
     @Value.Parameter @Override public abstract Map.Immutable<Tuple2<TermIndex, ITerm>, ITermProperty> termProperties();
 
-    public static State of(Spec spec) {
+    public static State of() {
         return State.of(Unifiers.Immutable.of(), ScopeGraph.Immutable.of(), Map.Immutable.of());
     }
 

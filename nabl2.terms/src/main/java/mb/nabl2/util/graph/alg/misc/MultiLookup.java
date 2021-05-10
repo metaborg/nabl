@@ -1,6 +1,7 @@
 package mb.nabl2.util.graph.alg.misc;
 
-import mb.nabl2.util.collections.MultiSetMap;
+import org.metaborg.util.collection.MultiSetMap;
+
 import mb.nabl2.util.graph.alg.misc.memory.IMemoryView;
 import mb.nabl2.util.graph.alg.misc.memory.MapBackedMemoryView;
 

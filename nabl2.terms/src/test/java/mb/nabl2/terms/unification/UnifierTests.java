@@ -21,7 +21,7 @@ public class UnifierTests {
 
     public static void assertSame(IUniDisunifier.Immutable phi, IUniDisunifier.Immutable theta) {
         try {
-            assertTrue(phi.unify(theta).map(r -> r.result().isEmpty()).orElse(false));
+            assertTrue(phi.uniDisunify(theta).map(r -> r.result().isEmpty()).orElse(false));
         } catch(OccursException e) {
             throw new AssertionError();
         }

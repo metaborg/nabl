@@ -25,6 +25,12 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.LabelOrder;
+import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.RegExpLabelWF;
+import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CResolveQuery;
@@ -40,16 +46,10 @@ import mb.statix.generator.scopegraph.Match;
 import mb.statix.generator.scopegraph.NameResolution;
 import mb.statix.generator.util.RandomUtil;
 import mb.statix.generator.util.Subsets;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.scopegraph.reference.ResolutionException;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
-import mb.statix.solver.query.RegExpLabelWF;
-import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spoofax.StatixTerms;
 
 public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQuery>, SearchState> {
@@ -71,7 +71,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
 
         final Boolean isAlways;
         try {
-            isAlways = query.min().getDataEquiv().isAlways(ctx.spec()).orElse(null);
+            isAlways = query.min().getDataEquiv().isAlways().orElse(null);
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -81,7 +81,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
 
         final ICompleteness.Immutable completeness = input.completeness();
         final LabelWF<ITerm> labelWF = RegExpLabelWF.of(query.filter().getLabelWF());
-        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder(query.min().getLabelOrder());
+        final LabelOrder<ITerm> labelOrd = new RelationLabelOrder<>(query.min().getLabelOrder());
         final DataWF<ITerm, CEqual> dataWF = new ResolveDataWF(state, completeness, query.filter().getDataWF(), query);
         final Predicate2<Scope, EdgeOrData<ITerm>> isComplete =
                 (s, l) -> completeness.isComplete(s, l, state.unifier());
@@ -139,9 +139,9 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                         entry.getValue().forEach(subEnvBuilder::reject);
                         env.rejects.forEach(subEnvBuilder::reject);
                         final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
-                        final List<ITerm> pathTerms =
-                                subEnv.matches.stream().map(m -> StatixTerms.explicate(m.path, ctx.spec().dataLabels()))
-                                        .collect(ImmutableList.toImmutableList());
+                        final List<ITerm> pathTerms = subEnv.matches.stream()
+                                .map(m -> StatixTerms.pathToTerm(m.path, ctx.spec().dataLabels()))
+                                .collect(ImmutableList.toImmutableList());
                         final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
                         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
                         flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(constraints::add);
@@ -149,7 +149,8 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                                 .forEach(condition -> constraints
                                         .add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
                                                 condition.cause().orElse(null), condition.message().orElse(null))));
-                        final SearchState newState = input.update(ctx.spec(), constraints.build(), Iterables2.singleton(query));
+                        final SearchState newState =
+                                input.update(ctx.spec(), constraints.build(), Iterables2.singleton(query));
                         return new SearchNode<>(ctx.nextNodeId(), newState, node,
                                 "resolve[" + (idx + 1) + "/" + count.get() + "]");
                     }));

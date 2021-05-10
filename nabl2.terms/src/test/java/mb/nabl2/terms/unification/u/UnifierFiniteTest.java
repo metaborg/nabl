@@ -1,6 +1,7 @@
 package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.unification.UnifierTests.assertContains;
 import static mb.nabl2.terms.unification.UnifierTests.assertNotContains;
 import static mb.nabl2.terms.unification.UnifierTests.assertPresent;
@@ -13,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -20,8 +22,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
+import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
-import mb.nabl2.util.CapsuleUtil;
 
 @SuppressWarnings("unused")
 public class UnifierFiniteTest {
@@ -382,6 +384,16 @@ public class UnifierFiniteTest {
             assertContains(b, ex.vars());
             assertNotContains(a, ex.vars());
         }
+    }
+
+    @Test(timeout = 10000) public void testSpecializedToString() throws OccursException {
+        SpecializedTermFormatter stf = (t, u, fmt) -> M.appl1(f, M.term(), (t0, t1) -> {
+            return "`f`(" + fmt.format(t1) + ")";
+        }).match(t, u);
+        IUnifier.Transient phi = PersistentUnifier.Immutable.of(false).melt();
+        assertPresent(phi.unify(a, B.newAppl(f, b)));
+        assertPresent(phi.unify(b, B.newAppl(g, B.newAppl(f, c))));
+        assertEquals("`f`(g(`f`(?c)))", phi.toString(a, stf));
     }
 
 }
