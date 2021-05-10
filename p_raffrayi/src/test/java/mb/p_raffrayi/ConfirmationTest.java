@@ -42,7 +42,7 @@ import mb.scopegraph.oopsla20.reference.ScopeGraph;
 public class ConfirmationTest extends PRaffrayiTestBase {
 
     private static final <R> UnitResult<Scope, IDatum, IDatum, R> emptyResult(String id, R analysis) {
-        return UnitResult.of(id, ScopeGraph.Immutable.of(), new HashSet<>(), new ArrayList<>(), analysis, new ArrayList<>(), new HashMap<>(), null);
+        return UnitResult.of(id, ScopeGraph.Immutable.of(), ScopeGraph.Immutable.of(), new HashSet<>(), new ArrayList<>(), analysis, new ArrayList<>(), new HashMap<>(), null);
     }
 
     private static final <R> IUnitResult<Scope, IDatum, IDatum, R> resultWithQueries(String id, R analysis, Set<IRecordedQuery<Scope, IDatum, IDatum>> queries) {

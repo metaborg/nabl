@@ -22,6 +22,8 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
 
+    @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> localScopeGraph();
+
     @Value.Parameter @Override public abstract Set<IRecordedQuery<S, L, D>> queries();
 
     @Value.Parameter @Override public abstract List<S> rootScopes();

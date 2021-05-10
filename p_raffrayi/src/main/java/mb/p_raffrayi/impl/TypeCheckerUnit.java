@@ -37,6 +37,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -56,6 +57,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private final IScopeImpl<S, D> scopeImpl; // TODO: remove field, and move methods to IUnitContext?
     private final IScopeGraphDifferOps<S, D> differOps;
+
+    private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
 
     private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
     private final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
@@ -218,12 +221,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertActive();
 
         doSetDatum(scope, datum);
+        localScopeGraph.setDatum(scope, datum);
     }
 
     @Override public void addEdge(S source, L label, S target) {
         assertActive();
 
         doAddEdge(self, source, label, target);
+        localScopeGraph.addEdge(source, label, target);
     }
 
     @Override public void closeEdge(S source, L label) {
@@ -359,14 +364,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
-            previousResult.scopeGraph().getEdges().forEach((entry, targets) -> {
+            previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
                 final S oldSource = entry.getKey();
                 final S newSource = patches.getOrDefault(oldSource, oldSource);
                 targets.forEach(targetScope -> {
                     newScopeGraph.addEdge(newSource, entry.getValue(), patches.getOrDefault(targetScope, targetScope));
                 });
             });
-            previousResult.scopeGraph().getData().forEach((oldScope, datum) -> {
+            previousResult.localScopeGraph().getData().forEach((oldScope, datum) -> {
                 final S newScope = patches.getOrDefault(oldScope, oldScope);
                 newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
             });
@@ -432,6 +437,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             super.handleDeadlock(nodes);
             resume();
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Local result
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override protected Immutable<S, L, D> localScopeGraph() {
+        return localScopeGraph.freeze();
     }
 
     ///////////////////////////////////////////////////////////////////////////

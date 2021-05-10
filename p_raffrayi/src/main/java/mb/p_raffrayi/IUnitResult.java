@@ -14,6 +14,10 @@ public interface IUnitResult<S, L, D, R> {
 
     IScopeGraph.Immutable<S, L, D> scopeGraph();
 
+    // contains edges/data created by unit type checker only (i.e. not sub-unit edges/data)
+    // TODO solve data duplication
+    IScopeGraph.Immutable<S, L, D> localScopeGraph();
+
     Set<IRecordedQuery<S, L, D>> queries();
 
     List<S> rootScopes();

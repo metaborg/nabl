@@ -72,6 +72,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -671,9 +672,13 @@ public abstract class AbstractUnit<S, L, D, R>
         logger.debug("{} tryFinish", this);
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
-            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), recordedQueries, rootScopes, analysis.get(),
+            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries, rootScopes, analysis.get(),
                     failures, subUnitResults, stats));
         }
+    }
+
+    protected IScopeGraph.Immutable<S, L, D> localScopeGraph() {
+        return scopeGraph.get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
