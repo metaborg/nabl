@@ -391,7 +391,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testQueryInReleasedUnit() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
-        final Scope d = new Scope("/./sub", 1);
+        final Scope d = new Scope("/.", 1);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> parentResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
                 .id("/.")
@@ -605,7 +605,6 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.localScopeGraph().getEdges(root, lbl)));
         assertEquals(sg.getData(), result.localScopeGraph().getData());
     }
-
 
     @Test(timeout = 10000) public void testReleaseChild_ParentUpdateSG() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);

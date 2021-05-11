@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletableFuture;
@@ -19,7 +20,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
-import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
@@ -94,7 +94,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(state == UnitState.INIT_TC) {
             // runIncremental not called, so start eagerly
             doRestart();
-        } else if (state == UnitState.DONE) {
+        } else if(state == UnitState.DONE) {
             // Completed synchronously
             whenActive.complete(Unit.unit);
             confirmationResult.complete(true);
@@ -119,21 +119,25 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         stats.incomingConfirmations++;
-        return whenActive.thenCompose(__ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null));
+        return whenActive.thenCompose(
+                __ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null));
     }
 
-    @Override public IFuture<Boolean> _requireRestart() {
-        return CompletableFuture.completedFuture(state.equals(UnitState.ACTIVE));
+    @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
+        if(state.equals(UnitState.ACTIVE)) {
+            return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
+        }
+        return CompletableFuture.completedFuture(ReleaseOrRestart.release(differ.currentMatches()));
     }
 
     @Override public void _restart() {
         doRestart();
     }
 
-    @Override public void _release() {
-        // TODO: collect patches (as part of _waitForLocalState???)
+    @Override public void _release(BiMap.Immutable<S> patches) {
         // TODO: what if message received, but not part of 'real' deadlock cluster?
-        doRelease(CapsuleUtil.immutableMap());
+        // Then in state `ACTIVE`, and hence doRelease won't do anything automatically?
+        doRelease(patches);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -325,22 +329,21 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     final ScopePath<S, L> path = new ScopePath<>(m.get());
                     final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), queryResult);
                     waitFor(query, owner);
-                    self.async(owner)
-                        ._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
-                        .whenComplete((env, ex2) -> {
-                            granted(query, owner);
-                            if(ex2 != null) {
-                                if(ex2 == Release.instance) {
-                                    confirmationResult.complete(true);
+                    self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                            .whenComplete((env, ex2) -> {
+                                granted(query, owner);
+                                if(ex2 != null) {
+                                    if(ex2 == Release.instance) {
+                                        confirmationResult.complete(true);
+                                    } else {
+                                        confirmationResult.completeExceptionally(ex2);
+                                    }
                                 } else {
-                                    confirmationResult.completeExceptionally(ex2);
+                                    // Query is valid iff environments are equal
+                                    // TODO: compare environments with scope patches.
+                                    confirmationResult.complete(env.equals(rq.result()));
                                 }
-                            } else {
-                                // Query is valid iff environments are equal
-                                // TODO: compare environments with scope patches.
-                                confirmationResult.complete(env.equals(rq.result()));
-                            }
-                        });
+                            });
                 }
             });
         });
@@ -353,12 +356,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 doRestart();
             } else {
                 // TODO: collect patches
-                doRelease(CapsuleUtil.immutableMap());
+                doRelease(BiMap.Immutable.of());
             }
         });
     }
 
-    private void doRelease(Map.Immutable<S, S> patches) {
+    private void doRelease(BiMap.Immutable<S> patches) {
         if(state == UnitState.UNKNOWN) {
             state = UnitState.RELEASED;
             final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
@@ -366,11 +369,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
             previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
                 final S oldSource = entry.getKey();
-                final S newSource = patches.getOrDefault(oldSource, oldSource);
+                final S newSource = patches.getValueOrDefault(oldSource, oldSource);
                 final L label = entry.getValue();
                 final boolean local = isOwner(newSource);
                 targets.forEach(targetScope -> {
-                    final S target = patches.getOrDefault(targetScope, targetScope);
+                    final S target = patches.getValueOrDefault(targetScope, targetScope);
                     if(local) {
                         newScopeGraph.addEdge(newSource, label, target);
                     } else {
@@ -380,9 +383,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 });
             });
             previousResult.localScopeGraph().getData().forEach((oldScope, datum) -> {
-                final S newScope = patches.getOrDefault(oldScope, oldScope);
+                final S newScope = patches.getValueOrDefault(oldScope, oldScope);
                 if(isOwner(newScope)) {
-                    newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches));
+                    newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches.asMap()));
                 } else {
                     doSetDatum(newScope, datum);
                     localScopeGraph.setDatum(newScope, datum);
@@ -395,6 +398,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
             waitForsByActor.get(self).forEach(wf -> {
+                // @formatter:off
                 wf.visit(IWaitFor.cases(
                     initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
                     closeScope -> {},
@@ -408,6 +412,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     differResult -> {},
                     activate -> {}
                 ));
+                // @formatter:on
             });
             recordedQueries.addAll(previousResult.queries());
 
@@ -433,25 +438,28 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        if(state.equals(UnitState.UNKNOWN)) {
-            Futures.noneMatch(nodes, node -> {
-                return self.async(node)._requireRestart();
-            }).whenComplete((w, ex) -> {
-                if(ex == null && w) {
-                    nodes.forEach(node -> self.async(node)._release());
-                } else {
-                    if(ex != null) {
-                        failures.add(ex);
-                    }
-                    nodes.forEach(node -> self.async(node)._restart());
-                }
-                resume();
-            });
-            resume();
-        } else {
-            super.handleDeadlock(nodes);
-            resume();
-        }
+        AggregateFuture.forAll(nodes, node -> self.async(node)._requireRestart()).whenComplete((rors, ex) -> {
+            logger.info("Received patches: {}.", rors);
+            if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
+                // All units are already active, proceed with regular deadlock handling
+                super.handleDeadlock(nodes);
+            } else {
+                rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
+                    () -> {
+                        logger.info("Restarting all involved units.");
+                        if(ex != null) {
+                            failures.add(ex);
+                        }
+                        nodes.forEach(node -> self.async(node)._restart());
+                    },
+                    ptcs -> {
+                        logger.info("Releasing all involved units: {}.", ptcs);
+                        nodes.forEach(node -> self.async(node)._release(ptcs));
+                    });
+            }
+            resume(); // FIXME needed?
+        });
+        resume();
     }
 
     ///////////////////////////////////////////////////////////////////////////

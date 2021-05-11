@@ -41,6 +41,14 @@ public abstract class BiMap<E> {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
         }
 
+        public E getKeyOrDefault(E key, E def) {
+            return fwd.getOrDefault(key, def);
+        }
+
+        public E getValueOrDefault(E value, E def) {
+            return bwd.getOrDefault(value, def);
+        }
+
         @Override public Set<E> keySet() {
             return fwd.keySet();
         }
@@ -53,8 +61,18 @@ public abstract class BiMap<E> {
             return fwd.entrySet();
         }
 
+        public Immutable<E> putAll(BiMap<E> other) {
+            final Transient<E> newMap = this.melt();
+            newMap.putAll(other);
+            return newMap.freeze();
+        }
+
         public Transient<E> melt() {
             return new Transient<>(fwd.asTransient(), bwd.asTransient());
+        }
+
+        public Map.Immutable<E, E> asMap() {
+            return fwd;
         }
 
         @Override public String toString() {
