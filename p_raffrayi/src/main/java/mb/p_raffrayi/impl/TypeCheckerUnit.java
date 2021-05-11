@@ -125,7 +125,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
-        if(state.equals(UnitState.ACTIVE)) {
+        if(state.equals(UnitState.ACTIVE) || state.equals(UnitState.DONE)) {
             return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
         }
         // When these patches are used, *all* involved units re-use their old scope graph.
