@@ -57,6 +57,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private final IScopeImpl<S, D> scopeImpl; // TODO: remove field, and move methods to IUnitContext?
     private final IScopeGraphDifferOps<S, D> differOps;
+    private final BiMap.Transient<S> matchedBySharing = BiMap.Transient.of();
 
     private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
 
@@ -127,7 +128,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(state.equals(UnitState.ACTIVE)) {
             return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
         }
-        return CompletableFuture.completedFuture(ReleaseOrRestart.release(differ.currentMatches()));
+        // When these patches are used, *all* involved units re-use their old scope graph.
+        // Hence only patching the root scopes is sufficient.
+        // TODO Re-validate when a more sophisticated confirmation algorithm is implemented.
+        return CompletableFuture.completedFuture(ReleaseOrRestart.release(BiMap.Immutable.from(matchedBySharing)));
     }
 
     @Override public void _restart() {
@@ -168,9 +172,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 throw new IllegalStateException("Different root scope count.");
             }
 
-            BiMap.Transient<S> req = BiMap.Transient.of();
+            final BiMap.Transient<S> req = BiMap.Transient.of();
             for(int i = 0; i < rootScopes.size(); i++) {
-                req.put(rootScopes.get(i), previousRootScopes.get(i));
+                final S cRoot = rootScopes.get(i);
+                final S pRoot = previousRootScopes.get(i);
+                req.put(cRoot, pRoot);
+                if(isOwner(cRoot)) {
+                    matchedBySharing.put(cRoot, pRoot);
+                }
             }
 
             if(!differ.matchScopes(req.freeze())) {
@@ -487,7 +496,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             throw new IllegalStateException("Expected active state, but was " + state);
         }
     }
-
 
     private <Q> IFuture<Q> ifActive(IFuture<Q> result) {
         return result.compose((r, ex) -> {

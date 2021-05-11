@@ -611,13 +611,6 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return Removed.of();
     }
 
-    // TODO: invent better interface/synchronization for this
-    @Override public BiMap.Immutable<S> currentMatches() {
-        final BiMap.Transient<S> matches = BiMap.Transient.of();
-        matches.putAll(matchedScopes);
-        return matches.freeze();
-    }
-
     // Events
 
     private void previousScopeProcessed(S previousScope) {

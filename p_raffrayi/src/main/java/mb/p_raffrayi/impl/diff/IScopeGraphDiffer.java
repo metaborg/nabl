@@ -38,6 +38,4 @@ public interface IScopeGraphDiffer<S, L, D> {
      * added/removed from it.
      */
     IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope);
-
-    BiMap.Immutable<S> currentMatches();
 }

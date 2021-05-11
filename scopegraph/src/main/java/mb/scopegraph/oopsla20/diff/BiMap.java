@@ -87,6 +87,12 @@ public abstract class BiMap<E> {
             return new Immutable<>(Map.Immutable.of(key, value), Map.Immutable.of(value, key));
         }
 
+        public static <E> Immutable<E> from(BiMap<E> other) {
+            Transient<E> newMap = BiMap.Transient.of();
+            newMap.putAll(other);
+            return newMap.freeze();
+        }
+
     }
 
     public static class Transient<E> extends BiMap<E> {

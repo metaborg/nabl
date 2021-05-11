@@ -156,8 +156,4 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private interface K<R> {
         void k(R res);
     }
-
-    @Override public BiMap.Immutable<S> currentMatches() {
-        return BiMap.Immutable.of();
-    }
 }
