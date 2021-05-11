@@ -26,6 +26,7 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.IUnitResult.Transitions;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
@@ -89,6 +90,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         doStart(rootScopes);
         state = UnitState.INIT_TC;
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
+            if(state == UnitState.INIT_TC) {
+                transitions = Transitions.INITIALLY_STARTED;
+            }
             state = UnitState.DONE;
         });
 
@@ -135,7 +139,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public void _restart() {
-        doRestart();
+        if(doRestart()) {
+            transitions = Transitions.RESTARTED;
+        }
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {
@@ -284,6 +290,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         state = UnitState.UNKNOWN;
         if(initialState.changed()) {
             logger.debug("Unit changed or no previous result was available.");
+            transitions = Transitions.INITIALLY_STARTED;
             doRestart();
             return runLocalTypeChecker.apply(false).compose(combine::apply);
         }
@@ -319,7 +326,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             confirmationResult.thenAccept(res -> {
                 // Immediately restart when a query is invalidated
                 if(!res) {
-                    doRestart();
+                    if(doRestart()) {
+                        transitions = Transitions.RESTARTED;
+                    }
                 }
             });
             final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(rq.scope());
@@ -358,11 +367,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         });
 
         Futures.noneMatch(futures, p -> p.thenApply(v -> !v)).whenComplete((r, ex) -> {
-            if(ex != null) {
-                if(ex != Release.instance) {
+            if(ex != null || !r) {
+                if(ex != null && ex != Release.instance) {
                     failures.add(ex);
                 }
-                doRestart();
+                if(doRestart()) {
+                    transitions = Transitions.RESTARTED;
+                }
             } else {
                 // TODO: collect patches
                 doRelease(BiMap.Immutable.of());
@@ -424,6 +435,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 // @formatter:on
             });
             recordedQueries.addAll(previousResult.queries());
+            transitions = Transitions.RELEASED;
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(Release.instance);
@@ -433,13 +445,15 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
     }
 
-    private void doRestart() {
+    private boolean doRestart() {
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
             state = UnitState.ACTIVE;
             whenActive.complete(Unit.unit);
             confirmationResult.complete(false);
             tryFinish(); // FIXME needed?
+            return true;
         }
+        return false;
     }
 
     ///////////////////////////////////////////////////////////////////////////

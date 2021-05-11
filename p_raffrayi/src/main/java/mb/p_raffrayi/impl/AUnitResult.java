@@ -36,4 +36,8 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
 
     @Value.Parameter @Override public abstract @Nullable IUnitStats stats();
 
+    @Value.Default @Override public Transitions transitions() {
+        return Transitions.OTHER;
+    }
+
 }

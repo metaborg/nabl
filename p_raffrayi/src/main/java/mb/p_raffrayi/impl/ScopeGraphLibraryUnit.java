@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -84,8 +85,11 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         }
 
         // initialize library
+        // Using context::makeScope assumes unique names in library
+        // and deterministic generation of scopes.
+        // Required to make diffs/matches deterministic.
         final Tuple2<? extends Set<S>, IScopeGraph.Immutable<S, L, D>> libraryResult =
-                library.initialize(rootScopes, this::makeScope);
+                library.initialize(rootScopes, context::makeScope);
         this.scopes.__insertAll(libraryResult._1());
         this.scopeGraph.set(libraryResult._2());
 
@@ -151,6 +155,11 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return result.whenComplete((r, ex) -> {
             granted(token, worker);
         });
+    }
+
+    @Override public IFuture<Optional<S>> _match(S previousScope) {
+        // Assume libraries are static, and an update to a library requires a clean run.
+        return CompletableFuture.completedFuture(Optional.of(previousScope));
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {

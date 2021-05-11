@@ -455,6 +455,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     // Result processing
 
     private Unit match(S currentScope, S previousScope) {
+        if(matchedScopes.containsEntry(currentScope, previousScope)) {
+            return Unit.unit;
+        }
         assertCurrentScopeOpen(currentScope);
         assertPreviousScopeOpen(previousScope);
 

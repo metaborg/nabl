@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -29,6 +30,7 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.IUnitResult.Transitions;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.GroupResult;
@@ -91,6 +93,10 @@ public class STX_solve_multi extends StatixPrimitive {
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
+            logger.info("* Initially changed units : {}.", flattenTransitions(unitResults, Transitions.INITIALLY_STARTED));
+            logger.info("* Restarted units         : {}.", flattenTransitions(unitResults, Transitions.RESTARTED));
+            logger.info("* Released units          : {}.", flattenTransitions(unitResults, Transitions.RELEASED));
+            logger.info("* Other units             : {}.", flattenTransitions(unitResults, Transitions.OTHER));
 
             for(Entry<String, ITerm> entry : resultMap.entrySet()) {
                 results.add(B.newTuple(B.newString(entry.getKey()), entry.getValue()));
@@ -196,6 +202,10 @@ public class STX_solve_multi extends StatixPrimitive {
     // TODO: resource on group?
     private String subResource(String parent, String child) {
     	return String.format("%s>%s", parent, child);
+    }
+
+    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, Transitions flow) {
+        return unitResults.stream().filter(r -> r.transitions() == flow).map(IUnitResult::id).collect(Collectors.joining(", "));
     }
 
 }

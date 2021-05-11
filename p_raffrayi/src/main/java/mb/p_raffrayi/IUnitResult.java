@@ -30,4 +30,10 @@ public interface IUnitResult<S, L, D, R> {
 
     IUnitStats stats();
 
+    Transitions transitions();
+
+    public enum Transitions {
+        OTHER, INITIALLY_STARTED, RESTARTED, RELEASED
+    }
+
 }

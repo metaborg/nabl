@@ -39,6 +39,7 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.IUnitResult.Transitions;
 import mb.p_raffrayi.IUnitStats;
 import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.p_raffrayi.actors.IActor;
@@ -115,12 +116,12 @@ public abstract class AbstractUnit<S, L, D, R>
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
+    protected Transitions transitions = Transitions.OTHER;
     protected final Stats stats;
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
-            IScopeGraphDifferOps<S, D> differOps) {
+            Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -671,8 +672,8 @@ public abstract class AbstractUnit<S, L, D, R>
         logger.debug("{} tryFinish", this);
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
-            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries, rootScopes, analysis.get(),
-                    failures, subUnitResults, stats));
+            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries,
+                    rootScopes, analysis.get(), failures, subUnitResults, stats).withFlow(transitions));
         }
     }
 
@@ -1019,11 +1020,10 @@ public abstract class AbstractUnit<S, L, D, R>
             final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(previousScope);
             final Match<S, L, D> match = Match.of(self, previousScope);
             waitFor(match, owner);
-            return self.async(context.owner(previousScope))._match(previousScope)
-                .whenComplete((__, ___) -> {
-                    granted(match, owner);
-                    resume();
-                });
+            return self.async(context.owner(previousScope))._match(previousScope).whenComplete((__, ___) -> {
+                granted(match, owner);
+                resume();
+            });
         }
     }
 
