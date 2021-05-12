@@ -55,6 +55,10 @@ public abstract class ReleaseOrRestart<S> {
             return this;
         }
 
+        @Override public String toString() {
+            return "Restart{}";
+        }
+
     }
 
     private static class Release<S> extends ReleaseOrRestart<S> {
@@ -76,6 +80,10 @@ public abstract class ReleaseOrRestart<S> {
                 ptcs -> release(patches.putAll(ptcs))
             );
             // @formatter:on
+        }
+
+        @Override public String toString() {
+            return "Release{" + patches + "}";
         }
 
     }

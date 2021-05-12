@@ -93,10 +93,9 @@ public class STX_solve_multi extends StatixPrimitive {
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
-            logger.info("* Initially changed units : {}.", flattenTransitions(unitResults, Transitions.INITIALLY_STARTED));
-            logger.info("* Restarted units         : {}.", flattenTransitions(unitResults, Transitions.RESTARTED));
-            logger.info("* Released units          : {}.", flattenTransitions(unitResults, Transitions.RELEASED));
-            logger.info("* Other units             : {}.", flattenTransitions(unitResults, Transitions.OTHER));
+            logger.info("* Initially changed units : {}", flattenTransitions(unitResults, Transitions.INITIALLY_STARTED));
+            logger.info("* Restarted units         : {}", flattenTransitions(unitResults, Transitions.RESTARTED));
+            logger.info("* Released units          : {}", flattenTransitions(unitResults, Transitions.RELEASED));
 
             for(Entry<String, ITerm> entry : resultMap.entrySet()) {
                 results.add(B.newTuple(B.newString(entry.getKey()), entry.getValue()));

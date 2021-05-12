@@ -434,25 +434,26 @@ public abstract class AbstractUnit<S, L, D, R>
                     logger.debug("local env {}", scope);
                     return Optional.empty();
                 } else {
-                    final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-                    logger.debug("remote env {} at {}", scope, owner);
-                    // this code mirrors query(...)
-                    final IFuture<Env<S, L, D>> result =
-                            self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
-                    final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
-                    waitFor(wf, owner);
-                    if(external) {
-                        stats.forwardedQueries += 1;
-                    } else {
-                        stats.outgoingQueries += 1;
-                    }
-                    return Optional.of(result.whenComplete((r, ex) -> {
-                        logger.debug("got answer from {}", sender);
-                        if(!external && ex == null) {
-                            recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, r));
+                    return Optional.of(getOwner(scope).thenCompose(owner -> {
+                        logger.debug("remote env {} at {}", scope, owner);
+                        // this code mirrors query(...)
+                        final IFuture<Env<S, L, D>> result =
+                                self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                        final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
+                        waitFor(wf, owner);
+                        if(external) {
+                            stats.forwardedQueries += 1;
+                        } else {
+                            stats.outgoingQueries += 1;
                         }
-                        resume();
-                        granted(wf, owner);
+                        return result.whenComplete((r, ex) -> {
+                            logger.debug("got answer from {}", sender);
+                            if(!external && ex == null) {
+                                recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, r));
+                            }
+                            resume();
+                            granted(wf, owner);
+                        });
                     }));
                 }
             }
@@ -619,8 +620,11 @@ public abstract class AbstractUnit<S, L, D, R>
     };
 
     protected final boolean isOwner(S scope) {
-        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-        return owner.equals(self);
+        return context.scopeId(scope).equals(self.id());
+    }
+
+    protected IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
+        return self.schedule(context.owner(scope)).whenComplete((r, ex) -> self.assertOnActorThread());
     }
 
     protected boolean canAnswer(S scope) {
@@ -955,14 +959,15 @@ public abstract class AbstractUnit<S, L, D, R>
         @Override public IFuture<Iterable<S>> getCurrentEdges(S scope, L label) {
             // Most be done via owner, because delays on a shared, non-owned scope are not activated
             // and not desired to be activated, because not any operation on them can proceed
-            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-            final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label));
+            return getOwner(scope).thenCompose(owner -> {
+                final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label));
 
-            waitFor(complete, owner);
-            return self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
-                granted(complete, owner);
-                resume();
-                return scopeGraph.get().getEdges(scope, label);
+                waitFor(complete, owner);
+                return self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+                    granted(complete, owner);
+                    resume();
+                    return scopeGraph.get().getEdges(scope, label);
+                });
             });
         }
 
@@ -978,12 +983,13 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @Override public IFuture<Optional<D>> currentDatum(S scope) {
-            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-            final Datum<S, L, D> datum = Datum.of(self, scope);
-            waitFor(datum, owner);
-            return self.async(owner)._datum(scope).whenComplete((__, ___) -> {
-                granted(datum, owner);
-                resume();
+            return getOwner(scope).thenCompose(owner -> {
+                final Datum<S, L, D> datum = Datum.of(self, scope);
+                waitFor(datum, owner);
+                return self.async(owner)._datum(scope).whenComplete((__, ___) -> {
+                    granted(datum, owner);
+                    resume();
+                });
             });
         }
 
@@ -997,7 +1003,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
-            return context.owner(previousScope).equals(context.owner(currentScope));
+            return context.scopeId(previousScope).equals(context.scopeId(currentScope));
         }
 
         @Override public Set.Immutable<S> getCurrentScopes(D d) {
@@ -1009,7 +1015,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @Override public boolean ownScope(S scope) {
-            return context.owner(scope).equals(self);
+            return context.scopeId(scope).equals(self.id());
         }
 
         @Override public boolean ownOrSharedScope(S currentScope) {
@@ -1017,12 +1023,13 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
-            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(previousScope);
-            final Match<S, L, D> match = Match.of(self, previousScope);
-            waitFor(match, owner);
-            return self.async(context.owner(previousScope))._match(previousScope).whenComplete((__, ___) -> {
-                granted(match, owner);
-                resume();
+            return getOwner(previousScope).thenCompose(owner -> {
+                final Match<S, L, D> match = Match.of(self, previousScope);
+                waitFor(match, owner);
+                return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
+                    granted(match, owner);
+                    resume();
+                });
             });
         }
     }
@@ -1125,9 +1132,9 @@ public abstract class AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     protected void assertOwnScope(S scope) {
-        if(!context.owner(scope).equals(self)) {
-            logger.error("Scope {} is not owned {}", scope, this);
-            throw new IllegalArgumentException("Scope " + scope + " is not owned " + this);
+        if(!context.scopeId(scope).equals(self.id())) {
+            logger.error("Scope {} is not owned by {}", scope, this);
+            throw new IllegalArgumentException("Scope " + scope + " is not owned by " + this);
         }
     }
 

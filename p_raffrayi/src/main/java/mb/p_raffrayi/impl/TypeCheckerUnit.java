@@ -331,38 +331,39 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     }
                 }
             });
-            final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(rq.scope());
-            self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
-                if(ex != null) {
-                    if(ex == Release.instance) {
-                        confirmationResult.complete(true);
+            getOwner(rq.scope()).thenAccept(owner -> {
+                self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
+                    if(ex != null) {
+                        if(ex == Release.instance) {
+                            confirmationResult.complete(true);
+                        } else {
+                            confirmationResult.completeExceptionally(ex);
+                        }
+                    } else if(!m.isPresent()) {
+                        // No match, so result is the same iff previous environment was empty.
+                        confirmationResult.complete(rq.result().isEmpty());
                     } else {
-                        confirmationResult.completeExceptionally(ex);
-                    }
-                } else if(!m.isPresent()) {
-                    // No match, so result is the same iff previous environment was empty.
-                    confirmationResult.complete(rq.result().isEmpty());
-                } else {
-                    final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
-                    final ScopePath<S, L> path = new ScopePath<>(m.get());
-                    final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), queryResult);
-                    waitFor(query, owner);
-                    self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
-                            .whenComplete((env, ex2) -> {
-                                granted(query, owner);
-                                if(ex2 != null) {
-                                    if(ex2 == Release.instance) {
-                                        confirmationResult.complete(true);
+                        final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
+                        final ScopePath<S, L> path = new ScopePath<>(m.get());
+                        final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), queryResult);
+                        waitFor(query, owner);
+                        self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                                .whenComplete((env, ex2) -> {
+                                    granted(query, owner);
+                                    if(ex2 != null) {
+                                        if(ex2 == Release.instance) {
+                                            confirmationResult.complete(true);
+                                        } else {
+                                            confirmationResult.completeExceptionally(ex2);
+                                        }
                                     } else {
-                                        confirmationResult.completeExceptionally(ex2);
+                                        // Query is valid iff environments are equal
+                                        // TODO: compare environments with scope patches.
+                                        confirmationResult.complete(env.equals(rq.result()));
                                     }
-                                } else {
-                                    // Query is valid iff environments are equal
-                                    // TODO: compare environments with scope patches.
-                                    confirmationResult.complete(env.equals(rq.result()));
-                                }
-                            });
-                }
+                                });
+                    }
+                });
             });
         });
 

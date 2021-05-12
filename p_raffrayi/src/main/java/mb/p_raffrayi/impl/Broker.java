@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletable;
+import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -16,6 +18,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
@@ -50,6 +53,9 @@ public class Broker<S, L, D, R> {
     private final AtomicInteger unfinishedUnits;
     private final AtomicInteger totalUnits;
 
+    private final Map<String, Set<ICompletable<IActorRef<? extends IUnit<S, L, D, ?>>>>> delays;
+    private final Object lock = new Object(); // Used to synchronize updates/queries of `units` and `delays`
+
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
             IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps, ICancel cancel,
             IActorScheduler scheduler) {
@@ -67,6 +73,8 @@ public class Broker<S, L, D, R> {
         this.units = new ConcurrentHashMap<>();
         this.unfinishedUnits = new AtomicInteger();
         this.totalUnits = new AtomicInteger();
+
+        this.delays = new ConcurrentHashMap<>();
     }
 
     private IFuture<IUnitResult<S, L, D, R>> run() {
@@ -90,7 +98,13 @@ public class Broker<S, L, D, R> {
     private void addUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
         unfinishedUnits.incrementAndGet();
         totalUnits.incrementAndGet();
-        units.put(unit.id(), unit);
+        synchronized(lock) {
+            units.put(unit.id(), unit);
+            delays.computeIfPresent(unit.id(), (id, futures) -> {
+                futures.forEach(f -> f.complete(unit));
+                return null; // remove mapping
+            });
+        }
     }
 
     private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit, Throwable ex) {
@@ -146,12 +160,28 @@ public class Broker<S, L, D, R> {
             return scopeImpl.make(self.id(), name);
         }
 
+        @Override public String scopeId(S scope) {
+            return scopeImpl.id(scope);
+        }
+
         @Override public D substituteScopes(D datum, Map<S, S> substitution) {
             return scopeImpl.substituteScopes(datum, substitution);
         }
 
-        @Override public IActorRef<? extends IUnit<S, L, D, ?>> owner(S scope) {
-            return units.get(scopeImpl.id(scope));
+        // TODO: this type of asynchrony is very prone to errors
+        // because there is no deadlock detection on it.
+        // Hence a better way to wait for actors starting should be invented.
+        @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope) {
+            final String id = scopeImpl.id(scope);
+            synchronized(lock) {
+                if(units.containsKey(id)) {
+                    return CompletableFuture.completedFuture(units.get(id));
+                } else {
+                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
+                    delays.computeIfAbsent(id, key -> Sets.newConcurrentHashSet()).add(future);
+                    return future;
+                }
+            }
         }
 
         @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> add(

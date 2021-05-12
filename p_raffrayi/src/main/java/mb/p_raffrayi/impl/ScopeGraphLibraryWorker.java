@@ -92,12 +92,11 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override protected boolean canAnswer(S scope) {
-        final IActorRef<? extends IUnit<S, L, D, ?>> owner = context.owner(scope);
-        return owner.equals(parent);
+        return context.scopeId(scope).equals(parent.id());
     }
 
     @Override protected void assertOwnScope(S scope) {
-        if(!context.owner(scope).equals(parent)) {
+        if(!context.scopeId(scope).equals(parent.id())) {
             logger.error("Scope {} is not owned {}", scope, this);
             throw new IllegalArgumentException("Scope " + scope + " is not owned " + this);
         }
