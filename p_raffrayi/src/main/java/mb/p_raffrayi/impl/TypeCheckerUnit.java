@@ -340,8 +340,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                             confirmationResult.completeExceptionally(ex);
                         }
                     } else if(!m.isPresent()) {
-                        // No match, so result is the same iff previous environment was empty.
-                        confirmationResult.complete(rq.result().isEmpty());
+                        if(!rq.result().isEmpty()) {
+                            confirmationResult.complete(false);
+                        }
                     } else {
                         final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
                         final ScopePath<S, L> path = new ScopePath<>(m.get());
@@ -359,7 +360,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                                     } else {
                                         // Query is valid iff environments are equal
                                         // TODO: compare environments with scope patches.
-                                        confirmationResult.complete(env.equals(rq.result()));
+                                        if(!env.equals(rq.result())) {
+                                            confirmationResult.complete(false);
+                                        }
                                     }
                                 });
                     }
@@ -377,7 +380,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 }
             } else {
                 // TODO: collect patches
-                doRelease(BiMap.Immutable.of());
+                // doRelease(BiMap.Immutable.of());
             }
         });
     }

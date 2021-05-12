@@ -678,6 +678,8 @@ public abstract class AbstractUnit<S, L, D, R>
             logger.debug("{} finish", this);
             unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries,
                     rootScopes, analysis.get(), failures, subUnitResults, stats).withFlow(transitions));
+        } else {
+            logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByActor);
         }
     }
 
