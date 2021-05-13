@@ -30,6 +30,7 @@ public class STX_get_scopegraph_data extends StatixPrimitive {
         // @formatter:off
         final ITerm data = M.cases(
             M.tuple2(Scope.matcher(), StatixTerms.label(), (t, s, r) -> {
+                reportInvalidDataLabel(analysis, r);
                 return B.newList(state.scopeGraph().getData(s, r));
             })
         ).match(term).orElseThrow(() -> new InterpreterException("Expected scope-label pair."));
