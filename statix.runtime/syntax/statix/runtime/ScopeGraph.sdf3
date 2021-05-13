@@ -3,7 +3,9 @@ module statix/runtime/ScopeGraph
 imports
 
   statix/API
+
   statix/runtime/ATerm
+
 
 context-free syntax
 
@@ -12,7 +14,7 @@ context-free syntax
       <{Stx-ScopeEntry "\n"}*>
   >
 
-  Stx-ScopeEntry.MainEntry = <
+  Stx-ScopeEntry = <
     <Stx-Scope><Stx-DataEntry> {
       <{Stx-EdgeEntry "\n"}*>
     }
@@ -29,21 +31,17 @@ context-free syntax
     }
   >
 
-  Stx-ScopeEntry.ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
-
   Stx-DataEntry.None =
   Stx-DataEntry.Some = < : <Stx-ATerm>>
 
-  Stx-MatchEntry.MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-EdgeEntry = <<Stx-Label> : <Stx-EntryValues>>
 
-  Stx-EdgeEntry.EdgeEntry = <<Stx-Label> : <Stx-EntryValues>>
-  Stx-EdgeEntry.ArrowEdgeEntry = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]
-
-  Stx-EntryValues.EntryValues = {Stx-ATerm "\n"}*
+  Stx-EntryValues = {Stx-ATerm "\n"}*
 
   // duplicate of RelRef & Label in statix.lang
   Stx-Label.Decl  = "decl"
   Stx-Label.Label = Stx-STRING
+
 
 context-free syntax
 
@@ -63,3 +61,7 @@ context-free syntax
     scopes <{Stx-ScopeEntry "\n"}*>
     edges  <{Stx-EdgeEntry "\n"}*>
   >
+
+  Stx-MatchEntry.MatchEntry = <<Stx-Scope> ~ <Stx-Scope>>
+  Stx-ScopeEntry.ScopeEntry = <<Stx-Scope> : <Stx-ATerm>>
+  Stx-EdgeEntry.EdgeEntry   = [[Stx-Scope] -[Stx-ATerm]-> [Stx-Scope]]
