@@ -30,7 +30,7 @@ rules // analysis
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
-  stx-analysis-has-errors = stx--analysis-has-errors	
+  stx-analysis-has-errors = stx--analysis-has-errors
 
 rules // ast
 
@@ -60,6 +60,13 @@ rules // ast
    * @type Term -> Term
    */
   stx-get-ast-type(|a) = stx--get-ast-property(|a, Type())
+
+  /**
+   * @param a    : Analysis
+   *
+   * @type Term -> Term
+   */
+  stx-get-ast-ref(|a) = stx--get-ast-property(|a, Ref())
 
 rules // scope graph
 
