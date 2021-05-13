@@ -15,6 +15,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.persistent.SolverResult;
@@ -30,6 +31,7 @@ public class STX_get_ast_property extends StatixPrimitive {
         final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final ITerm prop = terms.get(1);
+        warnOnInvalidProp(prop);
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
@@ -55,6 +57,19 @@ public class STX_get_ast_property extends StatixPrimitive {
             return Optional.of(result);
         } else {
             return Optional.empty();
+        }
+    }
+
+    private void warnOnInvalidProp(ITerm prop) {
+        // @formatter:off
+        IMatcher<ITerm> propMatcher = M.cases(
+            M.appl0("Type"),
+            M.appl0("Ref"),
+            M.appl1("Prop", M.string())
+        );
+        // @formatter:on
+        if(!propMatcher.match(prop).isPresent()) {
+            logger.warn("Expected Type(), Ref() or Prop(\"<name>\") as property, but got {}.", prop);
         }
     }
 

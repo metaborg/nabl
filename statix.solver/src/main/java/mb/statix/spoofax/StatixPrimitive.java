@@ -49,7 +49,7 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
-    private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+    protected static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
 
     final protected int tvars;
 
