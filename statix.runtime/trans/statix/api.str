@@ -47,6 +47,14 @@ rules // ast
   stx-get-ast-analysis = where(stx--get-ast-index) ; stx--get-ast-analysis
 
   /**
+   * Get the property set on an AST node by the Statix specification.
+   *
+   * Example: If the specification contains an `@t.prop := val` constraint,
+   * then `<stx-get-ast-property(|a, "prop")> t` returns `val`.
+   *
+   * Note that the `type` and `ref` properties have special implementations.
+   * To query those, use `stx-get-ast-type` or `stx-get-ast-ref`, respectively.
+   *
    * @param a    : Analysis
    * @param name : String
    *
@@ -55,6 +63,8 @@ rules // ast
   stx-get-ast-property(|a, name) = stx--get-ast-property(|a, Prop(name))
 
   /**
+   * Get the `type` property set on an AST node.
+   *
    * @param a    : Analysis
    *
    * @type Term -> Term
@@ -62,6 +72,8 @@ rules // ast
   stx-get-ast-type(|a) = stx--get-ast-property(|a, Type())
 
   /**
+   * Get the `ref` property set on an AST node.
+   *
    * @param a    : Analysis
    *
    * @type Term -> Term
@@ -71,14 +83,28 @@ rules // ast
 rules // scope graph
 
   /**
+   * Get the data under relation `rel` in the input scope term.
+   *
+   * Example: When the specification contains a `!var["x", INT()] in s` constraint,
+   * then `<stx-get-scopegraph-data(|a, "statics!base/var")> s` will return `[("x", INT())]`.
+   *
+   * Please note that a fully qualified name for the relation must be provided.
+   *
    * @param a   : Analysis
-   * @param lbl : String
+   * @param rel : String
    *
    * @type Scope -> [Term]
    */
-  stx-get-scopegraph-data(|a, lbl) = <stx--get-scopegraph-data(|a)> (<id>, Label(lbl))
+  stx-get-scopegraph-data(|a, rel) = <stx--get-scopegraph-data(|a)> (<id>, Label(rel))
 
   /**
+   * Get the target scopes that are reachable from the input scope via `lbl`-edges.
+   *
+   * Example: When the specification contains a `s1 -L-> s2` constraint,
+   * then `<stx-get-scopegraph-data(|a, "statics!base/L")> s1` will return `[s2]`.
+   *
+   * Please note that a fully qualified name for the label must be provided.
+   *
    * @param a   : Analysis
    * @param lbl : String
    *
