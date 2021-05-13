@@ -49,8 +49,11 @@ rules // ast
   /**
    * Get the property set on an AST node by the Statix specification.
    *
-   * Example: If the specification contains an `@t.prop := val` constraint,
+   * Example 1: If the specification contains an `@t.prop := val` constraint,
    * then `<stx-get-ast-property(|a, "prop")> t` returns `val`.
+   *
+   * Example 2: If the specification contains `@t.prop += val1, @t.prop += val2` constraints,
+   * then `<stx-get-ast-property(|a, "prop")> t` returns `[val1, val2]`.
    *
    * Note that the `type` and `ref` properties have special implementations.
    * To query those, use `stx-get-ast-type` or `stx-get-ast-ref`, respectively.
