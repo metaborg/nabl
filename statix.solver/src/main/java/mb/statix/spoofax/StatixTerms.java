@@ -567,6 +567,16 @@ public class StatixTerms {
     ///////////////////////////////////////////////////////////////////////////
 
     public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraph() {
+        // @formatter:off
+        return M.cases(
+            M.appl1("ScopeGraph", scopeGraphEntries(), (t, scopeGraph) -> scopeGraph),
+            // DEPRECATED
+            scopeGraphEntries()
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraphEntries() {
         return M.listElems(scopeEntry(), (t, scopeEntries) -> {
             final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
             for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
@@ -625,7 +635,7 @@ public class StatixTerms {
         }
 
         // @formatter:on
-        return B.newList(scopeEntries);
+        return B.newAppl("ScopeGraph", B.newList(scopeEntries));
     }
 
     ///////////////////////////////////////////////////////////////////////////
