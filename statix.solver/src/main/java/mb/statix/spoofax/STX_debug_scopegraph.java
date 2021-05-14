@@ -88,7 +88,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         }
 
         // @formatter:on
-        return Optional.of(B.newList(scopeEntries));
+        return Optional.of(B.newAppl(StatixTerms.SCOPEGRAPH_OP, B.newList(scopeEntries)));
     }
 
     private void addScopeEntries(SolverResult analysis, Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries,
