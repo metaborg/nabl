@@ -67,7 +67,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                }, Set.Immutable.of());
+                }, Set.Immutable.of(1));
 
         final IUnitResult<Scope, Integer, IDatum, Object> result = future.asJavaCompletion().get();
     }
@@ -85,7 +85,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return CompletableFuture.completedFuture(Unit.unit);
                     }
 
-                }, Set.Immutable.of());
+                }, Set.Immutable.of(1));
 
         final IUnitResult<Scope, Integer, IDatum, Object> result = future.asJavaCompletion().get();
         assertNotNull(result.analysis());

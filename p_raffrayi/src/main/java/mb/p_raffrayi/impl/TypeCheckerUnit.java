@@ -29,7 +29,7 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.Transitions;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.Query;
@@ -56,8 +56,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private volatile UnitState state;
 
-    private final IScopeImpl<S, D> scopeImpl; // TODO: remove field, and move methods to IUnitContext?
-    private final IScopeGraphDifferOps<S, D> differOps;
+    private final IDifferScopeOps<S, D> scopeOps;
     private final BiMap.Transient<S> matchedBySharing = BiMap.Transient.of();
 
     private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
@@ -67,11 +66,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
-            IInitialState<S, L, D, R> initialState, IScopeImpl<S, D> scopeImpl, IScopeGraphDifferOps<S, D> differOps) {
-        super(self, parent, context, edgeLabels, initialState, differOps);
+            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps) {
+        super(self, parent, context, edgeLabels, initialState, scopeOps);
         this.typeChecker = unitChecker;
-        this.differOps = differOps;
-        this.scopeImpl = scopeImpl;
+        this.scopeOps = scopeOps;
         this.state = UnitState.INIT_UNIT;
     }
 
@@ -196,8 +194,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         });
 
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
-            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeImpl,
-                    differOps);
+            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeOps);
         }, rootScopes)._2();
 
         return ifActive(result);
@@ -208,7 +205,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertActive();
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, differOps);
+            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, scopeOps);
         }, rootScopes)._2();
 
         return ifActive(result);
@@ -410,7 +407,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             previousResult.localScopeGraph().getData().forEach((oldScope, datum) -> {
                 final S newScope = patches.getValueOrDefault(oldScope, oldScope);
                 if(isOwner(newScope)) {
-                    newScopeGraph.setDatum(newScope, scopeImpl.substituteScopes(datum, patches.asMap()));
+                    newScopeGraph.setDatum(newScope, context.substituteScopes(datum, patches.asMap()));
                 } else {
                     doSetDatum(newScope, datum);
                     localScopeGraph.setDatum(newScope, datum);

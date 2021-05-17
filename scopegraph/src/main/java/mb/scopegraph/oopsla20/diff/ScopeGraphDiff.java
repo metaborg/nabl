@@ -1,6 +1,9 @@
 package mb.scopegraph.oopsla20.diff;
 
 import java.util.Map.Entry;
+
+import org.metaborg.util.collection.CapsuleUtil;
+
 import java.util.Optional;
 
 import io.usethesource.capsule.Map;
@@ -97,6 +100,11 @@ public class ScopeGraphDiff<S, L, D> {
             return sb.toString();
         }
 
+    }
+
+    public static <S, L, D> ScopeGraphDiff<S, L, D> empty() {
+        return new ScopeGraphDiff<>(BiMap.Immutable.of(), BiMap.Immutable.of(), CapsuleUtil.immutableMap(),
+                CapsuleUtil.immutableSet(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableSet());
     }
 
 }

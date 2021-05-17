@@ -1,0 +1,32 @@
+package mb.p_raffrayi.impl.diff;
+
+import java.util.Collection;
+import java.util.Optional;
+
+import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.IFuture;
+
+public interface IDifferOps<S, L, D> {
+
+    // Matching
+
+    boolean isMatchAllowed(S currentScope, S previousScope);
+
+    IFuture<Boolean> matchDatums(D currentDatum, D previousDatum, Function2<S, S, IFuture<Boolean>> scopeMatch);
+
+    // Data
+
+    /**
+     * Returns the external representation of the datum of the scope, if it exists
+     */
+    public Collection<S> getScopes(D d);
+
+    // External scopes
+
+    boolean ownScope(S scope);
+
+    boolean ownOrSharedScope(S currentScope);
+
+    IFuture<Optional<S>> externalMatch(S previousScope);
+
+}

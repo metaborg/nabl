@@ -21,7 +21,9 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -39,18 +41,17 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private IScopeGraphLibrary<S, L, D> library;
 
-    private final IScopeGraphDifferOps<S, D> differOps;
+    private final IDifferScopeOps<S, D> scopeOps;
     private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
     ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library,
-            IScopeGraphDifferOps<S, D> differOps) {
-        super(self, parent, context, edgeLabels, AInitialState.added(), differOps);
+            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library, IDifferScopeOps<S, D> scopeOps) {
+        super(self, parent, context, edgeLabels, AInitialState.added(), scopeOps);
 
         // these are replaced once started
         this.library = library;
-        this.differOps = differOps;
+        this.scopeOps = scopeOps;
         this.workers = new ArrayList<>();
     }
 
@@ -113,7 +114,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit>>, IFuture<IUnitResult<S, L, D, Unit>>> worker =
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
-                                scopeGraph.get(), differOps);
+                                scopeGraph.get(), scopeOps);
                     }, Collections.emptyList());
             workers.add(worker._1());
         }
@@ -172,6 +173,11 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public void _restart() {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
+    @Override protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, Unit> initialState,
+            IDifferScopeOps<S, D> scopeOps) {
+        return new MatchingDiffer<>(new DifferOps(scopeOps));
     }
 
     ///////////////////////////////////////////////////////////////////////////

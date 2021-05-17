@@ -21,7 +21,7 @@ import com.google.common.collect.Streams;
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 
 public abstract class PRaffrayiTestBase {
 
@@ -107,7 +107,7 @@ public abstract class PRaffrayiTestBase {
 
     };
 
-    private class DifferOps implements IScopeGraphDifferOps<Scope, IDatum> {
+    private class DifferOps implements IDifferScopeOps<Scope, IDatum> {
 
         @Override public Immutable<Scope> getScopes(IDatum datum) {
             return CapsuleUtil.toSet(datum.scopes());

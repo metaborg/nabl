@@ -12,7 +12,9 @@ import org.metaborg.util.unit.Unit;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -29,8 +31,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph,
-            IScopeGraphDifferOps<S, D> differOps) {
-        super(self, parent, context, edgeLabels, AInitialState.added(), differOps);
+            IDifferScopeOps<S, D> scopeOps) {
+        super(self, parent, context, edgeLabels, AInitialState.added(), scopeOps);
 
         this.scopes.__insertAll(scopes);
         this.scopeGraph.set(scopeGraph);
@@ -89,6 +91,11 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public void _restart() {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
+    @Override protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, Unit> initialState,
+            IDifferScopeOps<S, D> scopeOps) {
+        return new MatchingDiffer<>(new DifferOps(scopeOps));
     }
 
     @Override protected boolean canAnswer(S scope) {

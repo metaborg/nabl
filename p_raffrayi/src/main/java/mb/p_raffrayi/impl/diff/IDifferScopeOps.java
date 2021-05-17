@@ -5,7 +5,7 @@ import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set.Immutable;
 
-public interface IScopeGraphDifferOps<S, D> {
+public interface IDifferScopeOps<S, D> {
 
     Immutable<S> getScopes(D datum);
 

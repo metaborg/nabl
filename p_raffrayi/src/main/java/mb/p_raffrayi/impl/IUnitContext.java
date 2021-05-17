@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,8 @@ public interface IUnitContext<S, L, D> {
     String scopeId(S scope);
 
     D substituteScopes(D datum, Map<S, S> substitution);
+
+    Collection<S> getScopes(D datum);
 
     IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope);
 

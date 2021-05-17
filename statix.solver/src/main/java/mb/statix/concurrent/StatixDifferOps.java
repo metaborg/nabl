@@ -14,10 +14,10 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Transform.T;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.statix.scopegraph.Scope;
 
-public class StatixDifferOps implements IScopeGraphDifferOps<Scope, ITerm> {
+public class StatixDifferOps implements IDifferScopeOps<Scope, ITerm> {
 
     private static final IFuture<Boolean> FALSE = CompletableFuture.completedFuture(false);
     private static final IFuture<Boolean> TRUE = CompletableFuture.completedFuture(true);

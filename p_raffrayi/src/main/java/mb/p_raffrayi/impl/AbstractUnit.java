@@ -1,6 +1,7 @@
 package mb.p_raffrayi.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,9 +54,11 @@ import mb.p_raffrayi.impl.confirmation.DenyingConfirmation;
 import mb.p_raffrayi.impl.confirmation.IQueryConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferContext;
-import mb.p_raffrayi.impl.diff.IScopeGraphDifferOps;
+import mb.p_raffrayi.impl.diff.IDifferContext;
+import mb.p_raffrayi.impl.diff.IDifferOps;
+import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Complete;
@@ -121,7 +124,7 @@ public abstract class AbstractUnit<S, L, D, R>
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IScopeGraphDifferOps<S, D> differOps) {
+            Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -140,11 +143,7 @@ public abstract class AbstractUnit<S, L, D, R>
         this.delays = HashTrieRelation3.Transient.of();
 
         this.initialState = initialState;
-        final IScopeGraph.Immutable<S, L, D> previousScopeGraph =
-                initialState.previousResult().map(IUnitResult::scopeGraph).orElse(ScopeGraph.Immutable.of());
-        this.differ = initialState.previousResult().isPresent()
-                ? new ScopeGraphDiffer<>(new DifferContext(previousScopeGraph, differOps))
-                : new AddingDiffer<>(new DifferContext(previousScopeGraph, differOps));
+        this.differ = initDiffer(initialState, scopeOps);
 
         this.scopeNameCounters = MultiSet.Transient.of();
 
@@ -236,6 +235,15 @@ public abstract class AbstractUnit<S, L, D, R>
         return unitResult;
     }
 
+    protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, R> initialState,
+            IDifferScopeOps<S, D> scopeOps) {
+        final IDifferContext<S, L, D> context = new DifferContext();
+        final IDifferOps<S, L, D> differOps = new DifferOps(scopeOps);
+        return initialState.previousResult().<IScopeGraphDiffer<S, L, D>>map(pr -> {
+            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(pr.scopeGraph()), differOps);
+        }).orElse(new AddingDiffer<>(context, differOps));
+    }
+
     private void startDiffer(List<S> rootScopes) {
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
@@ -307,7 +315,8 @@ public abstract class AbstractUnit<S, L, D, R>
             labels.add(EdgeOrData.edge(l));
             if(!this.edgeLabels.contains(l)) {
                 logger.error("Initializing scope {} with unregistered edge label {}.", scope, l);
-                throw new IllegalStateException("Initializing scope " + scope + " with unregistered edge label " + l + ".");
+                throw new IllegalStateException(
+                        "Initializing scope " + scope + " with unregistered edge label " + l + ".");
             }
         }
         if(data) {
@@ -953,17 +962,9 @@ public abstract class AbstractUnit<S, L, D, R>
     // Scope graph diffing
     ///////////////////////////////////////////////////////////////////////////
 
-    private class DifferContext implements IScopeGraphDifferContext<S, L, D> {
+    private class DifferContext implements IDifferContext<S, L, D> {
 
-        private final IScopeGraph.Immutable<S, L, D> previousScopeGraph;
-        private final IScopeGraphDifferOps<S, D> differOps;
-
-        public DifferContext(IScopeGraph.Immutable<S, L, D> previousScopeGraph, IScopeGraphDifferOps<S, D> differOps) {
-            this.previousScopeGraph = previousScopeGraph;
-            this.differOps = differOps;
-        }
-
-        @Override public IFuture<Iterable<S>> getCurrentEdges(S scope, L label) {
+        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
             // Most be done via owner, because delays on a shared, non-owned scope are not activated
             // and not desired to be activated, because not any operation on them can proceed
             return getOwner(scope).thenCompose(owner -> {
@@ -978,18 +979,13 @@ public abstract class AbstractUnit<S, L, D, R>
             });
         }
 
-        @Override public IFuture<Iterable<S>> getPreviousEdges(S scope, L label) {
-            return CompletableFuture.completedFuture(previousScopeGraph.getEdges(scope, label));
-        }
-
-        @Override public IFuture<Iterable<L>> labels(S currentScope) {
-            assertOwnOrSharedScope(currentScope);
+        @Override public IFuture<Set.Immutable<L>> labels(S scope) {
+            assertOwnOrSharedScope(scope);
             // TODO make more precise with labels for which scope was initialized.
-            return CompletableFuture
-                    .completedFuture(Set.Immutable.union(scopeGraph.get().getLabels(), previousScopeGraph.getLabels()));
+            return CompletableFuture.completedFuture(scopeGraph.get().getLabels());
         }
 
-        @Override public IFuture<Optional<D>> currentDatum(S scope) {
+        @Override public IFuture<Optional<D>> datum(S scope) {
             return getOwner(scope).thenCompose(owner -> {
                 final Datum<S, L, D> datum = Datum.of(self, scope);
                 waitFor(datum, owner);
@@ -999,27 +995,29 @@ public abstract class AbstractUnit<S, L, D, R>
                 });
             });
         }
+    }
 
-        @Override public IFuture<Optional<D>> previousDatum(S scope) {
-            return CompletableFuture.completedFuture(previousScopeGraph.getData(scope));
-        }
+    protected class DifferOps implements IDifferOps<S, L, D> {
 
-        @Override public IFuture<Boolean> matchDatums(D currentDatum, D previousDatum,
-                Function2<S, S, IFuture<Boolean>> scopeMatch) {
-            return differOps.matchDatums(currentDatum, previousDatum, scopeMatch);
+        private final IDifferScopeOps<S, D> scopeOps;
+
+        public DifferOps(IDifferScopeOps<S, D> scopeOps) {
+            this.scopeOps = scopeOps;
         }
 
         @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
             return context.scopeId(previousScope).equals(context.scopeId(currentScope));
         }
 
-        @Override public Set.Immutable<S> getCurrentScopes(D d) {
-            return differOps.getScopes(d);
+        @Override public IFuture<Boolean> matchDatums(D currentDatum, D previousDatum,
+                Function2<S, S, IFuture<Boolean>> scopeMatch) {
+            return scopeOps.matchDatums(currentDatum, previousDatum, scopeMatch);
         }
 
-        @Override public Set.Immutable<S> getPreviousScopes(D d) {
-            return differOps.getScopes(d);
+        @Override public Collection<S> getScopes(D d) {
+            return context.getScopes(d);
         }
+
 
         @Override public boolean ownScope(S scope) {
             return context.scopeId(scope).equals(self.id());
