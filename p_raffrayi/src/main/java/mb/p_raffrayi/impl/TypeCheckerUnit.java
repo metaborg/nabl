@@ -288,7 +288,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
             Function1<R, Q> extractLocal, Function2<Q, Throwable, IFuture<R>> combine) {
         state = UnitState.UNKNOWN;
-        if(initialState.changed()) {
+        // Optional.get() is safe here, because short-circuiting implies that the result was `cached` when `get()` is actually called.
+        if(initialState.changed() || !initialState.previousResult().get().failures().isEmpty()) {
             logger.debug("Unit changed or no previous result was available.");
             transitions = Transitions.INITIALLY_STARTED;
             doRestart();
