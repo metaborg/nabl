@@ -677,7 +677,7 @@ public abstract class AbstractUnit<S, L, D, R>
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
             unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries,
-                    rootScopes, analysis.get(), failures, subUnitResults, stats).withFlow(transitions));
+                    rootScopes, analysis.get(), failures, subUnitResults, stats).withTransitions(transitions));
         } else {
             logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByActor);
         }
