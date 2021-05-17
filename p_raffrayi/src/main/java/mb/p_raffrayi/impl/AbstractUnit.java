@@ -305,6 +305,10 @@ public abstract class AbstractUnit<S, L, D, R>
         final List<EdgeOrData<L>> labels = Lists.newArrayList();
         for(L l : edgeLabels) {
             labels.add(EdgeOrData.edge(l));
+            if(!this.edgeLabels.contains(l)) {
+                logger.error("Initializing scope {} with unregistered edge label {}.", scope, l);
+                throw new IllegalStateException("Initializing scope " + scope + " with unregistered edge label " + l + ".");
+            }
         }
         if(data) {
             labels.add(EdgeOrData.data());
@@ -448,7 +452,8 @@ public abstract class AbstractUnit<S, L, D, R>
                         }
                         return result.whenComplete((r, ex) -> {
                             logger.debug("got answer from {}", sender);
-                            if(!external && ex == null) {
+                            if(ex == null) {
+                                // TODO: incorporate query validation in separate confirmation algorithm, and record only local queries.
                                 recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, r));
                             }
                             resume();

@@ -498,7 +498,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(), AInitialState.changed(parentResult));
+                }, Set.Immutable.of(lbl), AInitialState.changed(parentResult));
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -600,6 +600,124 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Query Recording behavior
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Test(timeout = 10000) public void testRecord_SimpleQuery() throws InterruptedException, ExecutionException {
+        final IDatum lbl = new IDatum() {};
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(lbl), false, true);
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> subResult =
+                                unit.add("sub", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                                    @Override public IFuture<Boolean> run(
+                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                            List<Scope> rootScopes,
+                                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                                        final Scope s1 = rootScopes.get(0);
+                                        unit.initScope(s1, Arrays.asList(), false);
+                                        return unit.runIncremental(restarted -> {
+                                            return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(),
+                                                    DataLeq.any()).thenApply(__ -> true);
+                                        });
+                                    }
+                                }, Arrays.asList(s), AInitialState.added());
+
+                        unit.closeScope(s);
+
+                        final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                        unit.addEdge(s, lbl, d);
+                        unit.closeEdge(s, lbl);
+                        unit.setDatum(d, d);
+
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
+                                .thenCompose(res -> bothRestarted(res, subResult));
+                    }
+
+                }, Set.Immutable.of(lbl), AInitialState.added());
+
+        IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+
+        assertTrue(result.failures().isEmpty());
+        assertTrue(result.analysis());
+
+        assertEquals(1, result.subUnitResults().get("sub").queries().size());
+    }
+
+    @Ignore("Not yet implemented.") @Test(timeout = 10000) public void testRecord_ForwardedQuery() {
+
+    }
+
+    @Test(timeout = 10000) public void testRecord_SharedDeclQuery() throws InterruptedException, ExecutionException {
+        final IDatum lbl = new IDatum() {};
+        final IDatum d = new IDatum() {};
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots,
+                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> sub1Result =
+                                unit.add("sub1", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                                    @Override public IFuture<Boolean> run(
+                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                            List<Scope> rootScopes,
+                                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                                        final Scope s1 = rootScopes.get(0);
+                                        unit.initScope(s1, Arrays.asList(), false);
+                                        return unit.runIncremental(restarted -> {
+                                            return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(),
+                                                    DataLeq.any()).thenApply(env -> env.size() == 1);
+                                        });
+                                    }
+                                }, Arrays.asList(s), AInitialState.added());
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> sub2Result =
+                                unit.add("sub2", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                                    @Override public IFuture<Boolean> run(
+                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                            List<Scope> rootScopes,
+                                            IInitialState<Scope, IDatum, IDatum, Boolean> initialState) {
+                                        final Scope s1 = rootScopes.get(0);
+                                        unit.initScope(s1, Arrays.asList(lbl), false);
+                                        return unit.runIncremental(restarted -> {
+                                            final Scope sd = unit.freshScope("d", Arrays.asList(), true, false);
+                                            unit.setDatum(sd, d);
+                                            unit.addEdge(s1, lbl, sd);
+                                            unit.closeEdge(s1, lbl);
+                                            return CompletableFuture.completedFuture(true);
+                                        });
+                                    }
+                                }, Arrays.asList(s), AInitialState.added());
+
+                        unit.closeScope(s);
+
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
+                                .thenCompose(res -> sub2Result.thenCompose(res2 -> bothRestarted(res, sub1Result)));
+                    }
+
+                }, Set.Immutable.of(lbl), AInitialState.added());
+
+        IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+
+        assertTrue(result.failures().isEmpty());
+        assertTrue(result.analysis());
+
+        assertEquals(1, result.subUnitResults().get("sub1").queries().size());
+        assertEquals(1, result.queries().size());
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
