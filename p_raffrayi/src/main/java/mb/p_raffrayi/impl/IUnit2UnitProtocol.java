@@ -1,16 +1,13 @@
 package mb.p_raffrayi.impl;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.future.IFuture;
 
-import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -43,17 +40,5 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<Optional<D>> _datum(S scope);
 
     IFuture<Optional<S>> _match(S previousScope);
-
-    void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m);
-
-    void _deadlockReply(IActorRef<? extends IUnit<S, L, D, ?>> i, int m, Set<IActorRef<? extends IUnit<S, L, D, ?>>> r);
-
-    void _deadlocked(Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes);
-
-    IFuture<ReleaseOrRestart<S>> _requireRestart();
-
-    void _release(BiMap.Immutable<S> patches);
-
-    void _restart();
 
 }

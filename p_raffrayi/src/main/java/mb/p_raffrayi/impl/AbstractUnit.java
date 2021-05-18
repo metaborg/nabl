@@ -84,7 +84,7 @@ import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public abstract class AbstractUnit<S, L, D, R>
-        implements IUnit<S, L, D, R>, IActorMonitor, Host<IActorRef<? extends IUnit<S, L, D, ?>>> {
+        implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
@@ -94,7 +94,8 @@ public abstract class AbstractUnit<S, L, D, R>
     protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent;
     protected final IUnitContext<S, L, D> context;
 
-    private final ChandyMisraHaas<IActorRef<? extends IUnit<S, L, D, ?>>> cmh;
+    private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
+    protected final UnitProcess<S, L, D> process;
 
     private volatile boolean innerResult;
     protected final Ref<R> analysis;
@@ -130,6 +131,7 @@ public abstract class AbstractUnit<S, L, D, R>
         this.context = context;
 
         this.cmh = new ChandyMisraHaas<>(this, this::handleDeadlock);
+        this.process = new UnitProcess<>(self);
 
         this.innerResult = false;
         this.analysis = new Ref<>();
@@ -226,7 +228,7 @@ public abstract class AbstractUnit<S, L, D, R>
                 analysis.set(r);
             }
             granted(token, self);
-            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = getTokens(self);
+            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = getTokens(process);
             if(!selfTokens.isEmpty()) {
                 logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
@@ -650,7 +652,7 @@ public abstract class AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     protected MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    protected MultiSetMap.Immutable<IActorRef<? extends IUnit<S, L, D, ?>>, IWaitFor<S, L, D>> waitForsByActor =
+    protected MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess =
             MultiSetMap.Immutable.of();
 
     protected boolean isWaiting() {
@@ -661,24 +663,30 @@ public abstract class AbstractUnit<S, L, D, R>
         return waitFors.contains(token);
     }
 
-    private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
-        return waitForsByActor.get(unit);
+    private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
+        return waitForsByProcess.get(unit);
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
         logger.debug("{} wait for {}/{}", self, actor, token);
         waitFors = waitFors.add(token);
-        waitForsByActor = waitForsByActor.put(actor, token);
+        waitForsByProcess = waitForsByProcess.put(process(actor), token);
     }
 
     protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
-        if(!waitForsByActor.contains(actor, token)) {
+        self.assertOnActorThread();
+        final IProcess<S, L, D> process = process(actor);
+        if(!waitForsByProcess.contains(process, token)) {
             logger.error("{} not waiting for granted {}/{}", self, actor, token);
             throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
         }
         logger.debug("{} granted {} by {}", self, token, actor);
         waitFors = waitFors.remove(token);
-        waitForsByActor = waitForsByActor.remove(actor, token);
+        waitForsByProcess = waitForsByProcess.remove(process, token);
+    }
+
+    private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        return actor == self ? process : new UnitProcess<>(actor);
     }
 
     /**
@@ -693,7 +701,7 @@ public abstract class AbstractUnit<S, L, D, R>
             unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries,
                     rootScopes, analysis.get(), failures, subUnitResults, stats).withTransitions(transitions));
         } else {
-            logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByActor);
+            logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByProcess);
         }
     }
 
@@ -775,30 +783,29 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    @Override public void _deadlockQuery(IActorRef<? extends IUnit<S, L, D, ?>> i, int m) {
+    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m) {
         final IActorRef<? extends IUnit<S, L, D, ?>> j = self.sender(TYPE);
-        cmh.query(i, m, j);
+        cmh.query(i, m, process(j));
     }
 
-    @Override public void _deadlockReply(IActorRef<? extends IUnit<S, L, D, ?>> i, int m,
-            java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
+    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {
         cmh.reply(i, m, R);
     }
 
-    @Override public void _deadlocked(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+    @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
         if(!failDelays(nodes)) {
-            logger.debug("No delays to fail. Still waiting for {}.", waitForsByActor);
+            logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
             resume();
         }
     }
 
-    protected void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+    protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
-        if(!nodes.contains(self)) {
+        if(!nodes.contains(process)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
         if(nodes.size() == 1) {
-            logger.debug("{} self-deadlocked with {}", this, getTokens(self));
+            logger.debug("{} self-deadlocked with {}", this, getTokens(process));
             if(failDelays(nodes)) {
                 resume(); // resume to ensure further deadlock detection after these are handled
             } else {
@@ -806,8 +813,8 @@ public abstract class AbstractUnit<S, L, D, R>
             }
         } else {
             // nodes will include self
-            for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
-                self.async(node)._deadlocked(nodes);
+            for(IProcess<S, L, D> node : nodes) {
+                node.from(self, context)._deadlocked(nodes);
             }
         }
     }
@@ -818,16 +825,16 @@ public abstract class AbstractUnit<S, L, D, R>
      *
      * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
-    private boolean failDelays(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
+    private boolean failDelays(java.util.Set<IProcess<S, L, D>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
         for(Delay delay : delays.inverse().keySet()) {
-            if(nodes.contains(delay.sender)) {
+            if(nodes.contains(process(delay.sender))) {
                 logger.debug("{} fail {}", self, delay);
                 delays.inverse().remove(delay);
                 deadlocked.__insert(delay.future);
             }
         }
-        for(IActorRef<? extends IUnit<S, L, D, ?>> node : nodes) {
+        for(IProcess<S, L, D> node : nodes) {
             for(IWaitFor<S, L, D> wf : getTokens(node)) {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
@@ -840,7 +847,7 @@ public abstract class AbstractUnit<S, L, D, R>
                     match -> {},
                     result  -> {},
                     typeCheckerState -> {
-                        if(nodes.contains(typeCheckerState.origin())) {
+                        if(nodes.contains(process(typeCheckerState.origin()))) {
                             logger.debug("{} fail {}", self, typeCheckerState);
                             deadlocked.__insert(typeCheckerState.future());
                         }
@@ -940,22 +947,20 @@ public abstract class AbstractUnit<S, L, D, R>
     // ChandryMisraHaas.Host
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IActorRef<? extends IUnit<S, L, D, ?>> process() {
-        return self;
+    @Override public IProcess<S, L, D> process() {
+        return process;
     }
 
-    @Override public java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> dependentSet() {
-        return waitForsByActor.keySet();
+    @Override public java.util.Set<IProcess<S, L, D>> dependentSet() {
+        return waitForsByProcess.keySet();
     }
 
-    @Override public void query(IActorRef<? extends IUnit<S, L, D, ?>> k, IActorRef<? extends IUnit<S, L, D, ?>> i,
-            int m) {
-        self.async(k)._deadlockQuery(i, m);
+    @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
+        k.from(self, context)._deadlockQuery(i, m);
     }
 
-    @Override public void reply(IActorRef<? extends IUnit<S, L, D, ?>> k, IActorRef<? extends IUnit<S, L, D, ?>> i,
-            int m, java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> R) {
-        self.async(k)._deadlockReply(i, m, R);
+    @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {
+        k.from(self, context)._deadlockReply(i, m, R);
     }
 
     ///////////////////////////////////////////////////////////////////////////

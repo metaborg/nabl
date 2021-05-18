@@ -27,13 +27,15 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.actors.TypeTag;
+import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.impl.ActorSystem;
 import mb.p_raffrayi.actors.impl.IActorScheduler;
 import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.scopegraph.oopsla20.diff.BiMap;
 
-public class Broker<S, L, D, R> {
+public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
@@ -57,6 +59,9 @@ public class Broker<S, L, D, R> {
     private final Map<String, Set<ICompletable<IActorRef<? extends IUnit<S, L, D, ?>>>>> delays;
     private final Object lock = new Object(); // Used to synchronize updates/queries of `units` and `delays`
 
+    private final BrokerProcess<S, L, D> process;
+    private ChandyMisraHaas<IProcess<S, L, D>> cmh;
+
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
             IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel,
             IActorScheduler scheduler) {
@@ -76,6 +81,8 @@ public class Broker<S, L, D, R> {
         this.totalUnits = new AtomicInteger();
 
         this.delays = new ConcurrentHashMap<>();
+        this.process = new BrokerProcess<S, L, D>();
+        this.cmh = new ChandyMisraHaas<>(this, this::_deadlocked);
     }
 
     private IFuture<IUnitResult<S, L, D, R>> run() {
@@ -145,6 +152,10 @@ public class Broker<S, L, D, R> {
         watcher.start();
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Context
+    ///////////////////////////////////////////////////////////////////////////
+
     private class UnitContext implements IUnitContext<S, L, D> {
 
         private final IActor<? extends IUnit<S, L, D, ?>> self;
@@ -204,7 +215,72 @@ public class Broker<S, L, D, R> {
             return scheduler.parallelism();
         }
 
+        @Override public IDeadlockProtocol<S, L, D> deadlock() {
+            return Broker.this;
+        }
+
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // IDeadlockProtocol
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public void _deadlocked(Set<IProcess<S, L, D>> nodes) {
+        // Nothing to do (yet)
+    }
+
+    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m) {
+        cmh.query(i, m, process);
+
+    }
+
+    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
+        cmh.reply(i, m, R);
+    }
+
+    @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
+        // When broker is involved in a deadlock, there is a unit waiting for
+        // another unit to be added. Just releasing such a unit is not safe.
+        return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
+    }
+
+    @Override public void _release(BiMap.Immutable<S> patches) {
+        // Since we always force a restart, this method should never be called.
+        logger.error("Trying to release broker.");
+        throw new IllegalStateException("Cannot release broker.");
+    }
+
+    @Override public void _restart() {
+        // Ignore
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // ChandyMisrahaas.Host
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override public IProcess<S, L, D> process() {
+        return process;
+    }
+
+    @Override public Set<IProcess<S, L, D>> dependentSet() {
+        return ImmutableSet.of();
+    }
+
+    @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
+        k.from(this)._deadlockQuery(i, m);
+    }
+
+    @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
+        k.from(this)._deadlockReply(i, m, R);
+    }
+
+    public IDeadlockProtocol<S, L, D> deadlock(IActorRef<? extends IDeadlockProtocol<S, L, D>> unit) {
+        return system.async(unit);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Utilities
+    ///////////////////////////////////////////////////////////////////////////
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
@@ -229,8 +305,7 @@ public class Broker<S, L, D, R> {
 
     public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
-            IDifferScopeOps<S, D> scopeOps, ICancel cancel, double preemptProbability,
-            int scheduleDelayBoundMillis) {
+            IDifferScopeOps<S, D> scopeOps, ICancel cancel, double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }

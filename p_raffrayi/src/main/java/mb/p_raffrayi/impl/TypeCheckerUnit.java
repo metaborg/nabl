@@ -23,7 +23,6 @@ import org.metaborg.util.unit.Unit;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
-import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.Transitions;
@@ -127,7 +126,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
-        if(state.equals(UnitState.ACTIVE) || state.equals(UnitState.DONE)) {
+        if(state.equals(UnitState.ACTIVE) || (state == UnitState.DONE && transitions != Transitions.RELEASED)) {
             return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
         }
         // When these patches are used, *all* involved units re-use their old scope graph.
@@ -317,6 +316,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertInState(UnitState.UNKNOWN);
         resume();
 
+        if(initialState.previousResult().get().queries().isEmpty()) {
+            // TODO: aggregate required scope patches
+            doRelease(BiMap.Immutable.of());
+            return;
+        }
+
         final List<IFuture<Boolean>> futures = new ArrayList<>();
         initialState.previousResult().get().queries().forEach(rq -> {
             final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
@@ -338,9 +343,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                             confirmationResult.completeExceptionally(ex);
                         }
                     } else if(!m.isPresent()) {
-                        if(!rq.result().isEmpty()) {
-                            confirmationResult.complete(false);
-                        }
+                        confirmationResult.complete(rq.result().isEmpty());
                     } else {
                         final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
                         final ScopePath<S, L> path = new ScopePath<>(m.get());
@@ -349,6 +352,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
                                 .whenComplete((env, ex2) -> {
                                     granted(query, owner);
+                                    resume();
                                     if(ex2 != null) {
                                         if(ex2 == Release.instance) {
                                             confirmationResult.complete(true);
@@ -358,9 +362,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                                     } else {
                                         // Query is valid iff environments are equal
                                         // TODO: compare environments with scope patches.
-                                        if(!env.equals(rq.result())) {
-                                            confirmationResult.complete(false);
-                                        }
+                                        confirmationResult.complete(env.equals(rq.result()));
                                     }
                                 });
                     }
@@ -378,7 +380,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 }
             } else {
                 // TODO: collect patches
-                // doRelease(BiMap.Immutable.of());
+                doRelease(BiMap.Immutable.of());
             }
         });
     }
@@ -419,7 +421,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
-            waitForsByActor.get(self).forEach(wf -> {
+            waitForsByProcess.get(process).forEach(wf -> {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
                     initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
@@ -462,8 +464,17 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void handleDeadlock(java.util.Set<IActorRef<? extends IUnit<S, L, D, ?>>> nodes) {
-        AggregateFuture.forAll(nodes, node -> self.async(node)._requireRestart()).whenComplete((rors, ex) -> {
+    @Override public void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
+        if(nodes.size() == 1) {
+            if(isWaitingFor(Activate.of(self, whenActive))) {
+                assertInState(UnitState.UNKNOWN);
+                doRelease(BiMap.Immutable.of());
+            } else {
+                super.handleDeadlock(nodes);
+            }
+            return;
+        }
+        AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             logger.info("Received patches: {}.", rors);
             if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
                 // All units are already active, proceed with regular deadlock handling
@@ -475,11 +486,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         if(ex != null) {
                             failures.add(ex);
                         }
-                        nodes.forEach(node -> self.async(node)._restart());
+                        nodes.forEach(node -> node.from(self, context)._restart());
                     },
                     ptcs -> {
                         logger.info("Releasing all involved units: {}.", ptcs);
-                        nodes.forEach(node -> self.async(node)._release(ptcs));
+                        nodes.forEach(node -> node.from(self, context)._release(ptcs));
                     });
             }
             resume(); // FIXME needed?

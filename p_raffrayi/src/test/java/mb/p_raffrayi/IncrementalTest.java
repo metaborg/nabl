@@ -120,8 +120,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 }, Set.Immutable.of(), AInitialState.cached(parentResult));
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
+        assertTrue(result.analysis());
 
         assertEquals(Transitions.RELEASED, result.transitions());
         assertEquals(Transitions.RELEASED, result.subUnitResults().get("sub").transitions());

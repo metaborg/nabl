@@ -36,4 +36,6 @@ public interface IUnitContext<S, L, D> {
 
     int parallelism();
 
+    IDeadlockProtocol<S, L, D> deadlock();
+
 }
