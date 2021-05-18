@@ -434,7 +434,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     result -> {},
                     typeCheckerState -> {},
                     differResult -> {},
-                    activate -> {}
+                    activate -> {},
+                    unitAdd -> {}
                 ));
                 // @formatter:on
             });

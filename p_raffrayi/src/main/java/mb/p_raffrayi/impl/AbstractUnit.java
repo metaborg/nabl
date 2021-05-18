@@ -70,6 +70,7 @@ import mb.p_raffrayi.impl.tokens.Match;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.p_raffrayi.impl.tokens.TypeCheckerState;
+import mb.p_raffrayi.impl.tokens.UnitAdd;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -96,6 +97,7 @@ public abstract class AbstractUnit<S, L, D, R>
 
     private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
     protected final UnitProcess<S, L, D> process;
+    private final BrokerProcess<S, L, D> broker = new BrokerProcess<>();
 
     private volatile boolean innerResult;
     protected final Ref<R> analysis;
@@ -640,7 +642,23 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
-        return self.schedule(context.owner(scope)).whenComplete((r, ex) -> self.assertOnActorThread());
+        final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = context.owner(scope);
+        if(future.isDone()) {
+            return future;
+        }
+        final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> result = new CompletableFuture<>();
+        final UnitAdd<S, L, D> unitAdd = UnitAdd.of(self, context.scopeId(scope), result);
+        waitFor(unitAdd, broker);
+        // Due to the synchronous nature of the Broker, this future may be completed by
+        // another unit's thread. Hence we wrap it in self.schedule, so we do not break
+        // the actor abstraction.
+        self.schedule(context.owner(scope)).whenComplete((r, ex) -> {
+            self.assertOnActorThread();
+            granted(unitAdd, broker);
+            result.complete(r, ex);
+            resume(); // FIXME needed?
+        });
+        return result;
     }
 
     protected boolean canAnswer(S scope) {
@@ -668,19 +686,26 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
-        logger.debug("{} wait for {}/{}", self, actor, token);
+        waitFor(token, process(actor));
+    }
+
+    protected void waitFor(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
+        logger.debug("{} wait for {}/{}", self, process, token);
         waitFors = waitFors.add(token);
-        waitForsByProcess = waitForsByProcess.put(process(actor), token);
+        waitForsByProcess = waitForsByProcess.put(process, token);
     }
 
     protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        granted(token, process(actor));
+    }
+
+    protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
         self.assertOnActorThread();
-        final IProcess<S, L, D> process = process(actor);
         if(!waitForsByProcess.contains(process, token)) {
-            logger.error("{} not waiting for granted {}/{}", self, actor, token);
-            throw new IllegalStateException(self + " not waiting for granted " + actor + "/" + token);
+            logger.error("{} not waiting for granted {}/{}", self, process, token);
+            throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
         }
-        logger.debug("{} granted {} by {}", self, token, actor);
+        logger.debug("{} granted {} by {}", self, token, process);
         waitFors = waitFors.remove(token);
         waitForsByProcess = waitForsByProcess.remove(process, token);
     }
@@ -853,7 +878,8 @@ public abstract class AbstractUnit<S, L, D, R>
                         }
                     },
                     differResult -> {},
-                    activate -> {}
+                    activate -> {},
+                    unitAdd -> {}
                 ));
                 // @formatter:on
             }
@@ -937,6 +963,10 @@ public abstract class AbstractUnit<S, L, D, R>
                 activate -> {
                     logger.error("Unit neither activated nor released.");
                     self.complete(activate.future(), null, new DeadlockException("Type checker deadlocked."));
+                },
+                unitAdd -> {
+                    logger.error("Requested Unit {} was never added.", unitAdd.unitId());
+                    self.complete(unitAdd.future(), null, new DeadlockException("Requested Unit " + unitAdd.unitId() + " was never added."));
                 }
             ));
             // @formatter:on

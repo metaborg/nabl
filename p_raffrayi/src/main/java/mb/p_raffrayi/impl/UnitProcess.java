@@ -11,12 +11,12 @@ class UnitProcess<S, L, D> implements IProcess<S, L, D> {
         this.unit = unit;
     }
 
-    @Override public IDeadlockProtocol<S, L, D> from(IActor<? extends IDeadlockProtocol<S, L, D>> process, IUnitContext<S, L, D> context) {
-        return process.async(unit);
+    @Override public IDeadlockProtocol<S, L, D> from(IActor<? extends IDeadlockProtocol<S, L, D>> origin, IUnitContext<S, L, D> context) {
+        return origin.async(unit);
     }
 
-    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?> process) {
-        return process.deadlock(unit);
+    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?> origin) {
+        return origin.deadlock(unit);
     }
 
     @Override public boolean equals(Object obj) {

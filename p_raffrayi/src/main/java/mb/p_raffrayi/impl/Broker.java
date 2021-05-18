@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -7,7 +8,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletable;
@@ -61,6 +66,10 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
     private final BrokerProcess<S, L, D> process;
     private ChandyMisraHaas<IProcess<S, L, D>> cmh;
+    private AtomicReference<MultiSet.Immutable<IProcess<S, L, D>>> dependentSet = new AtomicReference<>(MultiSet.Immutable.of());
+
+    // https://regex101.com/r/sGeGLs/1
+    private static final Pattern RE_ID_SEG = Pattern.compile("\\/(?:\\\\\\\\|\\\\\\/|[^\\\\\\/])+");
 
     private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
             IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel,
@@ -184,31 +193,33 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
             return scopeImpl.getAllScopes(datum);
         }
 
-        // TODO: this type of asynchrony is very prone to errors
-        // because there is no deadlock detection on it.
-        // Hence a better way to wait for actors starting should be invented.
         @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope) {
             final String id = scopeImpl.id(scope);
+            // No synchronization and deadlock handling when unit can be found.
+            if(units.containsKey(id)) {
+                return CompletableFuture.completedFuture(units.get(id));
+            }
             synchronized(lock) {
-                if(units.containsKey(id)) {
-                    return CompletableFuture.completedFuture(units.get(id));
-                } else {
-                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
-                    delays.computeIfAbsent(id, key -> Sets.newConcurrentHashSet()).add(future);
-                    return future;
-                }
+                cmh.exec();
+                final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> result = getActorRef(id);
+                cmh.idle();
+                return result;
             }
         }
 
         @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> add(
                 String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
                 List<S> rootScopes) {
-            final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
-                    (subself) -> unitProvider.apply(subself, new UnitContext(subself)));
-            addUnit(unit);
-            final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
-            unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
-            return Tuple2.of(unitResult, unit);
+            synchronized(lock) {
+                cmh.exec();
+                final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
+                        (subself) -> unitProvider.apply(subself, new UnitContext(subself)));
+                addUnit(unit);
+                final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
+                unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
+                cmh.idle();
+                return Tuple2.of(unitResult, unit);
+            }
         }
 
         @Override public int parallelism() {
@@ -217,6 +228,49 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
         @Override public IDeadlockProtocol<S, L, D> deadlock() {
             return Broker.this;
+        }
+
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Parent Actors
+    ///////////////////////////////////////////////////////////////////////////
+
+    private IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getActorRef(String unitId) {
+        final Matcher idMatcher = RE_ID_SEG.matcher(unitId);
+        final List<String> segments = new ArrayList<>();
+        while(idMatcher.find()) {
+            segments.add(idMatcher.group());
+        }
+        synchronized(lock) {
+            return getActorRef(segments);
+        }
+    }
+
+    private IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getActorRef(final List<String> segments) {
+        final String unitId = String.join("", segments);
+        if(segments.isEmpty()) {
+            throw new IllegalStateException("Invalid unit id.");
+        }
+
+        // Should be synchronized by `parent(String)` already.
+        if(units.containsKey(unitId)) {
+            return CompletableFuture.completedFuture(units.get(unitId));
+        } else {
+            segments.remove(segments.size() - 1);
+            return getActorRef(segments).thenCompose(parent -> {
+                synchronized(lock) {
+                    final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
+                    dependentSet.getAndUpdate(ds -> ds.add(origin));
+                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
+                    delays.computeIfAbsent(id, key -> Sets.newConcurrentHashSet()).add(future);
+                    return future.whenComplete((ref, ex) -> {
+                        synchronized(lock) {
+                            dependentSet.getAndUpdate(ds -> ds.remove(origin));
+                        }
+                    });
+                }
+            });
         }
 
     }
@@ -263,7 +317,9 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     }
 
     @Override public Set<IProcess<S, L, D>> dependentSet() {
-        return ImmutableSet.of();
+        synchronized(lock) {
+            return dependentSet.get().elementSet();
+        }
     }
 
     @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
