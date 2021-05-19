@@ -4,6 +4,7 @@ import static com.google.common.collect.Streams.stream;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -61,7 +62,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
 
     private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
-    private final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
+    private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
@@ -99,7 +100,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         } else if(state == UnitState.DONE) {
             // Completed synchronously
             whenActive.complete(Unit.unit);
-            confirmationResult.complete(true);
+            confirmationResult.complete(Optional.of(BiMap.Immutable.of()));
         }
 
         if(!whenActive.isDone()) {
@@ -282,7 +283,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
-            Function1<R, Q> extractLocal, Function2<Q, Throwable, IFuture<R>> combine) {
+            Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
+            Function2<Q, Throwable, IFuture<R>> combine) {
         state = UnitState.UNKNOWN;
         // Optional.get() is safe here, because short-circuiting implies that the result was `cached` when `get()` is actually called.
         if(initialState.changed() || !initialState.previousResult().get().failures().isEmpty()) {
@@ -298,10 +300,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         // Therefore, if unit is not changed, a previous result must be given.
         final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
 
-        return confirmationResult.thenCompose(validated -> {
-            if(validated) {
+        return confirmationResult.thenCompose(patches -> {
+            if(patches.isPresent()) {
                 final Q previousLocalResult = extractLocal.apply(previousResult.analysis());
-                return combine.apply(previousLocalResult, null);
+                return combine.apply(patch.apply(previousLocalResult, patches.get()), null);
             } else {
                 return runLocalTypeChecker.apply(true).compose(combine::apply);
             }
@@ -444,7 +446,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(Release.instance);
-            confirmationResult.complete(true);
+            confirmationResult.complete(Optional.of(patches));
 
             tryFinish(); // FIXME needed?
         }
@@ -454,7 +456,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
             state = UnitState.ACTIVE;
             whenActive.complete(Unit.unit);
-            confirmationResult.complete(false);
+            confirmationResult.complete(Optional.empty());
             tryFinish(); // FIXME needed?
             return true;
         }
@@ -481,6 +483,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 // All units are already active, proceed with regular deadlock handling
                 super.handleDeadlock(nodes);
             } else {
+                // @formatter:off
                 rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
                     () -> {
                         logger.info("Restarting all involved units.");
@@ -493,6 +496,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         logger.info("Releasing all involved units: {}.", ptcs);
                         nodes.forEach(node -> node.from(self, context)._release(ptcs));
                     });
+                // @formatter:on
             }
             resume(); // FIXME needed?
         });
