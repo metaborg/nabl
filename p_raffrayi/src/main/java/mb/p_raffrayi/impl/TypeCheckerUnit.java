@@ -163,6 +163,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
         assertActive();
 
+        if(!this.initialState.hasPreviousResult() && initialState.hasPreviousResult()) {
+            logger.warn("Starting unit {} with initial result, while added self.", id);
+        }
+
         initialState.previousResult().map(IUnitResult::rootScopes).ifPresent(previousRootScopes -> {
             // When a scope is shared, the shares must be consistent.
             // Also, it is not necessary that shared scopes are reachable from the root scopes

@@ -16,4 +16,8 @@ public interface IInitialState<S, L, D, R> {
      */
     Optional<IUnitResult<S, L, D, R>> previousResult();
 
+    default boolean hasPreviousResult() {
+        return previousResult().isPresent();
+    }
+
 }

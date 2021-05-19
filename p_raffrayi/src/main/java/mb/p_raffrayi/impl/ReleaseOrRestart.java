@@ -11,6 +11,7 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 public abstract class ReleaseOrRestart<S> {
 
     @SuppressWarnings("rawtypes") private static ReleaseOrRestart RESTART = new Restart<>();
+    @SuppressWarnings("rawtypes") private static ReleaseOrRestart EMPTY_RELEASE = new Release<>(BiMap.Immutable.of());
 
     private ReleaseOrRestart() {
     }
@@ -41,8 +42,15 @@ public abstract class ReleaseOrRestart<S> {
         return RESTART;
     }
 
-    public static <S> ReleaseOrRestart<S> release(BiMap.Immutable<S> patches) {
+    @SuppressWarnings("unchecked") public static <S> ReleaseOrRestart<S> release(BiMap.Immutable<S> patches) {
+        if(patches.isEmpty()) {
+            return EMPTY_RELEASE;
+        }
         return new Release<>(patches);
+    }
+
+    @SuppressWarnings("unchecked") public static <S> ReleaseOrRestart<S> release() {
+        return EMPTY_RELEASE;
     }
 
     private static class Restart<S> extends ReleaseOrRestart<S> {
