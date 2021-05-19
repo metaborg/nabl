@@ -8,7 +8,7 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 
 public interface IDeadlockProtocol<S, L, D> {
 
-    void _deadlockQuery(IProcess<S, L, D> i, int m);
+    void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k);
 
     void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> r);
 

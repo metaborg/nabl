@@ -808,9 +808,8 @@ public abstract class AbstractUnit<S, L, D, R>
         }
     }
 
-    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m) {
-        final IActorRef<? extends IUnit<S, L, D, ?>> j = self.sender(TYPE);
-        cmh.query(i, m, process(j));
+    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
+        cmh.query(i, m, k);
     }
 
     @Override public void _deadlockReply(IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {
@@ -986,7 +985,7 @@ public abstract class AbstractUnit<S, L, D, R>
     }
 
     @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
-        k.from(self, context)._deadlockQuery(i, m);
+        k.from(self, context)._deadlockQuery(i, m, process);
     }
 
     @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {

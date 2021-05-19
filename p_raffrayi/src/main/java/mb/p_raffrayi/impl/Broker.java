@@ -283,9 +283,8 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
         // Nothing to do (yet)
     }
 
-    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m) {
-        cmh.query(i, m, process);
-
+    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
+        cmh.query(i, m, k);
     }
 
     @Override public void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
@@ -323,7 +322,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     }
 
     @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
-        k.from(this)._deadlockQuery(i, m);
+        k.from(this)._deadlockQuery(i, m, process);
     }
 
     @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
