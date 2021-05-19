@@ -463,7 +463,7 @@ public class TermMatch {
         public <R> IMatcher<R> req(String msg, IMatcher<R> matcher) {
             return (term, unifier) -> {
                 return matcher.match(term, unifier).map(Optional::of)
-                        .orElseThrow(() -> new IllegalArgumentException(msg + ": " + term));
+                        .orElseThrow(() -> new IllegalArgumentException(msg + ": " + Unifiers.Immutable.of().toString(term, 4)));
             };
         }
 
