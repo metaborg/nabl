@@ -30,6 +30,7 @@ public class STX_get_scopegraph_edges extends StatixPrimitive {
         // @formatter:off
         final ITerm edges = M.cases(
             M.tuple2(Scope.matcher(), StatixTerms.label(), (t, s, r) -> {
+                reportInvalidEdgeLabel(analysis, r);
                 return B.newList(state.scopeGraph().getEdges(s, r));
             })
         ).match(term).orElseThrow(() -> new InterpreterException("Expected scope-label pair."));

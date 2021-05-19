@@ -100,6 +100,7 @@ public class StatixTerms {
     public static final String PATH_STEP_OP = "PathStep";
     public static final String WITHID_OP = "WithId";
     public static final String NOID_OP = "NoId";
+    public static final String SCOPEGRAPH_OP = "ScopeGraph";
 
     private static final String EOP_OP = "EOP";
 
@@ -567,6 +568,16 @@ public class StatixTerms {
     ///////////////////////////////////////////////////////////////////////////
 
     public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraph() {
+        // @formatter:off
+        return M.cases(
+            M.appl1(SCOPEGRAPH_OP, scopeGraphEntries(), (t, scopeGraph) -> scopeGraph),
+            // DEPRECATED
+            scopeGraphEntries()
+        );
+        // @formatter:on
+    }
+
+    public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraphEntries() {
         return M.listElems(scopeEntry(), (t, scopeEntries) -> {
             final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
             for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
@@ -625,7 +636,7 @@ public class StatixTerms {
         }
 
         // @formatter:on
-        return B.newList(scopeEntries);
+        return B.newAppl(SCOPEGRAPH_OP, B.newList(scopeEntries));
     }
 
     ///////////////////////////////////////////////////////////////////////////

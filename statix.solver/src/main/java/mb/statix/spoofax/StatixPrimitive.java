@@ -45,11 +45,12 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
-    private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+    protected static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
 
     final protected int tvars;
 
@@ -104,6 +105,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
                 }
             }
             logger.error("+--------------------------------------+");
+        }
+    }
+
+    protected void reportInvalidDataLabel(SolverResult analysis, ITerm label) {
+        if(!analysis.spec().dataLabels().contains(label)) {
+            logger.warn("{} is not a valid relation in this specification. Available relations are {}.", label, analysis.spec().dataLabels());
+        }
+    }
+
+    protected void reportInvalidEdgeLabel(SolverResult analysis, ITerm label) {
+        if(!analysis.spec().edgeLabels().contains(label)) {
+            logger.warn("{} is not a valid data label in this specification. Available labels are {}.", label, analysis.spec().edgeLabels());
         }
     }
 
