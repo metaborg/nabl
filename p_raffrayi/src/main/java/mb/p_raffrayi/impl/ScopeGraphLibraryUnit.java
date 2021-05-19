@@ -172,7 +172,8 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override public void _restart() {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+        // As part of the DataWf and DataLeq params of incoming queries, library the workers of a library unit
+        // can have outgoing queries. When these cause a deadlock, workers can receive a restart.
     }
 
     @Override protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, Unit> initialState,
