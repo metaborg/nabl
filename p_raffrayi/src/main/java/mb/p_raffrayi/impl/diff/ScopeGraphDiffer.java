@@ -474,9 +474,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         if(differOps.ownOrSharedScope(currentScope)) {
             // We can only own edges from scopes that we own, or that are shared with us.
-            final IFuture<Set.Immutable<L>> labels = AggregateFuture.apply(currentContext.labels(currentScope), previousContext.labels(previousScope))
-                    .thenApply(lbls -> Set.Immutable.union(lbls._1(), lbls._2()))
-                    .whenComplete((l, __) -> logger.trace("Labels for {}: {}", currentScope, l));
+            final IFuture<Set.Immutable<L>> labels =
+                    AggregateFuture.apply(currentContext.labels(currentScope), previousContext.labels(previousScope))
+                            .thenApply(lbls -> Set.Immutable.union(lbls._1(), lbls._2()))
+                            .whenComplete((l, __) -> logger.trace("Labels for {}: {}", currentScope, l));
             final K<Set.Immutable<L>> scheduleMatches = (lbls) -> {
                 logger.trace("Received labels for {}, scheduling edge matches.", currentScope);
                 aggregateAll(lbls, lbl -> scheduleEdgeMatches(currentScope, previousScope, lbl)).thenAccept(__ -> {
@@ -495,7 +496,6 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         // Collect all scopes in data term of previous scope
         schedulePreviousData(previousScope);
-
         previousScopeProcessed(previousScope);
 
         return Unit.unit;
@@ -554,6 +554,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         removedScopes.__insert(previousScope);
 
         schedulePreviousData(previousScope);
+        previousScopeProcessed(previousScope);
 
         return Unit.unit;
     }
@@ -657,20 +658,20 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void previousScopeProcessed(S previousScope) {
         logger.trace("Complete (PS) {}", previousScope);
-        previousScopeProcessedDelays.get(previousScope).forEach(c -> c.complete(Unit.unit));
+        previousScopeProcessedDelays.removeKey(previousScope).forEach(c -> c.complete(Unit.unit));
         logger.trace("Finished complete (PS) {}", previousScope);
     }
 
     private void previousScopeComplete(S previousScope) {
         logger.trace("Complete (PSC) {}", previousScope);
         completedPreviousScopes.__insert(previousScope);
-        previousScopeCompletedDelays.get(previousScope).forEach(c -> c.complete(Unit.unit));
+        previousScopeCompletedDelays.removeKey(previousScope).forEach(c -> c.complete(Unit.unit));
         logger.trace("Finished complete (PSC) {}", previousScope);
     }
 
     private void currentEdgeComplete(Edge<S, L> current) {
         logger.trace("Complete (CE), {}", current);
-        currentEdgeCompleteDelays.get(current).forEach(c -> c.complete(Unit.unit));
+        currentEdgeCompleteDelays.removeKey(current).forEach(c -> c.complete(Unit.unit));
         logger.trace("Finished complete (CE), {}", current);
     }
 
