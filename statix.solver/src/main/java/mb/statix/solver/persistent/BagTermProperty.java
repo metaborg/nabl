@@ -5,6 +5,7 @@ import java.io.Serializable;
 import org.metaborg.util.collection.ConsList;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.statix.solver.ITermProperty;
 
 public class BagTermProperty implements ITermProperty, Serializable {
@@ -31,6 +32,12 @@ public class BagTermProperty implements ITermProperty, Serializable {
 
     @Override public ITermProperty addValue(ITerm value) {
         return new BagTermProperty(values.prepend(value));
+    }
+
+    @Override public ITermProperty replace(IReplacement replacement) {
+        final ITermProperty newProp = BagTermProperty.of();
+        values.forEach(val -> newProp.addValue(replacement.apply(val)));
+        return newProp;
     }
 
     public static ITermProperty of() {

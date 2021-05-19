@@ -10,7 +10,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
@@ -45,6 +44,7 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
                 return runSolver(context, group.rule(), Arrays.asList(parentScope, thisGroupScope));
             },
             GroupResult::solveResult,
+            this::patch,
             (result, ex) -> {
                 return AggregateFuture.apply(groupResults, unitResults).thenApply(e -> {
                     return GroupResult.of(e._1(), e._2(), result, ex);

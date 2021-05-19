@@ -33,6 +33,7 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
                 return runSolver(context, unit.rule(), rootScopes);
             },
             UnitResult::solveResult,
+            this::patch,
             (result, ex) -> {
                 return CompletableFuture.completedFuture(UnitResult.of(unit.resource(), result, ex));
             })

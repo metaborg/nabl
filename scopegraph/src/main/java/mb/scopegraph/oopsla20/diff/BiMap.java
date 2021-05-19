@@ -67,6 +67,10 @@ public abstract class BiMap<E> {
             return newMap.freeze();
         }
 
+        public boolean isEmpty() {
+            return fwd.isEmpty();
+        }
+
         public Transient<E> melt() {
             return new Transient<>(fwd.asTransient(), bwd.asTransient());
         }

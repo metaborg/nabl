@@ -19,6 +19,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
@@ -307,7 +308,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
 
         /**
          * Disunify the given disequality.
-         * 
+         *
          * Reduces the disequality to canonical form for the current unifier. Returns a reduced disequality, or none if
          * the disequality is satisfied.
          */
@@ -410,6 +411,20 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             final PersistentUnifier.Immutable unifier = this.unifier.rename(renaming);
             final Set.Immutable<Diseq> disequalities =
                     this.disequalities.stream().map(diseq -> diseq.rename(renaming)).collect(CapsuleCollectors.toSet());
+            return new PersistentUniDisunifier.Immutable(unifier, disequalities);
+        }
+
+        ///////////////////////////////////////////
+        // replace(IReplacement)
+        ///////////////////////////////////////////
+
+        @Override public PersistentUniDisunifier.Immutable replace(IReplacement replacement) {
+            if(replacement.isEmpty() || this.isEmpty()) {
+                return this;
+            }
+            final PersistentUnifier.Immutable unifier = this.unifier.replace(replacement);
+            final Set.Immutable<Diseq> disequalities =
+                    this.disequalities.stream().map(diseq -> diseq.replace(replacement)).collect(CapsuleCollectors.toSet());
             return new PersistentUniDisunifier.Immutable(unifier, disequalities);
         }
 

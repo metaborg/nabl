@@ -50,6 +50,7 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
                 return runSolver(context, project.rule(), Arrays.asList(projectScope));
             },
             ProjectResult::solveResult,
+            this::patch,
             (result, ex) -> {
                 return AggregateFuture.apply(libraryResults, groupResults, unitResults).thenApply(e -> {
                     return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), result, ex);

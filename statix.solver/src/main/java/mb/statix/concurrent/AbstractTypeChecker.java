@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -19,16 +20,21 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.stratego.TermIndex;
+import mb.nabl2.terms.substitution.IReplacement;
+import mb.nabl2.terms.substitution.Replacement;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.impl.AInitialState;
 import mb.p_raffrayi.impl.IInitialState;
+import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
+import mb.statix.solver.ITermProperty;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
@@ -152,6 +158,48 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
             return r; // FIXME minimize result to what is externally visible
                       //       note that this can make debugging harder, so perhaps optional?
         });
+    }
+
+    protected SolverResult patch(SolverResult previousResult, BiMap.Immutable<Scope> patches) {
+        if(patches.isEmpty()) {
+            return previousResult;
+        }
+
+        // Convert patches to replacement
+        final Replacement.Builder builder = Replacement.builder();
+        patches.asMap().forEach(builder::put);
+        final IReplacement repl = builder.build();
+
+        // Patch unifier
+        final IState.Immutable oldState = previousResult.state();
+        final IUniDisunifier.Immutable unifier = oldState.unifier().replace(repl);
+
+        // Patch properties
+        // Note that the key is always a termindex * {Type(), Ref() or Prop(name)}, and hence does not need patching
+        final io.usethesource.capsule.Map.Transient<Tuple2<TermIndex, ITerm>, ITermProperty> props = CapsuleUtil.transientMap();
+        oldState.termProperties().forEach((k, v) -> props.__put(k, v.replace(repl)));
+
+        // Patch scope set.
+        // TODO: required, or only set for locally created scopes?
+        final Set.Transient<Scope> scopes = oldState.scopes().asTransient();
+        patches.keySet().forEach(s -> {
+            if(scopes.__remove(s)) {
+                scopes.__insert(patches.asMap().get(s));
+            }
+        });
+
+        // state.scopeGraph() property set later with new result, no need to patch here.
+
+        // TODO: patch removed edges? messages? delays? completeness?
+
+        // @formatter:off
+        final IState.Immutable newState = State.builder().from(oldState)
+            .__scopes(scopes.freeze())
+            .unifier(unifier)
+            .termProperties(props.freeze())
+            .build();
+        // @formatter:on
+        return previousResult.withState(newState);
     }
 
     @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
