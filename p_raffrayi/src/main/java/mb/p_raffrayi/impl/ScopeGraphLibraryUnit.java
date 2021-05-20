@@ -164,7 +164,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
-        return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
+        return CompletableFuture.completedFuture(ReleaseOrRestart.release());
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {

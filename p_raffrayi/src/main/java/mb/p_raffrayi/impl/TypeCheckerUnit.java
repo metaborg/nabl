@@ -490,7 +490,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 // @formatter:off
                 rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
                     () -> {
-                        logger.info("Restarting all involved units.");
+                        logger.info("Restarting all involved units: {}.", nodes);
                         if(ex != null) {
                             failures.add(ex);
                         }

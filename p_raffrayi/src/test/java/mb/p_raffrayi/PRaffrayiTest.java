@@ -635,6 +635,26 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Object, IDatum, Object> result = future.asJavaCompletion().get();
     }
 
+    @Test(timeout = 10000000) public void testExceptionalChildRunResult() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, IDatum, Object>> future =
+                run(".", new ITypeChecker<Scope, Object, IDatum, Object>() {
+
+                    @Override public IFuture<Object> run(IIncrementalTypeCheckerContext<Scope, Object, IDatum, Object> unit,
+                            List<Scope> roots, IInitialState<Scope, Object, IDatum, Object> initialState) {
+                        return unit.add("sub", new ITypeChecker<Scope, Object, IDatum, Object>() {
+
+                            @Override public IFuture<Object> run(
+                                    IIncrementalTypeCheckerContext<Scope, Object, IDatum, Object> unit,
+                                    List<Scope> rootScopes, IInitialState<Scope, Object, IDatum, Object> initialState) {
+                                return CompletableFuture.completedExceptionally(new ExpectedFailure());
+                            }}, Arrays.asList()).thenApply(IUnitResult::analysis);
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, IDatum, Object> result = future.asJavaCompletion().get();
+    }
+
     @Test(timeout = 10000) public void testExceptionalRunResult_NoClose()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, Object>> future =

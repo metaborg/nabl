@@ -117,6 +117,7 @@ rules // multi file analysis (new)
       //
       // 1. Build project task
       //
+      <get-constructor; stx--debug-log(|"Project: ")> project-change;
       switch !project-change
         case ?Added(_) + ?Changed(_, _):
           id
@@ -136,10 +137,12 @@ rules // multi file analysis (new)
         \(res, change) -> (res, ast, result)
            with switch !change
                   case ?Added(ast'):
-                    ast := ast'
+                    <stx--debug-log(|"Added unit: ")> res
+                  ; ast := ast'
                   ; result := Added()
                   case ?Changed(ast', FileAnalysis(_, _, _, result')):
-                    ast := ast'
+                    <stx--debug-log(|"Changed unit: ")> res
+                  ; ast := ast'
                   ; result := Changed(result')
                   otherwise:
                     <fatal-err(|"Unexpected change type: ")> change
@@ -154,7 +157,7 @@ rules // multi file analysis (new)
         \
       })> changed-file-ast*
     ; changed-file-task* := <map(\ (key, resource, rule, _, result) -> (key, resource, rule, result) \)> changed-file-task_ast*
-    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _, result))) -> (key, resource, file-rule, Cached(result)) \)> file-change*
+    ; cached-file-task*  := <filter(\ (resource, Cached(FileAnalysis(key, file-rule, _, result))) -> (key, resource, file-rule, Cached(result)) with <stx--debug-log(|"Cached unit: ")> resource \)> file-change*
     ; file-task*         := [changed-file-task*, cached-file-task*]
     ; changed-file-ast'* := <map(\ (_, resource, _, ast, _) -> (resource, ast) \)> changed-file-task_ast*
       //
@@ -226,11 +229,13 @@ rules // multi file analysis (new)
 
   cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, Cached(result), groups, units))
     where <getfirst(?([], _, rule, result))> group-task*
-    with (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
+    with <stx--debug-log(|"Cached group: ")> grp-res
+       ; (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
 
   cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, Added(), groups, units))
     where <filter(?([], _, _, _))> group-task* => []
-    with s-proj        := Var("s_proj")
+    with <stx--debug-log(|"Added group: ")> grp-res
+       ; s-proj        := Var("s_proj")
        ; s-this-grp    := Var("s_thisGrp")
        ; rule := LLam([s-proj, s-this-grp], C(grp-c-name, [s-proj, <stx--explode> key, s-this-grp], NoMessage()))
        ; (groups, units) := <cstx--make-subs(|grp-res, grp-c-name)> (group-task*, file-task*)
@@ -537,3 +542,7 @@ rules
   stx--get-occurrence-ns: StxOccurrence(ns, _, _) -> ns
 
   stx--get-occurrence-terms: StxOccurrence(_, ts, _) -> ts
+
+rules // debug
+
+  stx--debug-log(|msg) = id <+ debug(!msg)

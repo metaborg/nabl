@@ -122,6 +122,9 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
                 return null; // remove mapping
             });
         }
+        if(logger.warnEnabled() && dependentSet.get().contains(new UnitProcess<>(unit))) {
+            logger.warn("Race condition in request for actor {}.", unit.id());
+        }
     }
 
     private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit, Throwable ex) {
@@ -263,7 +266,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
                     final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
                     dependentSet.getAndUpdate(ds -> ds.add(origin));
                     final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
-                    delays.computeIfAbsent(id, key -> Sets.newConcurrentHashSet()).add(future);
+                    delays.computeIfAbsent(unitId, key -> Sets.newConcurrentHashSet()).add(future);
                     return future.whenComplete((ref, ex) -> {
                         synchronized(lock) {
                             dependentSet.getAndUpdate(ds -> ds.remove(origin));
