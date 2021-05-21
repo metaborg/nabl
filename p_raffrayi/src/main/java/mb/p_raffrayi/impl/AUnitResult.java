@@ -2,6 +2,8 @@ package mb.p_raffrayi.impl;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -35,6 +37,16 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
     @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
 
     @Value.Parameter @Override public abstract @Nullable IUnitStats stats();
+
+    @Value.Lazy @Override public List<Throwable> allFailures() {
+        // @formatter:off
+        return subUnitResults().values().stream()
+            .map(IUnitResult::allFailures)
+            .map(List::stream)
+            .reduce(failures().stream(), Stream::concat)
+            .collect(Collectors.toList());
+        // @formatter:on
+    }
 
     @Value.Default @Override public Transitions transitions() {
         return Transitions.OTHER;

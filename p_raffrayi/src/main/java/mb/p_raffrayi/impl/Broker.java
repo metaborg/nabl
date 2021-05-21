@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,7 +67,8 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
     private final BrokerProcess<S, L, D> process;
     private ChandyMisraHaas<IProcess<S, L, D>> cmh;
-    private AtomicReference<MultiSet.Immutable<IProcess<S, L, D>>> dependentSet = new AtomicReference<>(MultiSet.Immutable.of());
+    private AtomicReference<MultiSet.Immutable<IProcess<S, L, D>>> dependentSet =
+            new AtomicReference<>(MultiSet.Immutable.of());
 
     // https://regex101.com/r/sGeGLs/1
     private static final Pattern RE_ID_SEG = Pattern.compile("\\/(?:\\\\\\\\|\\\\\\/|[^\\\\\\/])+");
@@ -76,7 +78,13 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
             IActorScheduler scheduler) {
         this.id = id;
         this.typeChecker = typeChecker;
-        this.initialState = initialState;
+        // If initial state has failures, discard it.
+        this.initialState = initialState.previousResult().<IInitialState<S, L, D, R>>map(res -> {
+            if(!res.allFailures().isEmpty()) {
+                return AInitialState.added();
+            }
+            return initialState;
+        }).orElse(AInitialState.added());
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.scopeOps = scopeOps;

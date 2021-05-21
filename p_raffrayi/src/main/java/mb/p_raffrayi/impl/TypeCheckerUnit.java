@@ -295,8 +295,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
             Function2<Q, Throwable, IFuture<R>> combine) {
         state = UnitState.UNKNOWN;
-        // Optional.get() is safe here, because short-circuiting implies that the result was `cached` when `get()` is actually called.
-        if(initialState.changed() || !initialState.previousResult().get().failures().isEmpty()) {
+        if(initialState.changed()) {
             logger.debug("Unit changed or no previous result was available.");
             transitions = Transitions.INITIALLY_STARTED;
             doRestart();

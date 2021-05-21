@@ -32,6 +32,8 @@ public interface IUnitResult<S, L, D, R> {
 
     Transitions transitions();
 
+    List<Throwable> allFailures();
+
     public enum Transitions {
         OTHER, INITIALLY_STARTED, RESTARTED, RELEASED
     }
