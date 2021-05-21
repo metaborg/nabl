@@ -1,11 +1,14 @@
 package mb.scopegraph.ecoop21;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
 import mb.scopegraph.regexp.IRegExpMatcher;
 
-public class RegExpLabelWf<L> implements LabelWf<L> {
+public class RegExpLabelWf<L> implements LabelWf<L>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final IRegExpMatcher<L> re;
 

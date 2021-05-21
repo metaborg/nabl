@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.terms.newPath;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import org.metaborg.util.collection.ConsList;
@@ -7,7 +8,9 @@ import org.metaborg.util.collection.ConsList;
 import io.usethesource.capsule.Set.Immutable;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 
-public class ResolutionPath<S, L, D> implements IResolutionPath<S, L, D> {
+public class ResolutionPath<S, L, D> implements IResolutionPath<S, L, D>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final ScopePath<S, L> path;
     private final D datum;

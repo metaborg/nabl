@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.reference;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -9,7 +10,9 @@ import com.google.common.collect.Iterators;
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 
-public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>> {
+public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     @SuppressWarnings("rawtypes") private static final Env EMPTY = new Env<>(CapsuleUtil.immutableSet());
 

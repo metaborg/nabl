@@ -81,6 +81,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
         // If initial state has failures, discard it.
         this.initialState = initialState.previousResult().<IInitialState<S, L, D, R>>map(res -> {
             if(!res.allFailures().isEmpty()) {
+                logger.warn("Initial state contains failures, discarding it.");
                 return AInitialState.added();
             }
             return initialState;

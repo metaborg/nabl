@@ -4,6 +4,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.unit.Unit;
 
@@ -15,6 +16,7 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
 @Value.Immutable
+@Serial.Version(42L)
 public abstract class AProjectResult implements IStatixGroupResult {
 
     @Value.Parameter public abstract String resource();

@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1112,7 +1113,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Stats
     ///////////////////////////////////////////////////////////////////////////
 
-    protected static class Stats implements IUnitStats {
+    protected static class Stats implements IUnitStats, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         protected int localQueries;
         protected int incomingQueries;

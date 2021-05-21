@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.terms.newPath;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -12,7 +13,9 @@ import mb.scopegraph.oopsla20.path.IScopePath;
 import mb.scopegraph.oopsla20.path.IStep;
 import mb.scopegraph.oopsla20.terms.path.Paths;
 
-public class ScopePath<S, L> implements IScopePath<S, L> {
+public class ScopePath<S, L> implements IScopePath<S, L>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final S source;
     private final Path<S, L> path;
@@ -121,7 +124,9 @@ public class ScopePath<S, L> implements IScopePath<S, L> {
         return revPath;
     }
 
-    private static class Path<S, L> {
+    private static class Path<S, L> implements Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         public final Path<S, L> prefix;
         public final L label;

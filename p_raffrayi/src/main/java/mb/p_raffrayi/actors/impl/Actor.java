@@ -1,5 +1,6 @@
 package mb.p_raffrayi.actors.impl;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Deque;
@@ -566,7 +567,9 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         return stats;
     }
 
-    private static class Stats implements IActorStats {
+    private static class Stats implements IActorStats, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private int suspended = 0;
         private int preempted = 0;

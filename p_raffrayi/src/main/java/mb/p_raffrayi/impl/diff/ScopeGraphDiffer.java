@@ -595,14 +595,20 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         this.removedEdges.entrySet().stream().forEach(x -> x.getValue().forEach(removedEdges::__insert));
 
         // Clean up pending delays
-        previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(
-                delay -> delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"))));
+        previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(delay -> {
+            logger.error("Pending scope processed delay: {}.", s);
+            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"));
+        }));
 
-        previousScopeCompletedDelays.asMap().forEach((s, delays) -> delays.forEach(
-                delay -> delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"))));
+        previousScopeCompletedDelays.asMap().forEach((s, delays) -> delays.forEach(delay -> {
+            logger.error("Pending scope completed delay: {}.", s);
+            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"));
+        }));
 
-        currentEdgeCompleteDelays.asMap().forEach((edge, delays) -> delays.forEach(
-                delay -> delay.completeExceptionally(new IllegalStateException("Pending after differ finalization."))));
+        currentEdgeCompleteDelays.asMap().forEach((edge, delays) -> delays.forEach(delay -> {
+            logger.error("Pending edge complete delay: {}.", edge);
+            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization."));
+        }));
 
         // @formatter:off
         ScopeGraphDiff<S, L, D> result = new ScopeGraphDiff<S, L, D>(
