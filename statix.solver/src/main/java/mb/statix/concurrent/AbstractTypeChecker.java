@@ -29,7 +29,6 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
@@ -68,13 +67,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope,
-            IInitialState<Scope, ITerm, ITerm, ? extends IStatixGroupResult> initialState) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result =
-                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope), entry.getValue().initialState());
+                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope), false /* Assume groups don't change directly */);
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
@@ -87,13 +85,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope,
-            IInitialState<Scope, ITerm, ITerm, ? extends IStatixGroupResult> initialState) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope projectScope) {
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result =
-                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope), entry.getValue().initialState());
+                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(projectScope), entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
             }));

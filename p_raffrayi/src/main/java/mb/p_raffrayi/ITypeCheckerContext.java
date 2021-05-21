@@ -8,8 +8,6 @@ import javax.annotation.Nullable;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.impl.AInitialState;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -27,16 +25,17 @@ public interface ITypeCheckerContext<S, L, D> {
     String id();
 
     /**
-     * Start sub unit with the given type-checker, given root scopes and previous result.
+     * Start sub unit with the given type-checker, root scopes and changed marker.
      */
     <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-            List<S> rootScopes, IInitialState<S, L, D, R> initialState);
+            List<S> rootScopes, boolean changed);
 
     /**
-     * Start sub type-checker, with the given root scope and no previous result.
+     * Start sub unit with the given type-checker, root scopes, marked as changed.
      */
-    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
-    	return add(id, unitChecker, rootScopes, AInitialState.added());
+    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+            List<S> rootScopes) {
+        return add(id, unitChecker, rootScopes, true);
     }
 
     /**
@@ -115,7 +114,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
-                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, IInitialState<S, L, D, R> initialState) {
+                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, boolean changed) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

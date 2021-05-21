@@ -12,7 +12,6 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.impl.IInitialState;
 
 public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
 
@@ -25,8 +24,7 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
         this.unit = unit;
     }
 
-    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult> context, List<Scope> rootScopes,
-            IInitialState<Scope, ITerm, ITerm, UnitResult> initialState) {
+    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult> context, List<Scope> rootScopes) {
         // @formatter:off
         return context.runIncremental(
             restarted -> {

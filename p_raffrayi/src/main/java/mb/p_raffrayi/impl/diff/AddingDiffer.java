@@ -29,10 +29,10 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final IDifferContext<S, L, D> context;
     private final IDifferOps<S, L, D> differOps;
 
-    private Map.Transient<S, Optional<D>> addedScopes = CapsuleUtil.transientMap();
-    private Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
+    private final Map.Transient<S, Optional<D>> addedScopes = CapsuleUtil.transientMap();
+    private final Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
 
-    private Set.Transient<S> seenScopes = CapsuleUtil.transientSet();
+    private final Set.Transient<S> seenScopes = CapsuleUtil.transientSet();
 
     private final ICompletableFuture<ScopeGraphDiff<S, L, D>> diffResult = new CompletableFuture<>();
 

@@ -3,10 +3,7 @@ package mb.statix.concurrent;
 import java.util.Map;
 import java.util.Optional;
 
-import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
-import mb.p_raffrayi.impl.IInitialState;
 
 public interface IStatixGroup {
 
@@ -24,10 +21,5 @@ public interface IStatixGroup {
      * Direct sub units of this group.
      */
     Map<String, IStatixUnit> units();
-
-    /**
-     * Result of previous type-checker run.
-     */
-    IInitialState<Scope, ITerm, ITerm, GroupResult> initialState();
 
 }

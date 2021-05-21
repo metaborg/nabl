@@ -2,10 +2,7 @@ package mb.statix.concurrent;
 
 import java.util.Optional;
 
-import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
-import mb.p_raffrayi.impl.IInitialState;
 
 public interface IStatixUnit {
 
@@ -17,8 +14,8 @@ public interface IStatixUnit {
     Optional<Rule> rule();
 
     /**
-     * Result from previous type-checker run.
+     * Whether this unit changed since the previous run.
      */
-    IInitialState<Scope, ITerm, ITerm, UnitResult> initialState();
+    boolean changed();
 
 }

@@ -114,7 +114,6 @@ public class STX_solve_multi extends StatixPrimitive {
             logger.error("Async solving failed.", e);
             throw new InterpreterException("Async solving failed."/*, e*/);
         }
-
         return Optional.of(B.newList(results));
     }
 

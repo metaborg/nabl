@@ -160,12 +160,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
-            List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
+            List<S> rootScopes, boolean changed) {
         assertActive();
 
-        if(!this.initialState.hasPreviousResult() && initialState.hasPreviousResult()) {
-            logger.warn("Starting unit {} with initial result, while added self.", id);
-        }
+        @SuppressWarnings("unchecked") final IInitialState<S, L, D, Q> initialState = this.initialState.previousResult()
+                .map(IUnitResult::subUnitResults).<IInitialState<S, L, D, Q>>map(subResults -> {
+                    if(subResults.containsKey(id)) {
+                        final IUnitResult<S, L, D, Q> subResult = (IUnitResult<S, L, D, Q>) subResults.get(id);
+                        // TODO: use TYPETAGS to validate that Q is really Q?
+                        return changed ? AInitialState.changed(subResult) : AInitialState.cached(subResult);
+                    }
+                    return AInitialState.added();
+                }).orElseGet(() -> AInitialState.added());
 
         initialState.previousResult().map(IUnitResult::rootScopes).ifPresent(previousRootScopes -> {
             // When a scope is shared, the shares must be consistent.
@@ -194,7 +200,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
                 throw new IllegalStateException("Could not match.");
             }
-
         });
 
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {

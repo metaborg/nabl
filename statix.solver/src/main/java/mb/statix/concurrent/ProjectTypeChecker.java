@@ -16,7 +16,6 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.impl.IInitialState;
 
 public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
 
@@ -30,17 +29,17 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
     }
 
     @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult> context,
-            @SuppressWarnings("unused") List<Scope> rootScopes, IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState) {
+            @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
             runLibraries(context, project.libraries(), projectScope);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-            runGroups(context, project.groups(), projectScope, initialState);
+            runGroups(context, project.groups(), projectScope);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-            runUnits(context, project.units(), projectScope, initialState);
+            runUnits(context, project.units(), projectScope);
 
         context.closeScope(projectScope);
 

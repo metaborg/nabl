@@ -17,7 +17,6 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.scopegraph.oopsla20.IScopeGraph;
 
 public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
@@ -29,8 +28,7 @@ public class LibraryTypeChecker extends AbstractTypeChecker<Unit> {
         this.library = library;
     }
 
-    @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Unit> context, List<Scope> rootScopes,
-            IInitialState<Scope, ITerm, ITerm, Unit> initialState) {
+    @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, Unit> context, List<Scope> rootScopes) {
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = library.scopeGraph();
         final Set.Immutable<ITerm> labels = scopeGraph.getLabels();
 

@@ -4,10 +4,7 @@ import java.util.Optional;
 
 import org.immutables.value.Value;
 
-import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
-import mb.p_raffrayi.impl.IInitialState;
 
 @Value.Immutable
 public abstract class AStatixUnit implements IStatixUnit {
@@ -16,7 +13,7 @@ public abstract class AStatixUnit implements IStatixUnit {
 
     @Value.Parameter @Override public abstract Optional<Rule> rule();
 
-    @Value.Parameter @Override public abstract IInitialState<Scope, ITerm, ITerm, UnitResult> initialState();
+    @Value.Parameter @Override public abstract boolean changed();
 
     @Override public String toString() {
         return "StatixUnit@" + System.identityHashCode(this);

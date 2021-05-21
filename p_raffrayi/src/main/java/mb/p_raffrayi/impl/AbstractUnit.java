@@ -84,8 +84,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R>
-        implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
+public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
@@ -148,6 +147,7 @@ public abstract class AbstractUnit<S, L, D, R>
 
         this.initialState = initialState;
         this.differ = initDiffer(initialState, scopeOps);
+
 
         this.scopeNameCounters = MultiSet.Transient.of();
 
@@ -245,7 +245,7 @@ public abstract class AbstractUnit<S, L, D, R>
         final IDifferOps<S, L, D> differOps = new DifferOps(scopeOps);
         return initialState.previousResult().<IScopeGraphDiffer<S, L, D>>map(pr -> {
             return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(pr.scopeGraph()), differOps);
-        }).orElse(new AddingDiffer<>(context, differOps));
+        }).orElseGet(() -> new AddingDiffer<>(context, differOps));
     }
 
     private void startDiffer(List<S> rootScopes) {
@@ -581,7 +581,7 @@ public abstract class AbstractUnit<S, L, D, R>
         }
 
         @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-                ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, IInitialState<S, L, D, Q> initialState) {
+                ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
             throw new UnsupportedOperationException("Unsupported in query context.");
         }
 

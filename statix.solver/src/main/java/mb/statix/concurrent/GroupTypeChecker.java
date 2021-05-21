@@ -15,7 +15,6 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.impl.IInitialState;
 
 public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
 
@@ -29,13 +28,13 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
     }
 
     @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult> context,
-            List<Scope> rootScopes, IInitialState<Scope, ITerm, ITerm, GroupResult> initialState) {
+            List<Scope> rootScopes) {
         final Scope parentScope = rootScopes.get(0);
         final Scope thisGroupScope = makeSharedScope(context, "s_grp");
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-            runGroups(context, group.groups(), thisGroupScope, initialState);
+            runGroups(context, group.groups(), thisGroupScope);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-            runUnits(context, group.units(), thisGroupScope, initialState);
+            runUnits(context, group.units(), thisGroupScope);
         context.closeScope(thisGroupScope);
 
         // @formatter:off
