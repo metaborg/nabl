@@ -88,9 +88,9 @@ rules
   desugar-query: NamespaceFilter_dep(wf) -> NamespaceFilter(wf)
   desugar-query: NoNamespaceFilter() -> NamespaceFilter(Neg(Empty()))
 
-  desugar-query: NoMin() -> Min([], LFalse())
-  desugar-query: Min(ord) -> Min(ord, LFalse())
-  desugar-query: Min_dep(ord) -> Min(ord, LFalse())
+  desugar-query: NoMin() -> Min([], LTrue())
+  desugar-query: Min(ord) -> Min(ord, LTrue())
+  desugar-query: Min_dep(ord) -> Min(ord, LTrue())
   desugar-query: Min_dep(ord, l) -> Min(ord, l)
   desugar-query: NamespaceMin_dep(ord) -> NamespaceMin(ord)
   desugar-query: NoNamespaceMin() -> NamespaceMin([])
