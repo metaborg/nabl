@@ -491,7 +491,7 @@ class GreedySolver {
                 }
 
                 try {
-                    final ConstraintQueries cq = new ConstraintQueries(spec, state, completeness);
+                    final ConstraintQueries cq = new ConstraintQueries(spec, state, params::isComplete);
                     // @formatter:off
                     final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
                                 .withLabelWF(cq.getLabelWF(filter.getLabelWF()))

@@ -12,6 +12,7 @@ import mb.scopegraph.regexp.IRegExpMatcher;
 import mb.scopegraph.relations.IRelation;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
@@ -20,12 +21,12 @@ public class ConstraintQueries implements IConstraintQueries {
 
     private final Spec spec;
     private final IState.Immutable state;
-    private final ICompleteness.Immutable completeness;
+    private final IsComplete isComplete;
 
-    public ConstraintQueries(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness) {
+    public ConstraintQueries(Spec spec, IState.Immutable state, IsComplete isComplete) {
         this.spec = spec;
         this.state = state;
-        this.completeness = completeness;
+        this.isComplete = isComplete;
     }
 
     @Override public LabelWF<ITerm> getLabelWF(IRegExpMatcher<ITerm> pathWf) throws InterruptedException {
@@ -33,7 +34,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataWF<ITerm> getDataWF(Rule dataWf) {
-        return new ConstraintDataWF(spec, state, completeness, dataWf);
+        return new ConstraintDataWF(spec, state, isComplete, dataWf);
     }
 
     @Override public LabelOrder<ITerm> getLabelOrder(IRelation<EdgeOrData<ITerm>> labelOrd)
@@ -42,7 +43,7 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataLeq<ITerm> getDataEquiv(Rule dataLeq) {
-        return new ConstraintDataLeq(spec, state, completeness, dataLeq);
+        return new ConstraintDataLeq(spec, state, isComplete, dataLeq);
     }
 
 }
