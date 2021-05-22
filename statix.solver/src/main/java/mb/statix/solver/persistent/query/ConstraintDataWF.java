@@ -13,7 +13,7 @@ import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
-import mb.statix.solver.completeness.IsComplete;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
@@ -30,11 +30,13 @@ class ConstraintDataWF implements DataWF<ITerm> {
     private final Rule constraint;
 
     private final IState.Immutable state;
+    private final ICompleteness.Immutable completeness;
 
-    public ConstraintDataWF(Spec spec, IState.Immutable state, Rule constraint) {
+    public ConstraintDataWF(Spec spec, IState.Immutable state, ICompleteness.Immutable completeness, Rule constraint) {
         this.spec = spec;
-        this.constraint = constraint;
         this.state = state;
+        this.completeness = completeness;
+        this.constraint = constraint;
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
@@ -48,8 +50,8 @@ class ConstraintDataWF implements DataWF<ITerm> {
             }
 
             return Solver.entails(spec, state, Constraints.disjoin(applyResult.body()), Collections.emptyMap(),
-                    applyResult.criticalEdges(), IsComplete.ALWAYS, new NullDebugContext(),
-                    new NullProgress().subProgress(1), new NullCancel());
+                    applyResult.criticalEdges(), (s, l, st) -> completeness.isComplete(s, l, state.unifier()),
+                    new NullDebugContext(), new NullProgress().subProgress(1), new NullCancel());
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }
