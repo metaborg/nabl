@@ -11,7 +11,6 @@ import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
 import mb.scopegraph.regexp.IRegExpMatcher;
 import mb.scopegraph.relations.IRelation;
 import mb.statix.solver.IState;
-import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.query.IConstraintQueries;
 import mb.statix.spec.Rule;
