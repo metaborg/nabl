@@ -3,7 +3,7 @@ module statix/test/evaluate
 imports
 
   nabl2/api
-  
+
   signatures/statix/lang/-
   statix/lang/-
   statix/lang/statics/-
@@ -14,19 +14,29 @@ imports
   signatures/statix/test/-
   pp/statix/test/-
   statix/test/-
-  
+
   statix/api
   statixruntime
   statix/runtime/-
 
 rules
-  
-  editor-evaluate:
+
+  editor-evaluate-traditional:
       (_, _, Module(_, _), path, project-path) -> None()
 
-  editor-evaluate:
+  editor-evaluate-traditional:
       (_, _, ast@Test(_, _), path, project-path) -> (filename, result)
-    with result   := <evaluate;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
+    with result   := <evaluate-traditional;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
+         filename := <guarantee-extension(|"stxresult")> path
+
+rules
+
+  editor-evaluate-concurrent:
+      (_, _, Module(_, _), path, project-path) -> None()
+
+  editor-evaluate-concurrent:
+      (_, _, ast@Test(_, _), path, project-path) -> (filename, result)
+    with result   := <evaluate-concurrent;pp-Statix-string(prettyprint-Statix-TestResult)> ast;
          filename := <guarantee-extension(|"stxresult")> path
 
 rules
@@ -57,7 +67,7 @@ signature
 rules
 
   evaluate-test: ast -> result
-    with if EvalResult(_, [], w*, n*) := <evaluate> ast then
+    with if EvalResult(_, [], w*, n*) := <evaluate-traditional> ast then
            if [] := w* then
              result := SUCCEEDS()
            else
@@ -67,7 +77,13 @@ rules
            result := FAILS()
          end
 
-  evaluate: ast@Test(_, _) -> result
+  evaluate-traditional = evaluate(fail)
+
+  evaluate-concurrent = evaluate(id)
+
+  evaluate = evaluate(stx--is-concurrent-enabled)
+
+  evaluate(concurrent): ast@Test(_, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
          ast'   := <normalize(|a)> ast;
@@ -77,6 +93,8 @@ rules
          level  := <stx--log-level>;
          config := <stx--project-config>;
          body'  := <qualify-names(|a);eliminate-all;stx--index-ast(|""/*path*/)> body;
-         s@Solution(_, a') := <stx--solve-constraint(|spec', level)> body';
+         s@Solution(_, a') := <solve(concurrent|spec', level)> body';
          (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a';
          result := EvalResult(s, error*, warning*, note*)
+
+  solve(concurrent|spec', level) = concurrent < cstx--solve-constraint(|spec', level) + stx--solve-constraint(|spec', level)
