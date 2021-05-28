@@ -475,6 +475,13 @@ rules
 
 rules
 
+  cstx--solve-constraint(|spec, level) = cstx--solve-constraint(|spec, level, (), ())
+
+  // solve-constraint(|Spec, LogLevel, Progress, Cancel) : ([Var], Constraint) -> Solution
+  cstx--solve-constraint(|spec, level, progress, cancel) = prim("STX_solve_constraint_concurrent", spec, level, progress, cancel)
+
+rules
+
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis

@@ -27,7 +27,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     private final LabelOrder<L> labelOrder; // default: false
 
     private final DataWF<D> dataWF; // default: true
-    private final DataLeq<D> dataEquiv; // default: false
+    private final DataLeq<D> dataEquiv; // default: true
 
     private final Predicate2<S, EdgeOrData<L>> isComplete; // default: true
 
@@ -172,7 +172,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         private LabelOrder<L> labelOrder = LabelOrder.NONE();
 
         private DataWF<D> dataWF = DataWF.ANY();
-        private DataLeq<D> dataEquiv = DataLeq.NONE();
+        private DataLeq<D> dataEquiv = DataLeq.ALL();
 
         private Predicate2<S, EdgeOrData<L>> isComplete = (s, l) -> true;
 

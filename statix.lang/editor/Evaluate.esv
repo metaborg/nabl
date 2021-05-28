@@ -4,8 +4,10 @@ menus
 
   menu: "Evaluate" (openeditor)
 
-    action: "Evaluate Test" = editor-evaluate
-    
+    action: "Evaluate Test" = editor-evaluate-traditional
+
+    action: "Evaluate Test (Concurrent)" = editor-evaluate-concurrent
+
     separator
 
     action: "Evaluation Pair" = editor-evaluation-pair
