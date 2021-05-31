@@ -5,9 +5,9 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.terms.Occurrence;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.terms.Occurrence;
 
 public class SG_get_decl_scope extends AnalysisPrimitive {
 

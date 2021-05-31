@@ -3,17 +3,19 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
+fun compositeBuild(name: String) = "$group:$name:$version"
+val spoofax2Version: String by ext
 dependencies {
-  api(platform("org.metaborg:parent:$version"))
-  testImplementation(platform("org.metaborg:parent:$version"))
-  annotationProcessor(platform("org.metaborg:parent:$version"))
-  testAnnotationProcessor(platform("org.metaborg:parent:$version"))
+  api(platform("org.metaborg:parent:$spoofax2Version"))
+  testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
+  annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
+  testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg:org.metaborg.util:$version")
-  api("org.metaborg:org.spoofax.terms:$version")
-  api("org.metaborg:org.spoofax.interpreter.core:$version")
+  api(compositeBuild("org.metaborg.util"))
+  api(compositeBuild("org.spoofax.terms"))
+  api(compositeBuild("org.spoofax.interpreter.core"))
   api(project(":nabl2.terms"))
 
   api("com.google.guava:guava")

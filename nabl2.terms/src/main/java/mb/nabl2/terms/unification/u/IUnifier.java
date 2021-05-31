@@ -143,12 +143,13 @@ public interface IUnifier {
     }
 
     /**
-     * Return a string representation of the given term, up to a certain term depth.
+     * Return a string representation of the given term, up to a certain term depth. Use a depth value of -1 to format
+     * the full term.
      */
-    String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter);
+    String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter);
 
-    default String toString(ITerm term, int n) {
-        return toString(term, n, (t, u, f) -> Optional.empty());
+    default String toString(ITerm term, int depth) {
+        return toString(term, depth, (t, u, f) -> Optional.empty());
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////

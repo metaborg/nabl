@@ -1,21 +1,18 @@
 package mb.statix.solver.persistent.query;
 
-import org.metaborg.util.task.ICancel;
-import org.metaborg.util.task.IProgress;
-
-import mb.nabl2.regexp.IRegExpMatcher;
-import mb.nabl2.relations.IRelation;
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.EdgeOrData;
-import mb.statix.scopegraph.reference.LabelOrder;
-import mb.statix.scopegraph.reference.LabelWF;
-import mb.statix.solver.ConstraintContext;
+import mb.scopegraph.oopsla20.reference.DataLeq;
+import mb.scopegraph.oopsla20.reference.DataWF;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.LabelOrder;
+import mb.scopegraph.oopsla20.reference.LabelWF;
+import mb.scopegraph.oopsla20.reference.RegExpLabelWF;
+import mb.scopegraph.oopsla20.reference.RelationLabelOrder;
+import mb.scopegraph.regexp.IRegExpMatcher;
+import mb.scopegraph.relations.IRelation;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.query.IConstraintQueries;
-import mb.statix.solver.query.RegExpLabelWF;
-import mb.statix.solver.query.RelationLabelOrder;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
@@ -23,17 +20,12 @@ public class ConstraintQueries implements IConstraintQueries {
 
     private final Spec spec;
     private final IState.Immutable state;
-    private final ConstraintContext params;
-    private final IProgress progress;
-    private final ICancel cancel;
+    private final IsComplete isComplete;
 
-    public ConstraintQueries(Spec spec, IState.Immutable state, ConstraintContext params, IProgress progress,
-            ICancel cancel) {
+    public ConstraintQueries(Spec spec, IState.Immutable state, IsComplete isComplete) {
         this.spec = spec;
         this.state = state;
-        this.params = params;
-        this.progress = progress;
-        this.cancel = cancel;
+        this.isComplete = isComplete;
     }
 
     @Override public LabelWF<ITerm> getLabelWF(IRegExpMatcher<ITerm> pathWf) throws InterruptedException {
@@ -41,16 +33,16 @@ public class ConstraintQueries implements IConstraintQueries {
     }
 
     @Override public DataWF<ITerm> getDataWF(Rule dataWf) {
-        return new ConstraintDataWF(spec, dataWf, state, params::isComplete, params.debug(), progress, cancel);
+        return new ConstraintDataWF(spec, state, isComplete, dataWf);
     }
 
     @Override public LabelOrder<ITerm> getLabelOrder(IRelation<EdgeOrData<ITerm>> labelOrd)
             throws InterruptedException {
-        return new RelationLabelOrder(labelOrd);
+        return new RelationLabelOrder<>(labelOrd);
     }
 
     @Override public DataLeq<ITerm> getDataEquiv(Rule dataLeq) {
-        return new ConstraintDataLeq(spec, dataLeq, state, params::isComplete, params.debug(), progress, cancel);
+        return new ConstraintDataLeq(spec, state, isComplete, dataLeq);
     }
 
 }

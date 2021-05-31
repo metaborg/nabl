@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import org.spoofax.interpreter.core.InterpreterException;
 
-import mb.nabl2.scopegraph.terms.ScopeGraphTerms;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.terms.ScopeGraphTerms;
 
 public class SG_debug_scope_graph extends AnalysisPrimitive {
 

@@ -6,6 +6,9 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -65,12 +68,29 @@ public class CTry implements IConstraint, Serializable {
         return cases.caseTry(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return constraint.getVars();
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        constraint.visitFreeVars(onFreeVar);
+        if(message != null) {
+            message.visitVars(onFreeVar);
+        }
     }
 
     @Override public CTry apply(ISubstitution.Immutable subst) {
         return new CTry(constraint.apply(subst), cause, message == null ? null : message.apply(subst));
+    }
+
+    @Override public CTry unsafeApply(ISubstitution.Immutable subst) {
+        return new CTry(constraint.unsafeApply(subst), cause, message == null ? null : message.apply(subst));
     }
 
     @Override public CTry apply(IRenaming subst) {

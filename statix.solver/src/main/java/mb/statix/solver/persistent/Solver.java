@@ -2,11 +2,18 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -17,18 +24,26 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.unification.UnifierFormatter;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.scopegraph.INameResolution;
-import mb.statix.scopegraph.reference.FastNameResolution;
-import mb.statix.scopegraph.terms.Scope;
+import mb.p_raffrayi.ITypeCheckerContext;
+import mb.scopegraph.oopsla20.INameResolution;
+import mb.scopegraph.oopsla20.reference.FastNameResolution;
+import mb.statix.concurrent.StatixSolver;
+import mb.statix.constraints.Constraints;
+import mb.statix.constraints.messages.IMessage;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.spec.PreSolvedConstraint;
 import mb.statix.spec.Spec;
 
 public class Solver {
+
+    public static final int RETURN_ON_FIRST_ERROR = 1;
 
     public static final int TERM_FORMAT_DEPTH = 4;
 
@@ -38,51 +53,84 @@ public class Solver {
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IDebugContext debug, ICancel cancel, IProgress progress) throws InterruptedException {
-        return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress);
+            final IDebugContext debug, ICancel cancel, IProgress progress, int flags) throws InterruptedException {
+        return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress, flags);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress)
+            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
             throws InterruptedException {
-        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel).solve();
+        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
+    }
+
+    public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
+            final ICompleteness.Immutable completeness, final IDebugContext debug, ICancel cancel, IProgress progress,
+            int flags) throws InterruptedException {
+        return solve(spec, state, Collections.singletonList(constraint), Collections.emptyMap(), completeness,
+                (s, l, st) -> true, debug, progress, cancel, flags);
     }
 
     public static SolverResult solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
-            IProgress progress, ICancel cancel) throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel)
-                .solve();
+            IProgress progress, ICancel cancel, int flags) throws InterruptedException {
+        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                flags).solve();
+    }
+
+    public static IFuture<SolverResult> solveConcurrent(IConstraint constraint, Spec spec, IState.Immutable state,
+            ICompleteness.Immutable completeness, IDebugContext debug, IProgress progress, ICancel cancel,
+            ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags, Iterable<Scope> rootScopes) {
+        return new StatixSolver(constraint, spec, state, completeness, debug, progress, cancel, scopeGraph, flags)
+                .solve(rootScopes);
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
             final Map<IConstraint, Delay> delays, final ICompleteness.Immutable completeness,
             final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
             throws Delay, InterruptedException {
-        final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Debug)) {
-            debug.debug("Checking entailment of {}", toString(constraints, unifier));
+            debug.debug("Checking entailment of {}", toString(constraints, state.unifier()));
+        }
+        final IState.Immutable subState = state.subState();
+
+        final PreSolveResult preSolveResult;
+        if((preSolveResult =
+                Solver.preEntail(subState, completeness, Constraints.conjoin(constraints)).orElse(null)) == null) {
+            return false;
+        }
+        if(preSolveResult.constraints.isEmpty()) {
+            return entailed(subState, preSolveResult, debug);
         }
 
-        final IState.Immutable subState = state.subState();
-        final SolverResult result = Solver.solve(spec, subState, constraints, delays, completeness, isComplete,
-                debug.subContext(), progress, cancel);
+        final SolverResult result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints, delays,
+                preSolveResult.criticalEdges, isComplete, debug.subContext(), progress, cancel, RETURN_ON_FIRST_ERROR);
+
         return Solver.entailed(subState, result, debug);
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug, IProgress progress, ICancel cancel)
             throws Delay, InterruptedException {
-        final IUniDisunifier.Immutable unifier = state.unifier();
         if(debug.isEnabled(Level.Debug)) {
-            debug.debug("Checking entailment of {}", toString(constraint, unifier));
+            debug.debug("Checking entailment of {}", toString(constraint, state.unifier()));
+        }
+        final IState.Immutable subState = state.subState();
+
+        final PreSolveResult preSolveResult;
+        if((preSolveResult =
+                Solver.preEntail(subState, Completeness.Immutable.of(), constraint).orElse(null)) == null) {
+            return false;
+        }
+        if(preSolveResult.constraints.isEmpty()) {
+            return entailed(subState, preSolveResult, debug);
         }
 
-        final IState.Immutable subState = state.subState();
-        final SolverResult result =
-                Solver.solve(spec, subState, constraint, isComplete, debug.subContext(), cancel, progress);
-        return Solver.entailed(subState, result, debug);
+        final SolverResult result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints,
+                Collections.emptyMap(), preSolveResult.criticalEdges, isComplete, debug.subContext(), progress, cancel,
+                RETURN_ON_FIRST_ERROR);
+
+        return entailed(subState, result, debug);
     }
 
     public static boolean entailed(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
@@ -91,8 +139,6 @@ public class Solver {
             throw new IllegalArgumentException("Incurrent initial state: create with IState::subState.");
         }
 
-        debug.debug("Checking entailment");
-
         if(result.hasErrors()) {
             // no entailment if errors
             debug.debug("Constraints not entailed: errors");
@@ -100,18 +146,38 @@ public class Solver {
         }
 
         final IState.Immutable newState = result.state();
+        final Delay delay = result.delays().isEmpty() ? null : result.delay();
+        return entailed(initialState, newState, delay, debug);
+    }
+
+    public static boolean entailed(IState.Immutable initialState, PreSolveResult preSolveResult,
+            final IDebugContext debug) {
+        try {
+            return entailed(initialState, preSolveResult.state, null, debug);
+        } catch(Delay d) {
+            throw new IllegalStateException(d);
+        }
+    }
+
+    private static boolean entailed(IState.Immutable initialState, IState.Immutable newState,
+            final @Nullable Delay delay, final IDebugContext debug) throws Delay {
+        if(!initialState.vars().isEmpty() || !initialState.scopes().isEmpty()) {
+            throw new IllegalArgumentException("Incurrent initial state: create with IState::subState.");
+        }
+        debug.debug("Checking entailment");
+
         final Set<ITermVar> newVars = newState.vars();
         final Set<Scope> newScopes = newState.scopes();
         final IUniDisunifier.Immutable newUnifier = newState.unifier();
 
-        if(!result.delays().isEmpty()) {
-            final Delay delay = result.delay().removeAll(newVars, newScopes);
-            if(delay.criticalEdges().isEmpty() && delay.vars().isEmpty()) {
+        if(delay != null) {
+            final Delay _delay = delay.removeAll(newVars, newScopes);
+            if(_delay.criticalEdges().isEmpty() && _delay.vars().isEmpty()) {
                 debug.debug("Constraints not entailed: internal stuckness"); // of the point-free mind
                 return false;
             } else {
                 debug.debug("Cannot decide constraint entailment: unsolved constraints");
-                throw delay;
+                throw _delay;
             }
         }
 
@@ -164,6 +230,55 @@ public class Solver {
             TermIndex.matcher()
         ).map(ITerm::toString).match(t, unifier));
         // @formatter:on
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static Optional<PreSolveResult> preEntail(final IState.Immutable state,
+            final @Nullable ICompleteness.Immutable criticalEdges, final IConstraint constraint) throws Delay {
+        IState.Transient _state = state.melt();
+        IUniDisunifier.Transient _unifier = state.unifier().melt();
+        java.util.Set<ITermVar> _updatedVars = new HashSet<>();
+        List<IConstraint> constraints = new ArrayList<>();
+        ICompleteness.Transient _completeness =
+                criticalEdges != null ? criticalEdges.melt() : Completeness.Transient.of();
+        java.util.Map<ITermVar, ITermVar> _existentials = new HashMap<>();
+        List<IConstraint> failures = new ArrayList<>();
+        Map<IConstraint, Delay> delays = new HashMap<>();
+        PreSolvedConstraint.preSolve(constraint, _state::freshVars, _unifier, v -> !_state.vars().contains(v),
+                _updatedVars, constraints, _completeness, _existentials, failures, delays,
+                constraint.cause().orElse(null), true);
+        if(!failures.isEmpty()) {
+            return Optional.empty();
+        }
+        if(!delays.isEmpty()) {
+            throw Delay.of(delays.values());
+        }
+        final IState.Immutable newState = _state.freeze().withUnifier(_unifier.freeze());
+        final PreSolveResult preSolveResult = new PreSolveResult(newState, _updatedVars, constraints,
+                _completeness.freeze(), _existentials, Collections.emptyMap());
+        return Optional.of(preSolveResult);
+    }
+
+    public static class PreSolveResult {
+        public final IState.Immutable state;
+        public final Set<ITermVar> updatedVars;
+        public final List<IConstraint> constraints;
+        public final ICompleteness.Immutable criticalEdges;
+        public final Map<ITermVar, ITermVar> existentials;
+        public final Map<IConstraint, IMessage> errors;
+
+        public PreSolveResult(IState.Immutable state, Set<ITermVar> updatedVars, List<IConstraint> constraints,
+                ICompleteness.Immutable criticalEdges, Map<ITermVar, ITermVar> existentials,
+                Map<IConstraint, IMessage> errors) {
+            this.state = state;
+            this.updatedVars = updatedVars;
+            this.constraints = constraints;
+            this.criticalEdges = criticalEdges;
+            this.existentials = existentials;
+            this.errors = errors;
+        }
+
     }
 
 }

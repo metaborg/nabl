@@ -2,9 +2,6 @@ package mb.nabl2.terms.unification.u;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.nabl2.terms.unification.UnifierTests.assertSame;
-import static mb.nabl2.terms.unification.UnifierTests.assertContains;
-import static mb.nabl2.terms.unification.UnifierTests.assertNotContains;
 import static mb.nabl2.terms.unification.UnifierTests.assertPresent;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 import static org.junit.Assert.assertEquals;

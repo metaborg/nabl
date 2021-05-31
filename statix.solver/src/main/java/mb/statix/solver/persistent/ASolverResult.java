@@ -55,13 +55,7 @@ public abstract class ASolverResult {
     }
 
     public Delay delay() {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
-        delays().values().stream().forEach(d -> {
-            vars.addAll(d.vars());
-            scopes.addAll(d.criticalEdges());
-        });
-        return new Delay(vars.build(), scopes.build());
+        return Delay.of(delays().values());
     }
 
     public IConstraint delayed() {

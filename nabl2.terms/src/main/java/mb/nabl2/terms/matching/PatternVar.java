@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -15,9 +16,8 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.build.TermBuild;
 import mb.nabl2.terms.substitution.IRenaming;
-import mb.nabl2.terms.substitution.ISubstitution.Transient;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;
@@ -45,6 +45,10 @@ class PatternVar extends Pattern {
         return var;
     }
 
+    @Override public boolean isConstructed() {
+        return false;
+    }
+
     public boolean isWildcard() {
         return var == null;
     }
@@ -53,7 +57,8 @@ class PatternVar extends Pattern {
         return isWildcard() ? CapsuleUtil.immutableSet() : CapsuleUtil.immutableSet(var);
     }
 
-    @Override protected boolean matchTerm(ITerm term, Transient subst, IUnifier.Immutable unifier, Eqs eqs) {
+    @Override protected boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
+            Eqs eqs) {
         if(isWildcard()) {
             return true;
         } else if(subst.contains(var)) {

@@ -11,6 +11,7 @@ imports
   statix/api
 
   signatures/-
+  injections/units/Units-injections
   signatures/UnitsMultifile-sig
   signatures/ChangeSets-sig
 
@@ -33,7 +34,7 @@ rules
        ; <dbg> "****************"
        ; <dbg> "* BEGIN SCRIPT *"
        ; <dbg> "****************"
-       ; result* := <foldl(execute-changes(dbg|spec-name, "projectOk", "unitOk"))> (change-sets', ([], []))
+       ; result* := <foldl(execute-changes(dbg|spec-name, "projectOk", "fileOk"))> (change-sets', ([], []))
        < <dbg> "*****************"
        ; <dbg> "* FINISH SCRIPT *"
        ; <dbg> "*****************"
@@ -68,7 +69,7 @@ rules
     with <dbg> "**************"
        ; <dbg> "* BEGIN STEP *"
        ; <dbg> "**************"
-    with AnalysisResult(mresult*) := <stx-editor-analyze(id, id|spec-name, project-constraint, file-constraint)> AnalyzeMulti((project-resource, project-change), change*, (), ())
+    with AnalysisResult(mresult*) := <stx-editor-analyze(explicate-injections-Units, implicate-injections-Units|spec-name, project-constraint, file-constraint)> AnalyzeMulti((project-resource, project-change), change*, (), ())
 
     where [] := <filter(?(_, Failed()))> mresult*
     
@@ -92,6 +93,7 @@ rules
 
   format-origin =
     !$[[<origin-file>]:[<origin-line>].[<origin-column>]]
+ <+ !"<missing origin>"
 
 rules
 

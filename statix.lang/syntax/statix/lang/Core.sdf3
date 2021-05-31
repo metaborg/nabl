@@ -184,11 +184,6 @@ lexical syntax
 
 context-free syntax
 
-  Signature.Namespaces = <
-    namespaces
-      <{NsDecl "\n"}*>
-  > {longest-match}
-
   Signature.NameResolution = <
     name-resolution
       <{ResolutionParam "\n"}*>
@@ -202,12 +197,6 @@ context-free syntax
 
   EdgeRef     = Label
   EdgeRef.EOP = "$"
-
-  // namespaces
-
-  NsDecl.NsDecl = <<NamespaceId> : <{SortRef " * "}*>>
-
-  Rule = <namespace <NsDecl>>
 
   LabelPairs          = <<{LabelPair ", "}*>>
   LabelPair.LabelPair = [[EdgeRef] < [EdgeRef]]
@@ -233,25 +222,11 @@ context-free priorities
 
 context-free syntax
 
-  Term = Occurrence
   Term = Path
 
-  Occurrence = OccurrenceLit // this indirection is necessary to solve parse errors
-  Path       = PathLit
-
-  // little duplication to fix ambiguity between
-  // As(Var(_),Var(_)), NoId() and Var(_), WithId(Var(_))
-  OccurrenceTerms = <<{OccurrenceTerm " "}*>>
-  OccurrenceTerm  = Term {longest-match}
-  OccurrenceTerm  = <<Var>@<Term>> {reject}
+  Path = PathLit
 
 syntax
-
-  OccurrencePosition-CF.NoId   =
-  OccurrencePosition-CF.WithId = "@" TermOrTermIndex-CF
-  OccurrencePosition-CF.NoId   = "@-"
-
-  OccurrenceLit-CF.StxOccurrence = NamespaceId-LEX "{" LAYOUT?-CF OccurrenceTerms-CF LAYOUT?-CF OccurrencePosition-CF LAYOUT?-CF "}"
 
   PathLit-CF.PathEmpty = "_PathEmpty" "(" LAYOUT?-CF Term-CF LAYOUT?-CF ")"
   PathLit-CF.PathStep  = "_PathStep" "(" LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF "," LAYOUT?-CF Term-CF LAYOUT?-CF ")"

@@ -16,6 +16,7 @@ import org.metaborg.util.functions.Function5;
 import org.metaborg.util.functions.Function6;
 import org.metaborg.util.functions.Function7;
 import org.metaborg.util.optionals.Optionals;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -34,7 +35,6 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
-import mb.nabl2.util.Tuple2;
 
 public class TermMatch {
 

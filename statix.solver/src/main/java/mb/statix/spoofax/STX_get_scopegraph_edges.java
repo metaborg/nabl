@@ -12,7 +12,7 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.statix.scopegraph.terms.Scope;
+import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
 
@@ -30,6 +30,7 @@ public class STX_get_scopegraph_edges extends StatixPrimitive {
         // @formatter:off
         final ITerm edges = M.cases(
             M.tuple2(Scope.matcher(), StatixTerms.label(), (t, s, r) -> {
+                reportInvalidEdgeLabel(analysis, r);
                 return B.newList(state.scopeGraph().getEdges(s, r));
             })
         ).match(term).orElseThrow(() -> new InterpreterException("Expected scope-label pair."));

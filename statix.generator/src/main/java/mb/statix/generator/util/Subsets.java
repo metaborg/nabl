@@ -11,11 +11,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.tuple.Tuple2;
+
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.util.CapsuleUtil;
-import mb.nabl2.util.Tuple2;
 
 public class Subsets<E> {
 

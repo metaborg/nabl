@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Predicate1;
 
@@ -24,7 +25,6 @@ import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.u.BaseUnifier;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class PersistentUniDisunifier extends BaseUniDisunifier implements Serializable {
 
@@ -141,13 +141,21 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             });
         }
 
-        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUniDisunifier other,
+        @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> uniDisunify(IUniDisunifier other,
                 Predicate1<ITermVar> isRigid) throws OccursException, RigidException {
             final BaseUnifier.ImmutableResult<? extends IUnifier.Immutable> r;
             if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> {
+
+            // update range variables
+            final PersistentUnifier.Transient unifier = new PersistentUnifier.Transient(r.unifier());
+            for(Diseq diseq : other.disequalities()) {
+                for(ITermVar var : diseq.freeVarSet()) {
+                    unifier.addRangeVar(var, 1);
+                }
+            }
+            return normalizeDiseqs(unifier.freeze(), disequalities.__insertAll(other.disequalities())).map(ud -> {
                 return new ImmutableResult<>(r.result(), ud);
             });
         }
@@ -180,9 +188,9 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
         // disunify(Set<ITermVar>, ITerm, ITerm)
         ///////////////////////////////////////////
 
+
         @Override public Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universals,
                 ITerm left, ITerm right, Predicate1<ITermVar> isRigid) throws RigidException {
-
             // create Diseq in normal from
             final IUnifier.Transient diseqs = PersistentUnifier.Immutable.of(isFinite()).melt();
             try {
@@ -194,7 +202,12 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                 // terms are not equal
                 return Optional.of(new ImmutableResult<>(Optional.empty(), this));
             }
-            final Diseq diseq = Diseq.of(universals, diseqs.freeze());
+            return disunify(universals, diseqs.freeze(), isRigid);
+        }
+
+        @Override public Optional<IUniDisunifier.Result<Optional<Diseq>>> disunify(Iterable<ITermVar> universals,
+                IUnifier.Immutable diseqs, Predicate1<ITermVar> isRigid) throws RigidException {
+            final Diseq diseq = Diseq.of(universals, diseqs);
             if(diseq.isEmpty()) {
                 // no disequalities left, terms are equal
                 return Optional.empty();

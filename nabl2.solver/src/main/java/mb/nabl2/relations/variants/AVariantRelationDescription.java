@@ -5,7 +5,7 @@ import java.util.List;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import mb.nabl2.relations.RelationDescription;
+import mb.scopegraph.relations.RelationDescription;
 
 @Value.Immutable
 @Serial.Version(value = 42L)

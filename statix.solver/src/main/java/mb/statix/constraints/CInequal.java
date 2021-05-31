@@ -7,13 +7,15 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -81,15 +83,33 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
-        vars.__insertAll(universals);
-        vars.__insertAll(term1.getVars());
-        vars.__insertAll(term2.getVars());
-        return vars.freeze();
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
+    }
+
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
+        term1.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
+        term2.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
+        if(message != null) {
+            message.visitVars(onFreeVar);
+        }
+
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
+        final Set.Immutable<ITermVar> us =
+                universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
+        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
+                message == null ? null : message.apply(subst));
+    }
+
+    @Override public CInequal unsafeApply(ISubstitution.Immutable subst) {
         final Set.Immutable<ITermVar> us =
                 universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
         return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,

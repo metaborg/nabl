@@ -1,26 +1,24 @@
 package mb.statix.solver.persistent.query;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.Collections;
 
-import org.metaborg.util.log.Level;
-import org.metaborg.util.task.ICancel;
-import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.scopegraph.reference.DataWF;
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.DataWF;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
-import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -30,43 +28,30 @@ class ConstraintDataWF implements DataWF<ITerm> {
 
     private final Spec spec;
     private final Rule constraint;
+
     private final IState.Immutable state;
     private final IsComplete isComplete;
-    private final IDebugContext debug;
-    private final IProgress progress;
-    private final ICancel cancel;
 
-    public ConstraintDataWF(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
-            IDebugContext debug, IProgress progress, ICancel cancel) {
+    public ConstraintDataWF(Spec spec, IState.Immutable state, IsComplete isComplete, Rule constraint) {
         this.spec = spec;
-        this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
-        this.debug = debug;
-        this.progress = progress;
-        this.cancel = cancel;
+        this.constraint = constraint;
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
-        final IUniDisunifier.Immutable unifier = state.unifier();
         try {
-            final ApplyResult result;
-            if((result = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT)
+            final ApplyResult applyResult;
+            // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+            if((applyResult = RuleUtil
+                    .apply(state.unifier(), constraint, ImmutableList.of(datum), null, ApplyMode.STRICT, Safety.UNSAFE)
                     .orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
-                    result.criticalEdges(), isComplete, debug, progress.subProgress(1), cancel)) {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("Well-formed {}", unifier.toString(B.newTuple(datum)));
-                }
-                return true;
-            } else {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("Not well-formed {}", unifier.toString(B.newTuple(datum)));
-                }
-                return false;
-            }
+
+            return Solver.entails(spec, state, Constraints.disjoin(applyResult.body()), Collections.emptyMap(),
+                    applyResult.criticalEdges(), isComplete, new NullDebugContext(),
+                    new NullProgress().subProgress(1), new NullCancel());
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }

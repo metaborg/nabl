@@ -6,12 +6,14 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.functions.Action1;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
-import mb.nabl2.util.CapsuleUtil;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
@@ -44,19 +46,32 @@ public class CTrue implements IConstraint, Serializable {
         return cases.caseTrue(this);
     }
 
-    @Override public Set.Immutable<ITermVar> getVars() {
-        return CapsuleUtil.immutableSet();
+    @Override public Set.Immutable<ITermVar> freeVars() {
+        Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
+        doVisitFreeVars(freeVars::__insert);
+        return freeVars.freeze();
     }
 
-    @Override public CTrue apply(ISubstitution.Immutable subst) {
+    @Override public void visitFreeVars(Action1<ITermVar> onFreeVar) {
+        doVisitFreeVars(onFreeVar);
+    }
+
+    private void doVisitFreeVars(@SuppressWarnings("unused") Action1<ITermVar> onFreeVar) {
+    }
+
+    @Override public CTrue apply(@SuppressWarnings("unused") ISubstitution.Immutable subst) {
         return this;
     }
 
-    @Override public CTrue apply(IRenaming subst) {
+    @Override public CTrue unsafeApply(@SuppressWarnings("unused") ISubstitution.Immutable subst) {
         return this;
     }
 
-    @Override public String toString(TermFormatter termToString) {
+    @Override public CTrue apply(@SuppressWarnings("unused") IRenaming subst) {
+        return this;
+    }
+
+    @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {
         return "true";
     }
 

@@ -2,10 +2,15 @@ package mb.nabl2.terms;
 
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.List;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+
+import com.google.common.collect.ImmutableList;
 
 public class Terms {
 
@@ -279,6 +284,7 @@ public class Terms {
 
     }
 
+
     public static String escapeString(String text) {
         final StringBuilder sb = new StringBuilder();
         final StringCharacterIterator it = new StringCharacterIterator(text);
@@ -342,6 +348,29 @@ public class Terms {
             it.next();
         }
         return sb.toString();
+    }
+
+
+    /**
+     * Apply the given function to the list of terms. Returns a list of results iff any of the subterms changed
+     * identity, otherwise returns null.
+     */
+    public static @Nullable ImmutableList<ITerm> applyLazy(List<ITerm> terms, Function1<ITerm, ITerm> f) {
+        ImmutableList.Builder<ITerm> newTerms = null;
+        for(int i = 0; i < terms.size(); i++) {
+            ITerm term = terms.get(i);
+            ITerm newTerm = f.apply(term);
+            if(newTerm != term || newTerms != null) {
+                if(newTerms == null) {
+                    newTerms = ImmutableList.builderWithExpectedSize(terms.size());
+                    for(int j = 0; j < i; j++) {
+                        newTerms.add(terms.get(j));
+                    }
+                }
+                newTerms.add(newTerm);
+            }
+        }
+        return newTerms == null ? null : newTerms.build();
     }
 
 }

@@ -7,18 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.util.collection.IRelation3;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
 
-import mb.nabl2.scopegraph.IScopeGraph;
-import mb.nabl2.scopegraph.terms.Label;
-import mb.nabl2.scopegraph.terms.Occurrence;
-import mb.nabl2.scopegraph.terms.Scope;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.util.collections.IRelation3;
+import mb.scopegraph.pepm16.IScopeGraph;
+import mb.scopegraph.pepm16.terms.Label;
+import mb.scopegraph.pepm16.terms.Occurrence;
+import mb.scopegraph.pepm16.terms.Scope;
 
 public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisPrimitive {
 

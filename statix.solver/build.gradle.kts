@@ -17,6 +17,8 @@ dependencies {
   api(compositeBuild("org.spoofax.terms"))
   api(compositeBuild("org.spoofax.interpreter.core"))
   api(project(":nabl2.terms"))
+  api(project(":scopegraph"))
+  api(project(":p_raffrayi"))
 
   api("com.google.guava:guava")
   api("io.usethesource:capsule")

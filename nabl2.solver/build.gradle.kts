@@ -18,6 +18,7 @@ dependencies {
   api(compositeBuild("org.spoofax.interpreter.core"))
   implementation(compositeBuild("org.strategoxt.strj"))
   api(project(":nabl2.terms"))
+  api(project(":scopegraph"))
 
   api("com.google.guava:guava")
   api("io.usethesource:capsule")

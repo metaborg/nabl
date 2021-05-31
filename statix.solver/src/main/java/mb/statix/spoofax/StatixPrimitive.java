@@ -20,6 +20,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
@@ -44,13 +45,12 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
 import mb.statix.solver.persistent.Solver;
+import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
-    private static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
-
-    private static final int MAX_TRACE = 5;
+    protected static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
 
     final protected int tvars;
 
@@ -108,6 +108,18 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
     }
 
+    protected void reportInvalidDataLabel(SolverResult analysis, ITerm label) {
+        if(!analysis.spec().dataLabels().contains(label)) {
+            logger.warn("{} is not a valid relation in this specification. Available relations are {}.", label, analysis.spec().dataLabels());
+        }
+    }
+
+    protected void reportInvalidEdgeLabel(SolverResult analysis, ITerm label) {
+        if(!analysis.spec().edgeLabels().contains(label)) {
+            logger.warn("{} is not a valid data label in this specification. Available labels are {}.", label, analysis.spec().edgeLabels());
+        }
+    }
+
     protected IDebugContext getDebugContext(ITerm levelTerm) throws InterpreterException {
         final String levelString =
                 M.stringValue().match(levelTerm).orElseThrow(() -> new InterpreterException("Expected log level."));
@@ -139,38 +151,14 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ////////////////////////////////////////////////
 
     protected void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
-            final Collection<ITerm> errors, final Collection<ITerm> warnings, final Collection<ITerm> notes) {
-        final TermFormatter formatter = Solver.shallowTermFormatter(unifier, Solver.TERM_FORMAT_DEPTH);
+            IStatixProjectConfig config, final Collection<ITerm> errors, final Collection<ITerm> warnings,
+            final Collection<ITerm> notes) {
+        Tuple2<Iterable<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
 
-        ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
-        final Deque<String> trace = Lists.newLinkedList();
-        IConstraint current = constraint;
-        int traceCount = 0;
-        while(current != null) {
-            if(originTerm == null) {
-                originTerm = findOriginArgument(current, unifier).orElse(null);
-            }
-            if(traceCount++ < MAX_TRACE) {
-                trace.addLast(current.toString(formatter));
-            }
-            current = current.cause().orElse(null);
-        }
-        if(traceCount >= MAX_TRACE) {
-            trace.addLast("... trace truncated ...");
-        }
+        final String messageText = Streams.stream(message_origin._1()).filter(s -> !s.isEmpty())
+                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;"));
 
-        // use empty origin if none was found
-        if(originTerm == null) {
-            originTerm = B.newTuple();
-        }
-
-        // add constraint message
-        trace.addFirst(message.toString(formatter));
-
-        final String messageText = trace.stream().filter(s -> !s.isEmpty()).map(s -> cleanupString(s))
-                .collect(Collectors.joining("<br>\n&gt;&nbsp;"));
-
-        final ITerm messageTerm = B.newTuple(originTerm, B.newString(messageText));
+        final ITerm messageTerm = B.newTuple(message_origin._2(), B.newString(messageText));
         switch(message.kind()) {
             case ERROR:
                 errors.add(messageTerm);
@@ -181,11 +169,48 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
             case NOTE:
                 notes.add(messageTerm);
                 break;
+            case IGNORE:
+                break;
         }
 
     }
 
-    private Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
+    public static Tuple2<Iterable<String>, ITerm> formatMessage(final IMessage message, final IConstraint constraint,
+            final IUniDisunifier unifier, IStatixProjectConfig config) {
+        final TermFormatter formatter = Solver.shallowTermFormatter(unifier,
+                config.messageTermDepth(config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH)));
+        final int maxTraceLength =
+                config.messageTraceLength(config.messageTraceLength(IStatixProjectConfig.DEFAULT_MESSAGE_TRACE_LENGTH));
+
+        ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
+        final Deque<String> trace = Lists.newLinkedList();
+        IConstraint current = constraint;
+        int traceCount = 0;
+        while(current != null) {
+            if(originTerm == null) {
+                originTerm = findOriginArgument(current, unifier).orElse(null);
+            }
+            if(maxTraceLength < 0 || ++traceCount <= maxTraceLength) {
+                trace.addLast(current.toString(formatter));
+            }
+            current = current.cause().orElse(null);
+        }
+        if(maxTraceLength > 0 && traceCount > maxTraceLength) {
+            trace.addLast("... trace truncated ...");
+        }
+
+        // add constraint message
+        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
+
+        // use empty origin if none was found
+        if(originTerm == null) {
+            originTerm = B.newTuple();
+        }
+
+        return Tuple2.of(trace, originTerm);
+    }
+
+    private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
         final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
             onArith -> Stream.empty(),
@@ -209,7 +234,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
+    private static Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
         // @formatter:off
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())
@@ -218,7 +243,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
-    private String cleanupString(String string) {
+    private static String cleanupString(String string) {
         return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 

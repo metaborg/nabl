@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 
@@ -31,7 +32,6 @@ import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
-import mb.nabl2.util.CapsuleUtil;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -379,11 +379,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1, specializedTermFormatter);
     }
 
-    @Override public String toString(final ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-        if(n <= 0) {
-            throw new IllegalArgumentException("Depth must be positive, but is " + n);
-        }
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), n, specializedTermFormatter);
+    @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+        return toString(term, Maps.newHashMap(), Maps.newHashMap(), depth, specializedTermFormatter);
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
@@ -415,8 +412,15 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         }
         final StringBuilder sb = new StringBuilder();
         final AtomicBoolean tail = new AtomicBoolean();
+        int remaining = maxDepth;
         sb.append("[");
         while(list != null) {
+            if(remaining == 0) {
+                if(list.match(ListTerms.<Boolean>cases().nil(nil -> false).otherwise(l -> true))) {
+                    sb.append("|…");
+                }
+                break;
+            }
             list = list.match(ListTerms.cases(
             // @formatter:off
                 cons -> {
@@ -436,6 +440,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
                 }
                 // @formatter:on
             ));
+            remaining--;
         }
         sb.append("]");
         return sb.toString();
@@ -591,8 +596,8 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return unifier.toString(term, specializedTermFormatter);
         }
 
-        @Override public String toString(ITerm term, int n, SpecializedTermFormatter specializedTermFormatter) {
-            return unifier.toString(term, n, specializedTermFormatter);
+        @Override public String toString(ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
+            return unifier.toString(term, depth, specializedTermFormatter);
         }
 
         @Override public Optional<? extends IUnifier.Immutable> unify(ITerm term1, ITerm term2,

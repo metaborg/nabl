@@ -19,14 +19,18 @@ rules // analysis
 
   stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id ,  id  |spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre,  id  |spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
-  
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                               < cstx--editor-analyze(pre, stx--no-grouping, post|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
+                                                                               + stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
+
   stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                                                        ; cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
+                                                                                                        < cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
+                                                                                                        + fatal-err-msg(|"Grouping is only supported by concurrent Statix solver.")
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
+  stx-analysis-has-errors = stx--analysis-has-errors
 
 rules // ast
 
@@ -43,6 +47,17 @@ rules // ast
   stx-get-ast-analysis = where(stx--get-ast-index) ; stx--get-ast-analysis
 
   /**
+   * Get the property set on an AST node by the Statix specification.
+   *
+   * Example 1: If the specification contains an `@t.prop := val` constraint,
+   * then `<stx-get-ast-property(|a, "prop")> t` returns `val`.
+   *
+   * Example 2: If the specification contains `@t.prop += val1, @t.prop += val2` constraints,
+   * then `<stx-get-ast-property(|a, "prop")> t` returns `[val1, val2]`.
+   *
+   * Note that the `type` and `ref` properties have special implementations.
+   * To query those, use `stx-get-ast-type` or `stx-get-ast-ref`, respectively.
+   *
    * @param a    : Analysis
    * @param name : String
    *
@@ -51,23 +66,48 @@ rules // ast
   stx-get-ast-property(|a, name) = stx--get-ast-property(|a, Prop(name))
 
   /**
+   * Get the `type` property set on an AST node.
+   *
    * @param a    : Analysis
    *
    * @type Term -> Term
    */
   stx-get-ast-type(|a) = stx--get-ast-property(|a, Type())
 
+  /**
+   * Get the `ref` property set on an AST node.
+   *
+   * @param a    : Analysis
+   *
+   * @type Term -> Term
+   */
+  stx-get-ast-ref(|a) = stx--get-ast-property(|a, Ref())
+
 rules // scope graph
 
   /**
+   * Get the data under relation `rel` in the input scope term.
+   *
+   * Example: When the specification contains a `!var["x", INT()] in s` constraint,
+   * then `<stx-get-scopegraph-data(|a, "statics/base!var")> s` will return `[("x", INT())]`.
+   *
+   * Please note that a fully qualified name for the relation must be provided.
+   *
    * @param a   : Analysis
-   * @param lbl : String
+   * @param rel : String
    *
    * @type Scope -> [Term]
    */
-  stx-get-scopegraph-data(|a, lbl) = <stx--get-scopegraph-data(|a)> (<id>, Label(lbl))
+  stx-get-scopegraph-data(|a, rel) = <stx--get-scopegraph-data(|a)> (<id>, Label(rel))
 
   /**
+   * Get the target scopes that are reachable from the input scope via `lbl`-edges.
+   *
+   * Example: When the specification contains a `s1 -L-> s2` constraint,
+   * then `<stx-get-scopegraph-data(|a, "statics/base!L")> s1` will return `[s2]`.
+   *
+   * Please note that a fully qualified name for the label must be provided.
+   *
    * @param a   : Analysis
    * @param lbl : String
    *

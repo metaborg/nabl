@@ -2,23 +2,23 @@ package mb.statix.solver.persistent.query;
 
 import java.util.Collections;
 
-import org.metaborg.util.log.Level;
-import org.metaborg.util.task.ICancel;
-import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.statix.scopegraph.reference.DataLeq;
-import mb.statix.scopegraph.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.DataLeq;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
+import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.IsComplete;
-import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.spec.ApplyMode;
+import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
@@ -28,55 +28,36 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
 
     private final Spec spec;
     private final Rule constraint;
+
     private final IState.Immutable state;
     private final IsComplete isComplete;
-    private final IDebugContext debug;
-    private final IProgress progress;
-    private final ICancel cancel;
-    private volatile Boolean alwaysTrue;
 
-    public ConstraintDataLeq(Spec spec, Rule constraint, IState.Immutable state, IsComplete isComplete,
-            IDebugContext debug, IProgress progress, ICancel cancel) {
+    public ConstraintDataLeq(Spec spec, IState.Immutable state, IsComplete isComplete, Rule constraint) {
         this.spec = spec;
-        this.constraint = constraint;
         this.state = state;
         this.isComplete = isComplete;
-        this.debug = debug;
-        this.progress = progress;
-        this.cancel = cancel;
+        this.constraint = constraint;
     }
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
-        final IUniDisunifier.Immutable unifier = state.unifier();
         try {
-            final ApplyResult result;
-            if((result = RuleUtil
-                    .apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null, ApplyMode.STRICT)
-                    .orElse(null)) == null) {
+            final ApplyResult applyResult;
+            // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
+            if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+                    ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                 return false;
             }
-            if(Solver.entails(spec, state, Collections.singleton(result.body()), Collections.emptyMap(),
-                    result.criticalEdges(), isComplete, debug, progress.subProgress(1), cancel)) {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("{} shadows {}", unifier.toString(datum1), unifier.toString(datum2));
-                }
-                return true;
-            } else {
-                if(debug.isEnabled(Level.Debug)) {
-                    debug.debug("{} does not shadow {}", unifier.toString(datum1), unifier.toString(datum2));
-                }
-                return false;
-            }
+
+            return Solver.entails(spec, state, Constraints.disjoin(applyResult.body()), Collections.emptyMap(),
+                    applyResult.criticalEdges(), isComplete, new NullDebugContext(),
+                    new NullProgress().subProgress(1), new NullCancel());
         } catch(Delay d) {
             throw new ResolutionDelayException("Data order delayed.", d);
         }
     }
 
     @Override public boolean alwaysTrue() throws InterruptedException {
-        if(alwaysTrue != null)
-            return alwaysTrue.booleanValue();
-
-        return alwaysTrue = constraint.isAlways(spec).orElse(false);
+        return constraint.isAlways().orElse(false);
     }
 
     @Override public String toString() {

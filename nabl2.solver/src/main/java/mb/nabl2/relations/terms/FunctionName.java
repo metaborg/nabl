@@ -10,11 +10,11 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableList;
 
-import mb.nabl2.relations.IFunctionName;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.scopegraph.relations.IFunctionName;
 
 public abstract class FunctionName extends AbstractApplTerm implements IFunctionName, IApplTerm {
 

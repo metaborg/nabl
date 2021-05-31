@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -22,10 +23,6 @@ import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
 import mb.nabl2.constraints.relations.CEvalFunction;
 import mb.nabl2.constraints.relations.IRelationConstraint;
-import mb.nabl2.relations.IFunctionName;
-import mb.nabl2.relations.IRelation;
-import mb.nabl2.relations.IRelationName;
-import mb.nabl2.relations.RelationException;
 import mb.nabl2.relations.terms.FunctionName.RelationFunctions;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -38,7 +35,10 @@ import mb.nabl2.solver.exceptions.FunctionUndefinedException;
 import mb.nabl2.solver.exceptions.RelationDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
+import mb.scopegraph.relations.IFunctionName;
+import mb.scopegraph.relations.IRelation;
+import mb.scopegraph.relations.IRelationName;
+import mb.scopegraph.relations.RelationException;
 
 
 public class RelationComponent extends ASolver {
@@ -64,8 +64,7 @@ public class RelationComponent extends ASolver {
             String lubName = RelationFunctions.LUB.of(relationName);
             CheckedFunction1<ITerm, Optional<ITerm>, DelayException> lubFun = (term) -> {
                 Optional<Tuple2<ITerm, ITerm>> pair =
-                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r))
-                                .match(term);
+                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r)).match(term);
                 if(pair.isPresent()) {
                     return lub(relationName, pair.get()._1(), pair.get()._2());
                 } else {
@@ -76,8 +75,7 @@ public class RelationComponent extends ASolver {
             String glbName = RelationFunctions.GLB.of(relationName);
             CheckedFunction1<ITerm, Optional<ITerm>, DelayException> glbFun = (term) -> {
                 Optional<Tuple2<ITerm, ITerm>> pair =
-                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r))
-                                .match(term);
+                        M.tuple2(M.term(), M.term(), (t, l, r) -> (Tuple2<ITerm, ITerm>) Tuple2.of(l, r)).match(term);
                 if(pair.isPresent()) {
                     return glb(relationName, pair.get()._1(), pair.get()._2());
                 } else {

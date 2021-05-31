@@ -1,7 +1,0 @@
-module P { // problem regardless of package or module
-
-  module B {
-    var b : unit
-  }
-  
-}

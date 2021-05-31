@@ -4,15 +4,16 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import io.usethesource.capsule.Set;
-import mb.nabl2.regexp.IRegExp;
-import mb.nabl2.regexp.IRegExpMatcher;
-import mb.nabl2.regexp.RegExpMatcher;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
+import mb.scopegraph.regexp.IRegExp;
+import mb.scopegraph.regexp.IRegExpMatcher;
+import mb.scopegraph.regexp.RegExpMatcher;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleUtil;
 
 public class QueryFilter implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -38,11 +39,15 @@ public class QueryFilter implements Serializable {
     }
 
     public Set.Immutable<ITermVar> getVars() {
-        return dataWf.varSet();
+        return RuleUtil.vars(dataWf);
     }
 
     public QueryFilter apply(ISubstitution.Immutable subst) {
         return new QueryFilter(pathWf, dataWf.apply(subst));
+    }
+
+    public QueryFilter unsafeApply(ISubstitution.Immutable subst) {
+        return new QueryFilter(pathWf, dataWf.unsafeApply(subst));
     }
 
     public QueryFilter apply(IRenaming subst) {

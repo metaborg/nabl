@@ -10,6 +10,7 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
+import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
@@ -26,7 +27,6 @@ import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.MultiInitialResult;
 import mb.nabl2.spoofax.analysis.MultiUnitResult;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.util.Tuple2;
 
 public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
 

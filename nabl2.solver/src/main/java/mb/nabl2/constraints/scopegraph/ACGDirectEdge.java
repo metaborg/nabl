@@ -7,8 +7,8 @@ import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.scopegraph.terms.Label;
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.pepm16.terms.Label;
 
 @Value.Immutable
 @Serial.Version(value = 42L)
