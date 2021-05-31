@@ -22,7 +22,6 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;

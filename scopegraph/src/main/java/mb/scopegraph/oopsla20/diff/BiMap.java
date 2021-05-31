@@ -97,6 +97,17 @@ public abstract class BiMap<E> {
             return newMap.freeze();
         }
 
+        @SuppressWarnings("unchecked") @Override public boolean equals(Object obj) {
+            if(obj == null || obj.getClass() != this.getClass()) {
+                return false;
+            }
+            return fwd.equals(((BiMap.Immutable<E>) obj).fwd);
+        }
+
+        @Override public int hashCode() {
+            return fwd.hashCode();
+        }
+
     }
 
     public static class Transient<E> extends BiMap<E> {

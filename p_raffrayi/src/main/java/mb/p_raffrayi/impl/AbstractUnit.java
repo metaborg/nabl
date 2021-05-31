@@ -724,8 +724,22 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         logger.debug("{} tryFinish", this);
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
-            unitResult.complete(UnitResult.of(self.id(), scopeGraph.get(), localScopeGraph(), recordedQueries,
-                    rootScopes, analysis.get(), failures, subUnitResults, stats).withTransitions(transitions));
+            // @formatter:off
+            unitResult.complete(UnitResult.<S, L, D, R>builder()
+                .id(self.id())
+                .scopeGraph(scopeGraph.get())
+                .localScopeGraph(localScopeGraph())
+                .queries(recordedQueries)
+                .rootScopes(rootScopes)
+                .analysis(analysis.get())
+                .failures(failures)
+                .subUnitResults(subUnitResults)
+                .stats(stats)
+                .transitions(transitions)
+                .diff(diffResult.get())
+                .build()
+            );
+            // @formatter:on
         } else {
             logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByProcess);
         }
@@ -936,7 +950,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 },
                 complete -> {
                     logger.error("Unexpected remaining completeness query: " + complete);
-                    throw new IllegalStateException("Unexpected remaining completeness query: " + complete);
+                    self.complete(complete.future(), null, new DeadlockException("Unexpected remaining completeness query: " + complete));
                 },
                 datum -> {
                     logger.error("Unexpected remaining datum query: " + datum);
@@ -1003,21 +1017,25 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             // Most be done via owner, because delays on a shared, non-owned scope are not activated
             // and not desired to be activated, because not any operation on them can proceed
             return getOwner(scope).thenCompose(owner -> {
-                final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label));
+                final ICompletableFuture<Iterable<S>> future = new CompletableFuture<>();
+                final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label), future);
 
                 waitFor(complete, owner);
-                return self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+                self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+                    return scopeGraph.get().getEdges(scope, label);
+                }).whenComplete((r, ex) -> {
                     granted(complete, owner);
                     resume();
-                    return scopeGraph.get().getEdges(scope, label);
+                    future.complete(r, ex);
                 });
+                return future;
             });
         }
 
         @Override public IFuture<Set.Immutable<L>> labels(S scope) {
             assertOwnOrSharedScope(scope);
             // TODO make more precise with labels for which scope was initialized.
-            return CompletableFuture.completedFuture(scopeGraph.get().getLabels());
+            return CompletableFuture.completedFuture(edgeLabels);
         }
 
         @Override public IFuture<Optional<D>> datum(S scope) {

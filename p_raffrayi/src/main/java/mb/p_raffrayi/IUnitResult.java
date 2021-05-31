@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
 public interface IUnitResult<S, L, D, R> {
 
@@ -23,6 +24,8 @@ public interface IUnitResult<S, L, D, R> {
     List<S> rootScopes();
 
     @Nullable R analysis();
+
+    @Nullable ScopeGraphDiff<S, L, D> diff();
 
     List<Throwable> failures();
 
