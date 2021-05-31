@@ -1039,6 +1039,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         @Override public IFuture<Optional<D>> datum(S scope) {
+            // TODO is it needed to fetch data from remote scope????
             return getOwner(scope).thenCompose(owner -> {
                 final Datum<S, L, D> datum = Datum.of(self, scope);
                 waitFor(datum, owner);

@@ -80,21 +80,23 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             logger.trace("Schedule datum {}: {}", scope, datumFuture);
             future(datumFuture, processDatum);
 
-            IFuture<Set.Immutable<L>> labelsFuture = context.labels(scope);
-            K<Set.Immutable<L>> processLabels = lbls -> {
-                lbls.forEach(lbl -> {
-                    IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, lbl);
-                    K<Iterable<S>> processEdges = targets -> {
-                        targets.forEach(target -> {
-                            addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
-                            worklist.add(target);
-                        });
-                    };
-                    future(edgesFuture, processEdges);
-                });
-            };
-            logger.trace("Schedule labels {}: {}", scope, labelsFuture);
-            future(labelsFuture, processLabels);
+            if(differOps.ownOrSharedScope(scope)) {
+                IFuture<Set.Immutable<L>> labelsFuture = context.labels(scope);
+                K<Set.Immutable<L>> processLabels = lbls -> {
+                    lbls.forEach(lbl -> {
+                        IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, lbl);
+                        K<Iterable<S>> processEdges = targets -> {
+                            targets.forEach(target -> {
+                                addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
+                                worklist.add(target);
+                            });
+                        };
+                        future(edgesFuture, processEdges);
+                    });
+                };
+                logger.trace("Schedule labels {}: {}", scope, labelsFuture);
+                future(labelsFuture, processLabels);
+            }
         }
     }
 
