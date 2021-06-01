@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.units.multifile:2.5.12
+id: org.metaborg:statix.integrationtest.lang.units.multifile:2.6.0-SNAPSHOT
 name: UnitsMultifile
 dependencies:
   compile:
