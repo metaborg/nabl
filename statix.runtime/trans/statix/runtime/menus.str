@@ -24,5 +24,5 @@ rules
     with
       filename := "project.stxlib"
     ; sg := <stx--get-scopegraph;strip-annos> a*
-    ; s* := <collect-all(stx--is-scope, TupleToList; concat); imset-from-list; imset-to-list> sg
+    ; s* := <collect-all(stx--is-scope, conc); imset-from-list; imset-to-list> sg
     ; result := Library([], s*, sg)
