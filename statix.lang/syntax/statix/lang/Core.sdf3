@@ -114,6 +114,11 @@ context-free syntax
       [Constraint]
   ]
 
+  Constraint.CAbs =  [with {[{Var " "}*]} gen [Term] in [Constraint] |-> [Term][Message]]
+  Constraint.CInj =  [inject gen [Term] |-> [Term][Message]]
+
+  Constraint.CInst = [inst [Term] -> [Term][Message]]
+
 context-free priorities
 
   // Does this give longest-match behavior? Putting longest-match on CExists
@@ -122,7 +127,7 @@ context-free priorities
 
 lexical syntax
 
-  Keyword = "true" | "false" | "new" | "try"
+  Keyword = "true" | "false" | "new" | "try" | "with" | "gen" | "in" | "inject" | "inst"
 
 
 /******************************************************************
@@ -299,6 +304,7 @@ context-free syntax
   SortRef.OccurrenceSort = "occurrence"
   SortRef.ScopeSort      = "scope"
   SortRef.AstIdSort      = "astId"
+  SortRef.GenSort        = <gen(<SortRef>)>
   SortRef                = <(<SortRef>)> {bracket}
 
   OpDecl.OpDecl  = <<OpId> : <OpSort>>

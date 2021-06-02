@@ -33,6 +33,7 @@ context-free syntax
   TType.SCOPE      = <scope>
   TType.LIST       = <list(<TType>)>
   TType.TUPLE      = <(<TTypes>)>
+  TType.GEN	       = <gen(<TType>)>
 
 sorts
 
