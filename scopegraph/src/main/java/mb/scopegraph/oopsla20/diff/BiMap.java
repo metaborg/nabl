@@ -108,6 +108,23 @@ public abstract class BiMap<E> {
             return fwd.hashCode();
         }
 
+        public boolean canPut(E key, E value) {
+            if(fwd.containsKey(key) && !fwd.get(key).equals(value)) {
+                return false;
+            }
+            if(bwd.containsKey(value) && !bwd.get(value).equals(key)) {
+                return false;
+            }
+            return true;
+        }
+
+        public Immutable<E> put(E key, E value) {
+            if(!canPut(key, value)) {
+                throw new IllegalArgumentException("Key or value already set.");
+            }
+            return new Immutable<>(fwd.__put(key, value), bwd.__put(value, key));
+        }
+
     }
 
     public static class Transient<E> extends BiMap<E> {

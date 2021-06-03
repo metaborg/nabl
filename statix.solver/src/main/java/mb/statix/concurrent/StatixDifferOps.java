@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.functions.Function2;
-import org.metaborg.util.future.CompletableFuture;
-import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.IListTerm;
@@ -15,146 +12,141 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.Transform.T;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.statix.scopegraph.Scope;
 
 public class StatixDifferOps implements IDifferScopeOps<Scope, ITerm> {
-
-    private static final IFuture<Boolean> FALSE = CompletableFuture.completedFuture(false);
-    private static final IFuture<Boolean> TRUE = CompletableFuture.completedFuture(true);
 
     @Override public Immutable<Scope> getScopes(ITerm datum) {
         return CapsuleUtil.toSet(T.collecttd(Scope.matcher()::match).apply(datum));
     }
 
-    @Override public IFuture<Boolean> matchDatums(ITerm currentDatum, ITerm previousDatum,
-            Function2<Scope, Scope, IFuture<Boolean>> scopeMatch) {
-        return termMatch(currentDatum, previousDatum, scopeMatch);
+    @Override public Optional<BiMap.Immutable<Scope>> matchDatums(ITerm currentDatum, ITerm previousDatum) {
+        return termMatch(currentDatum, previousDatum);
     }
 
-    private IFuture<Boolean> termMatch(ITerm left, ITerm right, Function2<Scope, Scope, IFuture<Boolean>> matchScopes) {
+    private Optional<BiMap.Immutable<Scope>> termMatch(ITerm left, ITerm right) {
         final Optional<Scope> leftScope = Scope.matcher().match(left);
         if(leftScope.isPresent()) {
             final Optional<Scope> rightScope = Scope.matcher().match(right);
             if(!rightScope.isPresent()) {
-                return FALSE;
+                return Optional.empty();
             }
-            return matchScopes.apply(leftScope.get(), rightScope.get());
+            return Optional.of(BiMap.Immutable.of(leftScope.get(), rightScope.get()));
         }
         // @formatter:off
-        return left.match(Terms.<IFuture<Boolean>>cases(
-            applLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+        return left.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases(
+            applLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .appl(applRight -> {
                     if(applLeft.getArity() == applRight.getArity() &&
                         applLeft.getOp().equals(applRight.getOp())) {
-                        return termsMatch(applLeft.getArgs(), applRight.getArgs(), matchScopes);
+                        return termsMatch(applLeft.getArgs(), applRight.getArgs());
                     }
-                    return FALSE;
+                    return Optional.empty();
                 })
                 .otherwise(t -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            listLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+            listLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .list(listRight -> {
-                    return listMatch(listLeft, listRight, matchScopes);
+                    return listMatch(listLeft, listRight);
                 })
                 .otherwise(t -> {
-                    return TRUE;
+                    return Optional.of(BiMap.Immutable.of());
                 })
             ),
-            stringLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+            stringLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .string(stringRight -> {
-                    return f(stringLeft.getValue().equals(stringRight.getValue()));
+                    return fromEquality(stringLeft.getValue().equals(stringRight.getValue()));
                 })
                 .otherwise(t -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            integerLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+            integerLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .integer(integerRight -> {
-                    return f(integerLeft.getValue() == integerRight.getValue());
+                    return fromEquality(integerLeft.getValue() == integerRight.getValue());
                 })
                 .otherwise(t -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            blobLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+            blobLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .blob(blobRight -> {
-                    return f(blobLeft.getValue().equals(blobRight.getValue()));
+                    return fromEquality(blobLeft.getValue().equals(blobRight.getValue()));
                 })
                 .otherwise(t -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            varLeft -> right.match(Terms.<IFuture<Boolean>>cases()
+            varLeft -> right.match(Terms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .var(varRight -> {
-                    return f(varLeft.equals(varRight));
+                    return fromEquality(varLeft.equals(varRight));
                 })
                 .otherwise(termRight -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             )
         ));
         // @formatter:on
     }
 
-    private IFuture<Boolean> listMatch(final IListTerm left, final IListTerm right,
-        Function2<Scope, Scope, IFuture<Boolean>> matchScopes) {
+    private Optional<BiMap.Immutable<Scope>> listMatch(final IListTerm left, final IListTerm right) {
         // @formatter:off
-        return left.match(ListTerms.<IFuture<Boolean>>cases(
-            consLeft -> right.match(ListTerms.<IFuture<Boolean>>cases()
+        return left.match(ListTerms.<Optional<BiMap.Immutable<Scope>>>cases(
+            consLeft -> right.match(ListTerms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .cons(consRight -> {
-                    return termMatch(consLeft.getHead(), consRight.getHead(), matchScopes)
-                        .thenCompose(match -> {
-                            if(!match) {
-                                return FALSE;
-                            }
-                            return listMatch(consLeft.getTail(), consRight.getTail(), matchScopes);
+                    return termMatch(consLeft.getHead(), consRight.getHead()).flatMap(headMatches -> {
+                        return listMatch(consLeft.getTail(), consRight.getTail()).flatMap(tailMatches -> {
+                            return BiMaps.safeMerge(headMatches, tailMatches);
                         });
+                    });
                 })
                 .otherwise(l -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            nilLeft -> right.match(ListTerms.<IFuture<Boolean>>cases()
+            nilLeft -> right.match(ListTerms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .nil(nilRight -> {
-                    return FALSE;
+                    return Optional.of(BiMap.Immutable.of());
                 })
                 .otherwise(l -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             ),
-            varLeft -> right.match(ListTerms.<IFuture<Boolean>>cases()
+            varLeft -> right.match(ListTerms.<Optional<BiMap.Immutable<Scope>>>cases()
                 .var(varRight -> {
-                    return f(varLeft.equals(varRight));
+                    return fromEquality(varLeft.equals(varRight));
                 })
                 .otherwise(termRight -> {
-                    return FALSE;
+                    return Optional.empty();
                 })
             )
         ));
         // @formatter:on
     }
 
-    private IFuture<Boolean> termsMatch(final List<ITerm> lefts, final List<ITerm> rights,
-            Function2<Scope, Scope, IFuture<Boolean>> matchScopes) {
+    private Optional<BiMap.Immutable<Scope>> termsMatch(final List<ITerm> lefts, final List<ITerm> rights) {
         if(lefts.size() != rights.size()) {
-            return FALSE;
+            return Optional.empty();
         }
         if(lefts.isEmpty()) {
-            return TRUE;
+            return Optional.of(BiMap.Immutable.of());
         }
 
-        return termMatch(lefts.get(0), rights.get(0), matchScopes).thenCompose(match -> {
-            if(!match) {
-                return FALSE;
-            }
-            return termsMatch(lefts.subList(1, lefts.size()), rights.subList(1, rights.size()), matchScopes);
+        return termMatch(lefts.get(0), rights.get(0)).flatMap(headMatch -> {
+            final List<ITerm> leftsSub = lefts.subList(1, lefts.size());
+            final List<ITerm> rightsSub = lefts.subList(1, lefts.size());
+            return termsMatch(leftsSub, rightsSub).flatMap(tailMatch -> {
+                return BiMaps.safeMerge(headMatch, tailMatch);
+            });
         });
     }
 
-    private static IFuture<Boolean> f(boolean bool) {
-        return bool ? TRUE : FALSE;
+    private static Optional<BiMap.Immutable<Scope>> fromEquality(boolean equal) {
+        return equal ? Optional.of(BiMap.Immutable.of()) : Optional.empty();
     }
 
     /* public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff, IUnifier.Immutable current,

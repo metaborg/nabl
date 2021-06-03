@@ -3,8 +3,9 @@ package mb.p_raffrayi.impl.diff;
 import java.util.Collection;
 import java.util.Optional;
 
-import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.IFuture;
+
+import mb.scopegraph.oopsla20.diff.BiMap;
 
 public interface IDifferOps<S, L, D> {
 
@@ -12,7 +13,7 @@ public interface IDifferOps<S, L, D> {
 
     boolean isMatchAllowed(S currentScope, S previousScope);
 
-    IFuture<Boolean> matchDatums(D currentDatum, D previousDatum, Function2<S, S, IFuture<Boolean>> scopeMatch);
+    Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum);
 
     // Data
 

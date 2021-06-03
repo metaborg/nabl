@@ -15,6 +15,7 @@ import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletable;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -35,6 +36,7 @@ import io.usethesource.capsule.Map.Immutable;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
@@ -275,75 +277,61 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
      * Compute the patch required to match two scopes and their data.
      */
     private IFuture<Optional<BiMap.Immutable<S>>> consequences(S currentScope, S previousScope) {
-        CompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
-        final BiMap.Transient<S> _matches = BiMap.Transient.of();
-        scopeMatch(currentScope, previousScope, _matches).thenAccept(match -> {
-            if(match) {
-                result.complete(Optional.of(_matches.freeze()));
-            } else {
-                result.complete(Optional.empty());
-            }
-        });
-        return result;
+        return consequences(currentScope, previousScope, BiMap.Immutable.of());
     }
 
     /**
      * Computes matchability of two scopes, without taking the current state into account.
      * Additional implied matches are collected in the {@code req} argument.
      */
-    private IFuture<Boolean> scopeMatch(S currentScope, S previousScope, BiMap.Transient<S> req) {
+    private IFuture<Optional<BiMap.Immutable<S>>> consequences(S currentScope, S previousScope, BiMap.Immutable<S> req) {
         if(!differOps.isMatchAllowed(currentScope, previousScope)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(Optional.empty());
         }
         if(!req.canPut(currentScope, previousScope)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedFuture(Optional.empty());
         }
         if(req.containsEntry(currentScope, previousScope)) {
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(Optional.of(req));
         }
-        req.put(currentScope, previousScope);
+        BiMap.Immutable<S> newReq = req.put(currentScope, previousScope);
 
-        ICompletableFuture<Boolean> result = new CompletableFuture<>();
         if(differOps.ownScope(currentScope)) {
             // Match data of own scope
-            IFuture<Tuple2<Optional<D>, Optional<D>>> dataFuture =
-                    AggregateFuture.apply(currentContext.datum(currentScope), previousContext.datum(previousScope));
-            K<Tuple2<Optional<D>, Optional<D>>> processData = r -> {
+            return AggregateFuture.apply(currentContext.datum(currentScope), previousContext.datum(previousScope)).thenCompose(r -> {
                 final Optional<D> currentData = r._1();
                 final Optional<D> previousData = r._2();
                 if(currentData.isPresent() != previousData.isPresent()) {
-                    result.complete(false);
+                    return CompletableFuture.completedFuture(Optional.empty());
                 } else if(currentData.isPresent() && previousData.isPresent()) {
                     // Scopes with data can only match if data match
-                    IFuture<Boolean> dataMatch = differOps.matchDatums(currentData.get(), previousData.get(),
-                            (leftScope, rightScope) -> scopeMatch(leftScope, rightScope, req));
-                    K<Boolean> completeScopeMatch = match -> {
-                        result.complete(match);
-                        return Unit.unit;
-                    };
-                    future(dataMatch, completeScopeMatch);
-                } else {
-                    result.complete(true);
+                    // Calculate immediate consequences of data match
+                    final Optional<BiMap.Immutable<S>> dataMatch = differOps.matchDatums(currentData.get(), previousData.get())
+                            .flatMap(scopeMatches -> BiMaps.safeMerge(newReq, scopeMatches));
+                    // @formatter:off
+                    // Calculate transitive closure of consequences.
+                    return Futures.reducePartial(dataMatch, dataMatch.map(BiMap.Immutable::asMap).map(Map.Immutable::entrySet),
+                        (aggMatches, match) -> consequences(match.getKey(), match.getValue(), aggMatches),
+                        BiMaps::safeMerge
+                    );
+                    // @formatter:on
                 }
-                return Unit.unit;
-            };
-            future(dataFuture, processData);
+                // Both scopes don't have data
+                return CompletableFuture.completedFuture(Optional.of(newReq));
+            });
         } else {
             // We do not own the scope, hence ask owner to which current scope it is matched.
-            IFuture<Optional<S>> currentScopeFuture = differOps.externalMatch(previousScope);
-            K<Optional<S>> insertMatchLocal = match -> {
-                if(match.isPresent()) {
+            return differOps.externalMatch(previousScope).thenApply(match -> {
+                return match.flatMap(target -> {
                     // Insert new remote match
-                    match(match.get(), previousScope);
-                    result.complete(match.get().equals(currentScope));
-                } else {
-                    result.complete(false);
-                }
-                return Unit.unit;
-            };
-            future(currentScopeFuture, insertMatchLocal);
+                    match(target, previousScope);
+                    if(target.equals(currentScope)) {
+                        return Optional.of(BiMap.Immutable.of());
+                    }
+                    return Optional.empty();
+                });
+            });
         }
-        return result;
     }
 
 

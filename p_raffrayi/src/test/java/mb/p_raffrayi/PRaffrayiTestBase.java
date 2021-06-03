@@ -7,14 +7,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.functions.Function2;
-import org.metaborg.util.future.AggregateFuture;
-import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Streams;
 
@@ -22,6 +21,7 @@ import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class PRaffrayiTestBase {
 
@@ -113,16 +113,22 @@ public abstract class PRaffrayiTestBase {
             return CapsuleUtil.toSet(datum.scopes());
         }
 
-        @Override public IFuture<Boolean> matchDatums(IDatum currentDatum, IDatum previousDatum,
-                Function2<Scope, Scope, IFuture<Boolean>> scopeMatch) {
+        @Override public Optional<BiMap.Immutable<Scope>> matchDatums(IDatum currentDatum, IDatum previousDatum) {
             if(currentDatum.scopes().size() != previousDatum.scopes().size()) {
-                return CompletableFuture.completedFuture(false);
+                return Optional.empty();
             }
 
-            return new AggregateFuture<>(
-                    Streams.zip(currentDatum.scopes().stream(), previousDatum.scopes().stream(), scopeMatch::apply)
-                            .collect(Collectors.toList()))
-                                    .thenApply((List<Boolean> r) -> r.stream().allMatch(Boolean::booleanValue));
+            final BiMap.Transient<Scope> result = BiMap.Transient.of();
+            final List<Tuple2<Scope, Scope>> matches = Streams.zip(currentDatum.scopes().stream(), previousDatum.scopes().stream(), Tuple2::of)
+                .collect(Collectors.toList());
+
+            for(Tuple2<Scope, Scope> match : matches) {
+                if(!result.canPut(match._1(), match._2())) {
+                    return Optional.empty();
+                }
+                result.put(match._1(), match._2());
+            }
+            return Optional.of(result.freeze());
         }
 
     }

@@ -78,6 +78,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -1063,9 +1064,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return context.scopeId(previousScope).equals(context.scopeId(currentScope));
         }
 
-        @Override public IFuture<Boolean> matchDatums(D currentDatum, D previousDatum,
-                Function2<S, S, IFuture<Boolean>> scopeMatch) {
-            return scopeOps.matchDatums(currentDatum, previousDatum, scopeMatch);
+        @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
+            return scopeOps.matchDatums(currentDatum, previousDatum);
         }
 
         @Override public Collection<S> getScopes(D d) {
