@@ -5,13 +5,16 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IState;
 import mb.statix.solver.persistent.SolverResult;
@@ -30,7 +33,14 @@ public class STX_get_scopegraph_data extends StatixPrimitive {
         // @formatter:off
         final ITerm data = M.cases(
             M.tuple2(Scope.matcher(), StatixTerms.label(), (t, s, r) -> {
-                return B.newList(state.scopeGraph().getData(s, r));
+                reportInvalidDataLabel(analysis, r);
+                final IUniDisunifier.Immutable unifier = state.unifier();
+                return B.newList(Streams.stream(state.scopeGraph().getEdges(s, r))
+                        .map(state.scopeGraph()::getData)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .map(unifier::findRecursive)
+                        .collect(Collectors.toList()));
             })
         ).match(term).orElseThrow(() -> new InterpreterException("Expected scope-label pair."));
         // @formatter:on

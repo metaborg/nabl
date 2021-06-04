@@ -9,7 +9,7 @@ imports
 
 context-free syntax
 
-  Stx-ScopeGraph = <
+  Stx-ScopeGraph.ScopeGraph = <
     scope graph
       <{Stx-ScopeEntry "\n"}*>
   >

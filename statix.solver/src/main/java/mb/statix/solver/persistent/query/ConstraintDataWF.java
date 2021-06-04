@@ -30,11 +30,13 @@ class ConstraintDataWF implements DataWF<ITerm> {
     private final Rule constraint;
 
     private final IState.Immutable state;
+    private final IsComplete isComplete;
 
-    public ConstraintDataWF(Spec spec, IState.Immutable state, Rule constraint) {
+    public ConstraintDataWF(Spec spec, IState.Immutable state, IsComplete isComplete, Rule constraint) {
         this.spec = spec;
-        this.constraint = constraint;
         this.state = state;
+        this.isComplete = isComplete;
+        this.constraint = constraint;
     }
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
@@ -48,7 +50,7 @@ class ConstraintDataWF implements DataWF<ITerm> {
             }
 
             return Solver.entails(spec, state, Constraints.disjoin(applyResult.body()), Collections.emptyMap(),
-                    applyResult.criticalEdges(), IsComplete.ALWAYS, new NullDebugContext(),
+                    applyResult.criticalEdges(), isComplete, new NullDebugContext(),
                     new NullProgress().subProgress(1), new NullCancel());
         } catch(Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);

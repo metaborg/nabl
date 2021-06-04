@@ -4,9 +4,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-
 import io.usethesource.capsule.Set;
 
 public interface IScopeGraph<S, L, D> {
@@ -20,11 +17,6 @@ public interface IScopeGraph<S, L, D> {
     Map<S, D> getData();
 
     Optional<D> getData(S scope);
-
-    @Deprecated default Iterable<D> getData(S scope, L label) {
-        return Streams.stream(getEdges(scope, label)).flatMap(s -> Streams.stream(getData(s)))
-                .collect(ImmutableList.toImmutableList());
-    }
 
     interface Immutable<S, L, D> extends IScopeGraph<S, L, D> {
 

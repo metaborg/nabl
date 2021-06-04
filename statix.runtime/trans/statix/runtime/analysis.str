@@ -15,7 +15,7 @@ imports
   statix/runtime/constraints
   statix/runtime/terms
   statix/runtime/pp
-  
+
   statix/api
 
 signature
@@ -396,6 +396,13 @@ rules
 
 rules
 
+  cstx--solve-constraint(|spec, level) = cstx--solve-constraint(|spec, level, (), ())
+
+  // solve-constraint(|Spec, LogLevel, Progress, Cancel) : ([Var], Constraint) -> Solution
+  cstx--solve-constraint(|spec, level, progress, cancel) = prim("STX_solve_constraint_concurrent", spec, level, progress, cancel)
+
+rules
+
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis
@@ -408,7 +415,7 @@ rules
     get-project-constraint-analyses
   ; map((id, stx--get-result-analysis))
 
-  stx--get-result-analysis = 
+  stx--get-result-analysis =
     ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
    <+ ?FileAnalysis(_, _, <id>) + ?ProjectAnalysis(<id>) // cstx
     )
@@ -441,12 +448,12 @@ rules
    */
   stx--is-analysis =
     prim("STX_is_analysis")
-    
+
   /**
    * @type : Analysis -> Analysis
    */
   stx--analysis-has-errors =
-    prim("STX_analysis_has_errors")    
+    prim("STX_analysis_has_errors")
 
   /**
    * @type : Analysis -> ScopeGraph
