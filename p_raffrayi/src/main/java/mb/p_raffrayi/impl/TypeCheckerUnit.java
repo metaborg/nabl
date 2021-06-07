@@ -204,7 +204,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
             return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, initialState, scopeOps);
-        }, rootScopes)._2();
+        }, rootScopes, false)._2();
 
         return ifActive(result);
     }
@@ -215,7 +215,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
             return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, scopeOps);
-        }, rootScopes)._2();
+        }, rootScopes, true)._2();
 
         return ifActive(result);
     }

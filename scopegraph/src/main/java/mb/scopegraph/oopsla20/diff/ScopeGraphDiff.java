@@ -4,12 +4,15 @@ import java.util.Map.Entry;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 
-public class ScopeGraphDiff<S, L, D> {
+public class ScopeGraphDiff<S, L, D> implements Serializable {
+
+    private static final long serialVersionUID = 3418653361380828262L;
 
     private final BiMap.Immutable<S> matchedScopes;
     private final BiMap.Immutable<Edge<S, L>> matchedEdges;
@@ -63,7 +66,9 @@ public class ScopeGraphDiff<S, L, D> {
         return sb.toString();
     }
 
-    public static class Changes<S, L, D> {
+    public static class Changes<S, L, D> implements Serializable {
+
+        private static final long serialVersionUID = 2717749458901328532L;
 
         private final Map.Immutable<S, Optional<D>> scopes;
         private final Set.Immutable<Edge<S, L>> edges;

@@ -281,7 +281,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected <Q> Tuple2<IActorRef<? extends IUnit<S, L, D, Q>>, IFuture<IUnitResult<S, L, D, Q>>> doAddSubUnit(
             String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
-            List<S> rootScopes) {
+            List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
@@ -305,7 +305,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             granted(token, subunit);
             if(ex != null) {
                 failures.add(new Exception("No result for sub unit " + id));
-            } else {
+            } else if(!ignoreResult) {
                 subUnitResults.put(id, r);
             }
         });

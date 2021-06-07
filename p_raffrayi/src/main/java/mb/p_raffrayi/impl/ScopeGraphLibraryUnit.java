@@ -115,7 +115,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
                                 scopeGraph.get(), scopeOps);
-                    }, Collections.emptyList());
+                    }, Collections.emptyList(), true);
             workers.add(worker._1());
         }
     }
