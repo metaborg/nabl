@@ -114,8 +114,13 @@ context-free syntax
       [Constraint]
   ]
 
-  Constraint.CAbs =  [with {[{Var " "}*]} gen [Term] in [Constraint] |-> [Term][Message]]
-  Constraint.CInj =  [inject gen [Term] |-> [Term][Message]]
+  Constraint.CGenBound = [
+    boundary {
+      [Constraint]
+    }
+  ]
+  Constraint.CAbs =  [gen [Term] in [Constraint] |-> [Term][Message]]
+  Constraint.CInj =  [inject gen [Term] |-> [Term]]
 
   Constraint.CInst = [inst [Term] -> [Term][Message]]
 
@@ -127,7 +132,7 @@ context-free priorities
 
 lexical syntax
 
-  Keyword = "true" | "false" | "new" | "try" | "with" | "gen" | "in" | "inject" | "inst"
+  Keyword = "true" | "false" | "new" | "try" | "boundary" | "gen" | "in" | "inject" | "inst"
 
 
 /******************************************************************
