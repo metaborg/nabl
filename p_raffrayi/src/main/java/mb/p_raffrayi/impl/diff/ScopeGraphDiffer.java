@@ -630,10 +630,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         previousScopeData.keySet().retainAll(removedScopes);
 
         Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
-        this.addedEdges.entrySet().stream().forEach(x -> x.getValue().forEach(addedEdges::__insert));
+        this.addedEdges.asMap().values().forEach(x -> x.forEach(addedEdges::__insert));
 
         Set.Transient<Edge<S, L>> removedEdges = CapsuleUtil.transientSet();
-        this.removedEdges.entrySet().stream().forEach(x -> x.getValue().forEach(removedEdges::__insert));
+        this.removedEdges.asMap().values().forEach(x -> x.forEach(removedEdges::__insert));
 
         // Clean up pending delays
         previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(delay -> {
