@@ -119,7 +119,7 @@ context-free syntax
       [Constraint]
     }
   ]
-  Constraint.CAbs =  [gen [Term] in [Constraint] |-> [Term][Message]]
+  Constraint.CAbs =  [gen [Term] |-> [Term][Message]]
   Constraint.CInj =  [inject gen [Term] |-> [Term]]
 
   Constraint.CInst = [inst [Term] -> [Term][Message]]
@@ -132,7 +132,7 @@ context-free priorities
 
 lexical syntax
 
-  Keyword = "true" | "false" | "new" | "try" | "boundary" | "gen" | "in" | "inject" | "inst"
+  Keyword = "true" | "false" | "new" | "try" | "boundary" | "gen" | "inject" | "inst"
 
 
 /******************************************************************

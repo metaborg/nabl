@@ -223,12 +223,11 @@ rules
     new s', s' -P-> s, @a.scope := s',
     Constraint[[ c ^ (s') ]].
 
-  Constraint[[ a@CAbs(t, c, o, msg) ^ (s)]] :=
+  Constraint[[ a@CAbs(t, o, msg) ^ (s)]] :=
     new s', s' -P-> s, @a.scope := s',
     Term(Build)[[ t ^ (s') : ty ]],
     Term(Build)[[ o ^ (s') : GEN(ty) ]],
     Barrier{()} <- s', Barrier{()} =B=> s',
-    Constraint[[ c ^ (s') ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
   Constraint[[ a@CInj(t, o) ^ (s)]] :=
