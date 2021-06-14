@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Predicate2;
 
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.spoofax.StatixTerms;
@@ -16,22 +17,22 @@ public class ArithTerms {
         // @formatter:off
         return M.<ArithTest>cases(
             M.appl0("Equal", (t) -> {
-                return new ArithTest("=", (i1, i2) -> i1 == i2, true);
+                return new ArithTest("=", new Eq(), true);
             }),
             M.appl0("NotEqual", (t) -> {
-                return new ArithTest("\\=", (i1, i2) -> i1 != i2, false);
+                return new ArithTest("\\=", new Neq(), false);
             }),
             M.appl0("GreaterThanEqual", (t) -> {
-                return new ArithTest(">=", (i1, i2) -> i1 >= i2, false);
+                return new ArithTest(">=", new Gte(), false);
             }),
             M.appl0("LessThanEqual", (t) -> {
-                return new ArithTest("=<", (i1, i2) -> i1 <= i2, false);
+                return new ArithTest("=<", new Lte(), false);
             }),
             M.appl0("GreaterThan", (t) -> {
-                return new ArithTest(">", (i1, i2) -> i1 > i2, false);
+                return new ArithTest(">", new Ge(), false);
             }),
             M.appl0("LessThan", (t) -> {
-                return new ArithTest("<", (i1, i2) -> i1 < i2, false);
+                return new ArithTest("<", new Le(), false);
             })
         );
         // @formatter:on
@@ -137,4 +138,63 @@ public class ArithTerms {
 
     }
 
+    private static class Eq implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 == i2;
+        }
+
+    }
+
+    private static class Neq implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 != i2;
+        }
+
+    }
+
+    private static class Gte implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 >= i2;
+        }
+
+    }
+
+    private static class Lte implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 <= i2;
+        }
+
+    }
+
+    private static class Ge implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 > i2;
+        }
+
+    }
+
+    private static class Le implements Predicate2<Integer, Integer>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override public boolean test(Integer i1, Integer i2) {
+            return i1 < i2;
+        }
+
+    }
 }
