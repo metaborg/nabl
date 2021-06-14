@@ -122,7 +122,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         stats.incomingConfirmations++;
         return whenActive.thenCompose(
-                __ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null));
+                __ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null).thenApply(IQueryAnswer::env));
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
@@ -274,9 +274,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertActive();
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
-        final IFuture<Env<S, L, D>> result =
+        final IFuture<IQueryAnswer<S, L, D>> result =
                 doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-        final IFuture<Env<S, L, D>> ret;
+        final IFuture<IQueryAnswer<S, L, D>> ret;
         if(result.isDone()) {
             ret = result;
         } else {
@@ -287,7 +287,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             });
         }
         stats.localQueries += 1;
-        return ifActive(ret).thenApply(CapsuleUtil::toSet);
+        return ifActive(ret).thenApply(ans -> {
+            this.recordedQueries.addAll(ans.innerQueries());
+            return CapsuleUtil.toSet(ans.env());
+        });
     }
 
     @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
@@ -356,24 +359,28 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     } else {
                         final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
                         final ScopePath<S, L> path = new ScopePath<>(m.get());
-                        final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), queryResult);
+                        // TODO: hack, but is safe because future of token is never used.
+                        final Query<S, L, D> query = Query.of(self, path, rq.dataWf(), (ICompletableFuture<IQueryAnswer<S, L, D>>) (Object) queryResult);
                         waitFor(query, owner);
+                        // @formatter:off
                         self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
-                                .whenComplete((env, ex2) -> {
-                                    granted(query, owner);
-                                    resume();
-                                    if(ex2 != null) {
-                                        if(ex2 == Release.instance) {
-                                            confirmationResult.complete(true);
-                                        } else {
-                                            confirmationResult.completeExceptionally(ex2);
-                                        }
+                            .whenComplete(queryResult::complete);
+                        queryResult.whenComplete((env, ex2) -> {
+                                granted(query, owner);
+                                resume();
+                                if(ex2 != null) {
+                                    if(ex2 == Release.instance) {
+                                        confirmationResult.complete(true);
                                     } else {
-                                        // Query is valid iff environments are equal
-                                        // TODO: compare environments with scope patches.
-                                        confirmationResult.complete(env.equals(rq.result()));
+                                        confirmationResult.completeExceptionally(ex2);
                                     }
-                                });
+                                } else {
+                                    // Query is valid iff environments are equal
+                                    // TODO: compare environments with scope patches.
+                                    confirmationResult.complete(env.equals(rq.result()));
+                                }
+                            });
+                        // @formatter:on
                         resume();
                     }
                 });

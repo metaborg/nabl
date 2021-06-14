@@ -2,8 +2,6 @@ package mb.p_raffrayi.impl;
 
 import java.util.Optional;
 
-import org.metaborg.util.future.CompletableFuture;
-import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -29,12 +27,12 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
     default IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return _query(path, labelWF, dataWF, labelOrder, dataEquiv);
+        return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
     }
 
     IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label);

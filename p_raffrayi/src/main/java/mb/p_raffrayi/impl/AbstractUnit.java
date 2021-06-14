@@ -190,8 +190,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public IFuture<Env<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
@@ -439,11 +439,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected final IFuture<Env<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender, ScopePath<S, L> path,
-            LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+    protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+            ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
+            DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
+        final Set.Transient<IRecordedQuery<S, L, D>> recordedQueries = CapsuleUtil.transientSet();
+        ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
 
         final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
 
@@ -457,7 +459,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     return Optional.of(getOwner(scope).thenCompose(owner -> {
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
-                        final IFuture<Env<S, L, D>> result =
+                        final IFuture<IQueryAnswer<S, L, D>> result =
                                 self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
                         final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                         waitFor(wf, owner);
@@ -466,14 +468,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         } else {
                             stats.outgoingQueries += 1;
                         }
-                        return result.whenComplete((r, ex) -> {
+                        return result.whenComplete((ans, ex) -> {
                             logger.debug("got answer from {}", sender);
                             if(ex == null) {
                                 // TODO: incorporate query validation in separate confirmation algorithm, and record only local queries.
-                                recordedQueries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, r));
+                                recordedQueries.__insert(
+                                        RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
                             }
                             resume();
                             granted(wf, owner);
+                        }).thenApply(ans -> {
+                            recordedQueries.__insertAll(ans.innerQueries());
+                            return ans.env();
                         });
                     }));
                 }
@@ -574,71 +580,75 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
-        return result;
+        return result.<IQueryAnswer<S, L, D>>thenApply(env -> QueryAnswer.of(env, recordedQueries.freeze()));
     }
 
-    private final ITypeCheckerContext<S, L, D> queryContext = new ITypeCheckerContext<S, L, D>() {
+    private final ITypeCheckerContext<S, L, D> queryContext(Set.Transient<IRecordedQuery<S, L, D>> queries) {
+        return new ITypeCheckerContext<S, L, D>() {
 
-        @Override public String id() {
-            return self.id() + "#query";
-        }
+            @Override public String id() {
+                return self.id() + "#query";
+            }
 
-        @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-                ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
+                    ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
+                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data,
-                boolean sharing) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels,
+                    boolean data, boolean sharing) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void shareLocal(S scope) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void shareLocal(S scope) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void setDatum(S scope, D datum) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void setDatum(S scope, D datum) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void addEdge(S source, L label, S target) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void addEdge(S source, L label, S target) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void closeEdge(S source, L label) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void closeEdge(S source, L label) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @SuppressWarnings("unused") @Override public void closeScope(S scope) {
-            throw new UnsupportedOperationException("Unsupported in query context.");
-        }
+            @SuppressWarnings("unused") @Override public void closeScope(S scope) {
+                throw new UnsupportedOperationException("Unsupported in query context.");
+            }
 
-        @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
-                LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-                @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
-            // does not require the Unit to be ACTIVE
+            @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+                    LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
+                // does not require the Unit to be ACTIVE
 
-            final ScopePath<S, L> path = new ScopePath<>(scope);
-            final IFuture<Env<S, L, D>> result =
-                    doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-            final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
-            waitFor(wf, self);
-            stats.localQueries += 1;
-            return self.schedule(result).whenComplete((env, ex) -> {
-                granted(wf, self);
-            }).thenApply(CapsuleUtil::toSet);
-        }
-
-    };
+                final ScopePath<S, L> path = new ScopePath<>(scope);
+                final IFuture<IQueryAnswer<S, L, D>> result =
+                        doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+                waitFor(wf, self);
+                stats.localQueries += 1;
+                return self.schedule(result).whenComplete((ans, ex) -> {
+                    granted(wf, self);
+                }).thenApply(ans -> {
+                    queries.__insertAll(ans.innerQueries());
+                    return CapsuleUtil.toSet(ans.env());
+                });
+            }
+        };
+    }
 
     protected final boolean isOwner(S scope) {
         return context.scopeId(scope).equals(self.id());
