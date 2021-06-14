@@ -32,6 +32,7 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
@@ -155,6 +156,14 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return result.whenComplete((r, ex) -> {
             granted(token, worker);
         });
+    }
+
+    @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        // TODO: Correct confirmation
+        // This implementation is currently sound, because queries to libraries should not be forwarded to the project.
+        // When that holds, an empty result will stay an empty result. All other results will incorrectly be invalidated.
+        return CompletableFuture.completedFuture(Env.empty());
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
