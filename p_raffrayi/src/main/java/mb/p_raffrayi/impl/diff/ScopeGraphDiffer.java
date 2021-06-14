@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
@@ -35,6 +36,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Map.Immutable;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
+import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.scopegraph.oopsla20.diff.Edge;
@@ -134,10 +136,41 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 throw new IllegalStateException("Provided root scopes cannot be matched.");
             }
 
-            initialMatches.entrySet().forEach(e -> match(e.getKey(), e.getValue()));
-            logger.debug("Scheduled initial matches");
+            List<IFuture<Unit>> futures = new ArrayList<>();
+            initialMatches.entrySet().forEach(e -> {
+                S current = e.getKey();
+                S previous = e.getValue();
+                match(current, previous);
+                ICompletableFuture<Unit> future = new CompletableFuture<>();
+                consequences(current, previous).whenComplete((cOpt, ex) -> {
+                    if(ex != null) {
+                        future.completeExceptionally(ex);
+                        return;
+                    }
+                    if(!cOpt.isPresent()) {
+                        logger.error("Root match internally inconsistent: {} ~ {}.", current, previous);
+                        future.completeExceptionally(new TypeCheckingFailedException("Root match internally inconsistent: " + current + " ~ " + previous));
+                        return;
+                    }
+                    Optional<BiMap.Immutable<S>> matchesOpt = consistent(cOpt.get());
+                    if(!matchesOpt.isPresent()) {
+                        logger.error("Root match inconsistent: {} ~ {}.", current, previous);
+                        future.completeExceptionally(new TypeCheckingFailedException("Root match inconsistent: " + current + " ~ " + previous));
+                    }
+                    matchesOpt.get().asMap().forEach(this::match);
+                    future.complete(Unit.unit);
+                });
+                futures.add(future);
+            });
 
-            fixedpoint();
+            new AggregateFuture<>(futures).whenComplete((__, ex) -> {
+                if(ex != null) {
+                    result.completeExceptionally(ex);
+                }
+
+                logger.debug("Scheduled initial matches");
+                fixedpoint();
+            });
         } catch(Throwable ex) {
             logger.error("Differ initialization failed.", ex);
             result.completeExceptionally(ex);
@@ -159,7 +192,6 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         logger.trace("Matching {} succeeded.", scopes);
         for(Map.Entry<S, S> entry : newMatches.entrySet()) {
             match(entry.getKey(), entry.getValue());
-            // TODO: perform data matches?
         }
         return true;
     }
