@@ -20,6 +20,7 @@ import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletable;
 import org.metaborg.util.future.ICompletableFuture;
@@ -60,6 +61,7 @@ import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
+import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Complete;
@@ -841,22 +843,45 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
-        if(!nodes.contains(process)) {
-            throw new IllegalStateException("Deadlock unrelated to this unit.");
-        }
-        if(nodes.size() == 1) {
-            logger.debug("{} self-deadlocked with {}", this, getTokens(process));
-            if(failDelays(nodes)) {
-                resume(); // resume to ensure further deadlock detection after these are handled
+        AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
+            logger.info("Received patches: {}.", rors);
+            if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
+                // All units are already active, proceed with regular deadlock handling
+                if(!nodes.contains(process)) {
+                    throw new IllegalStateException("Deadlock unrelated to this unit.");
+                }
+                if(nodes.size() == 1) {
+                    logger.debug("{} self-deadlocked with {}", this, getTokens(process));
+                    if(failDelays(nodes)) {
+                        resume(); // resume to ensure further deadlock detection after these are handled
+                    } else {
+                        failAll();
+                    }
+                } else {
+                    // nodes will include self
+                    for(IProcess<S, L, D> node : nodes) {
+                        node.from(self, context)._deadlocked(nodes);
+                    }
+                }
             } else {
-                failAll();
+                // @formatter:off
+                rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
+                    () -> {
+                        logger.info("Restarting all involved units: {}.", nodes);
+                        if(ex != null) {
+                            failures.add(ex);
+                        }
+                        nodes.forEach(node -> node.from(self, context)._restart());
+                    },
+                    ptcs -> {
+                        logger.info("Releasing all involved units: {}.", ptcs);
+                        nodes.forEach(node -> node.from(self, context)._release(ptcs));
+                    });
+                // @formatter:on
             }
-        } else {
-            // nodes will include self
-            for(IProcess<S, L, D> node : nodes) {
-                node.from(self, context)._deadlocked(nodes);
-            }
-        }
+            resume(); // FIXME needed?
+        });
+        resume();
     }
 
     /**

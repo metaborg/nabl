@@ -485,30 +485,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             }
             return;
         }
-        AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
-            logger.info("Received patches: {}.", rors);
-            if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
-                // All units are already active, proceed with regular deadlock handling
-                super.handleDeadlock(nodes);
-            } else {
-                // @formatter:off
-                rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
-                    () -> {
-                        logger.info("Restarting all involved units: {}.", nodes);
-                        if(ex != null) {
-                            failures.add(ex);
-                        }
-                        nodes.forEach(node -> node.from(self, context)._restart());
-                    },
-                    ptcs -> {
-                        logger.info("Releasing all involved units: {}.", ptcs);
-                        nodes.forEach(node -> node.from(self, context)._release(ptcs));
-                    });
-                // @formatter:on
-            }
-            resume(); // FIXME needed?
-        });
-        resume();
+        super.handleDeadlock(nodes);
     }
 
     ///////////////////////////////////////////////////////////////////////////
