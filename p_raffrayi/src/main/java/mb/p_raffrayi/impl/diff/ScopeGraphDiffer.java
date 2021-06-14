@@ -327,7 +327,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         if(differOps.ownScope(currentScope)) {
             // Match data of own scope
-            return AggregateFuture.apply(currentContext.datum(currentScope), previousContext.datum(previousScope)).thenCompose(r -> {
+            return AggregateFuture.apply(waitFor(currentContext.datum(currentScope)), waitFor(previousContext.datum(previousScope))).thenCompose(r -> {
                 final Optional<D> currentData = r._1();
                 final Optional<D> previousData = r._2();
                 if(currentData.isPresent() != previousData.isPresent()) {
@@ -350,7 +350,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             });
         } else {
             // We do not own the scope, hence ask owner to which current scope it is matched.
-            return differOps.externalMatch(previousScope).thenApply(match -> {
+            return waitFor(differOps.externalMatch(previousScope)).thenApply(match -> {
                 return match.flatMap(target -> {
                     // Insert new remote match
                     match(target, previousScope);
@@ -373,13 +373,13 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         logger.debug("Scheduling edge matches for {} ~ {} and label {}", currentSource, previousSource, label);
 
         // Get current edges for label
-        final IFuture<Set.Immutable<Edge<S, L>>> currentEdgesFuture = currentContext.getEdges(currentSource, label)
+        final IFuture<Set.Immutable<Edge<S, L>>> currentEdgesFuture = waitFor(currentContext.getEdges(currentSource, label))
                 .thenApply(currentTargetScopes -> Streams.stream(currentTargetScopes)
                         .map(currentTarget -> new Edge<>(currentSource, label, currentTarget))
                         .collect(CapsuleCollectors.toSet()));
 
         // Get previous edges for label
-        final IFuture<Set.Immutable<Edge<S, L>>> previousEdgesFuture = previousContext.getEdges(previousSource, label)
+        final IFuture<Set.Immutable<Edge<S, L>>> previousEdgesFuture = waitFor(previousContext.getEdges(previousSource, label))
                 .thenApply(previousTargetScopes -> Streams.stream(previousTargetScopes)
                         .map(previousTarget -> new Edge<>(previousSource, label, previousTarget))
                         .collect(CapsuleCollectors.toSet()));
@@ -483,7 +483,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void scheduleCurrentData(S currentScope) {
         if(seenCurrentScopes.__insert(currentScope)) {
-            IFuture<Optional<D>> cd = currentContext.datum(currentScope);
+            IFuture<Optional<D>> cd = waitFor(currentContext.datum(currentScope));
             K<Optional<D>> insertCS = (d, ex) -> {
                 if(ex == null) {
                     logger.trace("Data for {} complete: ", currentScope, d);
@@ -505,7 +505,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void schedulePreviousData(S previousScope) {
         if(seenPreviousScopes.__insert(previousScope)) {
-            IFuture<Optional<D>> pd = previousContext.datum(previousScope);
+            IFuture<Optional<D>> pd = waitFor(previousContext.datum(previousScope));
             K<Optional<D>> insertPS = (d, ex) -> {
                 if(ex == null) {
                     logger.trace("Data for {} complete: ", previousScope, d);
@@ -544,7 +544,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         if(differOps.ownOrSharedScope(currentScope)) {
             // We can only own edges from scopes that we own, or that are shared with us.
             final IFuture<Set.Immutable<L>> labels =
-                    AggregateFuture.apply(currentContext.labels(currentScope), previousContext.labels(previousScope))
+                    AggregateFuture.apply(waitFor(currentContext.labels(currentScope)), waitFor(previousContext.labels(previousScope)))
                             .thenApply(lbls -> Set.Immutable.union(lbls._1(), lbls._2()))
                             .whenComplete((l, __) -> logger.trace("Labels for {}: {}", currentScope, l));
             final K<Set.Immutable<L>> scheduleMatches = (lbls, ex) -> {
@@ -669,18 +669,18 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         // Clean up pending delays
         previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(delay -> {
-            logger.error("Pending scope processed delay: {}.", s);
-            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"));
+            logger.debug("Pending scope processed delay: {}.", s);
+            delay.complete(Unit.unit);
         }));
 
         previousScopeCompletedDelays.asMap().forEach((s, delays) -> delays.forEach(delay -> {
-            logger.error("Pending scope completed delay: {}.", s);
-            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization"));
+            logger.debug("Pending scope completed delay: {}.", s);
+            delay.complete(Unit.unit);
         }));
 
         currentEdgeCompleteDelays.asMap().forEach((edge, delays) -> delays.forEach(delay -> {
-            logger.error("Pending edge complete delay: {}.", edge);
-            delay.completeExceptionally(new IllegalStateException("Pending after differ finalization."));
+            logger.debug("Pending edge complete delay: {}.", edge);
+            delay.complete(Unit.unit);
         }));
 
         // @formatter:off
@@ -818,6 +818,11 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             return currentEdge + " ~ " + previousEdges;
         }
 
+    }
+
+    private <U> IFuture<U> waitFor(IFuture<U> future) {
+        pendingResults.incrementAndGet();
+        return future.whenComplete((__, ex) -> pendingResults.decrementAndGet());
     }
 
     ///////////////////////////////////////////////////////////////////////////

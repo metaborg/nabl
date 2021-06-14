@@ -12,7 +12,6 @@ import javax.annotation.Nullable;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
-import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletableFuture;
@@ -375,6 +374,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                                         confirmationResult.complete(env.equals(rq.result()));
                                     }
                                 });
+                        resume();
                     }
                 });
             });

@@ -2,6 +2,8 @@ package mb.p_raffrayi.impl;
 
 import java.util.Optional;
 
+import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.nameresolution.DataLeq;

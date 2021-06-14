@@ -61,7 +61,6 @@ import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
-import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Complete;
@@ -263,7 +262,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 .whenComplete(differResult::complete);
         differResult.whenComplete((r, ex) -> {
             logger.debug("{} scope graph differ finished", this);
-            resume(); // FIXME necessary
             if(ex != null) {
                 logger.error("scope graph differ errored.", ex);
                 failures.add(ex);
@@ -271,6 +269,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 diffResult.set(r);
             }
             granted(result, self);
+            tryFinish();
         });
     }
 
