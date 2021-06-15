@@ -1,10 +1,11 @@
 package mb.statix.spoofax;
 
-import java.util.Set;
+import java.util.Map;
 
 public interface IStatixProjectConfig {
 
-    Set<String> parallelLanguages(Set<String> defaultValue);
+    SolverMode languageMode(String languageId, SolverMode defaultMode);
+    Map<String, SolverMode> languageModes(Map<String, SolverMode> defaultModes);
 
     Integer messageTraceLength(Integer defaultValue);
 
