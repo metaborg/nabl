@@ -16,6 +16,8 @@ import mb.statix.solver.persistent.SolverResult;
 @Serial.Version(42L)
 public abstract class AGroupResult implements IStatixResult {
 
+    @Value.Parameter public abstract String resource();
+
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>> unitResults();

@@ -4,8 +4,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
@@ -26,9 +24,9 @@ public class InputMatchers {
 
     public static IMatcher<IStatixGroup> group() {
         return M.req("Expected Group", M.casesFix(m -> Iterables2.singleton(
-            M.appl4("Group", M.string(), StatixTerms.hoconstraint(), M.map(M.stringValue(), m),
+            M.appl4("Group", M.stringValue(), StatixTerms.hoconstraint(), M.map(M.stringValue(), m),
                 M.map(M.stringValue(), unit()), (t, resource, rule, groups, units) -> {
-                    return StatixGroup.of(Optional.of(rule), groups, units);
+                    return StatixGroup.of(resource, Optional.of(rule), groups, units);
                 }))));
     }
 
@@ -55,7 +53,7 @@ public class InputMatchers {
         // formatter:on
     }
 
-    public static IMatcher<@Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult>> previousResult() {
+    public static IMatcher<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> previousResult() {
         // @formatter:off
         return M.req("Expected Unit Result option.", M.cases(
             M.appl0("Added", appl -> null),

@@ -135,7 +135,7 @@ public class STX_solve_multi extends StatixPrimitive {
             final String resource = projectResult.resource();
             final List<SolverResult> groupResults = new ArrayList<>();
             projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
-            projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, subResource(resource, k), gr,
+            projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, resource + "/" + k, gr,
                     groupResults, resourceResults, unitResults));
             projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
 
@@ -159,7 +159,7 @@ public class STX_solve_multi extends StatixPrimitive {
         unitResults.add(result);
         final GroupResult groupResult = result.analysis();
         if(groupResult != null) {
-            groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, subResource(groupId, k), gr,
+            groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(), gr,
                     groupResults, resourceResults, unitResults));
             groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             final SolverResult solveResult = flatSolverResult(spec, result);
@@ -205,11 +205,6 @@ public class STX_solve_multi extends StatixPrimitive {
         solveResult = solveResult.withMessages(messages.build());
 
         return solveResult;
-    }
-
-    // TODO: resource on group?
-    private String subResource(String parent, String child) {
-        return String.format("%s>%s", parent, child);
     }
 
     private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, TransitionTrace flow) {

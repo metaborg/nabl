@@ -8,6 +8,11 @@ import mb.statix.spec.Rule;
 public interface IStatixGroup {
 
     /**
+     * Group resource.
+     */
+    String resource();
+
+    /**
      * Rule for the group. Must have type {@literal rule : scope * scope}.
      */
     Optional<Rule> rule();

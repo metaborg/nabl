@@ -46,7 +46,7 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
             this::patch,
             (result, ex) -> {
                 return AggregateFuture.apply(groupResults, unitResults).thenApply(e -> {
-                    return GroupResult.of(e._1(), e._2(), result, ex);
+                    return GroupResult.of(group.resource(), e._1(), e._2(), result, ex);
                 });
             })
             .whenComplete((r, __) -> {
