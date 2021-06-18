@@ -19,8 +19,8 @@ public class ScopeGraphDiff<S, L, D> implements Serializable {
     private final Changes<S, L, D> removed;
 
     public ScopeGraphDiff(BiMap.Immutable<S> matchedScopes, BiMap.Immutable<Edge<S, L>> matchedEdges,
-        Map.Immutable<S, D> addedScopes, Set.Immutable<Edge<S, L>> addedEdges,
-        Map.Immutable<S, D> removedScopes, Set.Immutable<Edge<S, L>> removedEdges) {
+            Map.Immutable<S, D> addedScopes, Set.Immutable<Edge<S, L>> addedEdges, Map.Immutable<S, D> removedScopes,
+            Set.Immutable<Edge<S, L>> removedEdges) {
         this.matchedScopes = matchedScopes;
         this.matchedEdges = matchedEdges;
         this.added = new Changes<>(addedScopes, addedEdges);
