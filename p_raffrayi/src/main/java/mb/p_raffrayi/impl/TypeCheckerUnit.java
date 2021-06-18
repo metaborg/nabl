@@ -59,7 +59,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
 
     private final ITypeChecker<S, L, D, R> typeChecker;
-    protected final IInitialState<S, L, D, R> initialState;
+    private final IInitialState<S, L, D, R> initialState;
 
     private volatile UnitState state;
 
