@@ -29,10 +29,6 @@ public interface IUnitContext<S, L, D> {
 
     D substituteScopes(D datum, Map<S, S> substitution);
 
-    Collection<S> getScopes(D datum);
-
-    D embed(S scope);
-
     IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope);
 
     <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> add(String id,

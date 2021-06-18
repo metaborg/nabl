@@ -95,14 +95,6 @@ public abstract class PRaffrayiTestBase {
             return scope.id;
         }
 
-        @Override public Collection<Scope> getAllScopes(IDatum datum) {
-            return Collections.unmodifiableSet(scopes);
-        }
-
-        @Override public IDatum embed(Scope scope) {
-            return scope;
-        }
-
         @Override public IDatum substituteScopes(IDatum datum, Map<Scope, Scope> substitution) {
             return datum;
         }
@@ -113,6 +105,10 @@ public abstract class PRaffrayiTestBase {
 
         @Override public Immutable<Scope> getScopes(IDatum datum) {
             return CapsuleUtil.toSet(datum.scopes());
+        }
+
+        @Override public IDatum embed(Scope scope) {
+            return scope;
         }
 
         @Override public Optional<BiMap.Immutable<Scope>> matchDatums(IDatum currentDatum, IDatum previousDatum) {

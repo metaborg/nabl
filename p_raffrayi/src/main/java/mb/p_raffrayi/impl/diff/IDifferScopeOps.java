@@ -9,6 +9,8 @@ public interface IDifferScopeOps<S, D> {
 
     Immutable<S> getScopes(D datum);
 
+    D embed(S scope);
+
     Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum);
 
 }

@@ -1,6 +1,5 @@
 package mb.statix.concurrent.nameresolution;
 
-import java.util.Collection;
 import java.util.Map;
 
 import mb.nabl2.terms.ITerm;
@@ -16,14 +15,6 @@ public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
 
     @Override public String id(Scope scope) {
         return scope.getResource();
-    }
-
-    @Override public Collection<Scope> getAllScopes(ITerm datum) {
-        return T.collecttd(Scope.matcher()::match).apply(datum);
-    }
-
-    @Override public ITerm embed(Scope scope) {
-        return scope;
     }
 
     @Override public ITerm substituteScopes(ITerm datum, Map<Scope, Scope> substitution) {

@@ -1111,11 +1111,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         @Override public Collection<S> getScopes(D d) {
-            return context.getScopes(d);
+            return scopeOps.getScopes(d);
         }
 
         @Override public D embed(S scope) {
-            return context.embed(scope);
+            return scopeOps.embed(scope);
         }
 
         @Override public boolean ownScope(S scope) {

@@ -215,14 +215,6 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
             return scopeImpl.substituteScopes(datum, substitution);
         }
 
-        @Override public Collection<S> getScopes(D datum) {
-            return scopeImpl.getAllScopes(datum);
-        }
-
-        @Override public D embed(S scope) {
-            return scopeImpl.embed(scope);
-        }
-
         @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope) {
             final String id = scopeImpl.id(scope);
             // No synchronization and deadlock handling when unit can be found.

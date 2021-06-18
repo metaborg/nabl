@@ -22,6 +22,10 @@ public class StatixDifferOps implements IDifferScopeOps<Scope, ITerm> {
         return CapsuleUtil.toSet(T.collecttd(Scope.matcher()::match).apply(datum));
     }
 
+    @Override public ITerm embed(Scope scope) {
+        return scope;
+    }
+
     @Override public Optional<BiMap.Immutable<Scope>> matchDatums(ITerm currentDatum, ITerm previousDatum) {
         return termMatch(currentDatum, previousDatum);
     }
