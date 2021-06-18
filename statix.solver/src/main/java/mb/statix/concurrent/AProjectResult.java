@@ -17,15 +17,15 @@ import mb.statix.solver.persistent.SolverResult;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class AProjectResult implements IStatixGroupResult {
+public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract String resource();
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
-    @Override @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
 
-    @Override @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>> unitResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>> unitResults();
 
     @Override @Value.Parameter public abstract @Nullable SolverResult solveResult();
 
