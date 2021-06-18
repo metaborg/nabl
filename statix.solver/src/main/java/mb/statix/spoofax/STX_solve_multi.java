@@ -31,7 +31,7 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.IUnitResult.Transitions;
+import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
@@ -100,9 +100,9 @@ public class STX_solve_multi extends StatixPrimitive {
 
             if(settings.incremental()) {
                 logger.info("Files analyzed in {} s", (dt / 1_000d));
-                logger.info("* Initially changed units : {}", flattenTransitions(unitResults, Transitions.INITIALLY_STARTED));
-                logger.info("* Restarted units         : {}", flattenTransitions(unitResults, Transitions.RESTARTED));
-                logger.info("* Released units          : {}", flattenTransitions(unitResults, Transitions.RELEASED));
+                logger.info("* Initially changed units : {}", flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
+                logger.info("* Restarted units         : {}", flattenTransitions(unitResults, TransitionTrace.RESTARTED));
+                logger.info("* Released units          : {}", flattenTransitions(unitResults, TransitionTrace.RELEASED));
             }
 
             for(Entry<String, ITerm> entry : resultMap.entrySet()) {
@@ -210,8 +210,8 @@ public class STX_solve_multi extends StatixPrimitive {
     	return String.format("%s>%s", parent, child);
     }
 
-    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, Transitions flow) {
-        return unitResults.stream().filter(r -> r.transitions() == flow).map(IUnitResult::id).collect(Collectors.joining(", "));
+    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, TransitionTrace flow) {
+        return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id).collect(Collectors.joining(", "));
     }
 
     private SolverMode getSolverMode(ITerm term) throws InterpreterException {

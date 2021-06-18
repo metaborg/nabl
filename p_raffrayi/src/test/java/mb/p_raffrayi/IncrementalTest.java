@@ -17,7 +17,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
-import mb.p_raffrayi.IUnitResult.Transitions;
+import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.impl.AInitialState;
 import mb.p_raffrayi.impl.RecordedQuery;
 import mb.p_raffrayi.impl.UnitResult;
@@ -58,7 +58,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
-        assertEquals(Transitions.RELEASED, result.transitions());
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
         assertFalse(result.analysis());
         assertTrue(result.failures().isEmpty());
     }
@@ -120,8 +120,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
         assertTrue(result.analysis());
 
-        assertEquals(Transitions.RELEASED, result.transitions());
-        assertEquals(Transitions.RELEASED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     @Ignore("Requires proper validation of edges added by subunits.") @Test(timeout = 10000) public void
@@ -181,8 +181,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertFalse(result.analysis());
         assertTrue(result.failures().isEmpty());
 
-        assertEquals(Transitions.INITIALLY_STARTED, result.transitions());
-        assertEquals(Transitions.RELEASED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     @Test(timeout = 10000) public void testRelease_MutualDep_Cached() throws InterruptedException, ExecutionException {
@@ -254,8 +254,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
 
-        assertEquals(Transitions.RELEASED, result.transitions());
-        assertEquals(Transitions.RELEASED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     @Ignore("We cannot yet compare old and new environments properly.") @Test(timeout = 10000) public void
@@ -327,8 +327,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
 
-        assertEquals(Transitions.INITIALLY_STARTED, result.transitions());
-        assertEquals(Transitions.RELEASED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     @Test(timeout = 10000) public void testRelease_MutualDep_ChildChanged()
@@ -401,8 +401,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
         assertTrue(result.analysis());
 
-        assertEquals(Transitions.RELEASED, result.transitions());
-        assertEquals(Transitions.INITIALLY_STARTED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -433,7 +433,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
-        assertEquals(Transitions.INITIALLY_STARTED, result.transitions());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
     }
 
     @Test(timeout = 10000) public void testRestartChild_ParentChanged()
@@ -502,8 +502,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
 
-        assertEquals(Transitions.INITIALLY_STARTED, result.transitions());
-        assertEquals(Transitions.RESTARTED, result.subUnitResults().get("sub").transitions());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RESTARTED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
     @Ignore("We do not yet handle confirmations of queries that touch shared edges correctly.") @Test(
@@ -626,7 +626,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
-        assertEquals(Transitions.INITIALLY_STARTED, result.transitions());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
     }
 
     ///////////////////////////////////////////////////////////////////////////

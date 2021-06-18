@@ -51,8 +51,8 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
         // @formatter:on
     }
 
-    @Value.Default @Override public Transitions transitions() {
-        return Transitions.OTHER;
+    @Value.Default @Override public TransitionTrace stateTransitionTrace() {
+        return TransitionTrace.OTHER;
     }
 
 }

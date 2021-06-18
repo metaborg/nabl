@@ -15,7 +15,7 @@ public interface IUnitResult<S, L, D, R> {
 
     IScopeGraph.Immutable<S, L, D> scopeGraph();
 
-    // contains edges/data created by unit type checker only (i.e. not sub-unit edges/data)
+    // Contains edges/data created by unit type checker only (i.e. not sub-unit edges/data)
     // TODO solve data duplication
     IScopeGraph.Immutable<S, L, D> localScopeGraph();
 
@@ -33,11 +33,11 @@ public interface IUnitResult<S, L, D, R> {
 
     IUnitStats stats();
 
-    Transitions transitions();
+    TransitionTrace stateTransitionTrace();
 
     List<Throwable> allFailures();
 
-    public enum Transitions {
+    public enum TransitionTrace {
         OTHER, INITIALLY_STARTED, RESTARTED, RELEASED
     }
 

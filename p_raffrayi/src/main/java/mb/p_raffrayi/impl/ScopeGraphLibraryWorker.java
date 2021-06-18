@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -28,13 +29,17 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
+    private final IDifferScopeOps<S, D> scopeOps;
+
     ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph,
             IDifferScopeOps<S, D> scopeOps) {
-        super(self, parent, context, edgeLabels, AInitialState.added(), scopeOps);
+        super(self, parent, context, edgeLabels);
 
         this.scopes.__insertAll(scopes);
         this.scopeGraph.set(scopeGraph);
+
+        this.scopeOps = scopeOps;
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
@@ -46,7 +51,7 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes);
+        doStart(rootScopes, Collections.emptyList());
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
@@ -72,8 +77,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // duplicate of AbstractUnit::_query
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
@@ -89,12 +94,12 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override public void _restart() {
-        // As part of the DataWf and DataLeq params of incoming queries, library workers can have outgoing queries.
+        // As part of the DataWf and DataLeq params of incoming queries, library workers can have outgoing queries,
+        // originating from data{WF,LEq} parameters.
         // When these cause a deadlock, workers can receive a restart.
     }
 
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, Unit> initialState,
-            IDifferScopeOps<S, D> scopeOps) {
+    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
         return new MatchingDiffer<>(new DifferOps(scopeOps));
     }
 

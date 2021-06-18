@@ -47,7 +47,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library, IDifferScopeOps<S, D> scopeOps) {
-        super(self, parent, context, edgeLabels, AInitialState.added(), scopeOps);
+        super(self, parent, context, edgeLabels);
 
         // these are replaced once started
         this.library = library;
@@ -68,7 +68,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes);
+        doStart(rootScopes, Collections.emptyList());
         buildScopeGraph(rootScopes);
         clearLibrary();
         startWorkers();
@@ -184,8 +184,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // can have outgoing queries. When these cause a deadlock, workers can receive a restart.
     }
 
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, Unit> initialState,
-            IDifferScopeOps<S, D> scopeOps) {
+    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
         return new MatchingDiffer<>(new DifferOps(scopeOps));
     }
 

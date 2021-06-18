@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import static com.google.common.collect.Streams.stream;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,10 +26,16 @@ import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.IUnitResult.Transitions;
+import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.diff.AddingDiffer;
+import mb.p_raffrayi.impl.diff.IDifferContext;
+import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.Query;
@@ -52,6 +59,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
 
     private final ITypeChecker<S, L, D, R> typeChecker;
+    protected final IInitialState<S, L, D, R> initialState;
 
     private volatile UnitState state;
 
@@ -66,8 +74,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
             IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps) {
-        super(self, parent, context, edgeLabels, initialState, scopeOps);
+        super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
+        this.initialState = initialState;
         this.scopeOps = scopeOps;
         this.state = UnitState.INIT_UNIT;
     }
@@ -84,11 +93,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertInState(UnitState.INIT_UNIT);
         resume();
 
-        doStart(rootScopes);
+        doStart(rootScopes, initialState.previousResult().map(IUnitResult::rootScopes).orElse(Collections.emptyList()));
         state = UnitState.INIT_TC;
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             if(state == UnitState.INIT_TC) {
-                transitions = Transitions.INITIALLY_STARTED;
+                stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
             }
             state = UnitState.DONE;
         });
@@ -127,7 +136,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
         assertDifferEnabled();
-        if(state.equals(UnitState.ACTIVE) || (state == UnitState.DONE && transitions != Transitions.RELEASED)) {
+        if(state.equals(UnitState.ACTIVE) || (state == UnitState.DONE && stateTransitionTrace != TransitionTrace.RELEASED)) {
             return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
         }
         // When these patches are used, *all* involved units re-use their old scope graph.
@@ -138,7 +147,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public void _restart() {
         if(doRestart()) {
-            transitions = Transitions.RESTARTED;
+            stateTransitionTrace = TransitionTrace.RESTARTED;
         }
     }
 
@@ -300,7 +309,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         state = UnitState.UNKNOWN;
         if(!isIncrementalEnabled() || initialState.changed()) {
             logger.debug("Unit changed or no previous result was available.");
-            transitions = Transitions.INITIALLY_STARTED;
+            stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
             doRestart();
             return runLocalTypeChecker.apply(false).compose(combine::apply);
         }
@@ -344,7 +353,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 // Immediately restart when a query is invalidated
                 if(!res) {
                     if(doRestart()) {
-                        transitions = Transitions.RESTARTED;
+                        stateTransitionTrace = TransitionTrace.RESTARTED;
                     }
                 }
             });
@@ -395,7 +404,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     failures.add(ex);
                 }
                 if(doRestart()) {
-                    transitions = Transitions.RESTARTED;
+                    stateTransitionTrace = TransitionTrace.RESTARTED;
                 }
             } else {
                 // TODO: collect patches
@@ -460,7 +469,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 // @formatter:on
             });
             recordedQueries.addAll(previousResult.queries());
-            transitions = Transitions.RELEASED;
+            stateTransitionTrace = TransitionTrace.RELEASED;
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(Release.instance);
@@ -504,6 +513,18 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override protected Immutable<S, L, D> localScopeGraph() {
         return localScopeGraph.freeze();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Differ
+    ///////////////////////////////////////////////////////////////////////////
+
+    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
+        final IDifferContext<S, L, D> context = differContext();
+        final IDifferOps<S, L, D> differOps = new DifferOps(scopeOps);
+        return initialState.previousResult().<IScopeGraphDiffer<S, L, D>>map(pr -> {
+            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(pr.scopeGraph()), differOps);
+        }).orElseGet(() -> new AddingDiffer<>(context, differOps));
     }
 
     ///////////////////////////////////////////////////////////////////////////

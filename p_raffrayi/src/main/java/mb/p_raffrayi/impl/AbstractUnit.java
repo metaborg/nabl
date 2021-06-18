@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +41,7 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.IUnitResult.Transitions;
+import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.IUnitStats;
 import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.p_raffrayi.actors.IActor;
@@ -54,13 +53,10 @@ import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
 import mb.p_raffrayi.impl.confirmation.DenyingConfirmation;
 import mb.p_raffrayi.impl.confirmation.IQueryConfirmation;
-import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
-import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
-import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Complete;
@@ -114,22 +110,20 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
-    // TODO unwrap old scope graph(?)
-    protected final IInitialState<S, L, D, R> initialState; // TODO: move to typecheckerunit
     protected final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
-    protected final @Nullable IScopeGraphDiffer<S, L, D> differ;
+    protected @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
-    protected Transitions transitions = Transitions.OTHER;
+    protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
     protected final Stats stats;
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps) {
+            Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
         this.context = context;
@@ -147,9 +141,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
         this.scopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
-
-        this.initialState = initialState;
-        this.differ = context.settings().scopeGraphDiff() ? initDiffer(initialState, scopeOps) : null;
 
         this.scopeNameCounters = MultiSet.Transient.of();
 
@@ -207,14 +198,15 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return scope;
     }
 
-    protected final void doStart(List<S> rootScopes) {
-        this.rootScopes.addAll(rootScopes);
-        for(S rootScope : CapsuleUtil.toSet(rootScopes)) {
+    protected final void doStart(List<S> currentRootScopes, List<S> previousRootScopes) {
+        this.rootScopes.addAll(currentRootScopes);
+        for(S rootScope : CapsuleUtil.toSet(currentRootScopes)) {
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
         }
         if(isDifferEnabled()) {
-            startDiffer(rootScopes);
+            this.differ = context.settings().scopeGraphDiff() ? initDiffer() : null;
+            startDiffer(currentRootScopes, previousRootScopes);
         }
     }
 
@@ -249,25 +241,16 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.settings().scopeGraphDiff();
     }
 
-    protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, R> initialState,
-            IDifferScopeOps<S, D> scopeOps) {
-        final IDifferContext<S, L, D> context = new DifferContext();
-        final IDifferOps<S, L, D> differOps = new DifferOps(scopeOps);
-        return initialState.previousResult().<IScopeGraphDiffer<S, L, D>>map(pr -> {
-            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(pr.scopeGraph()), differOps);
-        }).orElseGet(() -> new AddingDiffer<>(context, differOps));
-    }
+    protected abstract IScopeGraphDiffer<S, L, D> initDiffer();
 
-    private void startDiffer(List<S> rootScopes) {
+    private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
         assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
         // Handle diff output
         final DifferResult<S, L, D> result = DifferResult.of(self, differResult);
         waitFor(result, self);
-        self.schedule(differ.diff(rootScopes,
-                initialState.previousResult().map(IUnitResult::rootScopes).orElse(Collections.emptyList())))
-                .whenComplete(differResult::complete);
+        self.schedule(differ.diff(currentRootScopes, previousRootScopes)).whenComplete(differResult::complete);
         differResult.whenComplete((r, ex) -> {
             logger.debug("{} scope graph differ finished", this);
             if(ex != null) {
@@ -756,7 +739,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 .failures(failures)
                 .subUnitResults(subUnitResults)
                 .stats(stats)
-                .transitions(transitions)
+                .stateTransitionTrace(stateTransitionTrace)
                 .diff(diffResult.get())
                 .build()
             );
@@ -1149,6 +1132,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             });
         }
+    }
+
+    private IDifferContext<S, L, D> differContext = new DifferContext();
+
+    protected IDifferContext<S, L, D> differContext() {
+        return differContext;
     }
 
     ///////////////////////////////////////////////////////////////////////////
