@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.unit.Unit;
 
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -35,7 +36,7 @@ public interface IUnit2UnitProtocol<S, L, D> {
         return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
     }
 
-    IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label);
+    IFuture<Unit> _isComplete(S scope, EdgeOrData<L> label);
 
     IFuture<Optional<D>> _datum(S scope);
 
