@@ -18,7 +18,6 @@ import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
-import mb.p_raffrayi.impl.AInitialState;
 import mb.p_raffrayi.impl.RecordedQuery;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -54,7 +53,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
                     }
 
-                }, Set.Immutable.of(), AInitialState.cached(previousResult));
+                }, Set.Immutable.of(), false, previousResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -114,7 +113,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
@@ -175,7 +174,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> subReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(), AInitialState.changed(parentResult));
+                }, Set.Immutable.of(), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertFalse(result.analysis());
@@ -248,7 +247,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -321,7 +320,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> subReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.changed(parentResult));
+                }, Set.Immutable.of(lbl), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -395,7 +394,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> subRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
@@ -427,7 +426,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
                     }
 
-                }, Set.Immutable.of(), AInitialState.changed(previousResult));
+                }, Set.Immutable.of(), true, previousResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -496,7 +495,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.changed(parentResult));
+                }, Set.Immutable.of(lbl), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -594,7 +593,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                                 && sRes2.analysis() && sRes2.failures().isEmpty())));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -620,7 +619,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
                     }
 
-                }, Set.Immutable.of(), AInitialState.cached(previousResult));
+                }, Set.Immutable.of(), false, previousResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -668,7 +667,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.added());
+                }, Set.Immutable.of(lbl));
 
         IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -730,7 +729,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> sub2Result.thenCompose(res2 -> bothRestarted(res, sub1Result)));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.added());
+                }, Set.Immutable.of(lbl));
 
         IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -787,7 +786,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> subRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -859,7 +858,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         final IUnitResult<Scope, IDatum, IDatum, ?> subResult = result.subUnitResults().get("sub");
@@ -934,7 +933,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue("Incorrect analysis", result.analysis());
@@ -971,7 +970,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true));
                     }
 
-                }, Set.Immutable.of(), AInitialState.cached(previousResult));
+                }, Set.Immutable.of(), false, previousResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
 
@@ -1043,7 +1042,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothReleased(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         final IUnitResult<Scope, IDatum, IDatum, ?> subResult = result.subUnitResults().get("sub");
@@ -1115,7 +1114,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> bothRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.changed(parentResult));
+                }, Set.Immutable.of(lbl), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());
@@ -1181,7 +1180,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> subRestarted(res, subResult));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         final IUnitResult<Scope, IDatum, IDatum, ?> subResult = result.subUnitResults().get("sub");
@@ -1297,7 +1296,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenCompose(res -> sub2Future.thenCompose(s2res -> bothReleased(res, sub1Future)));
                     }
 
-                }, Set.Immutable.of(lbl), AInitialState.cached(parentResult));
+                }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
         assertTrue(result.analysis());

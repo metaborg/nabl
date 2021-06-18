@@ -34,7 +34,6 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.GroupResult;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.IStatixResult;
@@ -77,8 +76,6 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
-        final IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState = project.initialState();
-
         final List<ITerm> results = Lists.newArrayList();
         try {
             logger.info("Analyzing files");
@@ -88,8 +85,9 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final double t0 = System.currentTimeMillis();
 
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(), settings,
-                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), initialState, new StatixDifferOps(), cancel);
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
+                    settings, new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(),
+                    project.changed(), project.previousResult(), new StatixDifferOps(), cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
@@ -100,9 +98,12 @@ public class STX_solve_multi extends StatixPrimitive {
 
             if(settings.incremental()) {
                 logger.info("Files analyzed in {} s", (dt / 1_000d));
-                logger.info("* Initially changed units : {}", flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
-                logger.info("* Restarted units         : {}", flattenTransitions(unitResults, TransitionTrace.RESTARTED));
-                logger.info("* Released units          : {}", flattenTransitions(unitResults, TransitionTrace.RELEASED));
+                logger.info("* Initially changed units : {}",
+                        flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
+                logger.info("* Restarted units         : {}",
+                        flattenTransitions(unitResults, TransitionTrace.RESTARTED));
+                logger.info("* Released units          : {}",
+                        flattenTransitions(unitResults, TransitionTrace.RELEASED));
             }
 
             for(Entry<String, ITerm> entry : resultMap.entrySet()) {
@@ -134,8 +135,8 @@ public class STX_solve_multi extends StatixPrimitive {
             final String resource = projectResult.resource();
             final List<SolverResult> groupResults = new ArrayList<>();
             projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
-            projectResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, subResource(resource,  k), gr, groupResults, resourceResults, unitResults));
+            projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, subResource(resource, k), gr,
+                    groupResults, resourceResults, unitResults));
             projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
 
             SolverResult solveResult = flatSolverResult(spec, result);
@@ -158,8 +159,8 @@ public class STX_solve_multi extends StatixPrimitive {
         unitResults.add(result);
         final GroupResult groupResult = result.analysis();
         if(groupResult != null) {
-            groupResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, subResource(groupId, k), gr, groupResults, resourceResults, unitResults));
+            groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, subResource(groupId, k), gr,
+                    groupResults, resourceResults, unitResults));
             groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             final SolverResult solveResult = flatSolverResult(spec, result);
             groupResults.add(solveResult);
@@ -175,7 +176,8 @@ public class STX_solve_multi extends StatixPrimitive {
         final UnitResult unitResult = result.analysis();
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
-            resourceResults.put(unitResult.resource(), B.newAppl("FileResult", B.newBlob(solveResult), B.newBlob(result)));
+            resourceResults.put(unitResult.resource(),
+                    B.newAppl("FileResult", B.newBlob(solveResult), B.newBlob(result)));
         } else {
             logger.error("Missing result for unit {}", result.id());
         }
@@ -207,15 +209,17 @@ public class STX_solve_multi extends StatixPrimitive {
 
     // TODO: resource on group?
     private String subResource(String parent, String child) {
-    	return String.format("%s>%s", parent, child);
+        return String.format("%s>%s", parent, child);
     }
 
     private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, TransitionTrace flow) {
-        return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id).collect(Collectors.joining(", "));
+        return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id)
+                .collect(Collectors.joining(", "));
     }
 
     private SolverMode getSolverMode(ITerm term) throws InterpreterException {
-        return M.blobValue(SolverMode.class).match(term).orElseThrow(() -> new InterpreterException("Expected project condiguration, got " + term));
+        return M.blobValue(SolverMode.class).match(term)
+                .orElseThrow(() -> new InterpreterException("Expected project condiguration, got " + term));
     }
 
     private PRaffrayiSettings solverModeToSettings(SolverMode mode) throws InterpreterException {

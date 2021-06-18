@@ -14,7 +14,6 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
-import mb.p_raffrayi.impl.AInitialState;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
@@ -131,7 +130,7 @@ public class DifferTests extends PRaffrayiTestBase {
                 return unit.runIncremental(restarted -> {
                     return subResult.thenApply(__ -> Unit.unit);
                 });
-            }}, labels, AInitialState.changed(parentResult)).thenApply(result -> {
+            }}, labels, true, parentResult).thenApply(result -> {
                 return (IUnitResult<Scope, IDatum, IDatum, R>) result.subUnitResults().get("sub");
             });
 

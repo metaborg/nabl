@@ -4,6 +4,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
@@ -11,16 +13,14 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spoofax.StatixTerms;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.impl.AInitialState;
-import mb.p_raffrayi.impl.IInitialState;
 
 public class InputMatchers {
 
     public static IMatcher<IStatixProject> project() {
-        return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.initialState(),
+        return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.previousResult(),
             M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()), M.map(M.stringValue(), M.req(library())),
             (t, id, rule, result, groups, units, libs) -> {
-                return StatixProject.of(id, Optional.of(rule), groups, units, libs, result);
+                return StatixProject.of(id, Optional.of(rule), groups, units, libs, result != null, result);
             });
     }
 
@@ -55,11 +55,11 @@ public class InputMatchers {
         // formatter:on
     }
 
-    @SuppressWarnings("unchecked") public static IMatcher<IInitialState<Scope, ITerm, ITerm, ProjectResult>> initialState() {
+    public static IMatcher<@Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult>> previousResult() {
         // @formatter:off
         return M.req("Expected Initial State", M.cases(
-            M.appl0("Added", appl -> AInitialState.added()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> AInitialState.cached(result))
+            M.appl0("Added", appl -> null),
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> result)
         ));
         // formatter:on
     }

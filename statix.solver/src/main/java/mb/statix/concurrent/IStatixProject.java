@@ -3,10 +3,12 @@ package mb.statix.concurrent;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
-import mb.p_raffrayi.impl.IInitialState;
+import mb.p_raffrayi.IUnitResult;
 
 public interface IStatixProject {
 
@@ -33,8 +35,13 @@ public interface IStatixProject {
     Map<String, IStatixLibrary> libraries();
 
     /**
+     * Indicates whether unit was changed since previous run.
+     */
+    boolean changed();
+
+    /**
      * Result from previous type-checker run.
      */
-    IInitialState<Scope, ITerm, ITerm, ProjectResult> initialState();
+    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult();
 
 }

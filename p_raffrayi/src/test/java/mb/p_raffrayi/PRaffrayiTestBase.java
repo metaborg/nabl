@@ -19,7 +19,6 @@ import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.Broker;
-import mb.p_raffrayi.impl.IInitialState;
 import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
@@ -35,8 +34,8 @@ public abstract class PRaffrayiTestBase {
 
     protected <R> IFuture<IUnitResult<Scope, IDatum, IDatum, R>> run(String id,
             ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels,
-            IInitialState<Scope, IDatum, IDatum, R> initialState) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, initialState, new DifferOps(),
+            boolean changed, IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
+        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed, previousResult, new DifferOps(),
                 new NullCancel(), 0.3, 50);
         //return Broker.run(id, typeChecker, scopeImpl, edgeLabels, initialState, new NullCancel());
     }
