@@ -57,7 +57,7 @@ public class InputMatchers {
 
     public static IMatcher<@Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult>> previousResult() {
         // @formatter:off
-        return M.req("Expected Initial State", M.cases(
+        return M.req("Expected Unit Result option.", M.cases(
             M.appl0("Added", appl -> null),
             M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> result)
         ));
