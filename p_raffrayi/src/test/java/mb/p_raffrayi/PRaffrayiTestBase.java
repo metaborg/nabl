@@ -28,16 +28,15 @@ public abstract class PRaffrayiTestBase {
 
     protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R>> run(String id,
             ITypeChecker<Scope, L, IDatum, R> typeChecker, Iterable<L> edgeLabels) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, new DifferOps(), new NullCancel(), 0.3, 50);
-        //return Broker.run(id, typeChecker, scopeImpl, edgeLabels, new NullCancel());
+        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, new DifferOps(),
+                new NullCancel(), 0.3, 50);
     }
 
     protected <R> IFuture<IUnitResult<Scope, IDatum, IDatum, R>> run(String id,
-            ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels,
-            boolean changed, IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed, previousResult, new DifferOps(),
-                new NullCancel(), 0.3, 50);
-        //return Broker.run(id, typeChecker, scopeImpl, edgeLabels, initialState, new NullCancel());
+            ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels, boolean changed,
+            IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
+        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed,
+                previousResult, new DifferOps(), new NullCancel(), 0.3, 50);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -118,8 +117,9 @@ public abstract class PRaffrayiTestBase {
             }
 
             final BiMap.Transient<Scope> result = BiMap.Transient.of();
-            final List<Tuple2<Scope, Scope>> matches = Streams.zip(currentDatum.scopes().stream(), previousDatum.scopes().stream(), Tuple2::of)
-                .collect(Collectors.toList());
+            final List<Tuple2<Scope, Scope>> matches =
+                    Streams.zip(currentDatum.scopes().stream(), previousDatum.scopes().stream(), Tuple2::of)
+                            .collect(Collectors.toList());
 
             for(Tuple2<Scope, Scope> match : matches) {
                 if(!result.canPut(match._1(), match._2())) {

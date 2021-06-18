@@ -8,8 +8,6 @@ import io.usethesource.capsule.Set;
 
 public interface IDifferContext<S, L, D> {
 
-    // Scope graph querying
-
     IFuture<Iterable<S>> getEdges(S scope, L label);
 
     IFuture<Set.Immutable<L>> labels(S scope);
