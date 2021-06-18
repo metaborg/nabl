@@ -1,6 +1,7 @@
 package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.Transitions;
+import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.IInitialState;
 import mb.statix.concurrent.GroupResult;
@@ -57,18 +59,18 @@ public class STX_solve_multi extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi.class);
 
     @Inject public STX_solve_multi() {
-        super(STX_solve_multi.class.getSimpleName(), 4);
+        super(STX_solve_multi.class.getSimpleName(), 5);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+                StatixTerms.spec().match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
-        final IProgress progress = getProgress(terms.get(2));
-        final ICancel cancel = getCancel(terms.get(3));
+        final IDebugContext debug = getDebugContext(terms.get(2));
+        final IProgress progress = getProgress(terms.get(3));
+        final ICancel cancel = getCancel(terms.get(4));
 
         final IStatixProject project =
                 InputMatchers.project().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
@@ -81,8 +83,12 @@ public class STX_solve_multi extends StatixPrimitive {
         try {
             logger.info("Analyzing files");
 
+            final SolverMode solverMode = getSolverMode(terms.get(0));
+            final PRaffrayiSettings settings = solverModeToSettings(solverMode);
+
             final double t0 = System.currentTimeMillis();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
+
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(), settings,
                     new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), initialState, new StatixDifferOps(), cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
@@ -204,6 +210,22 @@ public class STX_solve_multi extends StatixPrimitive {
 
     private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, Transitions flow) {
         return unitResults.stream().filter(r -> r.transitions() == flow).map(IUnitResult::id).collect(Collectors.joining(", "));
+    }
+
+    private SolverMode getSolverMode(ITerm term) throws InterpreterException {
+        return M.blobValue(SolverMode.class).match(term).orElseThrow(() -> new InterpreterException("Expected project condiguration, got " + term));
+    }
+
+    private PRaffrayiSettings solverModeToSettings(SolverMode mode) throws InterpreterException {
+        if(!mode.concurrent) {
+            throw new InterpreterException("Cannot create concurrent settings for solver mode " + mode);
+        }
+        // @formatter:off
+        return PRaffrayiSettings.builder()
+            .incrementalDeadlock(mode.deadlock)
+            .scopeGraphDiff(mode.sgDiff)
+            .build();
+        // @formatter:on
     }
 
 }

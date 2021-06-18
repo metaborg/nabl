@@ -115,7 +115,8 @@ rules // multi file analysis (new)
        ; s-proj      := Var("s_proj")
        ; s-parent    := Var("s_parent")
        ; s-grp       := Var("s_grp")
-       ; config := <stx--project-config>
+       ; config 	 := <stx--project-config>
+       ; solver-mode := <stx--solver-mode>
     with
       //
       // 1. Build project task
@@ -176,7 +177,7 @@ rules // multi file analysis (new)
       // 4. Solve project
       //
     ; project   := <cstx--make-project(|grp-c-name, libs)> (project-task, group-task*, file-task*)
-    ; analysis* := <cstx--solve-multi(|spec, level, progress, cancel)> project
+    ; analysis* := <cstx--solve-multi(|solver-mode, spec, level, progress, cancel)> project
       //
       // 5. Construct results
       //
@@ -246,8 +247,8 @@ rules // multi file analysis (new)
   // @param spec  : Spec
   // @param level : LogLevel
   // @type StatixProject -> [(String, SolverResult)]
-  cstx--solve-multi(|spec, level, progress, cancel) =
-    prim("STX_solve_multi", spec, level, progress, cancel)
+  cstx--solve-multi(|solver-mode, spec, level, progress, cancel) =
+    prim("STX_solve_multi", solver-mode, spec, level, progress, cancel)
 
   cstx-mk-group-results(|project, config): (task*, cached-group*, analysis*) -> (new-group-result*, grp-error*, grp-warning*, grp-note*)
     with group-result*  := <filter(?(_, GroupResult(_, _)))> analysis*
@@ -377,6 +378,9 @@ rules // multi file analysis
 
   // @type _ -> Config
   stx--project-config = prim("STX_project_config")
+
+  // @type _ -> SolverMode
+  stx--solver-mode = prim("STX_solver_mode")
 
 
   stx--default-group-key: (resource, _) -> [resource]

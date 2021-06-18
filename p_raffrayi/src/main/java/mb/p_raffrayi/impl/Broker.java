@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.actors.TypeTag;
@@ -47,6 +48,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     private static final int INACTIVE_TIMEOUT = 5;
 
     private final String id;
+    private final PRaffrayiSettings settings;
     private final ITypeChecker<S, L, D, R> typeChecker;
     private final IInitialState<S, L, D, R> initialState;
     private final IScopeImpl<S, D> scopeImpl;
@@ -72,10 +74,11 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     // https://regex101.com/r/sGeGLs/1
     private static final Pattern RE_ID_SEG = Pattern.compile("\\/(?:\\\\\\\\|\\\\\\/|[^\\\\\\/])+");
 
-    private Broker(String id, ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel,
-            IActorScheduler scheduler) {
+    private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R> typeChecker,
+            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
+            IDifferScopeOps<S, D> scopeOps, ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
+        this.settings = settings;
         this.typeChecker = typeChecker;
         // If initial state has failures, discard it.
         this.initialState = initialState.previousResult().<IInitialState<S, L, D, R>>map(res -> {
@@ -186,6 +189,10 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
         @Override public ICancel cancel() {
             return cancel;
+        }
+
+        @Override public PRaffrayiSettings settings() {
+            return settings;
         }
 
         @Override public S makeScope(String name) {
@@ -348,39 +355,40 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> unitChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
-            IDifferScopeOps<S, D> scopeOps, ICancel cancel) {
-        return run(id, unitChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
+            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel) {
+        return run(id, settings, unitChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
-            IDifferScopeOps<S, D> scopeOps, ICancel cancel, int parallelism) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
+            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel, int parallelism) {
+        return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
                 new WorkStealingScheduler(parallelism)).run();
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IDifferScopeOps<S, D> scopeOps, ICancel cancel,
-            double preemptProbability, int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, AInitialState.added(), scopeOps, cancel,
-                Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
-    }
-
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
             IDifferScopeOps<S, D> scopeOps, ICancel cancel, double preemptProbability, int scheduleDelayBoundMillis) {
-        return debug(id, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
+        return debug(id, settings, typeChecker, scopeImpl, edgeLabels, AInitialState.added(), scopeOps, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, ITypeChecker<S, L, D, R> typeChecker,
-            IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, IInitialState<S, L, D, R> initialState,
-            IDifferScopeOps<S, D> scopeOps, ICancel cancel, int parallelism, double preemptProbability,
-            int scheduleDelayBoundMillis) {
-        return new Broker<>(id, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
+            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel,
+            double preemptProbability, int scheduleDelayBoundMillis) {
+        return debug(id, settings, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
+                Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
+    }
+
+    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
+            IInitialState<S, L, D, R> initialState, IDifferScopeOps<S, D> scopeOps, ICancel cancel, int parallelism,
+            double preemptProbability, int scheduleDelayBoundMillis) {
+        return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, initialState, scopeOps, cancel,
                 new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 

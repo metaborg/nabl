@@ -10,6 +10,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 
@@ -19,6 +20,8 @@ import mb.p_raffrayi.actors.IActorRef;
 public interface IUnitContext<S, L, D> {
 
     ICancel cancel();
+
+    PRaffrayiSettings settings();
 
     S makeScope(String name);
 
