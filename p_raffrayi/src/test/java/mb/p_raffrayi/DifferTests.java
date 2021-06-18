@@ -37,7 +37,7 @@ public class DifferTests extends PRaffrayiTestBase {
     // Local Differ tests
     ///////////////////////////////////////////////////////////////////////////
 
-    @Test public void testEmptyDiff() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testEmptyDiff() throws InterruptedException, ExecutionException {
         final IFuture<IUnitResult<Scope, IDatum, IDatum, Scope>> future = runSingle(new ITypeChecker<Scope, IDatum, IDatum, Scope>() {
 
             @Override public IFuture<Scope> run(IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Scope> unit,
@@ -64,7 +64,7 @@ public class DifferTests extends PRaffrayiTestBase {
         assertEquals(EMPTY_BIMAP, diff.matchedEdges());
     }
 
-    @Test public void testAddedEdgeDiff() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testAddedEdgeDiff() throws InterruptedException, ExecutionException {
         final IFuture<IUnitResult<Scope, IDatum, IDatum, List<Scope>>> future = runSingle(new ITypeChecker<Scope, IDatum, IDatum, List<Scope>>() {
 
             @Override public IFuture<List<Scope>> run(IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, List<Scope>> unit,
