@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,8 +52,6 @@ import mb.p_raffrayi.actors.IActorStats;
 import mb.p_raffrayi.actors.TypeTag;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
-import mb.p_raffrayi.impl.confirmation.DenyingConfirmation;
-import mb.p_raffrayi.impl.confirmation.IQueryConfirmation;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
@@ -94,11 +93,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final IUnitContext<S, L, D> context;
 
     private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
-    protected final UnitProcess<S, L, D> process;
+    private final UnitProcess<S, L, D> process;
     private final BrokerProcess<S, L, D> broker = new BrokerProcess<>();
 
     private volatile boolean innerResult;
-    protected final Ref<R> analysis;
+    private final Ref<R> analysis;
     protected final List<Throwable> failures;
     private final Map<String, IUnitResult<S, L, D, ?>> subUnitResults;
     private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
@@ -110,7 +109,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
-    protected final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
     protected @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
 
@@ -198,7 +196,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return scope;
     }
 
-    protected final void doStart(List<S> currentRootScopes, List<S> previousRootScopes) {
+    protected final void doStart(List<S> currentRootScopes, @Nullable List<S> previousRootScopes) {
         this.rootScopes.addAll(currentRootScopes);
         for(S rootScope : CapsuleUtil.toSet(currentRootScopes)) {
             scopes.__insert(rootScope);
@@ -206,7 +204,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
         if(isDifferEnabled()) {
             this.differ = context.settings().scopeGraphDiff() ? initDiffer() : null;
-            startDiffer(currentRootScopes, previousRootScopes);
+            startDiffer(currentRootScopes, previousRootScopes != null ? previousRootScopes : Collections.emptyList());
         }
     }
 
@@ -674,8 +672,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    protected MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    protected MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess =
+    private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
+    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess =
             MultiSetMap.Immutable.of();
 
     protected boolean isWaiting() {
@@ -688,6 +686,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
         return waitForsByProcess.get(unit);
+    }
+
+    protected MultiSet.Immutable<IWaitFor<S, L, D>> ownTokens() {
+        return getTokens(process);
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
@@ -705,7 +707,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
-        self.assertOnActorThread();
         if(!waitForsByProcess.contains(process, token)) {
             logger.error("{} not waiting for granted {}/{}", self, process, token);
             throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
@@ -844,6 +845,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
+        if(!nodes.contains(process)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
+        }
         if(isIncrementalDeadlockEnabled()) {
             handleDeadlockIncremental(nodes);
         } else {
@@ -851,10 +855,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
-        if(!nodes.contains(process)) {
-            throw new IllegalStateException("Deadlock unrelated to this unit.");
-        }
+    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             logger.info("Received patches: {}.", rors);
             if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
@@ -879,7 +880,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         resume();
     }
 
-    protected void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
+    private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
         // All units are already active, proceed with regular deadlock handling
         if(nodes.size() == 1) {
             logger.debug("{} self-deadlocked with {}", this, getTokens(process));
@@ -1112,7 +1113,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         @Override public Collection<S> getScopes(D d) {
             return context.getScopes(d);
         }
-
 
         @Override public boolean ownScope(S scope) {
             return context.scopeId(scope).equals(self.id());

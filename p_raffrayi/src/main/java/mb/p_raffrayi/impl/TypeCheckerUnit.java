@@ -468,7 +468,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
-            waitForsByProcess.get(process).forEach(wf -> {
+            ownTokens().forEach(wf -> {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
                     initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
@@ -514,17 +514,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
-        if(nodes.size() == 1) {
-            if(isWaitingFor(Activate.of(self, whenActive))) {
-                assertInState(UnitState.UNKNOWN);
-                doRelease(BiMap.Immutable.of());
-            } else {
-                super.handleDeadlock(nodes);
-            }
-            return;
+    @Override protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
+        if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
+            assertInState(UnitState.UNKNOWN);
+            doRelease(BiMap.Immutable.of());
+        } else {
+            super.handleDeadlock(nodes);
         }
-        super.handleDeadlock(nodes);
     }
 
     ///////////////////////////////////////////////////////////////////////////
