@@ -299,7 +299,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 unit.add("sub", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
 
                                     @Override public IFuture<Boolean> run(
-                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> rootScopes) {
+                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                            List<Scope> rootScopes) {
                                         final Scope s1 = rootScopes.get(0);
                                         unit.initScope(s1, Arrays.asList(lbl), false);
                                         return unit.runIncremental(restarted -> {
@@ -486,13 +487,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
-                        unit.addEdge(s, lbl, d);
-                        unit.closeEdge(s, lbl);
-                        unit.setDatum(d, d);
+                        return unit.runIncremental(restarted -> {
+                            final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                            unit.addEdge(s, lbl, d);
+                            unit.closeEdge(s, lbl);
+                            unit.setDatum(d, d);
 
-                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
-                                .thenCompose(res -> bothRestarted(res, subResult));
+                            return CompletableFuture.completedFuture(true);
+                        }).thenCompose(res -> bothRestarted(res, subResult));
                     }
 
                 }, Set.Immutable.of(lbl), true, parentResult);
@@ -600,7 +602,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
     }
 
-    @Test(timeout = 10000) public void testRestart_FailureInInitialState() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testRestart_FailureInInitialState()
+            throws InterruptedException, ExecutionException {
         // @formatter:off
         final IUnitResult<Scope, IDatum, IDatum, Boolean> previousResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
             .id("/.")
@@ -658,13 +661,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
-                        unit.addEdge(s, lbl, d);
-                        unit.closeEdge(s, lbl);
-                        unit.setDatum(d, d);
+                        return unit.runIncremental(restarted -> {
+                            final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                            unit.addEdge(s, lbl, d);
+                            unit.closeEdge(s, lbl);
+                            unit.setDatum(d, d);
 
-                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
-                                .thenCompose(res -> bothRestarted(res, subResult));
+                            return CompletableFuture.completedFuture(true);
+                        }).thenCompose(res -> bothRestarted(res, subResult));
                     }
 
                 }, Set.Immutable.of(lbl));
@@ -1065,7 +1069,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     // Restart behavior
     ///////////////////////////////////////////////////////////////////////////
 
-    @Test(timeout = 10000) public void testQueryInRestartedUnit() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000000) public void testQueryInRestartedUnit() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
         final Scope d1 = new Scope("/.", 1);
@@ -1105,13 +1109,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
-                        unit.addEdge(s, lbl, d);
-                        unit.setDatum(d, d2);
-                        unit.closeEdge(s, lbl);
+                        return unit.runIncremental(restarted -> {
+                            final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                            unit.addEdge(s, lbl, d);
+                            unit.setDatum(d, d2);
+                            unit.closeEdge(s, lbl);
 
-                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
-                                .thenCompose(res -> bothRestarted(res, subResult));
+                            return CompletableFuture.completedFuture(true);
+                        }).thenCompose(res -> bothRestarted(res, subResult));
                     }
 
                 }, Set.Immutable.of(lbl), true, parentResult);
@@ -1212,7 +1217,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
     // Other
     ///////////////////////////////////////////////////////////////////////////
 
-    @Test(timeout = 10000) public void testActivateOnDelayedUnitAddition() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testActivateOnDelayedUnitAddition()
+            throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
         final Scope d1 = new Scope("/./sub2", 1);
