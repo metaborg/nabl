@@ -94,7 +94,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
     private final UnitProcess<S, L, D> process;
-    private final BrokerProcess<S, L, D> broker = new BrokerProcess<>();
+    private final BrokerProcess<S, L, D> broker = BrokerProcess.of();
 
     private volatile boolean innerResult;
     private final Ref<R> analysis;

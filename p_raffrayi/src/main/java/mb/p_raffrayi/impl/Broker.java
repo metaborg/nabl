@@ -109,7 +109,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
         this.totalUnits = new AtomicInteger();
 
         this.delays = new ConcurrentHashMap<>();
-        this.process = new BrokerProcess<S, L, D>();
+        this.process = BrokerProcess.of();
         this.cmh = new ChandyMisraHaas<>(this, this::_deadlocked);
     }
 
