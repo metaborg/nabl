@@ -117,7 +117,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // TODO unwrap old scope graph(?)
     protected final IInitialState<S, L, D, R> initialState; // TODO: move to typecheckerunit
     protected final IQueryConfirmation<S, L, D> confirmation = new DenyingConfirmation<>();
-    protected final IScopeGraphDiffer<S, L, D> differ;
+    protected final @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
@@ -149,8 +149,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         this.delays = HashTrieRelation3.Transient.of();
 
         this.initialState = initialState;
-        this.differ = initDiffer(initialState, scopeOps);
-
+        this.differ = context.settings().scopeGraphDiff() ? initDiffer(initialState, scopeOps) : null;
 
         this.scopeNameCounters = MultiSet.Transient.of();
 
@@ -214,7 +213,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
         }
-        startDiffer(rootScopes);
+        if(isDifferEnabled()) {
+            startDiffer(rootScopes);
+        }
     }
 
     protected final IFuture<IUnitResult<S, L, D, R>> doFinish(IFuture<R> result) {
@@ -225,7 +226,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         internalResult.whenComplete((r, ex) -> {
             logger.debug("{} type checker finished", this);
             resume(); // FIXME necessary?
-            differ.typeCheckerFinished();
+            if(isDifferEnabled()) {
+                differ.typeCheckerFinished();
+            }
             if(ex != null) {
                 logger.error("type checker errored: {}", ex);
                 failures.add(ex);
@@ -242,6 +245,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return unitResult;
     }
 
+    protected boolean isDifferEnabled() {
+        return context.settings().scopeGraphDiff();
+    }
+
     protected IScopeGraphDiffer<S, L, D> initDiffer(IInitialState<S, L, D, R> initialState,
             IDifferScopeOps<S, D> scopeOps) {
         final IDifferContext<S, L, D> context = new DifferContext();
@@ -252,6 +259,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     private void startDiffer(List<S> rootScopes) {
+        assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
         // Handle diff output
@@ -349,6 +357,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
+        assertDifferEnabled();
         return differ.match(previousScope);
     }
 
@@ -852,26 +861,21 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
+        if(isIncrementalDeadlockEnabled()) {
+            handleDeadlockIncremental(nodes);
+        } else {
+            handleDeadlockRegular(nodes);
+        }
+    }
+
+    protected void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
+        if(!nodes.contains(process)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
+        }
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             logger.info("Received patches: {}.", rors);
             if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
-                // All units are already active, proceed with regular deadlock handling
-                if(!nodes.contains(process)) {
-                    throw new IllegalStateException("Deadlock unrelated to this unit.");
-                }
-                if(nodes.size() == 1) {
-                    logger.debug("{} self-deadlocked with {}", this, getTokens(process));
-                    if(failDelays(nodes)) {
-                        resume(); // resume to ensure further deadlock detection after these are handled
-                    } else {
-                        failAll();
-                    }
-                } else {
-                    // nodes will include self
-                    for(IProcess<S, L, D> node : nodes) {
-                        node.from(self, context)._deadlocked(nodes);
-                    }
-                }
+                handleDeadlockRegular(nodes);
             } else {
                 // @formatter:off
                 rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
@@ -888,9 +892,25 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     });
                 // @formatter:on
             }
-            resume(); // FIXME needed?
         });
         resume();
+    }
+
+    protected void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
+        // All units are already active, proceed with regular deadlock handling
+        if(nodes.size() == 1) {
+            logger.debug("{} self-deadlocked with {}", this, getTokens(process));
+            if(failDelays(nodes)) {
+                resume(); // resume to ensure further deadlock detection after these are handled
+            } else {
+                failAll();
+            }
+        } else {
+            // nodes will include self
+            for(IProcess<S, L, D> node : nodes) {
+                node.from(self, context)._deadlocked(nodes);
+            }
+        }
     }
 
     /**
@@ -1020,6 +1040,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             ));
             // @formatter:on
         }
+    }
+
+    protected boolean isIncrementalDeadlockEnabled() {
+        return context.settings().incrementalDeadlock();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1245,6 +1269,20 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         if(isEdgeClosed(scope, edge)) {
             logger.error("Label {}/{} is not open on {}.", scope, edge, self);
             throw new IllegalArgumentException("Label " + scope + "/" + edge + " is not open on " + self + ".");
+        }
+    }
+
+    protected void assertDifferEnabled() {
+        if(!isDifferEnabled()) {
+            logger.error("Scope graph differ is not enabled.");
+            throw new IllegalStateException("Scope graph differ is not enabled.");
+        }
+    }
+
+    protected void assertIncrementalDeadlockEnabled() {
+        if(!isIncrementalDeadlockEnabled()) {
+            logger.error("Deadlock resolution for incremental analysis is not enabled.");
+            throw new IllegalStateException("Deadlock resolution for incremental analysis is not enabled.");
         }
     }
 }

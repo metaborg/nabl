@@ -9,4 +9,8 @@ public abstract class APRaffrayiSettings {
 
     @Value.Parameter public abstract boolean scopeGraphDiff();
 
+    public boolean incremental() {
+        return incrementalDeadlock() || scopeGraphDiff();
+    }
+
 }

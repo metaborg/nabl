@@ -126,6 +126,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
+        assertDifferEnabled();
         if(state.equals(UnitState.ACTIVE) || (state == UnitState.DONE && transitions != Transitions.RELEASED)) {
             return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
         }
@@ -195,7 +196,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 }
             }
 
-            if(!differ.matchScopes(req.freeze())) {
+            if(isDifferEnabled() && !differ.matchScopes(req.freeze())) {
                 logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
                 throw new IllegalStateException("Could not match.");
             }
@@ -297,7 +298,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
             Function2<Q, Throwable, IFuture<R>> combine) {
         state = UnitState.UNKNOWN;
-        if(initialState.changed()) {
+        if(!isIncrementalEnabled() || initialState.changed()) {
             logger.debug("Unit changed or no previous result was available.");
             transitions = Transitions.INITIALLY_STARTED;
             doRestart();
@@ -326,6 +327,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private void doConfirmQueries() {
         assertInState(UnitState.UNKNOWN);
+        assertIncrementalEnabled();
         resume();
 
         if(initialState.previousResult().get().queries().isEmpty()) {
@@ -403,6 +405,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     private void doRelease(BiMap.Immutable<S> patches) {
+        assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             state = UnitState.RELEASED;
             final IUnitResult<S, L, D, R> previousResult = initialState.previousResult().get();
@@ -532,6 +535,19 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // Incremental settings
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected boolean isIncrementalEnabled() {
+        return context.settings().incremental();
+    }
+
+    protected void assertIncrementalEnabled() {
+        if(!isIncrementalEnabled()) {
+            logger.error("Incremental analysis is not enabled");
+            throw new IllegalStateException("Incremental analysis is not enabled");
+        }
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // toString
