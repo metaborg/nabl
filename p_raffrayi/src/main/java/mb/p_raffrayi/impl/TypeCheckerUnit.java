@@ -251,6 +251,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         assertActive();
+        if(!sharing) {
+            doImplicitActivate();
+        }
 
         final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
 
@@ -272,6 +275,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public void addEdge(S source, L label, S target) {
         assertActive();
+        doImplicitActivate();
 
         doAddEdge(self, source, label, target);
         localScopeGraph.addEdge(source, label, target);
@@ -292,8 +296,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, @Nullable DataWf<S, L, D> dataWfInternal,
             @Nullable DataLeq<S, L, D> dataEquivInternal) {
-        // TODO: After doing a query, runIncremental may not be used anymore
         assertActive();
+        doImplicitActivate();
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<IQueryAnswer<S, L, D>> result =
@@ -318,6 +322,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
             Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
             Function2<Q, Throwable, IFuture<R>> combine) {
+        assertInState(UnitState.INIT_TC);
         state = UnitState.UNKNOWN;
         if(!isIncrementalEnabled() || changed) {
             logger.debug("Unit changed or no previous result was available.");
@@ -508,6 +513,15 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             return true;
         }
         return false;
+    }
+
+    private void doImplicitActivate() {
+        // If invoked synchronously, do a implicit transition to ACTIVE
+        // runIncremental may not be used anymore!
+        if(state == UnitState.INIT_TC && doRestart()) {
+            logger.debug("Performing implicit activation.");
+            this.stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
