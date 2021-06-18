@@ -5,7 +5,6 @@ import java.util.Map.Entry;
 import org.metaborg.util.collection.CapsuleUtil;
 
 import java.io.Serializable;
-import java.util.Optional;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -20,8 +19,8 @@ public class ScopeGraphDiff<S, L, D> implements Serializable {
     private final Changes<S, L, D> removed;
 
     public ScopeGraphDiff(BiMap.Immutable<S> matchedScopes, BiMap.Immutable<Edge<S, L>> matchedEdges,
-        Map.Immutable<S, Optional<D>> addedScopes, Set.Immutable<Edge<S, L>> addedEdges,
-        Map.Immutable<S, Optional<D>> removedScopes, Set.Immutable<Edge<S, L>> removedEdges) {
+        Map.Immutable<S, D> addedScopes, Set.Immutable<Edge<S, L>> addedEdges,
+        Map.Immutable<S, D> removedScopes, Set.Immutable<Edge<S, L>> removedEdges) {
         this.matchedScopes = matchedScopes;
         this.matchedEdges = matchedEdges;
         this.added = new Changes<>(addedScopes, addedEdges);
@@ -70,15 +69,15 @@ public class ScopeGraphDiff<S, L, D> implements Serializable {
 
         private static final long serialVersionUID = 2717749458901328532L;
 
-        private final Map.Immutable<S, Optional<D>> scopes;
+        private final Map.Immutable<S, D> scopes;
         private final Set.Immutable<Edge<S, L>> edges;
 
-        public Changes(Map.Immutable<S, Optional<D>> scopes, Set.Immutable<Edge<S, L>> edges) {
+        public Changes(Map.Immutable<S, D> scopes, Set.Immutable<Edge<S, L>> edges) {
             this.scopes = scopes;
             this.edges = edges;
         }
 
-        public Map.Immutable<S, Optional<D>> scopes() {
+        public Map.Immutable<S, D> scopes() {
             return scopes;
         }
 
@@ -89,9 +88,9 @@ public class ScopeGraphDiff<S, L, D> implements Serializable {
         @Override public String toString() {
             final StringBuilder sb = new StringBuilder();
             sb.append("    scopes:\n");
-            for(Entry<S, Optional<D>> entry : scopes.entrySet()) {
+            for(Entry<S, D> entry : scopes.entrySet()) {
                 sb.append("    + ").append(entry.getKey());
-                if(entry.getValue().isPresent()) {
+                if(entry.getValue() != null) {
                     sb.append(" : ").append(entry.getValue());
                 }
                 sb.append("\n");

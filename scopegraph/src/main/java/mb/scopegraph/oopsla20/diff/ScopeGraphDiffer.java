@@ -278,12 +278,12 @@ public class ScopeGraphDiffer<S, L, D> {
     public ScopeGraphDiff<S, L, D> finalize(IScopeGraph.Immutable<S, L, D> current,
         DifferState.Immutable<S, L, D> initialState) {
         final DifferState.Transient<S, L, D> state = initialState.melt();
-        final Map.Transient<S, Optional<D>> addedScopes = Map.Transient.of();
+        final Map.Transient<S, D> addedScopes = Map.Transient.of();
         final Set.Transient<Edge<S, L>> addedEdges = Set.Transient.of();
         finishDiff(current, diffOps::getCurrentScopes, state.seenCurrentScopes(), state.seenCurrentEdges(),
             state.matchedScopes().keySet(), state.matchedEdges().keySet(), addedScopes, addedEdges);
 
-        final Map.Transient<S, Optional<D>> removedScopes = Map.Transient.of();
+        final Map.Transient<S, D> removedScopes = Map.Transient.of();
         final Set.Transient<Edge<S, L>> removedEdges = Set.Transient.of();
         finishDiff(previous, diffOps::getPreviousScopes, state.seenPreviousScopes(), state.seenPreviousEdges(),
             state.matchedScopes().valueSet(), state.matchedEdges().valueSet(), removedScopes, removedEdges);
@@ -296,7 +296,7 @@ public class ScopeGraphDiffer<S, L, D> {
 
     private void finishDiff(IScopeGraph<S, L, D> scopeGraph, Function1<D, java.util.Set<S>> getScopes,
         Iterable<S> seenScopes, Iterable<Edge<S, L>> seenEdges, java.util.Set<S> matchedScopes,
-        java.util.Set<Edge<S, L>> matchedEdges, Map.Transient<S, Optional<D>> missedScopes,
+        java.util.Set<Edge<S, L>> matchedEdges, Map.Transient<S, D> missedScopes,
         Set.Transient<Edge<S, L>> missedEdges) {
 
         final Deque<S> scopeList = Lists.newLinkedList(seenScopes);
@@ -309,7 +309,7 @@ public class ScopeGraphDiffer<S, L, D> {
                     continue;
                 }
                 final Optional<D> datum = scopeGraph.getData(scope);
-                missedScopes.__put(scope, datum);
+                missedScopes.__put(scope, datum.orElse(null));
                 if(datum.isPresent()) {
                     scopeList.addAll(getScopes.apply(datum.get()));
                 }

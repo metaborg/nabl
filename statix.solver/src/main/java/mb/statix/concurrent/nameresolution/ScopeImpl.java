@@ -22,6 +22,10 @@ public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
         return T.collecttd(Scope.matcher()::match).apply(datum);
     }
 
+    @Override public ITerm embed(Scope scope) {
+        return scope;
+    }
+
     @Override public ITerm substituteScopes(ITerm datum, Map<Scope, Scope> substitution) {
         return T.sometd(Scope.matcher().map(s -> (ITerm) substitution.getOrDefault(s, s))::match).apply(datum);
     }

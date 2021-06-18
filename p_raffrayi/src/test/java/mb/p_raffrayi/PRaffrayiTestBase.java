@@ -99,6 +99,10 @@ public abstract class PRaffrayiTestBase {
             return Collections.unmodifiableSet(scopes);
         }
 
+        @Override public IDatum embed(Scope scope) {
+            return scope;
+        }
+
         @Override public IDatum substituteScopes(IDatum datum, Map<Scope, Scope> substitution) {
             return datum;
         }

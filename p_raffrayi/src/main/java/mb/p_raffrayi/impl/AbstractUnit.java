@@ -1114,6 +1114,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return context.getScopes(d);
         }
 
+        @Override public D embed(S scope) {
+            return context.embed(scope);
+        }
+
         @Override public boolean ownScope(S scope) {
             return context.scopeId(scope).equals(self.id());
         }

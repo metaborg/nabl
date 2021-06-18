@@ -658,8 +658,13 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         Sets.difference(seenCurrentScopes, matchedScopes.keySet()).forEach(this::added);
         Sets.difference(seenPreviousScopes, matchedScopes.valueSet()).forEach(this::removed);
 
-        currentScopeData.keySet().retainAll(addedScopes);
-        previousScopeData.keySet().retainAll(removedScopes);
+        Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
+        currentScopeData.keySet().retainAll(this.addedScopes);
+        currentScopeData.forEach((s, d) -> addedScopes.__put(s, d.orElse(differOps.embed(s))));
+
+        Map.Transient<S, D> removedScopes = CapsuleUtil.transientMap();
+        previousScopeData.keySet().retainAll(this.removedScopes);
+        previousScopeData.forEach((s, d) -> removedScopes.__put(s, d.orElse(differOps.embed(s))));
 
         Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
         this.addedEdges.asMap().values().forEach(x -> x.forEach(addedEdges::__insert));
@@ -687,9 +692,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         ScopeGraphDiff<S, L, D> result = new ScopeGraphDiff<S, L, D>(
             matchedScopes.freeze(),
             matchedEdges.freeze(),
-            currentScopeData.freeze(),
+            addedScopes.freeze(),
             addedEdges.freeze(),
-            previousScopeData.freeze(),
+            removedScopes.freeze(),
             removedEdges.freeze()
         );
         // @formatter:on

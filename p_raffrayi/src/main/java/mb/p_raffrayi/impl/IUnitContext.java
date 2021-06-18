@@ -31,6 +31,8 @@ public interface IUnitContext<S, L, D> {
 
     Collection<S> getScopes(D datum);
 
+    D embed(S scope);
+
     IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope);
 
     <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> add(String id,

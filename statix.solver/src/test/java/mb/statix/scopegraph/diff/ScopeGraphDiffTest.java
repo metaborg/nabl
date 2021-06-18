@@ -92,14 +92,14 @@ public class ScopeGraphDiffTest {
 
         assertEquals(1, diff.added().scopes().size());
         assertTrue(diff.added().scopes().containsKey(d2));
-        assertEquals(B.newList(B.newString("y"), B.newAppl("INT")), diff.added().scopes().get(d2).get());
+        assertEquals(B.newList(B.newString("y"), B.newAppl("INT")), diff.added().scopes().get(d2));
 
         assertEquals(1, diff.added().edges().size());
         assertTrue(diff.added().edges().contains(edge(s3, var, d2)));
 
         assertEquals(1, diff.removed().scopes().size());
         assertTrue(diff.removed().scopes().containsKey(d1));
-        assertEquals(B.newList(B.newString("x"), B.newAppl("INT")), diff.removed().scopes().get(d1).get());
+        assertEquals(B.newList(B.newString("x"), B.newAppl("INT")), diff.removed().scopes().get(d1));
 
         assertEquals(1, diff.removed().edges().size());
         assertTrue(diff.removed().edges().contains(edge(s1, var, d1)));

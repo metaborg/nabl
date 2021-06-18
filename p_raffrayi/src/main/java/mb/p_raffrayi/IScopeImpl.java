@@ -11,6 +11,8 @@ public interface IScopeImpl<S, D> {
 
     Collection<S> getAllScopes(D datum);
 
+    D embed(S scope);
+
     D substituteScopes(D datum, Map<S, S> substitution);
 
 }

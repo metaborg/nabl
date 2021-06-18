@@ -181,7 +181,7 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
 
     public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes, IUnifier.Immutable unifier) {
         final List<ITerm> scopes = changes.scopes().entrySet().stream()
-                .map(e -> B.newAppl(SCOPE_OP, e.getKey(), e.getValue().map(unifier::findRecursive).orElse(e.getKey())))
+                .map(e -> B.newAppl(SCOPE_OP, e.getKey(), unifier.findRecursive(e.getValue())))
                 .collect(ImmutableList.toImmutableList());
         final List<ITerm> edges = changes.edges().stream().map(e -> B.newAppl(EDGE_OP, e.source, e.label, e.target))
                 .collect(ImmutableList.toImmutableList());

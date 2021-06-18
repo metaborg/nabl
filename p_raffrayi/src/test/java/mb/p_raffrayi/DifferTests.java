@@ -85,7 +85,7 @@ public class DifferTests extends PRaffrayiTestBase {
         assertEquals(Arrays.asList(), result.allFailures());
         final ScopeGraphDiff<Scope, IDatum, IDatum> diff = result.diff();
 
-        assertEquals(CapsuleUtil.immutableMap().__put(resultScopes.get(1), Optional.empty()), diff.added().scopes());
+        assertEquals(CapsuleUtil.immutableMap().__put(resultScopes.get(1), resultScopes.get(1)), diff.added().scopes());
         assertEquals(CapsuleUtil.immutableSet(new Edge<>(resultScopes.get(0), LBL_1, resultScopes.get(1))), diff.added().edges());
 
         assertEquals(CapsuleUtil.immutableMap(), diff.removed().scopes());

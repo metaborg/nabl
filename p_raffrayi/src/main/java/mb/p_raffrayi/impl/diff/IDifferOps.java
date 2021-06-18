@@ -22,6 +22,8 @@ public interface IDifferOps<S, L, D> {
      */
     public Collection<S> getScopes(D d);
 
+    public D embed(S scope);
+
     // External scopes
 
     boolean ownScope(S scope);

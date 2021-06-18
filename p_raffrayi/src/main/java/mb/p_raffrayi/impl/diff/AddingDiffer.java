@@ -29,7 +29,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final IDifferContext<S, L, D> context;
     private final IDifferOps<S, L, D> differOps;
 
-    private final Map.Transient<S, Optional<D>> addedScopes = CapsuleUtil.transientMap();
+    private final Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
     private final Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
 
     private final Set.Transient<S> seenScopes = CapsuleUtil.transientSet();
@@ -72,7 +72,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
             IFuture<Optional<D>> datumFuture = context.datum(scope);
             K<Optional<D>> processDatum = d -> {
-                addedScopes.__put(scope, d);
+                addedScopes.__put(scope, d.orElse(differOps.embed(scope)));
                 d.ifPresent(datum -> {
                     differOps.getScopes(datum).forEach(this::addScope);
                 });
