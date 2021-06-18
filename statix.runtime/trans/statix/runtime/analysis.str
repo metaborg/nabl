@@ -222,7 +222,7 @@ rules // multi file analysis (new)
 
   cstx--make-sub(|key, parent-res, grp-c-name): (group-task*, file-task*) -> grp
     where <map(?([_|_], _, _, _))> file-task*
-    with grp-res := $[[parent-res]>[key]]
+    with grp-res := $[[parent-res]/[key]]
        ; grp := <cstx--make-group(|key, grp-res, grp-c-name)> (group-task*, file-task*)
 
   cstx--make-sub(|key, _, grp-c-name): (_, file-task*) -> (key, Unit(resource, ast, result))
@@ -253,7 +253,7 @@ rules // multi file analysis (new)
   cstx-mk-group-results(|project, config): (task*, cached-group*, analysis*) -> (new-group-result*, grp-error*, grp-warning*, grp-note*)
     with group-result*  := <filter(?(_, GroupResult(_, _)))> analysis*
        ; group*		    := <cstx-collect-groups> project
-       ; group-results-msgs := <map({ key, rule: \(resource, GroupResult(state, result)) -> ((key, GroupAnalysis(rule, state, result)), error*, warning*, note*)
+       ; group-results-msgs := <map({ resource, key, rule: \(resource, GroupResult(state, result)) -> ((key, GroupAnalysis(rule, state, result)), error*, warning*, note*)
                                   with (key, Group(_, rule, _, _)) := <getfirst(?(_, Group(resource, _, _, _)))> group*
                                      ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages(|config)> state
                                 \})> group-result*

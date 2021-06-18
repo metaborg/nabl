@@ -3,6 +3,8 @@ package mb.p_raffrayi.impl;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import com.google.common.base.MoreObjects;
+
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -25,4 +27,5 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
     @Override @Value.Parameter public abstract DataLeq<S, L, D> dataLeq();
 
     @Override @Value.Parameter public abstract Env<S, L, D> result();
+
 }

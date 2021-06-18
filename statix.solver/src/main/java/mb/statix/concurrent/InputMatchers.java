@@ -16,32 +16,33 @@ public class InputMatchers {
 
     public static IMatcher<IStatixProject> project() {
         return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.previousResult(),
-            M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()), M.map(M.stringValue(), M.req(library())),
-            (t, id, rule, result, groups, units, libs) -> {
-                return StatixProject.of(id, Optional.of(rule), groups, units, libs, result != null, result);
-            });
+                M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()),
+                M.map(M.stringValue(), M.req(library())), (t, id, rule, result, groups, units, libs) -> {
+                    return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(), result.orElse(null));
+                });
     }
 
     public static IMatcher<IStatixGroup> group() {
-        return M.req("Expected Group", M.casesFix(m -> Iterables2.singleton(
-            M.appl4("Group", M.stringValue(), StatixTerms.hoconstraint(), M.map(M.stringValue(), m),
-                M.map(M.stringValue(), unit()), (t, resource, rule, groups, units) -> {
-                    return StatixGroup.of(resource, Optional.of(rule), groups, units);
-                }))));
+        return M.req("Expected Group",
+                M.casesFix(m -> Iterables2.singleton(
+                        M.appl4("Group", M.stringValue(), StatixTerms.hoconstraint(), M.map(M.stringValue(), m),
+                                M.map(M.stringValue(), unit()), (t, resource, rule, groups, units) -> {
+                                    return StatixGroup.of(resource, Optional.of(rule), groups, units);
+                                }))));
     }
 
     public static IMatcher<IStatixUnit> unit() {
-        return M.req("Expected Unit", M.appl3("Unit", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.changed(),
-            (t, resource, rule, result) -> {
-                return StatixUnit.of(resource, Optional.of(rule), result);
-            }));
+        return M.req("Expected Unit", M.appl3("Unit", M.stringValue(), StatixTerms.hoconstraint(),
+                InputMatchers.changed(), (t, resource, rule, result) -> {
+                    return StatixUnit.of(resource, Optional.of(rule), result);
+                }));
     }
 
     public static IMatcher<IStatixLibrary> library() {
-        return M.req("Expected Library", M.appl3("Library", M.listElems(Scope.matcher()), M.listElems(Scope.matcher()), StatixTerms.scopeGraph(),
-            (t, rootScopes, ownScopes, scopeGraph) -> {
-                return new StatixLibrary(rootScopes, ownScopes, scopeGraph);
-            }));
+        return M.req("Expected Library", M.appl3("Library", M.listElems(Scope.matcher()), M.listElems(Scope.matcher()),
+                StatixTerms.scopeGraph(), (t, rootScopes, ownScopes, scopeGraph) -> {
+                    return new StatixLibrary(rootScopes, ownScopes, scopeGraph);
+                }));
     }
 
     public static IMatcher<Boolean> changed() {
@@ -53,11 +54,12 @@ public class InputMatchers {
         // formatter:on
     }
 
-    public static IMatcher<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> previousResult() {
+    @SuppressWarnings("unchecked")
+    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>> previousResult() {
         // @formatter:off
         return M.req("Expected Unit Result option.", M.cases(
-            M.appl0("Added", appl -> null),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> result)
+            M.appl0("Added", appl -> Optional.empty()),
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>of(result))
         ));
         // formatter:on
     }
