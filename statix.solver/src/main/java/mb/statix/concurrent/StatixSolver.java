@@ -266,7 +266,6 @@ public class StatixSolver {
         if(debug.isEnabled(Level.Debug)) {
             for(Map.Entry<IConstraint, Delay> entry : delayed.entrySet()) {
                 debug.debug(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
-                removeCompleteness(entry.getKey());
             }
         }
 
