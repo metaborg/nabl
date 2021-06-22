@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.diff;
 
+import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -19,7 +20,9 @@ public abstract class BiMap<E> {
 
     public abstract Set<Map.Entry<E, E>> entrySet();
 
-    public static class Immutable<E> extends BiMap<E> {
+    public static class Immutable<E> extends BiMap<E> implements Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final Map.Immutable<E, E> fwd;
         private final Map.Immutable<E, E> bwd;
