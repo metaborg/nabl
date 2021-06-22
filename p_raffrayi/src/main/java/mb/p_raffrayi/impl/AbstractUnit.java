@@ -920,6 +920,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     closeScope -> {},
                     closeLabel -> {},
                     query -> {},
+                    confirm -> {},
                     complete -> {},
                     datum -> {},
                     match -> {},
@@ -986,6 +987,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 query -> {
                     logger.error("Unexpected remaining query: " + query);
                     throw new IllegalStateException("Unexpected remaining query: " + query);
+                },
+                confirm -> {
+                    logger.error("Unexpected remaining confirmation request: " + confirm);
+                    throw new IllegalStateException("Unexpected remaining confirmation request: " + confirm);
                 },
                 complete -> {
                     logger.error("Unexpected remaining completeness query: " + complete);

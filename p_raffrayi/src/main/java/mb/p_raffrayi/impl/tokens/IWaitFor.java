@@ -21,6 +21,8 @@ public interface IWaitFor<S, L, D> {
 
         void on(Query<S, L, D> query);
 
+        void on(Confirm<S, L, D> query);
+
         void on(Complete<S, L, D> complete);
 
         void on(Datum<S, L, D> datum);
@@ -41,7 +43,7 @@ public interface IWaitFor<S, L, D> {
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
-            Action1<Query<S, L, D>> onQuery, Action1<Complete<S, L, D>> onComplete,
+            Action1<Query<S, L, D>> onQuery, Action1<Confirm<S, L, D>> onConfirm, Action1<Complete<S, L, D>> onComplete,
             Action1<Datum<S, L, D>> onDatum, Action1<Match<S, L, D>> onMatch,
             Action1<TypeCheckerResult<S, L, D>> onResult, Action1<TypeCheckerState<S, L, D>> onTypeCheckerState,
             Action1<DifferResult<S, L, D>> onDifferResult, Action1<Activate<S, L, D>> onActivate,
@@ -62,6 +64,10 @@ public interface IWaitFor<S, L, D> {
 
             @Override public void on(Query<S, L, D> query) {
                 onQuery.apply(query);
+            }
+
+            @Override public void on(Confirm<S, L, D> confirm) {
+                onConfirm.apply(confirm);
             }
 
             @Override public void on(Complete<S, L, D> complete) {

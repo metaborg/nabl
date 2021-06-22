@@ -37,6 +37,7 @@ import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.tokens.Activate;
+import mb.p_raffrayi.impl.tokens.Confirm;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -398,15 +399,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     } else {
                         final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
                         final ScopePath<S, L> path = new ScopePath<>(m.get());
-                        // TODO: hack, but is safe because future of token is never used.
-                        final Query<S, L, D> query = Query.of(self, path, rq.dataWf(),
-                                (ICompletableFuture<IQueryAnswer<S, L, D>>) (Object) queryResult);
-                        waitFor(query, owner);
+                        final Confirm<S, L, D> confirm = Confirm.of(self, path, rq.dataWf(), queryResult);
+                        waitFor(confirm, owner);
                         // @formatter:off
                         self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
                             .whenComplete(queryResult::complete);
                         queryResult.whenComplete((env, ex2) -> {
-                                granted(query, owner);
+                                granted(confirm, owner);
                                 resume();
                                 if(ex2 != null) {
                                     if(ex2 == Release.instance) {
@@ -486,6 +485,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     closeScope -> {},
                     closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
                     query -> {},
+                    confirm -> {},
                     complete -> {},
                     datum -> {},
                     match -> {},
