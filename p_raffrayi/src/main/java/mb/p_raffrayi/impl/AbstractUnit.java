@@ -860,11 +860,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             logger.info("Received patches: {}.", rors);
-            if(rors.stream().allMatch(ReleaseOrRestart::isRestart)) {
+            if(rors.stream().noneMatch(this::canProgress)) {
                 handleDeadlockRegular(nodes);
             } else {
                 // @formatter:off
-                rors.stream().reduce(ReleaseOrRestart::combine).get().accept(
+                rors.stream().reduce(StateSummary::combine).get().accept(
                     () -> {
                         logger.info("Restarting all involved units: {}.", nodes);
                         if(ex != null) {
@@ -875,10 +875,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     ptcs -> {
                         logger.info("Releasing all involved units: {}.", ptcs);
                         nodes.forEach(node -> node.from(self, context)._release(ptcs));
+                    },
+                    ptcs -> {
+                        logger.error("Cannot make progress when all units are already released.");
+                        throw new IllegalStateException("Cannot make progress when all units are already released.");
                     });
                 // @formatter:on
             }
         });
+    }
+
+    private boolean canProgress(StateSummary<S> state) {
+        return state.match(() -> false, __ -> true, __ -> false);
     }
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {

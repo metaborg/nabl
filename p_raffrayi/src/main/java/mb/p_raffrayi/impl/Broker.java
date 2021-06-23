@@ -1,7 +1,6 @@
 package mb.p_raffrayi.impl;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +13,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -28,6 +28,7 @@ import org.metaborg.util.tuple.Tuple2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import mb.p_raffrayi.DeadlockException;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
@@ -303,6 +304,10 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
     @Override public void _deadlocked(Set<IProcess<S, L, D>> nodes) {
         // Nothing to do (yet)
+        delays.entrySet().forEach(delays -> delays.getValue().forEach(future -> future.completeExceptionally(
+                new DeadlockException("Deadlocked while waiting for unit " + delays.getKey() + " to be added."))));
+        dependentSet.set(MultiSet.Immutable.of());
+        cmh.exec();
     }
 
     @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
@@ -313,10 +318,10 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
         cmh.reply(i, m, R);
     }
 
-    @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
+    @Override public IFuture<StateSummary<S>> _requireRestart() {
         // When broker is involved in a deadlock, there is a unit waiting for
         // another unit to be added. Just releasing such a unit is not safe.
-        return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
+        return CompletableFuture.completedFuture(StateSummary.restart());
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {

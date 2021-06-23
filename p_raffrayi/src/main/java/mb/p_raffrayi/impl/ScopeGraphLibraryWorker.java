@@ -85,8 +85,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
-    @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
-        return CompletableFuture.completedFuture(ReleaseOrRestart.release());
+    @Override public IFuture<StateSummary<S>> _requireRestart() {
+        return CompletableFuture.completedFuture(StateSummary.release());
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {

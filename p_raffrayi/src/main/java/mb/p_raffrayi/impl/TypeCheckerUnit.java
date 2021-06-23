@@ -145,16 +145,22 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         .thenApply(IQueryAnswer::env));
     }
 
-    @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
+    @Override public IFuture<StateSummary<S>> _requireRestart() {
         assertDifferEnabled();
         if(state.equals(UnitState.ACTIVE)
                 || (state == UnitState.DONE && stateTransitionTrace != TransitionTrace.RELEASED)) {
-            return CompletableFuture.completedFuture(ReleaseOrRestart.restart());
+            return CompletableFuture.completedFuture(StateSummary.restart());
         }
+
+        if(state.equals(UnitState.RELEASED)
+                || (state == UnitState.DONE && stateTransitionTrace == TransitionTrace.RELEASED)) {
+            return CompletableFuture.completedFuture(StateSummary.released(BiMap.Immutable.from(matchedBySharing)));
+        }
+
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
         // TODO Re-validate when a more sophisticated confirmation algorithm is implemented.
-        return CompletableFuture.completedFuture(ReleaseOrRestart.release(BiMap.Immutable.from(matchedBySharing)));
+        return CompletableFuture.completedFuture(StateSummary.release(BiMap.Immutable.from(matchedBySharing)));
     }
 
     @Override public void _restart() {
@@ -500,6 +506,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             whenActive.completeExceptionally(Release.instance);
             confirmationResult.complete(Optional.of(patches));
 
+            resume();
             tryFinish(); // FIXME needed?
         }
     }
@@ -509,6 +516,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             state = UnitState.ACTIVE;
             whenActive.complete(Unit.unit);
             confirmationResult.complete(Optional.empty());
+            resume();
             tryFinish(); // FIXME needed?
             return true;
         }

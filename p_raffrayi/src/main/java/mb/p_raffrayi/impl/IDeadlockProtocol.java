@@ -14,7 +14,7 @@ public interface IDeadlockProtocol<S, L, D> {
 
     void _deadlocked(Set<IProcess<S, L, D>> nodes);
 
-    IFuture<ReleaseOrRestart<S>> _requireRestart();
+    IFuture<StateSummary<S>> _requireRestart();
 
     void _release(BiMap.Immutable<S> patches);
 
