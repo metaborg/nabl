@@ -145,12 +145,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         .thenApply(IQueryAnswer::env));
     }
 
-    @Override public IFuture<Optional<S>> _match(S previousScope) {
-        assertOwnScope(previousScope);
-        assertDifferEnabled();
-        return whenActive.thenCompose(__ -> differ.match(previousScope));
-    }
-
     @Override public IFuture<ReleaseOrRestart<S>> _requireRestart() {
         assertDifferEnabled();
         if(state.equals(UnitState.ACTIVE)

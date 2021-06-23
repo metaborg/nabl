@@ -117,6 +117,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
+    private final ICompletableFuture<Unit> whenStarted = new CompletableFuture<>();
     protected final Stats stats;
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
@@ -206,6 +207,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             this.differ = context.settings().scopeGraphDiff() ? initDiffer() : null;
             startDiffer(currentRootScopes, previousRootScopes != null ? previousRootScopes : Collections.emptyList());
         }
+        self.complete(whenStarted, Unit.unit, null);
     }
 
     protected final IFuture<IUnitResult<S, L, D, R>> doFinish(IFuture<R> result) {
@@ -339,7 +341,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
         assertDifferEnabled();
-        return differ.match(previousScope);
+        return whenStarted.thenCompose(__ -> differ.match(previousScope));
     }
 
     ///////////////////////////////////////////////////////////////////////////
