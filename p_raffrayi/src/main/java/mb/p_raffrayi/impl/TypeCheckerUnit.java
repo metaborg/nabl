@@ -21,6 +21,8 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.Sets;
+
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
@@ -70,6 +72,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
 
+    private final Set.Transient<String> addedUnitIds = CapsuleUtil.transientSet();
+
     private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
     private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
@@ -111,6 +115,15 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             }
             state = UnitState.DONE;
         });
+
+        // Start phantom units for all units that have not yet been restarted
+        if(previousResult != null) {
+            for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
+                final IUnitResult<S, L, D, ?> subResult = previousResult.subUnitResults().get(removedId);
+                this.<Unit>doAddSubUnit(removedId, (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext,
+                        edgeLabels, subResult, scopeOps), new ArrayList<>(), true);
+            }
+        }
 
         if(state == UnitState.INIT_TC) {
             // runIncremental not called, so start eagerly
@@ -192,6 +205,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         // No previous result for subunit
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
+            this.addedUnitIds.__insert(id);
             return ifActive(this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
                 return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, scopeOps);
             }, rootScopes, false)._2());
@@ -229,6 +243,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             throw new IllegalStateException("Could not match.");
         }
 
+        this.addedUnitIds.__insert(id);
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
             return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, changed,
                     subUnitPreviousResult, scopeOps);

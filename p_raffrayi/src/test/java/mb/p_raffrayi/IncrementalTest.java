@@ -1309,6 +1309,88 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
     }
 
+    @Test(timeout = 10000) public void testChildRemoved()
+            throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final IDatum lbl = new IDatum() {};
+        final Scope d1 = new Scope("/./sub2/sub", 1);
+
+        // @formatter:off
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> sub1Result = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+            .id("/.sub1")
+            .addRootScopes(root)
+            .scopeGraph(ScopeGraph.Immutable.of())
+            .localScopeGraph(ScopeGraph.Immutable.of())
+            .addQueries(RecordedQuery.of(d1, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.none(), Env.empty()))
+            .analysis(false)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> sub2subResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+            .id("/./sub2/sub")
+            .addRootScopes(root)
+            .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .localScopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .analysis(false)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> sub2Result = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+            .id("/./sub2")
+            .addRootScopes(root)
+            .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .localScopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .analysis(false)
+            .putSubUnitResults("sub", sub2subResult)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> parentResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
+            .id("/.")
+            .scopeGraph(ScopeGraph.Immutable.<Scope, IDatum, IDatum>of().addEdge(root, lbl, d1))
+            .localScopeGraph(ScopeGraph.Immutable.of())
+            .putSubUnitResults("sub1", sub1Result)
+            .putSubUnitResults("sub2", sub2Result)
+            .analysis(false)
+            .build();
+        // @formatter:on
+
+        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> future =
+                this.run(".", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                    @Override public IFuture<Boolean> run(
+                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit, List<Scope> roots) {
+                        final Scope s = unit.freshScope("s", Arrays.asList(lbl), false, true);
+                        final IFuture<IUnitResult<Scope, IDatum, IDatum, Boolean>> sub1Future =
+                                unit.add("sub1", new ITypeChecker<Scope, IDatum, IDatum, Boolean>() {
+
+                                    @Override public IFuture<Boolean> run(
+                                            IIncrementalTypeCheckerContext<Scope, IDatum, IDatum, Boolean> unit,
+                                            List<Scope> rootScopes) {
+                                        final Scope s1 = rootScopes.get(0);
+                                        unit.initScope(s1, Arrays.asList(), false);
+                                        return unit.runIncremental(restarted -> {
+                                            return CompletableFuture.completedFuture(true);
+                                        });
+                                    }
+                                }, Arrays.asList(s), false);
+
+                        unit.closeScope(s);
+
+                        return unit.runIncremental(restarted -> CompletableFuture.completedFuture(true))
+                                .thenCompose(res -> bothReleased(res, sub1Future));
+                    }
+
+                }, Set.Immutable.of(lbl), false, parentResult);
+
+        final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
+        assertTrue(result.allFailures().isEmpty());
+        assertTrue(result.analysis());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Utility methods
     ///////////////////////////////////////////////////////////////////////////

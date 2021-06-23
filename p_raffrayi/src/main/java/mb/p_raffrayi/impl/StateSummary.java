@@ -58,6 +58,10 @@ public abstract class StateSummary<S> {
         return EMPTY_RELEASE;
     }
 
+    @SuppressWarnings("unchecked") public static <S> StateSummary<S> released() {
+        return EMPTY_RELEASED;
+    }
+
     private static class Restart<S> extends StateSummary<S> {
 
         @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
