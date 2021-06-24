@@ -3,8 +3,6 @@ package mb.p_raffrayi.impl;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.base.MoreObjects;
-
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;

@@ -96,8 +96,8 @@ public class STX_solve_multi extends StatixPrimitive {
             final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
+            logger.info("Files analyzed in {} s", (dt / 1_000d));
             if(settings.incremental()) {
-                logger.info("Files analyzed in {} s", (dt / 1_000d));
                 logger.info("* Initially changed units : {}",
                         flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
                 logger.info("* Restarted units         : {}",
