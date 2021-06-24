@@ -7,7 +7,7 @@ dependencies:
   - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
 runtime:
   statix:
-    concurrent:
-    - UnitsMultifile
+    modes:
+    - UnitsMultifile: concurrent
 build:
   useBuildSystemSpec: true
