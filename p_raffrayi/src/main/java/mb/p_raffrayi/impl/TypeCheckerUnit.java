@@ -34,7 +34,6 @@ import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
@@ -67,7 +66,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private volatile UnitState state;
 
-    private final IDifferScopeOps<S, D> scopeOps;
     private final BiMap.Transient<S> matchedBySharing = BiMap.Transient.of();
 
     private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
@@ -79,19 +77,17 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
-            boolean inputChanged, IUnitResult<S, L, D, R> previousResult, IDifferScopeOps<S, D> scopeOps) {
+            boolean inputChanged, IUnitResult<S, L, D, R> previousResult) {
         super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
         this.changed = inputChanged;
         this.previousResult = previousResult;
-        this.scopeOps = scopeOps;
         this.state = UnitState.INIT_UNIT;
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
-            IDifferScopeOps<S, D> scopeOps) {
-        this(self, parent, context, unitChecker, edgeLabels, true, null, scopeOps);
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+        this(self, parent, context, unitChecker, edgeLabels, true, null);
     }
 
 
@@ -121,7 +117,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 final IUnitResult<S, L, D, ?> subResult = previousResult.subUnitResults().get(removedId);
                 this.<Unit>doAddSubUnit(removedId, (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext,
-                        edgeLabels, subResult, scopeOps), new ArrayList<>(), true);
+                        edgeLabels, subResult), new ArrayList<>(), true);
             }
         }
 
@@ -207,7 +203,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
             this.addedUnitIds.__insert(id);
             return ifActive(this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
-                return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, scopeOps);
+                return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
             }, rootScopes, false)._2());
         }
 
@@ -246,7 +242,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         this.addedUnitIds.__insert(id);
         final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
             return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, changed,
-                    subUnitPreviousResult, scopeOps);
+                    subUnitPreviousResult);
         }, rootScopes, false)._2();
 
         return ifActive(result);
@@ -257,7 +253,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertActive();
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, scopeOps);
+            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
         }, rootScopes, true)._2();
 
         return ifActive(result);
@@ -574,11 +570,10 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
         final IDifferContext<S, L, D> context = differContext();
-        final IDifferOps<S, L, D> differOps = new DifferOps(scopeOps);
         if(previousResult != null) {
-            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps);
+            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps());
         }
-        return new AddingDiffer<>(context, differOps);
+        return new AddingDiffer<>(context, differOps());
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -1,8 +1,6 @@
 package mb.p_raffrayi;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +17,6 @@ import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.Broker;
-import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class PRaffrayiTestBase {
@@ -28,7 +25,7 @@ public abstract class PRaffrayiTestBase {
 
     protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R>> run(String id,
             ITypeChecker<Scope, L, IDatum, R> typeChecker, Iterable<L> edgeLabels) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, new DifferOps(),
+        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels,
                 new NullCancel(), 0.3, 50);
     }
 
@@ -36,7 +33,7 @@ public abstract class PRaffrayiTestBase {
             ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels, boolean changed,
             IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
         return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed,
-                previousResult, new DifferOps(), new NullCancel(), 0.3, 50);
+                previousResult, new NullCancel(), 0.3, 50);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -99,10 +96,6 @@ public abstract class PRaffrayiTestBase {
             return datum;
         }
 
-    };
-
-    private class DifferOps implements IDifferScopeOps<Scope, IDatum> {
-
         @Override public Immutable<Scope> getScopes(IDatum datum) {
             return CapsuleUtil.toSet(datum.scopes());
         }
@@ -130,6 +123,6 @@ public abstract class PRaffrayiTestBase {
             return Optional.of(result.freeze());
         }
 
-    }
+    };
 
 }

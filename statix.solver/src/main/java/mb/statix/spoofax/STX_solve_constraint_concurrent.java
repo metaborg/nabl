@@ -18,7 +18,6 @@ import mb.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.ProjectResult;
 import mb.statix.concurrent.ProjectTypeChecker;
-import mb.statix.concurrent.StatixDifferOps;
 import mb.statix.concurrent.StatixProject;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.constraints.messages.IMessage;
@@ -47,7 +46,7 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
                 .rule(Rule.of("resolve", Arrays.asList(P.newWld()), constraint)).build();
         final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> future =
                 Broker.run("", PRaffrayiSettings.of(true, true), new ProjectTypeChecker(project, spec, debug),
-                        new ScopeImpl(), spec.allLabels(), new StatixDifferOps(), cancel);
+                        new ScopeImpl(), spec.allLabels(), cancel);
         final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = future.asJavaCompletion().get();
         if(!result.allFailures().isEmpty() || result.analysis().exception() != null) {
             final SolverResult.Builder resultBuilder =

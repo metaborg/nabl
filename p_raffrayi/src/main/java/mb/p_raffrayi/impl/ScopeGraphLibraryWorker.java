@@ -14,7 +14,6 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
-import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -29,17 +28,12 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
-    private final IDifferScopeOps<S, D> scopeOps;
-
     ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph,
-            IDifferScopeOps<S, D> scopeOps) {
+            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph) {
         super(self, parent, context, edgeLabels);
 
         this.scopes.__insertAll(scopes);
         this.scopeGraph.set(scopeGraph);
-
-        this.scopeOps = scopeOps;
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
@@ -100,7 +94,7 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new MatchingDiffer<>(new DifferOps(scopeOps));
+        return new MatchingDiffer<>(differOps());
     }
 
     @Override protected boolean canAnswer(S scope) {

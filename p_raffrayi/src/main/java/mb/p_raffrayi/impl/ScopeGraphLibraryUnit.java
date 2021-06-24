@@ -22,7 +22,6 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
-import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -41,17 +40,15 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private IScopeGraphLibrary<S, L, D> library;
 
-    private final IDifferScopeOps<S, D> scopeOps;
     private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
     ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library, IDifferScopeOps<S, D> scopeOps) {
+            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library) {
         super(self, parent, context, edgeLabels);
 
         // these are replaced once started
         this.library = library;
-        this.scopeOps = scopeOps;
         this.workers = new ArrayList<>();
     }
 
@@ -114,7 +111,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
             final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit>>, IFuture<IUnitResult<S, L, D, Unit>>> worker =
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
-                                scopeGraph.get(), scopeOps);
+                                scopeGraph.get());
                     }, Collections.emptyList(), true);
             workers.add(worker._1());
         }
@@ -185,7 +182,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new MatchingDiffer<>(new DifferOps(scopeOps));
+        return new MatchingDiffer<>(differOps());
     }
 
     ///////////////////////////////////////////////////////////////////////////

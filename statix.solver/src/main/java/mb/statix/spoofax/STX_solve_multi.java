@@ -42,7 +42,6 @@ import mb.statix.concurrent.ProjectTypeChecker;
 import mb.statix.concurrent.UnitResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.concurrent.InputMatchers;
-import mb.statix.concurrent.StatixDifferOps;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.Message;
@@ -87,7 +86,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
                     settings, new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(),
-                    project.changed(), project.previousResult(), new StatixDifferOps(), cancel);
+                    project.changed(), project.previousResult(), cancel);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;

@@ -30,6 +30,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
+import org.omg.PortableInterceptor.INACTIVE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -55,7 +56,6 @@ import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.p_raffrayi.impl.diff.IDifferScopeOps;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Complete;
@@ -1108,12 +1108,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected class DifferOps implements IDifferOps<S, L, D> {
+    private class DifferOps implements IDifferOps<S, L, D> {
 
-        private final IDifferScopeOps<S, D> scopeOps;
-
-        public DifferOps(IDifferScopeOps<S, D> scopeOps) {
-            this.scopeOps = scopeOps;
+        private DifferOps() {
         }
 
         @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
@@ -1121,15 +1118,15 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
-            return scopeOps.matchDatums(currentDatum, previousDatum);
+            return context.matchDatums(currentDatum, previousDatum);
         }
 
         @Override public Collection<S> getScopes(D d) {
-            return scopeOps.getScopes(d);
+            return context.getScopes(d);
         }
 
         @Override public D embed(S scope) {
-            return scopeOps.embed(scope);
+            return context.embed(scope);
         }
 
         @Override public boolean ownScope(S scope) {
@@ -1152,10 +1149,17 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
+
     private IDifferContext<S, L, D> differContext = new DifferContext();
 
     protected IDifferContext<S, L, D> differContext() {
         return differContext;
+    }
+
+    private IDifferOps<S, L, D> differOps = new DifferOps();
+
+    protected IDifferOps<S, L, D> differOps() {
+        return differOps;
     }
 
     ///////////////////////////////////////////////////////////////////////////
