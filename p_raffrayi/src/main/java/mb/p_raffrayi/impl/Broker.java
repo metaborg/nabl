@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -85,8 +84,8 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
         this.id = id;
         this.settings = settings;
         this.typeChecker = typeChecker;
-        // If initial state has failures, discard it.
         this.rootChanged = rootChanged;
+        // If initial state has failures, discard it.
         if(previousResult != null) {
             if(!previousResult.allFailures().isEmpty()) {
                 logger.warn("Initial state contains failures, discarding it.");
