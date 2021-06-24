@@ -1,13 +1,14 @@
 package mb.statix.concurrent;
 
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.Map;
 import java.util.Optional;
 
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import javax.annotation.Nullable;
+
+import mb.nabl2.terms.ITerm;
+import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
-import mb.statix.spoofax.StatixTerms;
+import mb.p_raffrayi.IUnitResult;
 
 public interface IStatixProject {
 
@@ -33,12 +34,14 @@ public interface IStatixProject {
      */
     Map<String, IStatixLibrary> libraries();
 
-    static IMatcher<IStatixProject> matcher() {
-        return M.appl5("Project", M.stringValue(), StatixTerms.hoconstraint(),
-                M.map(M.stringValue(), IStatixGroup.matcher()), M.map(M.stringValue(), IStatixUnit.matcher()),
-                M.map(M.stringValue(), M.req(IStatixLibrary.matcher())), (t, id, rule, groups, units, libs) -> {
-                    return StatixProject.of(id, Optional.of(rule), groups, units, libs);
-                });
-    }
+    /**
+     * Indicates whether unit was changed since previous run.
+     */
+    boolean changed();
+
+    /**
+     * Result from previous type-checker run.
+     */
+    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult();
 
 }

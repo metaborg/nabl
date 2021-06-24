@@ -7,6 +7,7 @@ import static mb.statix.constraints.Constraints.disjoin;
 import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -265,7 +266,6 @@ public class StatixSolver {
         if(debug.isEnabled(Level.Debug)) {
             for(Map.Entry<IConstraint, Delay> entry : delayed.entrySet()) {
                 debug.debug(" * {} on {}", entry.getKey().toString(state.unifier()::toString), entry.getValue());
-                removeCompleteness(entry.getKey());
             }
         }
 
@@ -1018,7 +1018,9 @@ public class StatixSolver {
     // data wf & leq
     ///////////////////////////////////////////////////////////////////////////
 
-    private static class ConstraintDataWF implements DataWf<Scope, ITerm, ITerm> {
+    private static class ConstraintDataWF implements DataWf<Scope, ITerm, ITerm>, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final Spec spec;
         private final Rule constraint;
@@ -1058,7 +1060,7 @@ public class StatixSolver {
     private class ConstraintDataWFInternal implements DataWf<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;
@@ -1091,7 +1093,9 @@ public class StatixSolver {
 
     }
 
-    private static class ConstraintDataEquiv implements DataLeq<Scope, ITerm, ITerm> {
+    private static class ConstraintDataEquiv implements DataLeq<Scope, ITerm, ITerm>, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final Spec spec;
         private final Rule constraint;
@@ -1122,7 +1126,7 @@ public class StatixSolver {
             }
         }
 
-        private @Nullable IFuture<Boolean> alwaysTrue;
+        private transient @Nullable IFuture<Boolean> alwaysTrue;
 
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {
@@ -1178,7 +1182,7 @@ public class StatixSolver {
     private class ConstraintDataEquivInternal implements DataLeq<Scope, ITerm, ITerm> {
 
         // Non-static class that is only used on the unit of the type checker
-        // that started the query, and on data from that unit. Implicitly uses 
+        // that started the query, and on data from that unit. Implicitly uses
         // solver state from the surrounding object .
 
         private final Rule constraint;
@@ -1205,7 +1209,7 @@ public class StatixSolver {
             });
         }
 
-        private @Nullable IFuture<Boolean> alwaysTrue;
+        private transient @Nullable IFuture<Boolean> alwaysTrue;
 
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
             if(alwaysTrue == null) {

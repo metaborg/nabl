@@ -10,7 +10,7 @@ import org.metaborg.util.future.IFuture;
  */
 public interface ITypeChecker<S, L, D, R> {
 
-    IFuture<R> run(ITypeCheckerContext<S, L, D> unit, List<S> rootScopes);
+    IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R> unit, List<S> rootScopes);
 
     default IFuture<D> getExternalDatum(D datum) {
         return CompletableFuture.completedFuture(datum);

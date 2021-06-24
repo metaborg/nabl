@@ -10,6 +10,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
@@ -17,9 +18,9 @@ import mb.nabl2.terms.unification.u.IUnifier;
 
 /**
  * Unification
- * 
+ *
  * The following should hold:
- * 
+ *
  * <code>
  *   if (d', U') = U.unify(_, _) then U.compose(d') == U'
  *   !U.remove(v).varSet().contains(v)
@@ -28,14 +29,14 @@ import mb.nabl2.terms.unification.u.IUnifier;
  *   if (d', U') = U.remove(v), and t' = d'.findRecursive(t) then U.findRecursive(t) == U'.findRecursive(t')
  *   if (d', U') = U.remove(v) then U'.compose(d') == U
  * </code>
- * 
+ *
  * Internal invariants:
- * 
+ *
  * <code>
  *   terms.values().noneMatch(t -> t instanceOf ITermVar)
  *   Sets.intersection(reps.keySet(), terms.keySet()).isEmpty()
  * </code>
- * 
+ *
  * Support for recursive terms is easy to add, but makes many operations exceptional. For example: remove(ITermVar),
  * findRecursive(ITerm).
  *
@@ -47,7 +48,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
 
     /**
      * Return a unifier that makes these terms equal, relative to the current unifier.
-     * 
+     *
      * If no result is returned, the terms are unequal. Otherwise, if an empty unifier is returned, the terms are equal.
      * Finally, if a non-empty unifier is returned, the terms are not equal, but can be made equal by the returned
      * unifier.
@@ -207,6 +208,13 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Apply a variable renaming to this unifier.
          */
         @Override IUniDisunifier.Immutable rename(IRenaming renaming);
+
+        /**
+         * Apply a term replacement to this unifier.
+         *
+         * Please note that replacement might not respect all original disequalities, due to normalization.
+         */
+        @Override IUniDisunifier.Immutable replace(IReplacement replacement);
 
         /**
          * Return transient version of this unifier.

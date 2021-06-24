@@ -19,7 +19,7 @@ imports
 rules // Analysis
 
   editor-analyze = stx-editor-analyze(id|"statics", "startOK")
-  
+
 rules // Editor Services
 
   editor-resolve = stx-editor-resolve

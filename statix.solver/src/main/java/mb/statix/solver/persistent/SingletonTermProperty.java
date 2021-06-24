@@ -3,6 +3,7 @@ package mb.statix.solver.persistent;
 import java.io.Serializable;
 
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.statix.solver.ITermProperty;
 
 public class SingletonTermProperty implements ITermProperty, Serializable {
@@ -29,6 +30,10 @@ public class SingletonTermProperty implements ITermProperty, Serializable {
 
     @Override public ITermProperty addValue(@SuppressWarnings("unused") ITerm value) {
         throw new UnsupportedOperationException("Cannot add value to singleton property.");
+    }
+
+    @Override public ITermProperty replace(IReplacement replacement) {
+        return SingletonTermProperty.of(replacement.apply(value));
     }
 
     public static ITermProperty of(ITerm value) {

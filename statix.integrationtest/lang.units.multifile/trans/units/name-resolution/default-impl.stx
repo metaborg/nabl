@@ -1,6 +1,6 @@
 module units/name-resolution/default-impl
 
-imports
+/* imports
 
   signatures/units/Units-sig
   signatures/units/Type-sig
@@ -113,7 +113,7 @@ rules
 
 
   resolveMemberMod : scope * UCID -> scope
-  
+
   resolveMemberMod(s, x) = s_mod :- {x'} @x.ref := x',
     query mod
       filter EXT* | PKG? and { x' :- x' == x }
@@ -164,8 +164,7 @@ rules
 rules
 
   typesOf : list((path * (ID * TYPE))) -> list((ID * TYPE))
-  
+
   typesOf([]) = [].
 
   typesOf([(_, (x, T))|ps]) = [(x, T)|typesOf(ps)].
-  

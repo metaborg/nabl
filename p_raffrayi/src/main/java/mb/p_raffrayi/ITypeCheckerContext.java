@@ -3,6 +3,8 @@ package mb.p_raffrayi;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
@@ -23,9 +25,18 @@ public interface ITypeCheckerContext<S, L, D> {
     String id();
 
     /**
-     * Start sub unit with the given type-checker and root scopes.
+     * Start sub unit with the given type-checker, root scopes and changed marker.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes);
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+            List<S> rootScopes, boolean changed);
+
+    /**
+     * Start sub unit with the given type-checker, root scopes, marked as changed.
+     */
+    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+            List<S> rootScopes) {
+        return add(id, unitChecker, rootScopes, true);
+    }
 
     /**
      * Start sub unit with the given static scope graph and root scopes.
@@ -70,7 +81,7 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
      */
@@ -81,10 +92,10 @@ public interface ITypeCheckerContext<S, L, D> {
 
     /**
      * Execute scope graph query in the given scope.
-     * 
+     *
      * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
      * that do not leak references to the type checker, as this will break the actor abstraction.
-     * 
+     *
      * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
      * type checker state safely.
      */
@@ -103,7 +114,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
-                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes) {
+                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, boolean changed) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
@@ -143,7 +154,7 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                     LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-                    DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+                    @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
                 return outer.query(scope, labelWF, labelOrder, dataWF, dataEquiv, null, null);
             }
 

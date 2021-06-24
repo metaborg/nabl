@@ -1,9 +1,13 @@
 package mb.scopegraph.ecoop21;
 
+import java.io.Serializable;
+
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.relations.IRelation;
 
-public class RelationLabelOrder<L> implements LabelOrder<L> {
+public class RelationLabelOrder<L> implements LabelOrder<L>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final IRelation<EdgeOrData<L>> labelOrd;
 

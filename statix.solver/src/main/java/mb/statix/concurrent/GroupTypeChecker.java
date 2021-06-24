@@ -10,12 +10,11 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
-import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
+import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 
 public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
 
@@ -28,22 +27,32 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         this.group = group;
     }
 
-    @Override public IFuture<GroupResult> run(ITypeCheckerContext<Scope, ITerm, ITerm> context,
+    @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult> context,
             List<Scope> rootScopes) {
         final Scope parentScope = rootScopes.get(0);
         final Scope thisGroupScope = makeSharedScope(context, "s_grp");
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-                runGroups(context, group.groups(), thisGroupScope);
+            runGroups(context, group.groups(), thisGroupScope);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-                runUnits(context, group.units(), thisGroupScope);
+            runUnits(context, group.units(), thisGroupScope);
         context.closeScope(thisGroupScope);
-        final IFuture<SolverResult> result =
-                runSolver(context, group.rule(), Arrays.asList(parentScope, thisGroupScope));
-        return AggregateFuture.apply(groupResults, unitResults, result).thenApply(e -> {
-            return GroupResult.of(e._1(), e._2(), e._3(), null);
-        }).whenComplete((r, ex) -> {
-            logger.debug("group {}: returned.", context.id());
-        });
+
+        // @formatter:off
+        return context.runIncremental(
+            restarted -> {
+                return runSolver(context, group.rule(), Arrays.asList(parentScope, thisGroupScope));
+            },
+            GroupResult::solveResult,
+            this::patch,
+            (result, ex) -> {
+                return AggregateFuture.apply(groupResults, unitResults).thenApply(e -> {
+                    return GroupResult.of(group.resource(), e._1(), e._2(), result, ex);
+                });
+            })
+            .whenComplete((r, __) -> {
+                logger.debug("group {}: returned.", context.id());
+            });
+        // @formatter:on
     }
 
 }

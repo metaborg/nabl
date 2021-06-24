@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.diff;
 
+import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -19,7 +20,9 @@ public abstract class BiMap<E> {
 
     public abstract Set<Map.Entry<E, E>> entrySet();
 
-    public static class Immutable<E> extends BiMap<E> {
+    public static class Immutable<E> extends BiMap<E> implements Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private final Map.Immutable<E, E> fwd;
         private final Map.Immutable<E, E> bwd;
@@ -41,6 +44,14 @@ public abstract class BiMap<E> {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
         }
 
+        public E getKeyOrDefault(E key, E def) {
+            return fwd.getOrDefault(key, def);
+        }
+
+        public E getValueOrDefault(E value, E def) {
+            return bwd.getOrDefault(value, def);
+        }
+
         @Override public Set<E> keySet() {
             return fwd.keySet();
         }
@@ -53,8 +64,22 @@ public abstract class BiMap<E> {
             return fwd.entrySet();
         }
 
+        public Immutable<E> putAll(BiMap<E> other) {
+            final Transient<E> newMap = this.melt();
+            newMap.putAll(other);
+            return newMap.freeze();
+        }
+
+        public boolean isEmpty() {
+            return fwd.isEmpty();
+        }
+
         public Transient<E> melt() {
             return new Transient<>(fwd.asTransient(), bwd.asTransient());
+        }
+
+        public Map.Immutable<E, E> asMap() {
+            return fwd;
         }
 
         @Override public String toString() {
@@ -67,6 +92,40 @@ public abstract class BiMap<E> {
 
         public static <E> Immutable<E> of(E key, E value) {
             return new Immutable<>(Map.Immutable.of(key, value), Map.Immutable.of(value, key));
+        }
+
+        public static <E> Immutable<E> from(BiMap<E> other) {
+            Transient<E> newMap = BiMap.Transient.of();
+            newMap.putAll(other);
+            return newMap.freeze();
+        }
+
+        @SuppressWarnings("unchecked") @Override public boolean equals(Object obj) {
+            if(obj == null || obj.getClass() != this.getClass()) {
+                return false;
+            }
+            return fwd.equals(((BiMap.Immutable<E>) obj).fwd);
+        }
+
+        @Override public int hashCode() {
+            return fwd.hashCode();
+        }
+
+        public boolean canPut(E key, E value) {
+            if(fwd.containsKey(key) && !fwd.get(key).equals(value)) {
+                return false;
+            }
+            if(bwd.containsKey(value) && !bwd.get(value).equals(key)) {
+                return false;
+            }
+            return true;
+        }
+
+        public Immutable<E> put(E key, E value) {
+            if(!canPut(key, value)) {
+                throw new IllegalArgumentException("Key or value already set.");
+            }
+            return new Immutable<>(fwd.__put(key, value), bwd.__put(value, key));
         }
 
     }
@@ -145,6 +204,14 @@ public abstract class BiMap<E> {
 
         public static <E> Transient<E> of(E key, E value) {
             return new Transient<>(Map.Transient.of(key, value), Map.Transient.of(value, key));
+        }
+
+        public E getKey(E key) {
+            return fwd.get(key);
+        }
+
+        public E getValue(E value) {
+            return bwd.get(value);
         }
 
     }

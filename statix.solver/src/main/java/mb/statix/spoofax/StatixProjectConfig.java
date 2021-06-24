@@ -1,24 +1,21 @@
 package mb.statix.spoofax;
 
-import org.metaborg.util.collection.CapsuleUtil;
+import java.util.Map;
+import java.util.Optional;
 
-import io.usethesource.capsule.Set;
+import org.metaborg.util.collection.CapsuleUtil;
 
 public class StatixProjectConfig implements IStatixProjectConfig {
 
-    private final Set.Immutable<String> parallelLanguages;
+    private final io.usethesource.capsule.Map.Immutable<String, SolverMode> languageModes;
     private final Integer messageStacktraceLength;
     private final Integer messageTermDepth;
 
-    public StatixProjectConfig(Iterable<String> parallelLanguages, Integer messageStackTrace,
+    public StatixProjectConfig(Map<String, SolverMode> languageModes, Integer messageStackTrace,
             Integer messageTermDepth) {
-        this.parallelLanguages = parallelLanguages != null ? CapsuleUtil.toSet(parallelLanguages) : null;
+        this.languageModes = languageModes != null ? CapsuleUtil.toMap(languageModes) : null;
         this.messageStacktraceLength = messageStackTrace;
         this.messageTermDepth = messageTermDepth;
-    }
-
-    @Override public java.util.Set<String> parallelLanguages(java.util.Set<String> defaultValue) {
-        return parallelLanguages != null ? parallelLanguages : defaultValue;
     }
 
     @Override public Integer messageTraceLength(Integer defaultValue) {
@@ -29,5 +26,12 @@ public class StatixProjectConfig implements IStatixProjectConfig {
         return messageTermDepth != null ? messageTermDepth : defaultValue;
     }
 
+    @Override public SolverMode languageMode(String languageId, SolverMode defaultMode) {
+        return Optional.ofNullable(languageModes.get(languageId)).orElse(defaultMode);
+    }
+
+    @Override public Map<String, SolverMode> languageModes(Map<String, SolverMode> defaultModes) {
+        return languageModes != null ? languageModes : defaultModes;
+    }
 
 }

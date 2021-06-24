@@ -2,10 +2,16 @@ package mb.scopegraph.oopsla20.diff;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
+import java.io.Serializable;
+
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 
-public class ScopeGraphDiff<S, L, D> {
+public class ScopeGraphDiff<S, L, D> implements Serializable {
+
+    private static final long serialVersionUID = 3418653361380828262L;
 
     private final BiMap.Immutable<S> matchedScopes;
     private final BiMap.Immutable<Edge<S, L>> matchedEdges;
@@ -46,11 +52,9 @@ public class ScopeGraphDiff<S, L, D> {
             sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n");
         }
         /*
-        sb.append("  matched edges:\n");
-        for(Map.Entry<Edge<S, L>, Edge<S, L>> entry : matchedEdges.entrySet()) {
-            sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n");
-        }
-        */
+         * sb.append("  matched edges:\n"); for(Map.Entry<Edge<S, L>, Edge<S, L>> entry : matchedEdges.entrySet()) {
+         * sb.append("    ").append(entry.getKey()).append(" ~ ").append(entry.getValue()).append("\n"); }
+         */
 
         sb.append("  added:\n");
         sb.append(added);
@@ -61,7 +65,9 @@ public class ScopeGraphDiff<S, L, D> {
         return sb.toString();
     }
 
-    public static class Changes<S, L, D> {
+    public static class Changes<S, L, D> implements Serializable {
+
+        private static final long serialVersionUID = 2717749458901328532L;
 
         private final Map.Immutable<S, D> scopes;
         private final Set.Immutable<Edge<S, L>> edges;
@@ -81,25 +87,28 @@ public class ScopeGraphDiff<S, L, D> {
 
         @Override public String toString() {
             final StringBuilder sb = new StringBuilder();
-            sb.append("Changes:\n");
-
-            sb.append("  scopes:\n");
+            sb.append("    scopes:\n");
             for(Entry<S, D> entry : scopes.entrySet()) {
-                sb.append("  + ").append(entry.getKey());
+                sb.append("    + ").append(entry.getKey());
                 if(entry.getValue() != null) {
                     sb.append(" : ").append(entry.getValue());
                 }
                 sb.append("\n");
             }
 
-            sb.append("  edges:\n");
+            sb.append("    edges:\n");
             for(Edge<S, L> edge : edges) {
-                sb.append("  + ").append(edge).append("\n");
+                sb.append("    + ").append(edge).append("\n");
             }
 
             return sb.toString();
         }
 
+    }
+
+    public static <S, L, D> ScopeGraphDiff<S, L, D> empty() {
+        return new ScopeGraphDiff<>(BiMap.Immutable.of(), BiMap.Immutable.of(), CapsuleUtil.immutableMap(),
+                CapsuleUtil.immutableSet(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableSet());
     }
 
 }

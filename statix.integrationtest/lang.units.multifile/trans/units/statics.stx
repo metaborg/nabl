@@ -34,7 +34,7 @@ rules
 rules
 
   pkgOk : scope * Pkg * scope
-  
+
   pkgOk(s_lex, Pkg(x, mems), s_pkg) :- {s_pkg' s_lex'}
     new s_pkg',
     declarePkg(x, s_pkg', s_pkg),
@@ -67,7 +67,7 @@ rules
 
 
   extendsOk : scope * Extends * scope
-  
+
   extendsOk(s_lex, NoExtends(), s_mod).
 
   extendsOk(s_lex, Extends(m), s_mod) :- {s_mod'}
@@ -134,7 +134,7 @@ rules
 rules
 
   typeOfType : scope * Type -> TYPE
-  
+
   typeOfType(s_lex, t@Free()) = T :- @t.type := T.
 
   typeOfType(s_lex, t@Unit()) = T@UNIT() :- @t.type := T.
@@ -145,7 +145,7 @@ rules
 rules
 
   defName : DefRef -> ID
-  
+
   defName(DefRef(x)) = x.
   defName(QDefRef(_, x)) = x.
 
@@ -153,7 +153,7 @@ rules
 rules
 
   modName : ModRef -> ID
-  
+
   modName(ModRef(x)) = x.
   modName(QModInModRef(_, x)) = x.
   modName(QModInPkgRef(_, x)) = x.
@@ -162,7 +162,7 @@ rules
 rules
 
   pkgName : PkgRef -> ID
-  
+
   pkgName(PkgRef(x)) = x.
   pkgName(QPkgRef(_, x)) = x.
 

@@ -20,8 +20,8 @@ public class STX_solve_constraint extends StatixConstraintPrimitive {
         super(STX_solve_constraint.class.getSimpleName());
     }
 
-    @Override protected SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
-            ICancel cancel) throws InterruptedException, ExecutionException {
+    @Override protected SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug,
+            IProgress progress, ICancel cancel) throws InterruptedException, ExecutionException {
         return Solver.solve(spec, State.of(), constraint, debug, cancel, progress, 0);
     }
 

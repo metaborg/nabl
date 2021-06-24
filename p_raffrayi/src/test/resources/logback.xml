@@ -1,10 +1,11 @@
 <configuration>
+  <variable scope="context" name="contextid" value="%-15.15X{contextid:-} |"/>
   <appender
     name="stdout"
     class="ch.qos.logback.core.ConsoleAppender"
   >
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%date{HH:mm} | %-5level | ${contextid} %-30.30logger{20} - %message%n</pattern>
     </encoder>
   </appender>
 

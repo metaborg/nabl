@@ -1,12 +1,8 @@
 package mb.statix.concurrent;
 
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.Optional;
 
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.spec.Rule;
-import mb.statix.spoofax.StatixTerms;
 
 public interface IStatixUnit {
 
@@ -17,10 +13,9 @@ public interface IStatixUnit {
      */
     Optional<Rule> rule();
 
-    static IMatcher<IStatixUnit> matcher() {
-        return M.appl2("Unit", M.stringValue(), StatixTerms.hoconstraint(), (t, resource, rule) -> {
-            return StatixUnit.of(resource, Optional.of(rule));
-        });
-    }
+    /**
+     * Whether this unit changed since the previous run.
+     */
+    boolean changed();
 
 }

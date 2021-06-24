@@ -1,0 +1,13 @@
+---
+id: org.metaborg:statix.integrationtest.lang.units.multifile.test:${metaborgVersion}
+name: UnitsMultifileTestIncremental
+dependencies:
+  compile:
+  - org.metaborg:statix.integrationtest.lang.units.multifile:${metaborgVersion}
+  - org.metaborg:org.metaborg.meta.lang.spt:${metaborgVersion}
+runtime:
+  statix:
+    modes:
+    - UnitsMultifile: incremental-scopegraph-diff
+build:
+  useBuildSystemSpec: true
