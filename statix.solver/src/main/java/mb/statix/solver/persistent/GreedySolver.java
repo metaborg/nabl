@@ -604,6 +604,13 @@ class GreedySolver {
                         }
                         case SET: {
                             if(state.termProperties().containsKey(key)) {
+                                property = state.termProperties().get(key);
+                                if(property.multiplicity().equals(Multiplicity.SINGLETON)
+                                        && property.value().equals(value)
+                                        && property.value().getAttachments().equals(value.getAttachments())) {
+                                    return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
+                                            NO_EXISTENTIALS, fuel);
+                                }
                                 return fail(c);
                             }
                             property = SingletonTermProperty.of(value);

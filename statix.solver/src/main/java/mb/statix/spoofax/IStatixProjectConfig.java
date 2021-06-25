@@ -16,5 +16,5 @@ public interface IStatixProjectConfig {
     Integer messageTraceLength(Integer defaultValue);
 
     Integer messageTermDepth(Integer defaultValue);
-
+    
 }
