@@ -5,6 +5,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Action1;
@@ -15,6 +16,8 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -37,10 +40,27 @@ public class STX_delays_as_errors extends StatixPrimitive {
 
         final SolverResult result = M.blobValue(SolverResult.class).match(term)
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
+
+        // Collect all free variables in 'real' errors
+        // @formatter:off
+        final Set.Immutable<ITermVar> errorVars = result.messages().entrySet().stream()
+            .filter(e -> e.getValue().kind().equals(MessageKind.ERROR))
+            .map(Map.Entry::getKey)
+            .flatMap(c -> c.freeVars().stream())
+            .flatMap(v -> result.state().unifier().findRecursive(v).getVars().stream())
+            .collect(CapsuleCollectors.toSet());
+        // @formatter:on
+
+        // Collect all delays that involve variables that do not occur on free variables.
         final ImmutableMap.Builder<IConstraint, IMessage> messages = ImmutableMap.builder();
         messages.putAll(result.messages());
-        result.delays().keySet().forEach(c -> {
-            messages.put(c, new Unsolved(MessageUtil.findClosestMessage(c)));
+        result.delays().entrySet().forEach(e -> {
+            if(e.getValue().vars().stream().noneMatch(errorVars::contains)) {
+                final IConstraint c = e.getKey();
+                messages.put(c, new Unsolved(MessageUtil.findClosestMessage(c)));
+            } else {
+                logger.debug("Ignoring delay {} because there is already an error on the delayed variables.", e);
+            }
         });
         final SolverResult newResult = result.withMessages(messages.build()).withDelays(ImmutableMap.of());
         return Optional.of(B.newBlob(newResult));
