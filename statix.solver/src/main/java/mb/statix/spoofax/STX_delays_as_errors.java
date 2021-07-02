@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
@@ -111,9 +112,10 @@ public class STX_delays_as_errors extends StatixPrimitive {
             return message.kind();
         }
 
-        @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage) {
+        @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage,
+                Function1<ICompleteness.Immutable, String> formatCompleteness) {
             StringBuilder sb = new StringBuilder("(unsolved)");
-            final String msg = message.toString(formatter, getDefaultMessage);
+            final String msg = message.toString(formatter, getDefaultMessage, formatCompleteness);
             if(!msg.isEmpty()) {
                 sb.append(" ");
                 sb.append(msg);
@@ -130,7 +132,7 @@ public class STX_delays_as_errors extends StatixPrimitive {
                 sb.append("critial edges ").append(delay.criticalEdges());
             }
             if(completeness != null && !completeness.isEmpty()) {
-                sb.append(" preventing completion of ").append(completeness);
+                sb.append(" preventing completion of ").append(formatCompleteness.apply(completeness));
             }
             return sb.toString();
         }

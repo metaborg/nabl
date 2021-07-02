@@ -29,6 +29,12 @@ public interface ICompleteness {
 
     java.util.Set<Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>>> entrySet();
 
+    default Set.Immutable<ITermVar> vars() {
+        final Set.Transient<ITermVar> _vars = CapsuleUtil.transientSet();
+        entrySet().forEach(e -> _vars.__insertAll(e.getKey().getVars()));
+        return _vars.freeze();
+    }
+
     interface Immutable extends ICompleteness {
 
         Immutable addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier);

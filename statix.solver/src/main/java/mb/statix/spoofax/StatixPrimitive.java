@@ -37,6 +37,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
@@ -200,7 +202,16 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
 
         // add constraint message
-        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
+        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter), completeness -> {
+            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+            completeness.vars().forEach(var -> {
+                ITerm sub = unifier.findRecursive(var);
+                if(!sub.equals(var)) {
+                    subst.put(var, sub);
+                }
+            });
+            return completeness.apply(subst.freeze()).toString();
+        }));
 
         // use empty origin if none was found
         if(originTerm == null) {
