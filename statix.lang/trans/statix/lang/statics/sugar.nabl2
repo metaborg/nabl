@@ -70,6 +70,9 @@ rules
     C{x} -> s, C{x} |-> d | error $[Unresolved constraint [x]] @x, @x.ref := C{x}, @x.decl := d,
     d : ty.
 
+  HoConstraint[[ l@EQ(t) ^ (s) : PRED([ty]) ]] :=
+    Term(Build)[[ t ^ (s) : ty]].
+
 
 /******************************************************************
  * Base Constraints                                               *
@@ -115,7 +118,7 @@ rules
 /******************************************************************
  * Scope Graph                                                    *
  ******************************************************************/
- 
+
   DeclOrRule[[ NamespaceQuery(x, filter, min) ^ (s, s_syn) ]] :=
     Ns{x} -> s, Ns{x} |-> d | error $[Unresolved namespace [x]] @x, @x.ref := Ns{x}, @x.decl := d,
     NsQ{x} <- s,
