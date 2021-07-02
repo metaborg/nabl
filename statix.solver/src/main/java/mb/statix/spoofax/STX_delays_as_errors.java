@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
@@ -31,6 +33,7 @@ import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.persistent.SolverResult;
 
 public class STX_delays_as_errors extends StatixPrimitive {
@@ -83,7 +86,7 @@ public class STX_delays_as_errors extends StatixPrimitive {
         messages.putAll(result.messages());
 
         delays.forEach((c, d) -> {
-            messages.put(c, new Unsolved(MessageUtil.findClosestMessage(c)));
+            messages.put(c, new Unsolved(MessageUtil.findClosestMessage(c), d, c.ownCriticalEdges().orElse(null)));
         });
 
         final SolverResult newResult = result.withMessages(messages.build()).withDelays(ImmutableMap.of());
@@ -95,9 +98,13 @@ public class STX_delays_as_errors extends StatixPrimitive {
         private static final long serialVersionUID = 1L;
 
         private final IMessage message;
+        private final Delay delay;
+        private final @Nullable ICompleteness.Immutable completeness;
 
-        private Unsolved(IMessage message) {
+        private Unsolved(IMessage message, Delay delay, ICompleteness.Immutable completeness) {
             this.message = message;
+            this.delay = delay;
+            this.completeness = completeness;
         }
 
         @Override public MessageKind kind() {
@@ -105,8 +112,27 @@ public class STX_delays_as_errors extends StatixPrimitive {
         }
 
         @Override public String toString(TermFormatter formatter, Function0<String> getDefaultMessage) {
+            StringBuilder sb = new StringBuilder("(unsolved)");
             final String msg = message.toString(formatter, getDefaultMessage);
-            return "(unsolved)" + (msg.isEmpty() ? "" : " ") + msg;
+            if(!msg.isEmpty()) {
+                sb.append(" ");
+                sb.append(msg);
+                sb.append(" ");
+            }
+            sb.append(" delayed on: ");
+            if(!delay.vars().isEmpty()) {
+                sb.append("vars ").append(delay.vars());
+            }
+            if(!delay.criticalEdges().isEmpty()) {
+                if(!delay.vars().isEmpty()) {
+                    sb.append(" and ");
+                }
+                sb.append("critial edges ").append(delay.criticalEdges());
+            }
+            if(completeness != null && !completeness.isEmpty()) {
+                sb.append(" preventing completion of ").append(completeness);
+            }
+            return sb.toString();
         }
 
         @Override public Optional<ITerm> origin() {
@@ -118,11 +144,11 @@ public class STX_delays_as_errors extends StatixPrimitive {
         }
 
         @Override public IMessage apply(Immutable subst) {
-            return new Unsolved(message.apply(subst));
+            return new Unsolved(message.apply(subst), delay, completeness == null ? null : completeness.apply(subst));
         }
 
         @Override public IMessage apply(IRenaming subst) {
-            return new Unsolved(message.apply(subst));
+            return new Unsolved(message.apply(subst), delay, completeness == null ? null : completeness.apply(subst));
         }
 
     }
