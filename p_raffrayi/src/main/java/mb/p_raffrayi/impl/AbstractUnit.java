@@ -30,7 +30,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
