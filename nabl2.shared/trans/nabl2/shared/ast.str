@@ -1,6 +1,9 @@
 module nabl2/shared/ast
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/term/origin
   

@@ -1,6 +1,9 @@
 module nabl2/runtime/analysis/constraint-compat
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/analysis/constraint
 

@@ -1,6 +1,9 @@
 module statix/runtime/ast
 
 imports
+  libstratego-lib
+
+imports
 
 signature
   constructors

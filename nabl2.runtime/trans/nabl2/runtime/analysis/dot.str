@@ -1,6 +1,9 @@
 module nabl2/runtime/analysis/dot
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/nabl2/runtime/analysis/Debug-sig
   nabl2/runtime/pp

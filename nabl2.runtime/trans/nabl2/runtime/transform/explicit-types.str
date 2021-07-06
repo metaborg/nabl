@@ -1,6 +1,9 @@
 module nabl2/runtime/transform/explicit-types
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/term/annotation
 

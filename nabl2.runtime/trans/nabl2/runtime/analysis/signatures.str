@@ -1,6 +1,9 @@
 module nabl2/runtime/analysis/signatures
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-

@@ -1,6 +1,9 @@
 module nabl2/shared/common/vars
 
 imports
+  libstratego-lib
+
+imports
 
   pp/nabl2/shared/common/-
   completion/nabl2/shared/common/-

@@ -1,6 +1,9 @@
 module nabl2/runtime/prelude/base
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/term/annotation
 

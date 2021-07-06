@@ -1,5 +1,8 @@
 module nabl2/runtime/analysis/query
 
+imports
+  libstratego-lib
+
 // forward to new location
 
 imports

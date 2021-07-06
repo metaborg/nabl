@@ -1,5 +1,8 @@
 module nabl2/shared/fresh
 
+imports
+  libstratego-lib
+
 rules
 
   nabl2--with-fresh(s) = nabl2--with-fresh(!"", s)

@@ -1,5 +1,8 @@
 module statix/runtime/constraints
 
+imports
+  libstratego-lib
+
 // Constraint duplicates from statix.lang
 
 imports

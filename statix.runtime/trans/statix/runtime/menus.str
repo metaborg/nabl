@@ -1,6 +1,9 @@
 module statix/runtime/menus
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/analysis/constraint
 
