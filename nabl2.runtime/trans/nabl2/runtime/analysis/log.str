@@ -1,5 +1,8 @@
 module nabl2/runtime/analysis/log 
 
+imports
+  libstratego-lib
+
 rules
 
   nabl2--collection-info-msg(|msg) =

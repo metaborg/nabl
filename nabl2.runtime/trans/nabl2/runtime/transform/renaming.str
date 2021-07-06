@@ -1,6 +1,9 @@
 module nabl2/runtime/transform/renaming
 
 imports
+  libstratego-lib
+
+imports
   signatures/-
   signatures/nabl2/shared/common/-
   signatures/nabl2/runtime/common/-

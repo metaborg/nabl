@@ -1,5 +1,8 @@
 module nabl2/runtime/prelude/list
 
+imports
+  libstratego-lib
+
 strategies
   
   // n-ary zip 

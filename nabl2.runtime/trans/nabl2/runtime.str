@@ -1,6 +1,9 @@
 module nabl2/runtime
 
 imports
+  libstratego-lib
+
+imports
 
   nabl2/shared
   nabl2/runtime/main

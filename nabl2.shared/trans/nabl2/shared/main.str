@@ -1,6 +1,9 @@
 module nabl2/shared/main
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/nabl2/shared/-
   pp/nabl2/shared/-

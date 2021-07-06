@@ -1,6 +1,9 @@
 module nabl2/runtime/pp
 
 imports
+  libstratego-lib
+
+imports
 
   libstratego-gpp
 

@@ -1,6 +1,9 @@
 module nabl2/shared/common/pp
 
 imports
+  libstratego-lib
+
+imports
 
   libstratego-gpp
 
