@@ -1,6 +1,9 @@
 module statix/api
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/statix/-
   injections/statix/-

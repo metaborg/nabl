@@ -1,5 +1,8 @@
 module statix/runtime/terms
 
+imports
+  libstratego-lib
+
 // Term duplicates from statix.lang
 
 signature
