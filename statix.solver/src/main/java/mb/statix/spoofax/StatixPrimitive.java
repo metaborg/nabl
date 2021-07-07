@@ -158,7 +158,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         Tuple2<Iterable<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
 
         final String messageText = Streams.stream(message_origin._1()).filter(s -> !s.isEmpty())
-                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;", "", "<br>\n"));
 
         final ITerm messageTerm = B.newTuple(message_origin._2(), B.newString(messageText));
         switch(message.kind()) {
