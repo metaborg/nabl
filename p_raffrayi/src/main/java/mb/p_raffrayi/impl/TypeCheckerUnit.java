@@ -33,7 +33,6 @@ import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
-import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
@@ -155,7 +154,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
-        assertDifferEnabled();
         if(state.equals(UnitState.ACTIVE)
                 || (state == UnitState.DONE && stateTransitionTrace != TransitionTrace.RELEASED)) {
             return CompletableFuture.completedFuture(StateSummary.restart());
