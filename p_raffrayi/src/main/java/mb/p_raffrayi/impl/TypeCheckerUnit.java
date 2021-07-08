@@ -454,7 +454,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             assertPreviousResultProvided();
-            state = UnitState.RELEASED;
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
             previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
@@ -513,6 +512,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(Release.instance);
+            state = UnitState.RELEASED;
             confirmationResult.complete(Optional.of(patches));
 
             resume();
