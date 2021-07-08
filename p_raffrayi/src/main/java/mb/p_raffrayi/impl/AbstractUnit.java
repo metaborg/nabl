@@ -339,8 +339,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
-        assertDifferEnabled();
-        return whenStarted.thenCompose(__ -> differ.match(previousScope));
+        if(isDifferEnabled()) {
+            return whenStarted.thenCompose(__ -> differ.match(previousScope));
+        } else {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
