@@ -57,7 +57,7 @@ public class InputMatchers {
     @SuppressWarnings("unchecked")
     public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>> previousResult() {
         // @formatter:off
-        return M.req("Expected Unit Result option.", M.cases(
+        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>>cases(
             M.appl0("Added", appl -> Optional.empty()),
             M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>of(result))
         ));

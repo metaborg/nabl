@@ -225,10 +225,10 @@ rules // multi file analysis (new)
     with grp-res := $[[parent-res]/[key]]
        ; grp := <cstx--make-group(|key, grp-res, grp-c-name)> (group-task*, file-task*)
 
-  cstx--make-sub(|key, _, grp-c-name): (_, file-task*) -> (key, Unit(resource, ast, result))
+  cstx--make-sub(|key, dummy, grp-c-name): (_, file-task*) -> (key, Unit(resource, ast, result))
     where <map(?([], resource, ast, result))> file-task*
 
-  cstx--make-sub(|key, _, grp-c-name) = fatal-err(|$[Grouping failed for key [key]])
+  cstx--make-sub(|key, dummy, grp-c-name) = fatal-err(|$[Grouping failed for key [key]])
 
   cstx--make-group(|key, grp-res, grp-c-name): (group-task*, file-task*) -> (key, Group(grp-res, rule, groups, units))
     with s-proj        := Var("s_proj")
