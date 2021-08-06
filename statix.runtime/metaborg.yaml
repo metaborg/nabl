@@ -17,6 +17,12 @@ exports:
   - "statix/**/*.str"
   - "injections/statix/**/*.str"
   - "statix/**/*.meta"
+- language: StrategoLang
+  directory: trans
+  includes:
+  - "statixruntime.str2"
+  - "statix/**/*.str2"
+  - "injections/statix/**/*.str2"
   ## SDF3
 - language: TemplateLang
   directory: syntax
@@ -36,6 +42,12 @@ exports:
   - "completion/statix/**/*.str"
   - "pp/statix/**/*.str"
   - "signatures/statix/**/*.str"
+- language: StrategoLang
+  directory: src-gen
+  includes:
+  - "completion/statix/**/*.str2"
+  - "pp/statix/**/*.str2"
+  - "signatures/statix/**/*.str2"
   ## ESV
 - language: EditorService
   directory: editor
