@@ -57,6 +57,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final BiMap.Transient<Edge<S, L>> matchedEdges = BiMap.Transient.of();
 
     private final MultiSetMap.Transient<S, Edge<S, L>> addedEdges = MultiSetMap.Transient.of();
+    private final MultiSetMap.Transient<S, Edge<S, L>> matchedOutgoingEdges = MultiSetMap.Transient.of();
     private final MultiSetMap.Transient<S, Edge<S, L>> removedEdges = MultiSetMap.Transient.of();
 
     private final Map.Transient<S, Optional<D>> currentScopeData = CapsuleUtil.transientMap();
@@ -580,6 +581,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         logger.debug("Matching {} ~ {}", current, previous);
         matchedEdges.put(current, previous);
+        matchedOutgoingEdges.put(previous.source, previous);
 
         currentEdgeComplete(current);
 
@@ -733,7 +735,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private IScopeDiff<S, L, D> buildScopeDiff(S previousScope) {
         if(matchedScopes.containsValue(previousScope)) {
             S currentScope = matchedScopes.getValue(previousScope);
-            return Matched.of(currentScope, addedEdges.get(currentScope), removedEdges.get(previousScope));
+            return Matched.of(currentScope, addedEdges.get(currentScope),
+                    matchedOutgoingEdges.get(previousScope),
+                    removedEdges.get(previousScope));
         }
         return Removed.of();
     }
