@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
@@ -27,6 +29,7 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Spec;
 
 public abstract class StatixConstraintPrimitive extends StatixPrimitive {
+    protected static final ILogger logger = LoggerUtils.logger(StatixConstraintPrimitive.class);
 
     @Inject public StatixConstraintPrimitive(String name) {
         super(name, 4);
@@ -84,5 +87,9 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
     protected abstract SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) throws InterruptedException, ExecutionException;
 
+
+    protected ILogger getLogger() {
+        return logger;
+    }
 }
 

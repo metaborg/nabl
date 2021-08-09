@@ -10,12 +10,14 @@ public class StatixProjectConfig implements IStatixProjectConfig {
     private final io.usethesource.capsule.Map.Immutable<String, SolverMode> languageModes;
     private final Integer messageStacktraceLength;
     private final Integer messageTermDepth;
+    private final String testLogLevel;
 
     public StatixProjectConfig(Map<String, SolverMode> languageModes, Integer messageStackTrace,
-            Integer messageTermDepth) {
+            Integer messageTermDepth, String testLogLevel) {
         this.languageModes = languageModes != null ? CapsuleUtil.toMap(languageModes) : null;
         this.messageStacktraceLength = messageStackTrace;
         this.messageTermDepth = messageTermDepth;
+        this.testLogLevel = testLogLevel;
     }
 
     @Override public Integer messageTraceLength(Integer defaultValue) {
@@ -32,6 +34,10 @@ public class StatixProjectConfig implements IStatixProjectConfig {
 
     @Override public Map<String, SolverMode> languageModes(Map<String, SolverMode> defaultModes) {
         return languageModes != null ? languageModes : defaultModes;
+    }
+
+    @Override public String testLogLevel(String defaultValue) {
+        return Optional.ofNullable(testLogLevel).orElse(defaultValue);
     }
 
 }
