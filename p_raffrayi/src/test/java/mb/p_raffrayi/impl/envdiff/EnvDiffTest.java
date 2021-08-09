@@ -52,10 +52,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), new TestDifferOps());
+                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -84,10 +84,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), new TestDifferOps());
+                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -105,7 +105,39 @@ public class EnvDiffTest {
     }
 
 
-    private class TestDifferOps implements IDifferOps<String, Integer, List<String>> {
+    @Test public void testFilterEdge() {
+        // @formatter:off
+        final IScopeGraph.Immutable<String, Integer, List<String>> sc1 =
+            ScopeGraph.Immutable.<String, Integer, List<String>>of();
+        final IScopeGraph.Immutable<String, Integer, List<String>> sc2 =
+            ScopeGraph.Immutable.<String, Integer, List<String>>of()
+                .addEdge(s1n, l1, s2n);
+        // @formatter:on
+
+        final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
+                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+
+        final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
+        envDiffer.diff(s1o, LabelWf.none(), DataWf.any()).thenAccept(diffResult::set);
+
+        assertNotNull(diffResult.get());
+
+        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
+                diffResult.get().diffPaths();
+
+        assertEquals(0, paths.size());
+    }
+
+
+    private static class TestDifferOps implements IDifferOps<String, Integer, List<String>> {
+
+        public static final TestDifferOps instance = new TestDifferOps();
+
+        private TestDifferOps() {
+        }
 
         @Override public boolean isMatchAllowed(String currentScope, String previousScope) {
             return true;
