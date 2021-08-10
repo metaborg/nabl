@@ -31,7 +31,6 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {

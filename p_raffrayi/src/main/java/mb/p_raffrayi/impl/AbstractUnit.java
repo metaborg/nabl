@@ -69,6 +69,7 @@ import mb.p_raffrayi.impl.tokens.TypeCheckerState;
 import mb.p_raffrayi.impl.tokens.UnitAdd;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.scopegraph.ecoop21.INameResolutionContext;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.NameResolution;
@@ -441,7 +442,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         final Set.Transient<IRecordedQuery<S, L, D>> recordedQueries = CapsuleUtil.transientSet();
         ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
 
-        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
+        final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
             @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
                     LabelOrder<L> labelOrder) {
@@ -479,7 +480,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
             }
 
-            @Override protected IFuture<Optional<D>> getDatum(S scope) {
+            @Override public IFuture<Optional<D>> getDatum(S scope) {
                 return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
                     final Optional<D> datum;
                     if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
@@ -512,13 +513,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
 
-            @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
                 return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, label);
                 });
             }
 
-            @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
                 stats.dataWfChecks += 1;
                 final IFuture<Boolean> result;
                 if(external || dataWfInternal == null) {
@@ -541,7 +542,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
             }
 
-            @Override protected IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
                 stats.dataLeqChecks += 1;
                 final IFuture<Boolean> result;
                 if(external || dataEquivInternal == null) {
@@ -569,6 +570,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             }
 
         };
+        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder, nrc);
 
         final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
         result.whenComplete((env, ex) -> {
