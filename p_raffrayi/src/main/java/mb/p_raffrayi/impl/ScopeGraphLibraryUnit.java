@@ -142,12 +142,13 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
         final IActorRef<? extends IUnit<S, L, D, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
 
-        final IFuture<IQueryAnswer<S, L, D>> result = self.async(worker)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
+        final IFuture<IQueryAnswer<S, L, D>> result =
+                self.async(worker)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
         final Query<S, L, D> token = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(token, worker);
         return result.whenComplete((r, ex) -> {
@@ -155,12 +156,9 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         });
     }
 
-    @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        // TODO: Correct confirmation
-        // This implementation is currently sound, because queries to libraries should not be forwarded to the project.
-        // When that holds, an empty result will stay an empty result. All other results will incorrectly be invalidated.
-        return CompletableFuture.completedFuture(Env.empty());
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope,
+            io.usethesource.capsule.Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {

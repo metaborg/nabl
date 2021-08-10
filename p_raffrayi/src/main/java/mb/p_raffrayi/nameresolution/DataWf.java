@@ -36,7 +36,7 @@ public interface DataWf<S, L, D> {
 
         @SuppressWarnings("unused") @Override public IFuture<Boolean> wf(Object d, ITypeCheckerContext context,
                 ICancel cancel) throws InterruptedException {
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedFuture(false);
         }
 
         @Override public String toString() {

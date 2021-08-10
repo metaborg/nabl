@@ -1069,7 +1069,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     // Restart behavior
     ///////////////////////////////////////////////////////////////////////////
 
-    @Test(timeout = 10000000) public void testQueryInRestartedUnit() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testQueryInRestartedUnit() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
         final Scope d1 = new Scope("/.", 1);

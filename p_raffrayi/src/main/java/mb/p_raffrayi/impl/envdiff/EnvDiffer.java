@@ -26,12 +26,11 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         this.scopeGraphDiffer = scopeGraphDiffer;
     }
 
-    @Override
-    public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf) {
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf) {
         return diff(scope, CapsuleUtil.immutableSet(scope), labelWf, dataWf);
     }
 
-    private IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf,
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
         if(!differOps.ownScope(scope) ) {
             return CompletableFuture.completedFuture(External.of(scope, seenScopes, labelWf, dataWf));

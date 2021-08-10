@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.RefBool;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -25,6 +26,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
+import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
@@ -33,9 +35,13 @@ import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
+import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
+import mb.p_raffrayi.impl.envdiff.EnvDiffer;
+import mb.p_raffrayi.impl.envdiff.External;
+import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.Confirm;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
@@ -47,10 +53,12 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
@@ -73,6 +81,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
     private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
+
+    private IEnvDiffer<S, L, D> envDiffer;
+
+//    private IConfirmation<S, L, D> confirmation = new TrivialConfirmation();
+    private IConfirmation<S, L, D> confirmation = new SimpleConfirmation();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
@@ -115,8 +128,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 final IUnitResult<S, L, D, ?> subResult = previousResult.subUnitResults().get(removedId);
-                this.<Unit>doAddSubUnit(removedId, (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext,
-                        edgeLabels, subResult), new ArrayList<>(), true);
+                this.<Unit>doAddSubUnit(removedId,
+                        (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
+                        new ArrayList<>(), true);
             }
         }
 
@@ -145,12 +159,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes,
+            LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         stats.incomingConfirmations++;
-        return whenActive
-                .thenCompose(__ -> doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null)
-                        .thenApply(IQueryAnswer::env));
+        // TODO assert confirmation enabled
+        return whenActive.thenCompose(__ -> confirmation.confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty));
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
@@ -378,65 +391,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
 
         if(previousResult.queries().isEmpty()) {
-            // TODO: aggregate required scope patches
             doRelease(BiMap.Immutable.of());
             return;
         }
 
-        final List<IFuture<Boolean>> futures = new ArrayList<>();
-        previousResult.queries().forEach(rq -> {
-            final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
-            futures.add(confirmationResult);
-            confirmationResult.thenAccept(res -> {
-                // Immediately restart when a query is invalidated
-                if(!res) {
-                    if(doRestart()) {
-                        stateTransitionTrace = TransitionTrace.RESTARTED;
-                    }
-                }
-            });
-            getOwner(rq.scope()).thenAccept(owner -> {
-                self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
-                    if(ex != null) {
-                        if(ex == Release.instance) {
-                            confirmationResult.complete(true);
-                        } else {
-                            confirmationResult.completeExceptionally(ex);
-                        }
-                    } else if(!m.isPresent()) {
-                        confirmationResult.complete(rq.result().isEmpty());
-                    } else {
-                        final ICompletableFuture<Env<S, L, D>> queryResult = new CompletableFuture<>();
-                        final ScopePath<S, L> path = new ScopePath<>(m.get());
-                        final Confirm<S, L, D> confirm = Confirm.of(self, path, rq.dataWf(), queryResult);
-                        waitFor(confirm, owner);
-                        // @formatter:off
-                        self.async(owner)._confirm(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
-                            .whenComplete(queryResult::complete);
-                        queryResult.whenComplete((env, ex2) -> {
-                                granted(confirm, owner);
-                                resume();
-                                if(ex2 != null) {
-                                    if(ex2 == Release.instance) {
-                                        confirmationResult.complete(true);
-                                    } else {
-                                        confirmationResult.completeExceptionally(ex2);
-                                    }
-                                } else {
-                                    // Query is valid iff environments are equal
-                                    // TODO: compare environments with scope patches.
-                                    confirmationResult.complete(env.equals(rq.result()));
-                                }
-                            });
-                        // @formatter:on
-                        resume();
-                    }
-                });
-            });
-        });
-
-        Futures.noneMatch(futures, p -> p.thenApply(v -> !v)).whenComplete((r, ex) -> {
-            if(ex != null || !r) {
+        confirmation.confirm(previousResult.queries()).whenComplete((r, ex) -> {
+            if(ex != null || !r.isPresent()) {
                 if(ex != null && ex != Release.instance) {
                     failures.add(ex);
                 }
@@ -444,8 +404,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     stateTransitionTrace = TransitionTrace.RESTARTED;
                 }
             } else {
-                // TODO: collect patches
-                doRelease(BiMap.Immutable.of());
+                doRelease(r.get());
             }
         });
     }
@@ -568,10 +527,158 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
         final IDifferContext<S, L, D> context = differContext();
+        final IDifferOps<S, L, D> differOps = differOps();
         if(previousResult != null) {
-            return new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps());
+            final IScopeGraphDiffer<S, L, D> differ =
+                    new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps);
+            this.envDiffer = new EnvDiffer<>(differ, differOps);
+            return differ;
         }
-        return new AddingDiffer<>(context, differOps());
+        return new AddingDiffer<>(context, differOps);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Confirmation
+    ///////////////////////////////////////////////////////////////////////////
+
+    private interface IConfirmation<S, L, D> {
+        IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries);
+
+        IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, io.usethesource.capsule.Set.Immutable<S> seenScopes,
+                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
+    }
+
+    private class TrivialConfirmation implements IConfirmation<S, L, D> {
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
+            final List<IFuture<Boolean>> futures = new ArrayList<>();
+            previousResult.queries().forEach(rq -> {
+                final ICompletableFuture<Boolean> confirmationResult = new CompletableFuture<>();
+                futures.add(confirmationResult);
+                confirmationResult.thenAccept(res -> {
+                    // Immediately restart when a query is invalidated
+                    if(!res) {
+                        if(doRestart()) {
+                            stateTransitionTrace = TransitionTrace.RESTARTED;
+                        }
+                    }
+                });
+                getOwner(rq.scope()).thenAccept(owner -> {
+                    self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
+                        if(ex != null) {
+                            if(ex == Release.instance) {
+                                confirmationResult.complete(true);
+                            } else {
+                                confirmationResult.completeExceptionally(ex);
+                            }
+                        } else if(!m.isPresent()) {
+                            confirmationResult.complete(rq.result().isEmpty());
+                        } else {
+                            final ICompletableFuture<IQueryAnswer<S, L, D>> queryResult = new CompletableFuture<>();
+                            final ScopePath<S, L> path = new ScopePath<>(m.get());
+                            final Query<S, L, D> confirm = Query.of(self, path, rq.dataWf(), queryResult);
+                            waitFor(confirm, owner);
+                            // @formatter:off
+                            self.async(owner)._query(path, rq.labelWf(), rq.dataWf(), rq.labelOrder(), rq.dataLeq())
+                                .whenComplete(queryResult::complete);
+                            queryResult.whenComplete((env, ex2) -> {
+                                    granted(confirm, owner);
+                                    resume();
+                                    if(ex2 != null) {
+                                        if(ex2 == Release.instance) {
+                                            confirmationResult.complete(true);
+                                        } else {
+                                            confirmationResult.completeExceptionally(ex2);
+                                        }
+                                    } else {
+                                        // Query is valid iff environments are equal
+                                        // TODO: compare environments with scope patches.
+                                        java.util.Set<ResolutionPath<S, L, D>> oldPaths = Sets.newHashSet(rq.result());
+                                        java.util.Set<ResolutionPath<S, L, D>> newPaths = Sets.newHashSet(env.env());
+                                        confirmationResult.complete(oldPaths.equals(newPaths));
+                                    }
+                                });
+                            // @formatter:on
+                            resume();
+                        }
+                    });
+                });
+            });
+
+            return Futures.noneMatch(futures, p -> p.thenApply(v -> !v))
+                    .thenApply(v -> v ? Optional.of(BiMap.Immutable.of()) : Optional.empty());
+        }
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, Set.Immutable<S> seenScopes,
+                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+
+    }
+
+    private class SimpleConfirmation implements IConfirmation<S, L, D> {
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
+            // @formatter:off
+            return Futures.<IRecordedQuery<S, L, D>, BiMap.Immutable<S>>reducePartial(
+                Optional.of(BiMap.Immutable.of()),
+                Optional.of(queries),
+                (acc, q) -> confirm(q.scope(), CapsuleUtil.immutableSet(q.scope()), q.labelWf(), q.dataWf(), q.result().isEmpty())
+                    .thenApply(ptcOpt -> ptcOpt.flatMap(ptc -> BiMaps.safeMerge(ptc, acc))),
+                BiMaps::safeMerge
+            );
+            // @formatter:on
+        }
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, Set.Immutable<S> seenScopes,
+                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+            return getOwner(scope).thenCompose(owner -> {
+                if(!owner.equals(self)) {
+                    final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
+                    final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
+                    waitFor(confirm, owner);
+                    self.async(owner)._confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
+                        granted(confirm, owner);
+                        if(ex != null && ex == Release.instance) {
+                            result.complete(Optional.of(BiMap.Immutable.of()));
+                        } else {
+                            result.complete(v, ex);
+                        }
+                    });
+                    return result;
+                }
+                return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {
+                    final RefBool change = new RefBool(false);
+                    final ArrayList<External<S, L, D>> externals = new ArrayList<>();
+                    envDiff.diffPaths().forEach(path -> {
+                        // @formatter:off
+                        path.getDatum().<Unit>match(
+                            addedEdge -> { change.set(true); return Unit.unit; },
+                            removedEdge -> { change.set(true); return Unit.unit; },
+                            external -> { externals.add(external); return Unit.unit; },
+                            diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
+                        );
+                        // @formatter:on
+                    });
+
+                    if(change.get()) {
+                        return CompletableFuture.completedFuture(Optional.<BiMap.Immutable<S>>empty());
+                    }
+
+                    // @formatter:off
+                    return Futures.<External<S, L, D>, BiMap.Immutable<S>>reducePartial(
+                        Optional.of(BiMap.Immutable.of()),
+                        Optional.of(externals),
+                        (acc, ext) -> confirm(ext.scope(), ext.seenScopes(), ext.labelWf(), ext.dataWf(), prevEnvEmpty)
+                            .thenApply(ptcOpt -> ptcOpt.flatMap(ptc -> BiMaps.safeMerge(ptc, acc))),
+                        BiMaps::safeMerge
+                    );
+                    // @formatter:on
+
+                });
+            });
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////

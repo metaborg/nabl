@@ -2,6 +2,7 @@ package mb.p_raffrayi.impl;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.future.CompletableFuture;
@@ -77,6 +78,11 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+    }
+
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope,
+            io.usethesource.capsule.Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
