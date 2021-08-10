@@ -662,12 +662,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     });
 
                     if(change.get()) {
-                        return CompletableFuture.completedFuture(Optional.<BiMap.Immutable<S>>empty());
+                        return CompletableFuture.completedFuture(Optional.empty());
                     }
 
                     // @formatter:off
                     return Futures.<External<S, L, D>, BiMap.Immutable<S>>reducePartial(
-                        Optional.of(BiMap.Immutable.of()),
+                        Optional.of(envDiff.patches()),
                         Optional.of(externals),
                         (acc, ext) -> confirm(ext.scope(), ext.seenScopes(), ext.labelWf(), ext.dataWf(), prevEnvEmpty)
                             .thenApply(ptcOpt -> ptcOpt.flatMap(ptc -> BiMaps.safeMerge(ptc, acc))),

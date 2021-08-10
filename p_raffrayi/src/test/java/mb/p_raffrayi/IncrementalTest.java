@@ -187,7 +187,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testRelease_MutualDep_Cached() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
-        final Scope d = new Scope("/./sub", 1);
+        final Scope d = new Scope("/./sub", -1);
 
         final ResolutionPath<Scope, IDatum, IDatum> path =
                 new ScopePath<Scope, IDatum>(root).step(lbl, d).get().resolve(d);
@@ -335,7 +335,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
-        final Scope d = new Scope("/./sub", 1);
+        final Scope d = new Scope("/./sub", -1);
 
         final ResolutionPath<Scope, IDatum, IDatum> path =
                 new ScopePath<Scope, IDatum>(root).step(lbl, d).get().resolve(d);

@@ -6,13 +6,17 @@ import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
+import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.diff.BiMap.Immutable;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 @Value.Immutable
 public abstract class ADiffTree<S, L, D> implements IEnvDiff<S, L, D> {
 
-    @Value.Parameter public abstract S scope();
+    @Value.Parameter public abstract S oldScope();
+
+    @Value.Parameter public abstract S newScope();
 
     @Value.Parameter public abstract IRelation3.Immutable<L, S, IEnvDiff<S, L, D>> edges();
 
@@ -21,7 +25,7 @@ public abstract class ADiffTree<S, L, D> implements IEnvDiff<S, L, D> {
     }
 
     @Override @Value.Lazy public Set.Immutable<ResolutionPath<S, L, IEnvDiff<S, L, D>>> diffPaths() {
-        return diffPaths(new ScopePath<S, L>(scope()));
+        return diffPaths(new ScopePath<S, L>(oldScope()));
     }
 
     @Override public Set.Immutable<ResolutionPath<S, L, IEnvDiff<S, L, D>>> diffPaths(ScopePath<S, L> prefix) {
@@ -34,6 +38,14 @@ public abstract class ADiffTree<S, L, D> implements IEnvDiff<S, L, D> {
             });
         });
         return _paths.freeze();
+    }
+
+    @Override @Value.Lazy public Immutable<S> patches() {
+        // @formatter:off
+        return edges().valueSet().stream()
+            .map(IEnvDiff::patches)
+            .reduce(BiMap.Immutable.of(newScope(), oldScope()), (m1, m2) -> m1.putAll(m2));
+        // @formatter:on
     }
 
     @Override public <T> T match(Function1<AddedEdge<S, L, D>, T> onAddedEdge,

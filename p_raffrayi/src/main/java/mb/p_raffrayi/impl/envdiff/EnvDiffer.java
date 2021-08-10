@@ -38,7 +38,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
 
         return scopeGraphDiffer.scopeDiff(scope).thenCompose(scopeDiff -> {
             return scopeDiff.<IFuture<IEnvDiff<S, L, D>>>match(match -> {
-                final DiffTreeBuilder<S, L, D> treeBuilder = new DiffTreeBuilder<>(scope);
+                final DiffTreeBuilder<S, L, D> treeBuilder = new DiffTreeBuilder<>(scope, match.currentScope());
 
                 // Process all added/removed edges
                 // @formatter:off
@@ -70,7 +70,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
             // When label would be traversed by label WF ...
             labelWf.step(edge.label).ifPresent(newLabelWf -> {
                 final Set.Transient<S> newSeenScopes = seenScopes.asTransient();
-                // ... and target edge is not seen yet ...
+                // ... and target scope is not seen yet ...
                 if(newSeenScopes.__insert(edge.target)) {
                     // ... apply action
                     action.apply(edge.label, edge.target, newSeenScopes.freeze(), newLabelWf);

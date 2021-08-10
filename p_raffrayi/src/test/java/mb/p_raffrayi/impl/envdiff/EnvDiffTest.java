@@ -70,6 +70,8 @@ public class EnvDiffTest {
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2n).get(), path.getPath());
         assertEquals(AddedEdge.of(s2n, CapsuleUtil.immutableSet(s1o, s2n), LabelWf.any(), DataWf.any()), path.getDatum());
+
+        assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
 
     @Test public void testRemovedEdge() {
@@ -102,6 +104,8 @@ public class EnvDiffTest {
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3o).get(), path.getPath());
         assertEquals(RemovedEdge.of(s3o, LabelWf.any(), DataWf.any()), path.getDatum());
+
+        assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }
 
 
@@ -129,6 +133,8 @@ public class EnvDiffTest {
                 diffResult.get().diffPaths();
 
         assertEquals(0, paths.size());
+
+        assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
 
 
@@ -164,6 +170,8 @@ public class EnvDiffTest {
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
         assertEquals(AddedEdge.of(s3n, CapsuleUtil.toSet(s1o, s2o, s3n), LabelWf.any(), DataWf.any()), path.getDatum());
+
+        assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }
 
 
