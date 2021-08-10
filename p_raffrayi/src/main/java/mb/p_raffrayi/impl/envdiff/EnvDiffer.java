@@ -53,7 +53,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                 // Asynchronously collect all sub environment diffs
                 final ArrayList<IFuture<Unit>> subEnvFutures = new ArrayList<>();
                 traverseApplicable(match.matchedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
-                    subEnvFutures.add(diff(target, newLabelWf, dataWf).thenApply(subDiff -> {
+                    subEnvFutures.add(diff(target, newSeenScopes, newLabelWf, dataWf).thenApply(subDiff -> {
                         treeBuilder.addSubTree(label, target, subDiff);
                         return Unit.unit;
                     }));

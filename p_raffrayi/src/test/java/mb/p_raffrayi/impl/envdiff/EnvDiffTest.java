@@ -76,11 +76,11 @@ public class EnvDiffTest {
         // @formatter:off
         final IScopeGraph.Immutable<String, Integer, List<String>> sc1 =
             ScopeGraph.Immutable.<String, Integer, List<String>>of()
-            .addEdge(s1o, l1, s2o)
-            .addEdge(s2o, l1, s3o);
+                .addEdge(s1o, l1, s2o)
+                .addEdge(s2o, l1, s3o);
         final IScopeGraph.Immutable<String, Integer, List<String>> sc2 =
             ScopeGraph.Immutable.<String, Integer, List<String>>of()
-            .addEdge(s1n, l1, s2n);
+                .addEdge(s1n, l1, s2n);
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
@@ -129,6 +129,41 @@ public class EnvDiffTest {
                 diffResult.get().diffPaths();
 
         assertEquals(0, paths.size());
+    }
+
+
+    @Test public void testCycle() {
+        // @formatter:off
+        final IScopeGraph.Immutable<String, Integer, List<String>> sc1 =
+            ScopeGraph.Immutable.<String, Integer, List<String>>of()
+                .addEdge(s1o, l1, s2o)
+                .addEdge(s2o, l1, s1o);
+        final IScopeGraph.Immutable<String, Integer, List<String>> sc2 =
+            ScopeGraph.Immutable.<String, Integer, List<String>>of()
+                .addEdge(s1n, l1, s2n)
+                .addEdge(s2n, l1, s1n)
+                .addEdge(s2n, l1, s3n);
+        // @formatter:on
+
+        final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
+                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+
+        final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
+        envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
+
+        assertNotNull(diffResult.get());
+
+        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
+                diffResult.get().diffPaths();
+
+        assertEquals(1, paths.size());
+        ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
+
+        assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
+        assertEquals(AddedEdge.of(s3n, CapsuleUtil.toSet(s1o, s2o, s3n), LabelWf.any(), DataWf.any()), path.getDatum());
     }
 
 
