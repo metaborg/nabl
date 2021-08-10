@@ -262,7 +262,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                         final Method method1 = method;
                         final Object[] args1 = args;
                         final Action2<Object, Throwable> _return =
-                                (r, ex) -> sender._return(sender, method, result, r, ex);
+                                (r, ex) -> sender._return(this, method, result, r, ex);
                         ;
                         put(() -> {
                             doInvoke((IActorInternal<?>) sender, method1, args1, _return);

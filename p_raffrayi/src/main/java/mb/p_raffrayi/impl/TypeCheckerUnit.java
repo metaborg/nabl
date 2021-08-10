@@ -639,6 +639,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     waitFor(confirm, owner);
                     self.async(owner)._confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
                         granted(confirm, owner);
+                        resume();
                         if(ex != null && ex == Release.instance) {
                             result.complete(Optional.of(BiMap.Immutable.of()));
                         } else {
