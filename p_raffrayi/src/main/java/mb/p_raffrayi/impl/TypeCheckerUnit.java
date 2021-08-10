@@ -654,7 +654,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         // @formatter:off
                         path.getDatum().<Unit>match(
                             addedEdge -> { change.set(true); return Unit.unit; },
-                            removedEdge -> { change.set(true); return Unit.unit; },
+                            removedEdge -> { change.or(!prevEnvEmpty); return Unit.unit; },
                             external -> { externals.add(external); return Unit.unit; },
                             diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
                         );
