@@ -36,6 +36,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Map.Immutable;
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
+
 import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.BiMaps;

@@ -433,8 +433,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             assertPreviousResultProvided();
-            // TODO: matching differ with patches
-            initDiffer(new MatchingDiffer<S, L, D>(differOps()), this.rootScopes, previousResult.rootScopes());
+            initDiffer(new MatchingDiffer<S, L, D>(differOps(), differContext(), patches), this.rootScopes,
+                    previousResult.rootScopes());
             this.envDiffer = new EnvDiffer<>(differ, differOps());
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
@@ -511,9 +511,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 final IDifferContext<S, L, D> context = differContext();
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
-                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps), this.rootScopes, previousResult.rootScopes());
+                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()),
+                            differOps), this.rootScopes, previousResult.rootScopes());
                 } else {
-                    initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(), Collections.emptyList());
+                    initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
+                            Collections.emptyList());
                 }
                 this.envDiffer = new EnvDiffer<>(differ, differOps());
             }
