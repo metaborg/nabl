@@ -249,7 +249,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -274,7 +274,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -297,7 +297,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -321,7 +321,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -345,7 +345,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -369,7 +369,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -393,7 +393,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -417,7 +417,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -441,7 +441,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -466,7 +466,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -489,7 +489,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -513,7 +513,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2, 3));
@@ -536,7 +536,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -560,7 +560,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                         unit.closeScope(s);
 
-                        return new AggregateFuture<>(subResults).handle((r, ex) -> Unit.unit);
+                        return AggregateFuture.of(subResults).handle((r, ex) -> Unit.unit);
                     }
 
                 }, Arrays.asList(1, 2));
@@ -884,7 +884,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results).whenComplete((r, ex) -> {
+            final IFuture<List<Object>> result = AggregateFuture.of(results).whenComplete((r, ex) -> {
                 unit.closeScope(s1);
             });
 
@@ -922,7 +922,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }
@@ -956,7 +956,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results).whenComplete((r, ex) -> {
+            final IFuture<List<Object>> result = AggregateFuture.of(results).whenComplete((r, ex) -> {
                 unit.setDatum(s1, s1);
             });
 
@@ -994,7 +994,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }
@@ -1030,7 +1030,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }
@@ -1071,7 +1071,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }
@@ -1112,7 +1112,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }
@@ -1150,7 +1150,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                 final IRegExpMatcher<Integer> rem = RegExpMatcher.create(re);
                 results.add(unit.query(s, new RegExpLabelWf<>(rem), LabelOrder.none(), DataWf.any(), DataLeq.none()));
             }
-            final IFuture<List<Object>> result = new AggregateFuture<>(results);
+            final IFuture<List<Object>> result = AggregateFuture.of(results);
 
             return result.handle((r, ex) -> Unit.unit);
         }

@@ -73,7 +73,7 @@ public class NameResolution<S, L, D>  {
         for(EdgeOrData<L> l : max_L) {
             envs.add(env_lL(path, re, l, smaller(L, l), cancel));
         }
-        final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
+        final IFuture<List<Env<S, L, D>>> listEnv = AggregateFuture.of(envs);
         logger.trace("env_L {} {} {}: listEnv: {}", path, re, L, listEnv);
         listEnv.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: listResult {}", path, re, L, listEnv));
         final IFuture<Env<S, L, D>> env = listEnv.thenApply((es) -> {
@@ -179,7 +179,7 @@ public class NameResolution<S, L, D>  {
                     // cycle
                 }
             }
-            final AggregateFuture<Env<S, L, D>> listEnv = new AggregateFuture<>(envs);
+            final IFuture<List<Env<S, L, D>>> listEnv = AggregateFuture.of(envs);
             logger.trace("env_edges {} {} {}: listEnv {}", path, re, l, listEnv);
             listEnv.whenComplete((r, ex) -> logger.trace("env_edges {} {} {}: listResult {}", path, re, l, listEnv));
             final IFuture<Env<S, L, D>> env = listEnv.thenApply(es -> {

@@ -348,7 +348,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
         stats.localQueries += 1;
         return ifActive(ret).thenApply(ans -> {
-            this.recordedQueries.addAll(ans.innerQueries());
             return CapsuleUtil.toSet(ans.env());
         });
     }

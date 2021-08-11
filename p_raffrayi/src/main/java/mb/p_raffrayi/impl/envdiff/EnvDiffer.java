@@ -59,7 +59,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                 });
                 // @formatter:on
 
-                return new AggregateFuture<>(subEnvFutures).thenApply(__ -> treeBuilder.build());
+                return AggregateFuture.of(subEnvFutures).thenApply(__ -> treeBuilder.build());
             }, () -> CompletableFuture.completedFuture(RemovedEdge.of(scope, labelWf, dataWf)));
         });
     }

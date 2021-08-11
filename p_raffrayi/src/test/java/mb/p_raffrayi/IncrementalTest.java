@@ -740,7 +740,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
         assertTrue(result.analysis());
 
-        assertEquals(2, result.subUnitResults().get("sub1").queries().size());
+        assertEquals(1, result.subUnitResults().get("sub1").queries().size());
+        assertEquals(1, result.subUnitResults().get("sub1").queries().iterator().next().transitiveQueries().size());
         assertEquals(0, result.queries().size());
 
     }

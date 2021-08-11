@@ -1,5 +1,7 @@
 package mb.p_raffrayi;
 
+import java.util.Set;
+
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -18,6 +20,11 @@ public interface IRecordedQuery<S, L, D> {
 
     DataLeq<S, L, D> dataLeq();
 
+    Set<IRecordedQuery<S, L, D>> transitiveQueries();
+
+    Set<IRecordedQuery<S, L, D>> predicateQueries();
+
+    // TODO: remove result
     Env<S, L, D> result();
 
 }

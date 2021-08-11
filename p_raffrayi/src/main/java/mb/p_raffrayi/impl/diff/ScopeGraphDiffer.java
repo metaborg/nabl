@@ -164,7 +164,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 futures.add(future);
             });
 
-            new AggregateFuture<>(futures).whenComplete((__, ex) -> {
+            AggregateFuture.of(futures).whenComplete((__, ex) -> {
                 if(ex != null) {
                     result.completeExceptionally(ex);
                 }
@@ -766,7 +766,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     // Helper methods and classes
 
     private static <T, R> IFuture<List<R>> aggregateAll(Iterable<T> items, Function1<T, IFuture<R>> mapper) {
-        return new AggregateFuture<R>(Streams.stream(items).map(mapper::apply).collect(Collectors.toSet()));
+        return AggregateFuture.of(Streams.stream(items).map(mapper::apply).collect(Collectors.toSet()));
     }
 
     private boolean isCurrentScopeOpen(S scope) {

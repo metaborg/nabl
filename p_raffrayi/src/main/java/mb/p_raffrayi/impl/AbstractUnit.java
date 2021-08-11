@@ -32,6 +32,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -437,8 +438,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
-        final Set.Transient<IRecordedQuery<S, L, D>> recordedQueries = CapsuleUtil.transientSet();
-        final ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
+        final ImmutableSet.Builder<IRecordedQuery<S, L, D>> transitiveQueries = ImmutableSet.builder();
+        final ImmutableSet.Builder<IRecordedQuery<S, L, D>> predicateQueries = ImmutableSet.builder();
+        final ITypeCheckerContext<S, L, D> queryContext = queryContext(predicateQueries);
 
         final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
@@ -461,18 +463,23 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         } else {
                             stats.outgoingQueries += 1;
                         }
-                        return result.whenComplete((ans, ex) -> {
-                            logger.debug("got answer from {}", sender);
-                            if(ex == null) {
-                                // TODO: incorporate query validation in separate confirmation algorithm, and record only local queries.
-                                recordedQueries.__insert(
-                                        RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                        return result.thenApply(ans -> {
+                            if(external) {
+                                // For external queries, track this query as transitive.
+                                transitiveQueries.add(RecordedQuery.of(path.getTarget(), re, dataWF, labelOrder,
+                                        dataEquiv, ans.env()));
+                                transitiveQueries.addAll(ans.transitiveQueries());
+                                predicateQueries.addAll(ans.predicateQueries());
+                            } else {
+                                // For local query, record it as such.
+                                recordedQueries.add(RecordedQuery.of(path.getTarget(), labelWF, dataWF, labelOrder,
+                                        dataEquiv, ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
                             }
+                            return ans.env();
+                        }).whenComplete((env, ex) -> {
+                            logger.debug("got answer from {}", sender);
                             resume();
                             granted(wf, owner);
-                        }).thenApply(ans -> {
-                            recordedQueries.__insertAll(ans.innerQueries());
-                            return ans.env();
                         });
                     }));
                 }
@@ -574,10 +581,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
-        return result.thenApply(env -> QueryAnswer.of(env, recordedQueries.freeze()));
+        return result.<IQueryAnswer<S, L, D>>thenApply(
+                env -> QueryAnswer.of(env, transitiveQueries.build(), predicateQueries.build()));
     }
 
-    private final ITypeCheckerContext<S, L, D> queryContext(Set.Transient<IRecordedQuery<S, L, D>> queries) {
+    private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries) {
         return new AbstractQueryTypeCheckerContext<S, L, D, R>() {
 
             @Override public String id() {
@@ -598,17 +606,22 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 return self.schedule(result).whenComplete((ans, ex) -> {
                     granted(wf, self);
                 }).thenApply(ans -> {
-                    queries.__insertAll(ans.innerQueries());
+                    queries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, ans.env(),
+                            ImmutableSet.of(), ImmutableSet.of()));
+                    queries.addAll(ans.transitiveQueries());
+                    // TODO can this happen? Is flattening here ok then?
+                    queries.addAll(ans.predicateQueries());
                     return CapsuleUtil.toSet(ans.env());
                 });
             }
         };
     }
 
-    protected IFuture<Env<S, L, D>> doQueryPrevious(IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    protected IFuture<Env<S, L, D>> doQueryPrevious(IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path,
+            LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
-        final INameResolutionContext<S, L, D> nrc = new StaticNameResolutionContext(scopeGraph,
-                new StaticQueryContext(scopeGraph), dataWF, dataEquiv);
+        final INameResolutionContext<S, L, D> nrc =
+                new StaticNameResolutionContext(scopeGraph, new StaticQueryContext(scopeGraph), dataWF, dataEquiv);
         final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
 
         return nr.env(path, labelWF, context.cancel());
@@ -851,12 +864,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-            final INameResolutionContext<S, L, D> pContext = new StaticNameResolutionContext(
-                    scopeGraph, this, dataWF, dataEquiv);
+            final INameResolutionContext<S, L, D> pContext =
+                    new StaticNameResolutionContext(scopeGraph, this, dataWF, dataEquiv);
             // @formatter::off
             return new NameResolution<>(edgeLabels, labelOrder, pContext)
-                .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
-                .thenApply(CapsuleUtil::toSet);
+                    .env(new ScopePath<S, L>(scope), labelWF, context.cancel()).thenApply(CapsuleUtil::toSet);
             // @formatter::on
         }
     }

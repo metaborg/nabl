@@ -77,7 +77,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
         }
-        return new AggregateFuture<>(results)
+        return AggregateFuture.of(results)
                 .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all groups returned.", context.id());
@@ -95,7 +95,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
             }));
         }
-        return new AggregateFuture<>(results)
+        return AggregateFuture.of(results)
                 .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all units returned.", context.id());
@@ -115,7 +115,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
         }
-        return new AggregateFuture<>(results)
+        return AggregateFuture.of(results)
                 .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all groups returned.", context.id());
