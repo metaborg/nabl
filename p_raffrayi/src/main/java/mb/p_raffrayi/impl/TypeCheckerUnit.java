@@ -10,10 +10,11 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.RefBool;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.AggregateFuture;
+import org.metaborg.util.future.AggregateFuture.SC;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletableFuture;
@@ -39,9 +40,11 @@ import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
+import mb.p_raffrayi.impl.envdiff.AddedEdge;
 import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.External;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
+import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.Confirm;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
@@ -53,7 +56,6 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
-import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
@@ -85,7 +87,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private IEnvDiffer<S, L, D> envDiffer;
 
     //    private IConfirmation<S, L, D> confirmation = new TrivialConfirmation();
-    private IConfirmation<S, L, D> confirmation = new SimpleConfirmation();
+    private IConfirmation<S, L, D> confirmation = new LazyConfirmation();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
@@ -161,9 +163,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes,
             LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        stats.incomingConfirmations++;
         // TODO assert confirmation enabled
-        return whenActive.thenCompose(__ -> confirmation.confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty));
+        stats.incomingConfirmations++;
+        final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
+        return whenActive
+                .thenCompose(__ -> confirmation.confirm(sender, scope, seenScopes, labelWF, dataWF, prevEnvEmpty));
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
@@ -548,8 +552,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private interface IConfirmation<S, L, D> {
         IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries);
 
-        IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, io.usethesource.capsule.Set.Immutable<S> seenScopes,
-                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
+        IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
+                Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
     }
 
     private class TrivialConfirmation implements IConfirmation<S, L, D> {
@@ -613,29 +617,38 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     .thenApply(v -> v ? Optional.of(BiMap.Immutable.of()) : Optional.empty());
         }
 
-        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, Set.Immutable<S> seenScopes,
-                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+                boolean prevEnvEmpty) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
     }
 
-    private class SimpleConfirmation implements IConfirmation<S, L, D> {
+    private abstract class BaseConfirmation implements IConfirmation<S, L, D> {
+
+        private final SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>> DENY =
+                SC.shortCircuit(Optional.empty());
+        private final SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>> ACC_NO_PATCHES =
+                SC.of(BiMap.Immutable.of());
 
         @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
-            // @formatter:off
-            return Futures.<IRecordedQuery<S, L, D>, BiMap.Immutable<S>>reducePartial(
-                Optional.of(BiMap.Immutable.of()),
-                Optional.of(queries),
-                (acc, q) -> confirm(q.scope(), CapsuleUtil.immutableSet(q.scope()), q.labelWf(), q.dataWf(), q.result().isEmpty())
-                    .thenApply(ptcOpt -> ptcOpt.flatMap(ptc -> BiMaps.safeMerge(ptc, acc))),
-                BiMaps::safeMerge
-            );
-            // @formatter:on
+            final List<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>> futures =
+                    queries.stream().map(this::confirm).map(this::toSCFuture).collect(Collectors.toList());
+
+            return AggregateFuture.ofShortCircuitable(this::merge, futures);
         }
 
-        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(S scope, Set.Immutable<S> seenScopes,
-                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        public abstract IFuture<Optional<BiMap.Immutable<S>>> confirm(IRecordedQuery<S, L, D> query);
+
+        protected IFuture<Optional<BiMap.Immutable<S>>> confirmSingle(IRecordedQuery<S, L, D> query) {
+            return confirm(self, query.scope(), CapsuleUtil.immutableSet(query.scope()), query.labelWf(),
+                    query.dataWf(), query.result().isEmpty());
+        }
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+                boolean prevEnvEmpty) {
             return getOwner(scope).thenCompose(owner -> {
                 if(!owner.equals(self)) {
                     final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
@@ -654,39 +667,127 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     return result;
                 }
                 return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {
-                    final RefBool change = new RefBool(false);
-                    final ArrayList<External<S, L, D>> externals = new ArrayList<>();
+                    final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>> futures =
+                            new ArrayList<>();
                     envDiff.diffPaths().forEach(path -> {
                         // @formatter:off
-                        path.getDatum().<Unit>match(
-                            addedEdge -> { change.set(true); return Unit.unit; },
-                            removedEdge -> { change.or(!prevEnvEmpty); return Unit.unit; },
-                            external -> { externals.add(external); return Unit.unit; },
+                        futures.add(path.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>>match(
+                            addedEdge -> handleAddedEdge(sender, addedEdge),
+                            removedEdge -> handleRemovedEdge(sender, removedEdge, prevEnvEmpty),
+                            external -> handleExternal(sender, external),
                             diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
-                        );
+                        ));
                         // @formatter:on
                     });
 
-                    if(change.get()) {
-                        return CompletableFuture.completedFuture(Optional.empty());
-                    }
-
-                    // @formatter:off
-                    return Futures.<External<S, L, D>, BiMap.Immutable<S>>reducePartial(
-                        Optional.of(envDiff.patches()),
-                        Optional.of(externals),
-                        (acc, ext) -> confirm(ext.scope(), ext.seenScopes(), ext.labelWf(), ext.dataWf(), prevEnvEmpty)
-                            .thenApply(ptcOpt -> ptcOpt.flatMap(ptc -> BiMaps.safeMerge(ptc, acc))),
-                        BiMaps::safeMerge
-                    );
-                    // @formatter:on
-
+                    return AggregateFuture.<BiMap.Immutable<S>, Optional<BiMap.Immutable<S>>>ofShortCircuitable(
+                            this::merge, futures);
                 });
             });
         }
 
+        protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleAddedEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, AddedEdge<S, L, D> addedEdge);
+
+        protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleRemovedEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, RemovedEdge<S, L, D> removedEdge,
+                        boolean prevEnvEnpty);
+
+        protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleExternal(IActorRef<? extends IUnit<S, L, D, ?>> sender, External<S, L, D> external);
+
+        protected SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>> deny() {
+            return DENY;
+        }
+
+        protected SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>> accept() {
+            return ACC_NO_PATCHES;
+        }
+
+        protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>> acceptFuture() {
+            return CompletableFuture.completedFuture(ACC_NO_PATCHES);
+        }
+
+        protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                accept(BiMap.Immutable<S> patches) {
+            return CompletableFuture.completedFuture(SC.of(patches));
+        }
+
+        private Optional<BiMap.Immutable<S>> merge(List<BiMap.Immutable<S>> patchSets) {
+            // Patch sets should be build from matches by scope differ, so just adding them is safe.
+            return Optional.of(patchSets.stream().reduce(BiMap.Immutable.of(), BiMap.Immutable::putAll));
+        }
+
+        private SC<BiMap.Immutable<S>, Optional<BiMap.Immutable<S>>> toSC(Optional<BiMap.Immutable<S>> intermediate) {
+            return intermediate.<SC<BiMap.Immutable<S>, Optional<BiMap.Immutable<S>>>>map(SC::of)
+                    .orElse(SC.shortCircuit(Optional.empty()));
+        }
+
+        private IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                toSCFuture(IFuture<Optional<BiMap.Immutable<S>>> intermediateFuture) {
+            return intermediateFuture.thenApply(this::toSC);
+        }
+
     }
 
+    private class LazyConfirmation extends BaseConfirmation {
+
+        @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IRecordedQuery<S, L, D> query) {
+            // First confirm root query
+            return confirmSingle(query).thenCompose(res -> {
+                return Futures.<BiMap.Immutable<S>>liftOptional(res.map(initialPatches -> {
+                    // If that succeeds, confirm all transitive queries
+                    return confirm(query.transitiveQueries()).thenCompose(res2 -> {
+                        return Futures.<BiMap.Immutable<S>>liftOptional(res2.map(transitivePatches -> {
+                            // If that succeeds, confirm all queries raised by predicates
+                            return confirm(query.predicateQueries()).thenApply(res3 -> {
+                                return res3.map(__ -> {
+                                    // Do no include patches from predicate queries in eventual result, because
+                                    // nested state should not leak to the outer state, and hance plays no role in confirmation.
+                                    return initialPatches.putAll(transitivePatches);
+                                });
+                            });
+                        }));
+                    });
+                }));
+            });
+        }
+
+        @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleAddedEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, AddedEdge<S, L, D> addedEdge) {
+            return doQuery(sender, new ScopePath<>(addedEdge.scope()), addedEdge.labelWf(), LabelOrder.none(),
+                    addedEdge.dataWf(), DataLeq.none(), null, null).thenApply(ans -> {
+                        if(ans.env().isEmpty()) {
+                            return accept();
+                        } else {
+                            return deny();
+                        }
+                    });
+        }
+
+        @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleRemovedEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, RemovedEdge<S, L, D> removedEdge,
+                        boolean prevEnvEnpty) {
+            if(prevEnvEnpty) {
+                return acceptFuture();
+            }
+            return doQueryPrevious(previousResult.scopeGraph(), new ScopePath<>(removedEdge.scope()),
+                    removedEdge.labelWf(), removedEdge.dataWf(), LabelOrder.none(), DataLeq.none()).thenApply(env -> {
+                        if(env.isEmpty()) {
+                            return accept();
+                        } else {
+                            return deny();
+                        }
+                    });
+        }
+
+        @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+                handleExternal(IActorRef<? extends IUnit<S, L, D, ?>> sender, External<S, L, D> external) {
+            // External env diff validated by transitively recorded query
+            return acceptFuture();
+        }
+
+    }
     ///////////////////////////////////////////////////////////////////////////
     // Assertions
     ///////////////////////////////////////////////////////////////////////////
