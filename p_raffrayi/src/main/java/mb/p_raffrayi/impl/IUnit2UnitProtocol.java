@@ -12,6 +12,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 /**
@@ -30,6 +31,9 @@ public interface IUnit2UnitProtocol<S, L, D> {
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
     IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
+
+    IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
     IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF,

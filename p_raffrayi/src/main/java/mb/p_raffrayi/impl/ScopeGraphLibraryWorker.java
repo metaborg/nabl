@@ -23,6 +23,7 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
@@ -78,6 +79,12 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
         return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+    }
+
+    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        // Library unit will route these to _query.
+        throw new UnsupportedOperationException("Library workers cannot receive queries in previous scope graphs.");
     }
 
     @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope,

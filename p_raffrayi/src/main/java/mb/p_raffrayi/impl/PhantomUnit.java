@@ -15,10 +15,14 @@ import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.RemovingDiffer;
+import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.BiMap.Immutable;
+import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
@@ -41,6 +45,11 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         }
 
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
+    }
+
+    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {

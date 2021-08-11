@@ -56,6 +56,7 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.BiMaps;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -83,7 +84,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private IEnvDiffer<S, L, D> envDiffer;
 
-//    private IConfirmation<S, L, D> confirmation = new TrivialConfirmation();
+    //    private IConfirmation<S, L, D> confirmation = new TrivialConfirmation();
     private IConfirmation<S, L, D> confirmation = new SimpleConfirmation();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
@@ -163,6 +164,11 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         stats.incomingConfirmations++;
         // TODO assert confirmation enabled
         return whenActive.thenCompose(__ -> confirmation.confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty));
+    }
+
+    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
@@ -636,15 +642,16 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
                     final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                     waitFor(confirm, owner);
-                    self.async(owner)._confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
-                        granted(confirm, owner);
-                        resume();
-                        if(ex != null && ex == Release.instance) {
-                            result.complete(Optional.of(BiMap.Immutable.of()));
-                        } else {
-                            result.complete(v, ex);
-                        }
-                    });
+                    self.async(owner)._confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty)
+                            .whenComplete((v, ex) -> {
+                                granted(confirm, owner);
+                                resume();
+                                if(ex != null && ex == Release.instance) {
+                                    result.complete(Optional.of(BiMap.Immutable.of()));
+                                } else {
+                                    result.complete(v, ex);
+                                }
+                            });
                     return result;
                 }
                 return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {

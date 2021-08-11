@@ -38,8 +38,6 @@ import com.google.common.collect.Lists;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
 import mb.p_raffrayi.IRecordedQuery;
-import mb.p_raffrayi.IScopeGraphLibrary;
-import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -440,7 +438,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         logger.debug("got _query from {}", sender);
         final boolean external = !sender.equals(self);
         final Set.Transient<IRecordedQuery<S, L, D>> recordedQueries = CapsuleUtil.transientSet();
-        ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
+        final ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
 
         final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
@@ -576,53 +574,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
-        return result.<IQueryAnswer<S, L, D>>thenApply(env -> QueryAnswer.of(env, recordedQueries.freeze()));
+        return result.thenApply(env -> QueryAnswer.of(env, recordedQueries.freeze()));
     }
 
     private final ITypeCheckerContext<S, L, D> queryContext(Set.Transient<IRecordedQuery<S, L, D>> queries) {
-        return new ITypeCheckerContext<S, L, D>() {
+        return new AbstractQueryTypeCheckerContext<S, L, D, R>() {
 
             @Override public String id() {
                 return self.id() + "#query";
-            }
-
-            @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-                    ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels,
-                    boolean data, boolean sharing) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void shareLocal(S scope) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void setDatum(S scope, D datum) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void addEdge(S source, L label, S target) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void closeEdge(S source, L label) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void closeScope(S scope) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
             }
 
             @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
@@ -644,6 +603,15 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
         };
+    }
+
+    protected IFuture<Env<S, L, D>> doQueryPrevious(IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
+        final INameResolutionContext<S, L, D> nrc = new StaticNameResolutionContext(scopeGraph,
+                new StaticQueryContext(scopeGraph), dataWF, dataEquiv);
+        final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
+
+        return nr.env(path, labelWF, context.cancel());
     }
 
     protected final boolean isOwner(S scope) {
@@ -679,8 +647,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     ///////////////////////////////////////////////////////////////////////////
 
     private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess =
-            MultiSetMap.Immutable.of();
+    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess = MultiSetMap.Immutable.of();
 
     protected boolean isWaiting() {
         return !waitFors.isEmpty();
@@ -818,6 +785,80 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return "Delay{future=" + future + ",sender=" + sender + "}";
         }
 
+    }
+
+    protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
+
+        private final DataLeq<S, L, D> dataLeq;
+        private final ITypeCheckerContext<S, L, D> queryContext;
+        private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+        private final DataWf<S, L, D> dataWf;
+
+        protected StaticNameResolutionContext(IScopeGraph.Immutable<S, L, D> scopeGraph,
+                ITypeCheckerContext<S, L, D> queryContext, DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
+            this.queryContext = queryContext;
+            this.scopeGraph = scopeGraph;
+            this.dataWf = dataWf;
+            this.dataLeq = dataLeq;
+        }
+
+        @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
+                LabelOrder<L> labelOrder) {
+            final S scope = path.getTarget();
+            if(canAnswer(scope)) {
+                logger.debug("local p_env {}", scope);
+                return Optional.empty();
+            }
+            // TODO logging
+            return Optional.of(getOwner(scope).thenCompose(owner -> {
+                return self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq);
+            }));
+        }
+
+        @Override public IFuture<Optional<D>> getDatum(S scope) {
+            return CompletableFuture.completedFuture(scopeGraph.getData(scope));
+        }
+
+        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            return CompletableFuture.completedFuture(scopeGraph.getEdges(scope, label));
+        }
+
+        @Override public IFuture<Boolean> dataWf(D datum, ICancel cancel) throws InterruptedException {
+            return dataWf.wf(datum, queryContext, cancel);
+        }
+
+        @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            return dataLeq.leq(d1, d2, queryContext, cancel);
+        }
+
+        @Override public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+            return dataLeq.alwaysTrue(queryContext, cancel);
+        }
+    }
+
+    protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
+
+        private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+
+        public StaticQueryContext(IScopeGraph.Immutable<S, L, D> scopeGraph) {
+            this.scopeGraph = scopeGraph;
+        }
+
+        @Override public String id() {
+            return self.id() + "#prev-query";
+        }
+
+        @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+                LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            final INameResolutionContext<S, L, D> pContext = new StaticNameResolutionContext(
+                    scopeGraph, this, dataWF, dataEquiv);
+            // @formatter::off
+            return new NameResolution<>(edgeLabels, labelOrder, pContext)
+                .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
+                .thenApply(CapsuleUtil::toSet);
+            // @formatter::on
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1300,4 +1341,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             throw new IllegalStateException("Deadlock resolution for incremental analysis is not enabled.");
         }
     }
+
+
 }
