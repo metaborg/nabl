@@ -446,10 +446,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 targets.forEach(targetScope -> {
                     final S target = patches.getValueOrDefault(targetScope, targetScope);
                     if(local) {
+                        scopes.__insert(newSource);
                         newScopeGraph.addEdge(newSource, label, target);
                     } else {
                         doAddEdge(self, newSource, label, target);
                         localScopeGraph.addEdge(newSource, label, target);
+                    }
+                    if(isOwner(target)) {
+                        scopes.__insert(target);
                     }
                 });
             });
