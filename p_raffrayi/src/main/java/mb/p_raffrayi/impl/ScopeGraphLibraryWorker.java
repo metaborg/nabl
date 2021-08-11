@@ -1,6 +1,5 @@
 package mb.p_raffrayi.impl;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -14,8 +13,6 @@ import org.metaborg.util.unit.Unit;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
-import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -47,7 +44,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes, Collections.emptyList());
+        doStart(rootScopes);
+        // library workers do not need a differ, so don't initialize one here.
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
@@ -104,10 +102,6 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // As part of the DataWf and DataLeq params of incoming queries, library workers can have outgoing queries,
         // originating from data{WF,LEq} parameters.
         // When these cause a deadlock, workers can receive a restart.
-    }
-
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new MatchingDiffer<>(differOps());
     }
 
     @Override protected boolean canAnswer(S scope) {

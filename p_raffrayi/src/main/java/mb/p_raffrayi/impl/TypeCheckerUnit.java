@@ -37,7 +37,7 @@ import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
@@ -117,7 +117,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertInState(UnitState.INIT_UNIT);
         resume();
 
-        doStart(rootScopes, previousResult != null ? previousResult.rootScopes() : Collections.emptyList());
+        doStart(rootScopes);
         state = UnitState.INIT_TC;
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             if(state == UnitState.INIT_TC) {
@@ -173,6 +173,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
+    }
+
+    @Override public IFuture<Optional<S>> _match(S previousScope) {
+        assertOwnScope(previousScope);
+        if(matchedBySharing.containsValue(previousScope)) {
+            return CompletableFuture.completedFuture(Optional.of(matchedBySharing.getKey(previousScope)));
+        }
+        return super._match(previousScope);
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
@@ -254,9 +262,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             }
         }
 
-        if(isDifferEnabled() && !differ.matchScopes(req.freeze())) {
-            logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
-            throw new IllegalStateException("Could not match.");
+        if(isDifferEnabled()) {
+            whenDifferActivated.thenAccept(__ -> {
+                if(!differ.matchScopes(req.freeze())) {
+                    logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                    throw new IllegalStateException("Could not match.");
+                }
+            });
         }
 
         this.addedUnitIds.__insert(id);
@@ -421,6 +433,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             assertPreviousResultProvided();
+            // TODO: matching differ with patches
+            initDiffer(new MatchingDiffer<S, L, D>(differOps()), this.rootScopes, previousResult.rootScopes());
+            this.envDiffer = new EnvDiffer<>(differ, differOps());
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
             previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
@@ -492,6 +507,16 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             state = UnitState.ACTIVE;
             whenActive.complete(Unit.unit);
             confirmationResult.complete(Optional.empty());
+            if(isDifferEnabled()) {
+                final IDifferContext<S, L, D> context = differContext();
+                final IDifferOps<S, L, D> differOps = differOps();
+                if(previousResult != null) {
+                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps), this.rootScopes, previousResult.rootScopes());
+                } else {
+                    initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(), Collections.emptyList());
+                }
+                this.envDiffer = new EnvDiffer<>(differ, differOps());
+            }
             resume();
             tryFinish(); // FIXME needed?
             return true;
@@ -527,22 +552,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override protected Immutable<S, L, D> localScopeGraph() {
         return localScopeGraph.freeze();
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Differ
-    ///////////////////////////////////////////////////////////////////////////
-
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        final IDifferContext<S, L, D> context = differContext();
-        final IDifferOps<S, L, D> differOps = differOps();
-        if(previousResult != null) {
-            final IScopeGraphDiffer<S, L, D> differ =
-                    new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()), differOps);
-            this.envDiffer = new EnvDiffer<>(differ, differOps);
-            return differ;
-        }
-        return new AddingDiffer<>(context, differOps);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -666,22 +675,24 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                             });
                     return result;
                 }
-                return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {
-                    final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>> futures =
-                            new ArrayList<>();
-                    envDiff.diffPaths().forEach(path -> {
-                        // @formatter:off
-                        futures.add(path.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>>match(
-                            addedEdge -> handleAddedEdge(sender, addedEdge),
-                            removedEdge -> handleRemovedEdge(sender, removedEdge, prevEnvEmpty),
-                            external -> handleExternal(sender, external),
-                            diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
-                        ));
-                        // @formatter:on
-                    });
+                return whenDifferActivated.thenCompose(__ -> {
+                    return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {
+                        final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>> futures =
+                                new ArrayList<>();
+                        envDiff.diffPaths().forEach(path -> {
+                            // @formatter:off
+                            futures.add(path.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>>match(
+                                addedEdge -> handleAddedEdge(sender, addedEdge),
+                                removedEdge -> handleRemovedEdge(sender, removedEdge, prevEnvEmpty),
+                                external -> handleExternal(sender, external),
+                                diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
+                            ));
+                            // @formatter:on
+                        });
 
-                    return AggregateFuture.<BiMap.Immutable<S>, Optional<BiMap.Immutable<S>>>ofShortCircuitable(
-                            this::merge, futures);
+                        return AggregateFuture.<BiMap.Immutable<S>, Optional<BiMap.Immutable<S>>>ofShortCircuitable(
+                                this::merge, futures);
+                    });
                 });
             });
         }

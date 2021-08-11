@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,12 +103,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
-    private final List<S> rootScopes = new ArrayList<>();
+    protected final List<S> rootScopes = new ArrayList<>();
 
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
     protected @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
+    protected ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
 
     private final MultiSet.Transient<String> scopeNameCounters;
 
@@ -196,15 +196,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return scope;
     }
 
-    protected final void doStart(List<S> currentRootScopes, @Nullable List<S> previousRootScopes) {
+    protected final void doStart(List<S> currentRootScopes) {
         this.rootScopes.addAll(currentRootScopes);
         for(S rootScope : CapsuleUtil.toSet(currentRootScopes)) {
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
-        }
-        if(isDifferEnabled()) {
-            this.differ = context.settings().scopeGraphDiff() ? initDiffer() : null;
-            startDiffer(currentRootScopes, previousRootScopes != null ? previousRootScopes : Collections.emptyList());
         }
         self.complete(whenStarted, Unit.unit, null);
     }
@@ -218,7 +214,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             logger.debug("{} type checker finished", this);
             resume(); // FIXME necessary?
             if(isDifferEnabled()) {
-                differ.typeCheckerFinished();
+                whenDifferActivated.thenAccept(__ -> differ.typeCheckerFinished());
             }
             if(ex != null) {
                 logger.error("type checker errored: {}", ex);
@@ -240,9 +236,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.settings().scopeGraphDiff();
     }
 
-    protected abstract IScopeGraphDiffer<S, L, D> initDiffer();
+    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, List<S> currentRootScopes, List<S> previousRootScopes) {
+        this.differ = differ;
+        startDiffer(currentRootScopes, previousRootScopes);
+        self.complete(whenDifferActivated, Unit.unit, null);
+    }
 
-    private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
+    protected void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
         assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
@@ -340,7 +340,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
         if(isDifferEnabled()) {
-            return whenStarted.thenCompose(__ -> differ.match(previousScope));
+            return whenDifferActivated.thenCompose(__ -> differ.match(previousScope));
         } else {
             return CompletableFuture.completedFuture(Optional.empty());
         }

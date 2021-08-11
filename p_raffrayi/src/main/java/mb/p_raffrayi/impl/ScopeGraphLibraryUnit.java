@@ -21,7 +21,6 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -65,9 +64,10 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes, Collections.emptyList());
+        doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
+        initDiffer(new MatchingDiffer<>(differOps()), Collections.emptyList(), Collections.emptyList());
         startWorkers();
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
@@ -182,10 +182,6 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     @Override public void _restart() {
         // As part of the DataWf and DataLeq params of incoming queries, library the workers of a library unit
         // can have outgoing queries. When these cause a deadlock, workers can receive a restart.
-    }
-
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new MatchingDiffer<>(differOps());
     }
 
     ///////////////////////////////////////////////////////////////////////////

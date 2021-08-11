@@ -13,7 +13,6 @@ import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.RemovingDiffer;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -35,7 +34,8 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes, previousResult.rootScopes());
+        doStart(rootScopes);
+        initDiffer(new RemovingDiffer<>(previousResult.scopeGraph(), differOps()), rootScopes, previousResult.rootScopes());
 
         // Add Phantom unit for all previous subunits.
         for(Map.Entry<String, IUnitResult<S, L, D, ?>> entry : previousResult.subUnitResults().entrySet()) {
@@ -72,10 +72,6 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
         return CompletableFuture.completedFuture(datum);
-    }
-
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new RemovingDiffer<>(previousResult.scopeGraph(), differOps());
     }
 
 }
