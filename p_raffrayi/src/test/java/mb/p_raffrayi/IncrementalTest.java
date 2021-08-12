@@ -37,14 +37,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test(timeout = 10000) public void testSimpleRelease() throws InterruptedException, ExecutionException {
-        // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
-            .analysis(Unit.unit)
-            .build();
-        // @formatter:on
+        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = rootResult().build();
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
                 this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
@@ -66,22 +59,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.empty()))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
-            .analysis(Unit.unit)
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on
@@ -126,23 +110,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.empty()))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -192,24 +167,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Env<Scope, Integer, IDatum> env = Env.of(path);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -265,24 +234,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Env<Scope, Integer, IDatum> env = Env.of(path);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -338,24 +301,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Env<Scope, Integer, IDatum> env = Env.of(path);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult .<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -405,14 +362,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test(timeout = 10000) public void testSimpleRestart() throws InterruptedException, ExecutionException {
-        // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
-            .analysis(Unit.unit)
-            .build();
-        // @formatter:on
+        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = rootResult().build();
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
                 this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
@@ -439,22 +389,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub").addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.of(path)))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -513,34 +455,23 @@ public class IncrementalTest extends PRaffrayiTestBase {
                         .withTransitiveQueries(rqTrans);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub1")
-            .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = subResult("/./sub1", root)
             .addQueries(rq)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> child2Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub2")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> child2Result = subResult("/./sub2", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .putSubUnitResults("sub1", child1Result)
             .putSubUnitResults("sub2", child2Result)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -604,11 +535,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testRestart_FailureInInitialState()
             throws InterruptedException, ExecutionException {
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
-            .analysis(Unit.unit)
+        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = rootResult()
             .addFailures(new Exception())
             .build();
         // @formatter:on
@@ -748,11 +675,9 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d = new Scope("/.", 1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -805,23 +730,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
-            .localScopeGraph(ScopeGraph.Immutable.of()).addQueries(query)
+            .addQueries(query)
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -882,24 +802,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), env))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .putSubUnitResults("sub", childResult)
             .addQueries(query)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -959,11 +873,9 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> previousResult = rootResult()
             .scopeGraph(sg)
             .localScopeGraph(sg)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -998,22 +910,16 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d1 = new Scope("/./sub", 1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -1134,24 +1040,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d2 = new Scope("/./sub", 2);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> childResult = subResult("/./sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.empty()))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.none(), LabelOrder.none(), DataLeq.any(), Env.empty()))
             .putSubUnitResults("sub", childResult)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -1225,31 +1125,21 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d1 = new Scope("/./sub2", 1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> sub1Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.sub1")
-            .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> sub1Result = subResult("/./sub1", root)
             .addQueries(RecordedQuery.of(d1, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.none(), Env.empty()))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> sub2Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub2")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> sub2Result = subResult("/./sub2", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .putSubUnitResults("sub1", sub1Result)
             .putSubUnitResults("sub2", sub2Result)
             .analysis(Unit.unit)
@@ -1320,45 +1210,30 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d1 = new Scope("/./sub2/sub", 1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> sub1Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.sub1")
-            .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of())
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, Unit> sub1Result = subResult("/./sub1", root)
             .addQueries(RecordedQuery.of(d1, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.none(), Env.empty()))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> sub2subResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub2/sub")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> sub2subResult = subResult("/./sub2/sub", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> sub2Result = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/./sub2")
-            .addRootScopes(root)
+        final IUnitResult<Scope, Integer, IDatum, Unit> sub2Result = subResult("/./sub2", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Unit.unit)
             .putSubUnitResults("sub", sub2subResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
-            .id("/.")
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
-            .localScopeGraph(ScopeGraph.Immutable.of())
             .putSubUnitResults("sub1", sub1Result)
             .putSubUnitResults("sub2", sub2Result)
-            .analysis(Unit.unit)
             .build();
         // @formatter:on
 
@@ -1392,6 +1267,27 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
         assertTrue(result.allFailures().isEmpty());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Initial state builder utils
+    ///////////////////////////////////////////////////////////////////////////
+
+    private UnitResult.Builder<Scope, Integer, IDatum, Unit> rootResult() {
+        return UnitResult.<Scope, Integer, IDatum, Unit>builder()
+                .id("/.")
+                .scopeGraph(ScopeGraph.Immutable.of())
+                .localScopeGraph(ScopeGraph.Immutable.of())
+                .analysis(Unit.unit);
+    }
+
+    private UnitResult.Builder<Scope, Integer, IDatum, Unit> subResult(String id, Scope root) {
+        return UnitResult.<Scope, Integer, IDatum, Unit>builder()
+                .id(id)
+                .addRootScopes(root)
+                .scopeGraph(ScopeGraph.Immutable.of())
+                .localScopeGraph(ScopeGraph.Immutable.of())
+                .analysis(Unit.unit);
     }
 
 }
