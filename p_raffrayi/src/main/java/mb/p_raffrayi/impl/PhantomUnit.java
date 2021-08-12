@@ -9,7 +9,6 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -67,8 +66,12 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public IFuture<Optional<Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        // TODO: execute query in old scope graph, and return {} when result is empty?
-        return CompletableFuture.completedFuture(prevEnvEmpty ? Optional.of(BiMap.Immutable.of()) : Optional.empty());
+        if(prevEnvEmpty) {
+            return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
+        }
+        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, LabelOrder.none(), DataLeq.any()).thenApply(env -> {
+            return env.isEmpty() ? Optional.of(BiMap.Immutable.of()) : Optional.empty();
+        });
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
