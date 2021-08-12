@@ -424,10 +424,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
 
         confirmation.confirm(previousResult.queries()).whenComplete((r, ex) -> {
-            if(ex != null || !r.isPresent()) {
-                if(ex != null && ex != Release.instance) {
-                    failures.add(ex);
-                }
+            if(ex == Release.instance) {
+                // Do nothing, unit is already released by deadlock resolution.
+            } else if(ex != null) {
+                failures.add(ex);
+            } else if(!r.isPresent()) {
+                // No confirmation, hence restart
                 if(doRestart()) {
                     stateTransitionTrace = TransitionTrace.RESTARTED;
                 }
@@ -674,8 +676,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         public abstract IFuture<Optional<BiMap.Immutable<S>>> confirm(IRecordedQuery<S, L, D> query);
 
         protected IFuture<Optional<BiMap.Immutable<S>>> confirmSingle(IRecordedQuery<S, L, D> query) {
-            return confirm(self, query.scopePath(), query.labelWf(), query.dataWf(),
-                    query.result().isEmpty());
+            return confirm(self, query.scopePath(), query.labelWf(), query.dataWf(), query.result().isEmpty());
         }
 
         @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
@@ -686,16 +687,15 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
                     final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                     waitFor(confirm, owner);
-                    self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty)
-                            .whenComplete((v, ex) -> {
-                                granted(confirm, owner);
-                                resume();
-                                if(ex != null && ex == Release.instance) {
-                                    result.complete(Optional.of(BiMap.Immutable.of()));
-                                } else {
-                                    result.complete(v, ex);
-                                }
-                            });
+                    self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
+                        granted(confirm, owner);
+                        resume();
+                        if(ex != null && ex == Release.instance) {
+                            result.complete(Optional.of(BiMap.Immutable.of()));
+                        } else {
+                            result.complete(v, ex);
+                        }
+                    });
                     return result;
                 }
                 return whenDifferActivated.thenCompose(__ -> {
@@ -790,13 +790,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
                 handleAddedEdge(IActorRef<? extends IUnit<S, L, D, ?>> sender, AddedEdge<S, L, D> addedEdge) {
             return doQuery(sender, new ScopePath<>(addedEdge.scope()), addedEdge.labelWf(), LabelOrder.none(),
-                    addedEdge.dataWf(), DataLeq.none(), null, null).thenApply(ans -> {
-                        if(ans.env().isEmpty()) {
-                            return accept();
-                        } else {
-                            return deny();
-                        }
-                    });
+                    addedEdge.dataWf(), DataLeq.none(), null, null)
+                            .thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
         }
 
         @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
@@ -806,13 +801,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 return acceptFuture();
             }
             return doQueryPrevious(previousResult.scopeGraph(), new ScopePath<>(removedEdge.scope()),
-                    removedEdge.labelWf(), removedEdge.dataWf(), LabelOrder.none(), DataLeq.none()).thenApply(env -> {
-                        if(env.isEmpty()) {
-                            return accept();
-                        } else {
-                            return deny();
-                        }
-                    });
+                    removedEdge.labelWf(), removedEdge.dataWf(), LabelOrder.none(), DataLeq.none())
+                            .thenApply(env -> env.isEmpty() ? accept() : deny());
         }
 
         @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>

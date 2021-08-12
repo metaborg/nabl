@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.metaborg.util.Ref;
-import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.IFuture;
 
 import com.google.common.collect.ImmutableList;
@@ -39,8 +38,6 @@ public class EnvDiffTest {
     private static final String s3n = "s3n";
 
     private static final Integer l1 = 1;
-    private static final Integer l2 = 2;
-
 
     @Test public void testAddedEdge() {
         // @formatter:off
@@ -69,7 +66,7 @@ public class EnvDiffTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s2n, CapsuleUtil.immutableSet(s1o, s2n), LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s2n, /* CapsuleUtil.immutableSet(s1o, s2n), */ LabelWf.any(), DataWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
@@ -169,7 +166,7 @@ public class EnvDiffTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s3n, CapsuleUtil.toSet(s1o, s2o, s3n), LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s3n, /* CapsuleUtil.toSet(s1o, s2o, s3n), */LabelWf.any(), DataWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }

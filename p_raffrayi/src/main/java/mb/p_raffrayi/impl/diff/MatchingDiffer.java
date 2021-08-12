@@ -78,8 +78,6 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 return builder.build();
             });
         });
-
-        // return CompletableFuture.completedFuture();
     }
 
     private S getCurrent(S previousScope) {

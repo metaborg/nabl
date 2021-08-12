@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import io.usethesource.capsule.Set;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;

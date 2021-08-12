@@ -236,13 +236,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.settings().scopeGraphDiff();
     }
 
-    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, List<S> currentRootScopes, List<S> previousRootScopes) {
+    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, List<S> currentRootScopes,
+            List<S> previousRootScopes) {
         this.differ = differ;
         startDiffer(currentRootScopes, previousRootScopes);
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 
-    protected void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
+    private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
         assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
@@ -466,14 +467,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         return result.thenApply(ans -> {
                             if(external) {
                                 // For external queries, track this query as transitive.
-                                transitiveQueries.add(RecordedQuery.of(path, re, dataWF, labelOrder,
-                                        dataEquiv, ans.env()));
+                                transitiveQueries
+                                        .add(RecordedQuery.of(path, re, dataWF, labelOrder, dataEquiv, ans.env()));
                                 transitiveQueries.addAll(ans.transitiveQueries());
                                 predicateQueries.addAll(ans.predicateQueries());
                             } else {
                                 // For local query, record it as such.
-                                recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder,
-                                        dataEquiv, ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
+                                recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv,
+                                        ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
                             }
                             return ans.env();
                         }).whenComplete((env, ex) -> {
@@ -581,8 +582,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
-        return result.<IQueryAnswer<S, L, D>>thenApply(
-                env -> QueryAnswer.of(env, transitiveQueries.build(), predicateQueries.build()));
+        return result.thenApply(env -> QueryAnswer.of(env, transitiveQueries.build(), predicateQueries.build()));
     }
 
     private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries) {
@@ -868,7 +868,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     new StaticNameResolutionContext(scopeGraph, this, dataWF, dataEquiv);
             // @formatter::off
             return new NameResolution<>(edgeLabels, labelOrder, pContext)
-                    .env(new ScopePath<S, L>(scope), labelWF, context.cancel()).thenApply(CapsuleUtil::toSet);
+                .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
+                .thenApply(CapsuleUtil::toSet);
             // @formatter::on
         }
     }
@@ -1353,6 +1354,4 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             throw new IllegalStateException("Deadlock resolution for incremental analysis is not enabled.");
         }
     }
-
-
 }

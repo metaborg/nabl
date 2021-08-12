@@ -33,7 +33,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
     @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
         if(!differOps.ownScope(scope) ) {
-            return CompletableFuture.completedFuture(External.of(scope, seenScopes, labelWf, dataWf));
+            return CompletableFuture.completedFuture(External.of(scope, labelWf, dataWf));
         }
 
         return scopeGraphDiffer.scopeDiff(scope).thenCompose(scopeDiff -> {
@@ -43,7 +43,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                 // Process all added/removed edges
                 // @formatter:off
                 traverseApplicable(match.addedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
-                    treeBuilder.addSubTree(label, target, AddedEdge.of(target, newSeenScopes, newLabelWf, dataWf));
+                    treeBuilder.addSubTree(label, target, AddedEdge.of(target, newLabelWf, dataWf));
                 });
                 traverseApplicable(match.removedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                     treeBuilder.addSubTree(label, target, RemovedEdge.of(target, newLabelWf, dataWf));

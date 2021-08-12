@@ -17,9 +17,9 @@ public interface IRecordedQuery<S, L, D> {
 
     DataWf<S, L, D> dataWf();
 
-    LabelOrder<L> labelOrder();
+    LabelOrder<L> labelOrder(); // TODO: remove?
 
-    DataLeq<S, L, D> dataLeq();
+    DataLeq<S, L, D> dataLeq(); // TODO: remove?
 
     Set<IRecordedQuery<S, L, D>> transitiveQueries();
 

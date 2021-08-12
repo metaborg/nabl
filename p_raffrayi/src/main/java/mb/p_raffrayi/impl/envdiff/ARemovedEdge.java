@@ -24,11 +24,10 @@ public abstract class ARemovedEdge<S, L, D> implements IEnvDiff<S, L, D> {
     }
 
     @Override @Value.Lazy public Set.Immutable<ResolutionPath<S, L, IEnvDiff<S, L, D>>> diffPaths() {
-        return CapsuleUtil.immutableSet(new ScopePath<S, L>(scope()).resolve(this));
+        return diffPaths(new ScopePath<S, L>(scope()));
     }
 
     @Override public Set.Immutable<ResolutionPath<S, L, IEnvDiff<S, L, D>>> diffPaths(ScopePath<S, L> prefix) {
-        // TODO need step with scope() prop?
         return CapsuleUtil.immutableSet(prefix.resolve(this));
     }
 
