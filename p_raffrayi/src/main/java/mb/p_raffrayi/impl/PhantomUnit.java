@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -12,13 +11,13 @@ import org.metaborg.util.unit.Unit;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.diff.RemovingDiffer;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
-import mb.scopegraph.oopsla20.diff.BiMap.Immutable;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
@@ -56,7 +55,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return CompletableFuture.completedFuture(StateSummary.released());
     }
 
-    @Override public void _release(Immutable<S> patches) {
+    @Override public void _release(BiMap.Immutable<S> patches) {
         // ignore
     }
 
@@ -64,13 +63,13 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // ignore
     }
 
-    @Override public IFuture<Optional<Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         if(prevEnvEmpty) {
-            return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
+            return CompletableFuture.completedFuture(ConfirmResult.confirm());
         }
         return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, LabelOrder.none(), DataLeq.any()).thenApply(env -> {
-            return env.isEmpty() ? Optional.of(BiMap.Immutable.of()) : Optional.empty();
+            return env.isEmpty() ? ConfirmResult.confirm() : ConfirmResult.deny();
         });
     }
 

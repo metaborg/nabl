@@ -159,12 +159,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         // TODO assert confirmation enabled
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
-        final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
+        final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
         whenActive.whenComplete((__, ex) -> {
             if(ex != null && ex != Release.instance) {
                 result.completeExceptionally(ex);
@@ -427,13 +427,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         // Do nothing, unit is already released by deadlock resolution.
                     } else if(ex != null) {
                         failures.add(ex);
-                    } else if(!r.isPresent()) {
-                        // No confirmation, hence restart
-                        if(doRestart()) {
-                            stateTransitionTrace = TransitionTrace.RESTARTED;
-                        }
                     } else {
-                        doRelease(r.get());
+                        r.visit(() -> {
+                            // No confirmation, hence restart
+                            if(doRestart()) {
+                                stateTransitionTrace = TransitionTrace.RESTARTED;
+                            }
+                        }, this::doRelease);
                     }
                 });
     }
@@ -621,7 +621,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     } else if(ex != null) {
                         result.completeExceptionally(ex);
                     } else {
-                        result.complete(v.map(ConfirmResult::confirm).orElseGet(ConfirmResult::deny));
+                        result.complete(v);
                     }
                 });
                 return result.thenApply(Optional::of);

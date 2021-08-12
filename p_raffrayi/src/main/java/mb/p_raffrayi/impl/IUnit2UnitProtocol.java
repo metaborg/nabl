@@ -5,11 +5,11 @@ import java.util.Optional;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -35,7 +35,7 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
-    IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             boolean prevEnvEmpty);
 
     IFuture<Unit> _isComplete(S scope, EdgeOrData<L> label);

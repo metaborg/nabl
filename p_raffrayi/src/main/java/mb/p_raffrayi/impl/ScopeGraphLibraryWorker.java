@@ -1,7 +1,6 @@
 package mb.p_raffrayi.impl;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.future.CompletableFuture;
@@ -13,6 +12,7 @@ import org.metaborg.util.unit.Unit;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -85,9 +85,9 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         throw new UnsupportedOperationException("Library workers cannot receive queries in previous scope graphs.");
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
+        return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {

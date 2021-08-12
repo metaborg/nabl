@@ -1,10 +1,9 @@
 package mb.p_raffrayi.impl.confirm;
 
-import java.util.Optional;
-
-import org.metaborg.util.future.Futures;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.future.AggregateFuture.SC;
+import org.metaborg.util.future.CompletableFuture;
 
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
@@ -21,34 +20,42 @@ public class LazyConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
         super(context);
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IRecordedQuery<S, L, D> query) {
+    @Override public IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query) {
         // First confirm root query
         return confirmSingle(query).thenCompose(res -> {
-            return Futures.<BiMap.Immutable<S>>liftOptional(res.map(initialPatches -> {
+            return mapConfirmResultToFuture(res, initialPatches -> {
                 // If that succeeds, confirm all transitive queries
                 return confirm(query.transitiveQueries()).thenCompose(res2 -> {
-                    return Futures.<BiMap.Immutable<S>>liftOptional(res2.map(transitivePatches -> {
+                    return mapConfirmResultToFuture(res2, transitivePatches -> {
                         // If that succeeds, confirm all queries raised by predicates
                         return confirm(query.predicateQueries()).thenApply(res3 -> {
-                            return res3.map(__ -> {
+                            return mapConfirmResult(res3, __ -> {
                                 // Do no include patches from predicate queries in eventual result, because
                                 // nested state should not leak to the outer state, and hence plays no role in confirmation.
                                 return initialPatches.putAll(transitivePatches);
                             });
                         });
-                    }));
+                    });
                 });
-            }));
+            });
         });
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+    private IFuture<ConfirmResult<S>> mapConfirmResultToFuture(ConfirmResult<S> res, Function1<BiMap.Immutable<S>, IFuture<ConfirmResult<S>>> mapper) {
+        return res.match(() -> CompletableFuture.completedFuture(ConfirmResult.deny()), mapper);
+    }
+
+    private ConfirmResult<S> mapConfirmResult(ConfirmResult<S> res, Function1<BiMap.Immutable<S>, BiMap.Immutable<S>> mapper) {
+        return res.match(() -> ConfirmResult.deny(), patches -> ConfirmResult.confirm(mapper.apply(patches)));
+    }
+
+    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
             handleAddedEdge(AddedEdge<S, L, D> addedEdge) {
         return context.query(new ScopePath<>(addedEdge.scope()), addedEdge.labelWf(), LabelOrder.none(),
                 addedEdge.dataWf(), DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, boolean prevEnvEnpty) {
         if(prevEnvEnpty) {
             return acceptFuture();
@@ -57,7 +64,7 @@ public class LazyConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
                 LabelOrder.none(), DataLeq.none()).thenApply(env -> env.isEmpty() ? accept() : deny());
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>
+    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
             handleExternal(External<S, L, D> external) {
         // External env diff validated by transitively recorded query
         return acceptFuture();

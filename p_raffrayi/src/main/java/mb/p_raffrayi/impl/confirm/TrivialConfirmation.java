@@ -2,7 +2,6 @@ package mb.p_raffrayi.impl.confirm;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
@@ -28,8 +27,8 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         this.context = context;
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
-        final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
+    @Override public IFuture<ConfirmResult<S>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
+        final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
 
         final List<IFuture<Boolean>> futures = new ArrayList<>();
         queries.forEach(rq -> {
@@ -38,7 +37,7 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
             confirmationResult.thenAccept(res -> {
                 // Immediately restart when a query is invalidated
                 if(!res) {
-                    result.complete(Optional.empty());
+                    result.complete(ConfirmResult.deny());
                 }
             });
             final S scope = rq.scopePath().getTarget();
@@ -75,18 +74,18 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         Futures.noneMatch(futures, p -> p.thenApply(v -> !v))
             .thenAccept(confirmed -> {
                 if(confirmed) {
-                    result.complete(Optional.of(BiMap.Immutable.of()));
+                    result.complete(ConfirmResult.confirm(BiMap.Immutable.of()));
                 } else {
-                    result.complete(Optional.empty());
+                    result.complete(ConfirmResult.deny());
                 }
             });
 
         return result;
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        return CompletableFuture.completedFuture(Optional.empty());
+        return CompletableFuture.completedFuture(ConfirmResult.deny());
     }
 
     public static <S, L, D> IConfirmationFactory<S, L, D> factory() {

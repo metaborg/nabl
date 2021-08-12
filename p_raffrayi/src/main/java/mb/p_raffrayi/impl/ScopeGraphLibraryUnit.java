@@ -21,6 +21,7 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -162,9 +163,9 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
+        return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
