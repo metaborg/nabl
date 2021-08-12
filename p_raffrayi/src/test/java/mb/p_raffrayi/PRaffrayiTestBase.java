@@ -13,6 +13,7 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.tuple.Tuple2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
@@ -65,6 +66,10 @@ public abstract class PRaffrayiTestBase {
 
         @Override public String toString() {
             return String.format("%s-%d", id, index);
+        }
+
+        @Override public List<Scope> scopes() {
+            return ImmutableList.of(this);
         }
 
     }

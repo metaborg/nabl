@@ -123,15 +123,15 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
-    @Ignore("Requires proper validation of edges added by subunits.") @Test(timeout = 10000) public void
-            testReleaseChild_ParentChanged() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testReleaseChild_ParentChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
 
         // @formatter:off
         final IUnitResult<Scope, IDatum, IDatum, Boolean> childResult = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
             .id("/./sub")
             .addRootScopes(root)
-            .scopeGraph(ScopeGraph.Immutable.of()).localScopeGraph(ScopeGraph.Immutable.of())
+            .scopeGraph(ScopeGraph.Immutable.of())
+            .localScopeGraph(ScopeGraph.Immutable.of())
             .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.empty()))
             .analysis(false)
             .build();
@@ -177,7 +177,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 }, Set.Immutable.of(), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertFalse(result.analysis());
+        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
 
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
@@ -257,7 +257,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
-    @Ignore("We cannot yet compare old and new environments properly.") @Test(timeout = 10000) public void
+    @Ignore("Requires early validation of shared edges") @Test(timeout = 10000) public void
             testRelease_MutualDep_ParentChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
@@ -324,7 +324,6 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 }, Set.Immutable.of(lbl), true, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
 
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
@@ -507,14 +506,17 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RESTARTED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
-    @Ignore("We do not yet handle confirmations of queries that touch shared edges correctly.") @Test(
-            timeout = 10000) public void testRestart_SharedEdgeChanged()
-                    throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testRestart_SharedEdgeChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
         final Scope d1 = new Scope("/./sub2", 123);
-        final ResolutionPath<Scope, IDatum, IDatum> path =
-                new ScopePath<Scope, IDatum>(root).step(lbl, d1).get().resolve(d1);
+        final ScopePath<Scope, IDatum> scopePath = new ScopePath<Scope, IDatum>(root).step(lbl, d1).get();
+        final ResolutionPath<Scope, IDatum, IDatum> path = scopePath.resolve(d1);
+        final RecordedQuery<Scope, IDatum, IDatum> rqTrans = RecordedQuery.of(scopePath, LabelWf.any(), DataWf.any(),
+                LabelOrder.none(), DataLeq.any(), Env.of(path));
+        final RecordedQuery<Scope, IDatum, IDatum> rq =
+                RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.of(path))
+                        .withTransitiveQueries(rqTrans);
 
         // @formatter:off
         final IUnitResult<Scope, IDatum, IDatum, Boolean> child1Result = UnitResult.<Scope, IDatum, IDatum, Boolean>builder()
@@ -522,7 +524,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .addRootScopes(root)
             .scopeGraph(ScopeGraph.Immutable.of())
             .localScopeGraph(ScopeGraph.Immutable.of())
-            .addQueries(RecordedQuery.of(root, LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.of(path)))
+            .addQueries(rq)
             .analysis(false).build();
         // @formatter:on
 
@@ -580,7 +582,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                         return unit.runIncremental(restarted -> {
                                             final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
                                             unit.addEdge(s1, lbl, d);
-                                            unit.setDatum(d, d);
+                                            unit.setDatum(d, s1);
                                             unit.closeEdge(s1, lbl);
                                             return CompletableFuture.completedFuture(true);
                                         });
@@ -598,8 +600,11 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 }, Set.Immutable.of(lbl), false, parentResult);
 
         final IUnitResult<Scope, IDatum, IDatum, Boolean> result = future.asJavaCompletion().get();
-        assertTrue(result.analysis());
         assertTrue(result.failures().isEmpty());
+
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RESTARTED, result.subUnitResults().get("sub1").stateTransitionTrace());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub2").stateTransitionTrace());
     }
 
     @Test(timeout = 10000) public void testRestart_FailureInInitialState()
@@ -679,10 +684,6 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.analysis());
 
         assertEquals(1, result.subUnitResults().get("sub").queries().size());
-    }
-
-    @Ignore("Not yet implemented.") @Test(timeout = 10000) public void testRecord_ForwardedQuery() {
-
     }
 
     @Test(timeout = 10000) public void testRecord_SharedDeclQuery() throws InterruptedException, ExecutionException {
@@ -1310,8 +1311,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
     }
 
-    @Test(timeout = 10000) public void testChildRemoved()
-            throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testChildRemoved() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final IDatum lbl = new IDatum() {};
         final Scope d1 = new Scope("/./sub2/sub", 1);
