@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Ignore;
@@ -228,6 +229,111 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
+    @Test(timeout = 10000) public void testRelease_NewUnitChangesSharedEdge()
+            throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final Integer lbl = 1;
+        final IDatum datum = new IDatum() {};
+
+        // @formatter:off
+        final RecordedQuery<Scope, Integer, IDatum> rq = recordedQuery(root)
+            .labelWf(NoAcceptLabelWf.instance)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = subResult("/./sub1", root)
+            .addQueries(rq)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
+            .putSubUnitResults("sub1", child1Result)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future = this.run(
+            new ComposedRootTypeChecker<>(false,
+                new SingleQueryTypeChecker("sub1", false),
+                new DeclTypeChecker("sub2", true, lbl, datum)
+            ), Set.Immutable.of(lbl), parentResult);
+        // @formatter:on
+
+        final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
+        assertTrue(result.failures().isEmpty());
+
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub1").stateTransitionTrace());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub2").stateTransitionTrace());
+    }
+
+    @Test(timeout = 10000) public void testRelease_NestedDeclChanged() throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final Integer lbl = 1;
+        final Scope si = new Scope("/./sub2", 122);
+        final Scope d1 = new Scope("/./sub2", 123);
+        final IDatum datum = new IDatum() {};
+
+        final ScopePath<Scope, Integer> scopePath = new ScopePath<Scope, Integer>(root).step(lbl, si).get();
+        final ResolutionPath<Scope, Integer, IDatum> path = scopePath.step(lbl, d1).get().resolve(d1);
+
+        // @formatter:off
+        final RecordedQuery<Scope, Integer, IDatum> rqTrans = recordedQuery(scopePath, Env.of(path))
+            .labelWf(NoAcceptLabelWf.instance)
+            .build();
+        final RecordedQuery<Scope, Integer, IDatum> rq = recordedQuery(scopePath, Env.of(path))
+            .labelWf(NoAcceptLabelWf.instance)
+            .addTransitiveQueries(rqTrans)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = subResult("/./sub1", root)
+            .addQueries(rq)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child2Result = subResult("/./sub2", root)
+            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, si)
+                .addEdge(si, lbl, d1)
+                .setDatum(d1, d1))
+            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, si)
+                .addEdge(si, lbl, d1)
+                .setDatum(d1, d1))
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
+            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, si)
+                .addEdge(si, lbl, d1))
+            .putSubUnitResults("sub1", child1Result)
+            .putSubUnitResults("sub2", child2Result)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future = this.run(
+            new ComposedRootTypeChecker<>(false,
+                new SingleQueryTypeChecker("sub1", false),
+                new NestedDeclTypeChecker("sub2", true, lbl, datum)
+            ), Set.Immutable.of(lbl), parentResult);
+        // @formatter:on
+
+        final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
+        assertTrue(result.failures().isEmpty());
+
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub1").stateTransitionTrace());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub2").stateTransitionTrace());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Restart conditions
     ///////////////////////////////////////////////////////////////////////////
@@ -383,7 +489,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testRestart_NestedDeclChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
-        final Scope si = new Scope("/./si", 122);
+        final Scope si = new Scope("/./sub2", 122);
         final Scope d1 = new Scope("/./sub2", 123);
         final IDatum datum = new IDatum() {};
 
@@ -1150,5 +1256,26 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(Scope root, Env<Scope, Integer, IDatum> env) {
         return recordedQuery(root).result(env);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Custom Query Arguments
+    ///////////////////////////////////////////////////////////////////////////
+
+    private static class NoAcceptLabelWf implements LabelWf<Integer> {
+
+        public static final NoAcceptLabelWf instance = new NoAcceptLabelWf();
+
+        private NoAcceptLabelWf() {
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return Optional.of(this);
+        }
+
+        @Override public boolean accepting() {
+            return false;
+        }
+
     }
 }
