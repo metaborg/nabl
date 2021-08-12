@@ -30,9 +30,9 @@ public abstract class PRaffrayiTestBase {
                 new NullCancel(), 0.3, 50);
     }
 
-    protected <R> IFuture<IUnitResult<Scope, IDatum, IDatum, R>> run(String id,
-            ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels, boolean changed,
-            IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
+    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> run(String id,
+            ITypeChecker<Scope, Integer, IDatum, R> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
+            IUnitResult<Scope, Integer, IDatum, R> previousResult) {
         return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed,
                 previousResult, new NullCancel(), 0.3, 50);
     }
