@@ -1,15 +1,14 @@
 package mb.p_raffrayi.impl.tokens;
 
-import java.util.Optional;
 
 import org.immutables.value.Value;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.IUnit;
+import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
 
 @Value.Immutable(prehash = false)
 public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
@@ -22,7 +21,7 @@ public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract DataWf<S, L, D> dataWF();
 
-    @Value.Parameter public abstract IFuture<Optional<BiMap.Immutable<S>>> future();
+    @Value.Parameter public abstract IFuture<IConfirmationContext.ExternalConfirm<S>> future();
 
     @Override public void visit(Cases<S, L, D> cases) {
         cases.on((Confirm<S, L, D>) this);
