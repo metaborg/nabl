@@ -37,6 +37,7 @@ import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
@@ -166,8 +167,15 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         // TODO assert confirmation enabled
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
-        return whenActive
-                .thenCompose(__ -> confirmation.confirm(sender, path, labelWF, dataWF, prevEnvEmpty));
+        final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
+        whenActive.whenComplete((__, ex) -> {
+            if(ex != null && ex != Release.instance) {
+                result.completeExceptionally(ex);
+            } else {
+                confirmation.confirm(sender, path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
+            }
+        });
+        return result;
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
@@ -433,8 +441,19 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             assertPreviousResultProvided();
-            initDiffer(new MatchingDiffer<S, L, D>(differOps(), differContext(), patches), this.rootScopes,
-                    previousResult.rootScopes());
+
+            // TODO When a unit has active subunits, the matching differ cannot be used, because these units may add/remove edges.
+            // However, a full-blown scope graph differ may impose quite some overhead. We should invent a smarter solution for this.
+            // - Perhaps only maintain local scope graphs (i.e. no edge sharing), and relay queries to subunits
+            //   - Con: very similar to epsilon edges, which degraded performance a lot, and complicated shadowing
+            // - Somehow inform differ of local edges and subunit edges, and perform diff based on those.
+
+            // @formatter:off
+            final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
+                new MatchingDiffer<S, L, D>(differOps(), differContext(), patches) :
+                new ScopeGraphDiffer<>(differContext(), new StaticDifferContext<>(previousResult.scopeGraph()), differOps());
+            // @formatter:on
+            initDiffer(differ, this.rootScopes, previousResult.rootScopes());
             this.envDiffer = new EnvDiffer<>(differ, differOps());
 
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();

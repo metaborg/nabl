@@ -14,6 +14,8 @@ public abstract class BiMap<E> {
 
     public abstract boolean containsEntry(E key, E value);
 
+    public abstract boolean isEmpty();
+
     public abstract Set<E> keySet();
 
     public abstract Set<E> valueSet();
@@ -44,6 +46,10 @@ public abstract class BiMap<E> {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
         }
 
+        @Override public boolean isEmpty() {
+            return fwd.isEmpty();
+        }
+
         public E getKeyOrDefault(E key, E def) {
             return fwd.getOrDefault(key, def);
         }
@@ -68,10 +74,6 @@ public abstract class BiMap<E> {
             final Transient<E> newMap = this.melt();
             newMap.putAll(other);
             return newMap.freeze();
-        }
-
-        public boolean isEmpty() {
-            return fwd.isEmpty();
         }
 
         public Transient<E> melt() {
@@ -150,6 +152,10 @@ public abstract class BiMap<E> {
 
         @Override public boolean containsEntry(E key, E value) {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
+        }
+
+        @Override public boolean isEmpty() {
+            return fwd.isEmpty();
         }
 
         @Override public Set<E> keySet() {

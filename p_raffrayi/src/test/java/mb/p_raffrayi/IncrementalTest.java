@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
+import mb.p_raffrayi.impl.ARecordedQuery;
 import mb.p_raffrayi.impl.RecordedQuery;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -100,7 +101,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(true,
                 new SingleQueryTypeChecker("sub", false)
             ), Set.Immutable.of(), parentResult);
-        // @formatter:off
+        // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
@@ -337,7 +338,6 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .build();
         // @formatter:on
 
-        // @formatter:off
         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
                 this.run(new NoopTypeChecker(".", false), Set.Immutable.of(), previousResult);
 
@@ -345,6 +345,43 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         assertTrue(result.failures().isEmpty());
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
+    }
+
+    @Test(timeout = 10000) public void testRestart_NewUnitChangesSharedEdge()
+            throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final Integer lbl = 1;
+        final IDatum datum = new IDatum() {};
+
+        final RecordedQuery<Scope, Integer, IDatum> rq = ARecordedQuery.of(new ScopePath<Scope, Integer>(root),
+                LabelWf.any(), DataWf.any(), LabelOrder.none(), DataLeq.any(), Env.<Scope, Integer, IDatum>empty());
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = subResult("/./sub1", root)
+            .addQueries(rq)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
+            .putSubUnitResults("sub1", child1Result)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future = this.run(
+            new ComposedRootTypeChecker<>(false,
+                new SingleQueryTypeChecker("sub1", false),
+                new DeclTypeChecker("sub2", true, lbl, datum)
+            ), Set.Immutable.of(lbl), parentResult);
+        // @formatter:on
+
+        final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
+        assertTrue(result.failures().isEmpty());
+
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RESTARTED, result.subUnitResults().get("sub1").stateTransitionTrace());
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub2").stateTransitionTrace());
     }
 
     ///////////////////////////////////////////////////////////////////////////
