@@ -178,7 +178,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
         if(matchedBySharing.containsValue(previousScope)) {
-            return CompletableFuture.completedFuture(Optional.of(matchedBySharing.getKey(previousScope)));
+            return CompletableFuture.completedFuture(Optional.of(matchedBySharing.getValue(previousScope)));
         }
         return super._match(previousScope);
     }
