@@ -30,6 +30,7 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
 import mb.p_raffrayi.impl.confirm.LazyConfirmation;
@@ -602,28 +603,28 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             return doQueryPrevious(previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder, dataEquiv);
         }
 
-        @Override public IFuture<ExternalConfirm<S>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+        @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
                 DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             final S scope = path.getTarget();
             return getOwner(path.getTarget()).thenCompose(owner -> {
                 if(owner.equals(self)) {
-                    return CompletableFuture.completedFuture(ExternalConfirm.local());
+                    return CompletableFuture.completedFuture(Optional.empty());
                 }
-                final ICompletableFuture<ExternalConfirm<S>> result = new CompletableFuture<>();
+                final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
                 self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
                     granted(confirm, owner);
                     resume();
                     if(ex != null && ex == Release.instance) {
-                        result.complete(ExternalConfirm.confirm(BiMap.Immutable.of()));
+                        result.complete(ConfirmResult.confirm(BiMap.Immutable.of()));
                     } else if(ex != null) {
                         result.completeExceptionally(ex);
                     } else {
-                        result.complete(v.map(ExternalConfirm::confirm).orElseGet(ExternalConfirm::deny));
+                        result.complete(v.map(ConfirmResult::confirm).orElseGet(ConfirmResult::deny));
                     }
                 });
-                return result;
+                return result.thenApply(Optional::of);
             });
         }
 

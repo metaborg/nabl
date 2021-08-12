@@ -48,22 +48,15 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
-        context.externalConfirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((conf, ex) -> {
-            if(ex != null) {
-                result.completeExceptionally(ex);
-            } else {
-                // @formatter:off
-                conf.visit(
-                    () -> localConfirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete),
-                    () -> result.complete(Optional.empty()),
-                    patches -> result.complete(Optional.of(patches))
-                );
-                // @formatter:on
-            }
+        return context.externalConfirm(path, labelWF, dataWF, prevEnvEmpty).thenCompose(conf -> {
+            // @formatter:off
+            return conf.map(c -> c.match(
+                    () -> CompletableFuture.completedFuture(Optional.<BiMap.Immutable<S>>empty()),
+                    patches -> CompletableFuture.completedFuture(Optional.of(patches))
+                ))
+                .orElseGet(() -> localConfirm(path, labelWF, dataWF, prevEnvEmpty));
+            // @formatter:on
         });
-
-        return result;
     }
 
     private IFuture<Optional<BiMap.Immutable<S>>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,

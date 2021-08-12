@@ -6,7 +6,7 @@ import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.IUnit;
-import mb.p_raffrayi.impl.confirm.IConfirmationContext;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 
@@ -21,7 +21,7 @@ public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract DataWf<S, L, D> dataWF();
 
-    @Value.Parameter public abstract IFuture<IConfirmationContext.ExternalConfirm<S>> future();
+    @Value.Parameter public abstract IFuture<ConfirmResult<S>> future();
 
     @Override public void visit(Cases<S, L, D> cases) {
         cases.on((Confirm<S, L, D>) this);
