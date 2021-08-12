@@ -37,6 +37,34 @@ public abstract class PRaffrayiTestBase {
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
+    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> run(TestTypeChecker<R> typeChecker,
+            Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, R> previousResult) {
+        return Broker.debug(typeChecker.getId(), PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
+                previousResult, new NullCancel(), 0.3, 50);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, R> {
+
+        private final String id;
+        private final boolean changed;
+
+        protected TestTypeChecker(String id, boolean changed) {
+            this.id = id;
+            this.changed = changed;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public boolean isChanged() {
+            return changed;
+        }
+
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     protected final static class Scope implements IDatum {
