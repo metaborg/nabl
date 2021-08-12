@@ -67,8 +67,8 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
-        initDiffer(
-                new MatchingDiffer<>(differOps(), differContext()), Collections.emptyList(), Collections.emptyList());
+        initDiffer(new MatchingDiffer<>(differOps(), differContext()), Collections.emptyList(),
+                Collections.emptyList());
         startWorkers();
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
@@ -162,8 +162,8 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope,
-            io.usethesource.capsule.Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
     }
 

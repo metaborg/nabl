@@ -35,7 +35,8 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
-        initDiffer(new RemovingDiffer<>(previousResult.scopeGraph(), differOps()), rootScopes, previousResult.rootScopes());
+        initDiffer(new RemovingDiffer<>(previousResult.scopeGraph(), differOps()), rootScopes,
+                previousResult.rootScopes());
 
         // Add Phantom unit for all previous subunits.
         for(Map.Entry<String, IUnitResult<S, L, D, ?>> entry : previousResult.subUnitResults().entrySet()) {
@@ -64,10 +65,10 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // ignore
     }
 
-    @Override public IFuture<Optional<Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF,
+    @Override public IFuture<Optional<Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         // TODO: execute query in old scope graph, and return {} when result is empty?
-        return CompletableFuture.completedFuture(prevEnvEmpty ? Optional.of(BiMap.Immutable.of()): Optional.empty());
+        return CompletableFuture.completedFuture(prevEnvEmpty ? Optional.of(BiMap.Immutable.of()) : Optional.empty());
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {

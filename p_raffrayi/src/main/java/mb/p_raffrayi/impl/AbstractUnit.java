@@ -466,13 +466,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         return result.thenApply(ans -> {
                             if(external) {
                                 // For external queries, track this query as transitive.
-                                transitiveQueries.add(RecordedQuery.of(path.getTarget(), re, dataWF, labelOrder,
+                                transitiveQueries.add(RecordedQuery.of(path, re, dataWF, labelOrder,
                                         dataEquiv, ans.env()));
                                 transitiveQueries.addAll(ans.transitiveQueries());
                                 predicateQueries.addAll(ans.predicateQueries());
                             } else {
                                 // For local query, record it as such.
-                                recordedQueries.add(RecordedQuery.of(path.getTarget(), labelWF, dataWF, labelOrder,
+                                recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder,
                                         dataEquiv, ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
                             }
                             return ans.env();
@@ -606,7 +606,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 return self.schedule(result).whenComplete((ans, ex) -> {
                     granted(wf, self);
                 }).thenApply(ans -> {
-                    queries.add(RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, ans.env(),
+                    queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env(),
                             ImmutableSet.of(), ImmutableSet.of()));
                     queries.addAll(ans.transitiveQueries());
                     // TODO can this happen? Is flattening here ok then?

@@ -85,8 +85,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         throw new UnsupportedOperationException("Library workers cannot receive queries in previous scope graphs.");
     }
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope,
-            io.usethesource.capsule.Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()));
     }
 

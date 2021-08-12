@@ -7,10 +7,11 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public interface IRecordedQuery<S, L, D> {
 
-    S scope();
+    ScopePath<S, L> scopePath();
 
     LabelWf<L> labelWf();
 

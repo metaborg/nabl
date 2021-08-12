@@ -13,12 +13,13 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.Env;
+import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 @Value.Immutable
 @Serial.Version(42L)
 public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D> {
 
-    @Override @Value.Parameter public abstract S scope();
+    @Override @Value.Parameter public abstract ScopePath<S, L> scopePath();
 
     @Override @Value.Parameter public abstract LabelWf<L> labelWf();
 
@@ -34,9 +35,15 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> predicateQueries();
 
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq, Env<S, L, D> result) {
+        return RecordedQuery.of(path, labelWf, dataWf, labelOrder, dataLeq, result, ImmutableSet.of(),
+                ImmutableSet.of());
+    }
+
     public static <S, L, D> RecordedQuery<S, L, D> of(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq, Env<S, L, D> result) {
-        return RecordedQuery.of(scope, labelWf, dataWf, labelOrder, dataLeq, result, ImmutableSet.of(), ImmutableSet.of());
+        return of(new ScopePath<S, L>(scope), labelWf, dataWf, labelOrder, dataLeq, result);
     }
 
 }

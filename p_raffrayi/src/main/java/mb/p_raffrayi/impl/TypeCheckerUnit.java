@@ -161,13 +161,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes,
-            LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         // TODO assert confirmation enabled
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
         return whenActive
-                .thenCompose(__ -> confirmation.confirm(sender, scope, seenScopes, labelWF, dataWF, prevEnvEmpty));
+                .thenCompose(__ -> confirmation.confirm(sender, path, labelWF, dataWF, prevEnvEmpty));
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
@@ -567,8 +567,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private interface IConfirmation<S, L, D> {
         IFuture<Optional<BiMap.Immutable<S>>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries);
 
-        IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
-                Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
+        IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
     }
 
     private class TrivialConfirmation implements IConfirmation<S, L, D> {
@@ -580,14 +580,13 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 futures.add(confirmationResult);
                 confirmationResult.thenAccept(res -> {
                     // Immediately restart when a query is invalidated
-                    if(!res) {
-                        if(doRestart()) {
-                            stateTransitionTrace = TransitionTrace.RESTARTED;
-                        }
+                    if(!res && doRestart()) {
+                        stateTransitionTrace = TransitionTrace.RESTARTED;
                     }
                 });
-                getOwner(rq.scope()).thenAccept(owner -> {
-                    self.async(owner)._match(rq.scope()).whenComplete((m, ex) -> {
+                final S scope = rq.scopePath().getTarget();
+                getOwner(scope).thenAccept(owner -> {
+                    self.async(owner)._match(scope).whenComplete((m, ex) -> {
                         if(ex != null) {
                             if(ex == Release.instance) {
                                 confirmationResult.complete(true);
@@ -633,8 +632,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
 
         @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
-                S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-                boolean prevEnvEmpty) {
+                ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
 
@@ -657,19 +655,19 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         public abstract IFuture<Optional<BiMap.Immutable<S>>> confirm(IRecordedQuery<S, L, D> query);
 
         protected IFuture<Optional<BiMap.Immutable<S>>> confirmSingle(IRecordedQuery<S, L, D> query) {
-            return confirm(self, query.scope(), CapsuleUtil.immutableSet(query.scope()), query.labelWf(),
-                    query.dataWf(), query.result().isEmpty());
+            return confirm(self, query.scopePath(), query.labelWf(), query.dataWf(),
+                    query.result().isEmpty());
         }
 
         @Override public IFuture<Optional<BiMap.Immutable<S>>> confirm(IActorRef<? extends IUnit<S, L, D, ?>> sender,
-                S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-                boolean prevEnvEmpty) {
+                ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+            final S scope = path.getTarget();
             return getOwner(scope).thenCompose(owner -> {
                 if(!owner.equals(self)) {
                     final ICompletableFuture<Optional<BiMap.Immutable<S>>> result = new CompletableFuture<>();
                     final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                     waitFor(confirm, owner);
-                    self.async(owner)._confirm(scope, seenScopes, labelWF, dataWF, prevEnvEmpty)
+                    self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty)
                             .whenComplete((v, ex) -> {
                                 granted(confirm, owner);
                                 resume();
@@ -682,12 +680,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     return result;
                 }
                 return whenDifferActivated.thenCompose(__ -> {
-                    return envDiffer.diff(scope, seenScopes, labelWF, dataWF).thenCompose(envDiff -> {
+                    return envDiffer.diff(path.getTarget(), path.scopeSet(), labelWF, dataWF).thenCompose(envDiff -> {
                         final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>> futures =
                                 new ArrayList<>();
-                        envDiff.diffPaths().forEach(path -> {
+                        envDiff.diffPaths().forEach(diffPath -> {
                             // @formatter:off
-                            futures.add(path.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>>match(
+                            futures.add(diffPath.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends Optional<BiMap.Immutable<S>>>>>match(
                                 addedEdge -> handleAddedEdge(sender, addedEdge),
                                 removedEdge -> handleRemovedEdge(sender, removedEdge, prevEnvEmpty),
                                 external -> handleExternal(sender, external),
@@ -760,7 +758,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                             return confirm(query.predicateQueries()).thenApply(res3 -> {
                                 return res3.map(__ -> {
                                     // Do no include patches from predicate queries in eventual result, because
-                                    // nested state should not leak to the outer state, and hance plays no role in confirmation.
+                                    // nested state should not leak to the outer state, and hence plays no role in confirmation.
                                     return initialPatches.putAll(transitivePatches);
                                 });
                             });

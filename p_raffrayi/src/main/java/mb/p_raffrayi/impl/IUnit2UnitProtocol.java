@@ -36,8 +36,8 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
-    IFuture<Optional<BiMap.Immutable<S>>> _confirm(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
+    IFuture<Optional<BiMap.Immutable<S>>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty);
 
     IFuture<Unit> _isComplete(S scope, EdgeOrData<L> label);
 
