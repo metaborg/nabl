@@ -27,6 +27,7 @@ import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.APRaffrayiSettings.ConfirmationMode;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -34,6 +35,7 @@ import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
 import mb.p_raffrayi.impl.confirm.LazyConfirmation;
+import mb.p_raffrayi.impl.confirm.TrivialConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
@@ -84,8 +86,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private IEnvDiffer<S, L, D> envDiffer;
 
-    //    private IConfirmationFactory<S, L, D> confirmation = TrivialConfirmation.factory();
-    private IConfirmationFactory<S, L, D> confirmation = LazyConfirmation.factory();
+    private final IConfirmationFactory<S, L, D> confirmation;
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
             IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
@@ -95,6 +96,17 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         this.changed = inputChanged;
         this.previousResult = previousResult;
         this.state = UnitState.INIT_UNIT;
+        switch(context.settings().confirmationMode()) {
+            case TRIVIAL:
+                confirmation = TrivialConfirmation.factory();
+                break;
+            case SIMPLE_ENVIRONMENT:
+                confirmation = LazyConfirmation.factory();
+                break;
+            default:
+                throw new IllegalStateException("Unknown confirmation mode: " + context.settings().confirmationMode());
+        }
+
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
@@ -161,7 +173,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        // TODO assert confirmation enabled
+        assertConfirmationEnabled();
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
         final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
@@ -178,7 +190,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
+        assertPreviousResultProvided();
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder,
+                dataEquiv);
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
@@ -410,12 +424,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         logger.debug("Confirming queries from previous result.");
         assertInState(UnitState.UNKNOWN);
         assertIncrementalEnabled();
+        assertPreviousResultProvided();
         resume();
-
-        if(previousResult == null) {
-            logger.error("Cannot confirm queries when no previous result is provided.");
-            throw new IllegalStateException("Cannot confirm queries when no previous result is provided.");
-        }
 
         if(previousResult.queries().isEmpty()) {
             logger.debug("Releasing - no queries in previous result.");
@@ -465,7 +475,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 new ScopeGraphDiffer<>(differContext(), new StaticDifferContext<>(previousResult.scopeGraph()), differOps());
             // @formatter:on
             initDiffer(differ, this.rootScopes, previousResult.rootScopes());
-            this.envDiffer = new EnvDiffer<>(differ, differOps());
+            if(isConfirmationEnabled()) {
+                this.envDiffer = new EnvDiffer<>(differ, differOps());
+            }
 
             logger.debug("Rebuilding scope graph.");
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
@@ -557,7 +569,9 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
                             Collections.emptyList());
                 }
-                this.envDiffer = new EnvDiffer<>(differ, differOps());
+                if(isConfirmationEnabled()) {
+                    this.envDiffer = new EnvDiffer<>(differ, differOps());
+                }
             }
             resume();
             tryFinish(); // FIXME needed?
@@ -620,7 +634,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 DataWf<S, L, D> dataWf, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
             assertPreviousResultProvided();
             logger.debug("previous query from env differ.");
-            return doQueryPrevious(sender, previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder, dataEquiv);
+            return doQueryPrevious(sender, previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder,
+                    dataEquiv);
         }
 
         @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
@@ -656,6 +671,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf) {
+            assertConfirmationEnabled();
             logger.debug("local env diff");
             return whenDifferActivated
                     .thenCompose(__ -> envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf));
@@ -714,6 +730,17 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         if(previousResult == null) {
             logger.error("Cannot confirm queries when no previous result is provided.");
             throw new IllegalStateException("Cannot confirm queries when no previous result is provided.");
+        }
+    }
+
+    protected boolean isConfirmationEnabled() {
+        return context.settings().confirmationMode() != ConfirmationMode.TRIVIAL;
+    }
+
+    protected void assertConfirmationEnabled() {
+        if(!isConfirmationEnabled()) {
+            logger.error("Environment differ not enabled.");
+            throw new IllegalStateException("Environment differ not enabled.");
         }
     }
 

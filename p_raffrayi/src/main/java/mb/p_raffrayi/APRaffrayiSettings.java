@@ -9,8 +9,14 @@ public abstract class APRaffrayiSettings {
 
     @Value.Parameter public abstract boolean scopeGraphDiff();
 
+    @Value.Parameter public abstract ConfirmationMode confirmationMode();
+
     public boolean incremental() {
         return incrementalDeadlock() || scopeGraphDiff();
+    }
+
+    public enum ConfirmationMode {
+        TRIVIAL, SIMPLE_ENVIRONMENT
     }
 
 }
