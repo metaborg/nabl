@@ -716,8 +716,12 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<Optional<S>> match(S previousScope) {
         if(matchedScopes.containsValue(previousScope)) {
-            S currentScope = matchedScopes.getValue(previousScope);
+            final S currentScope = matchedScopes.getValue(previousScope);
             return CompletableFuture.completedFuture(Optional.of(currentScope));
+        }
+
+        if(removedScopes.contains(previousScope)) {
+            return CompletableFuture.completedFuture(Optional.empty());
         }
 
         final ICompletableFuture<Unit> result = new CompletableFuture<>();
