@@ -8,6 +8,8 @@ import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.future.AggregateFuture.SC;
 
 import mb.p_raffrayi.IRecordedQuery;
@@ -20,6 +22,8 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
+
+    private static final ILogger logger = LoggerUtils.logger(BaseConfirmation.class);
 
     protected final IConfirmationContext<S, L, D> context;
 
@@ -42,6 +46,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     public abstract IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query);
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
+        logger.debug("Confirming {}.", query);
         return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.result().isEmpty());
     }
 
@@ -53,13 +58,16 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         });
     }
 
-    private IFuture<ConfirmResult<S>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    private IFuture<ConfirmResult<S>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             boolean prevEnvEmpty) {
         final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
-        context.envDiff(path, labelWF, dataWF).whenComplete((envDiff, ex2) -> {
-            if(ex2 != null) {
-                result.completeExceptionally(ex2);
+        context.envDiff(path, labelWf, dataWf).whenComplete((envDiff, ex) -> {
+            if(ex != null) {
+                logger.error("Environment diff for {}/{} failed.", path, labelWf, ex);
+                result.completeExceptionally(ex);
             } else {
+                logger.debug("Environment diff for {}/{} completed.", path, labelWf, ex);
+                logger.trace("value: {}.", envDiff);
                 final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>> futures =
                         new ArrayList<>();
                 envDiff.diffPaths().forEach(diffPath -> {
@@ -68,7 +76,10 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                         addedEdge -> handleAddedEdge(addedEdge),
                         removedEdge -> handleRemovedEdge(removedEdge, prevEnvEmpty),
                         external -> handleExternal(external),
-                        diffTree -> { throw new IllegalStateException("Diff path cannot end in subtree"); }
+                        diffTree -> {
+                            logger.error("Diff path cannot end in subtree: {}.", diffPath);
+                            throw new IllegalStateException("Diff path cannot end in subtree");
+                        }
                     ));
                     // @formatter:on
                 });
@@ -78,7 +89,9 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
             }
         });
 
-        return result;
+        return result.whenComplete((res, ex) -> {
+            logger.debug("Environment diff completed: {}.", res);
+        });
     }
 
     protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
