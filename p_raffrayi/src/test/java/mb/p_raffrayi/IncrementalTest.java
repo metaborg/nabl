@@ -334,6 +334,82 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub2").stateTransitionTrace());
     }
 
+    @Test(timeout = 10000) public void testRelease_CyclicGraph() throws InterruptedException, ExecutionException {
+        final Scope root = new Scope("/.", 0);
+        final Integer lbl = 1;
+        final Scope s1 = new Scope("/./sub1", 122);
+        final Scope s2 = new Scope("/./sub2", 123);
+        final Scope d1 = new Scope("/./sub2", 124);
+        final IDatum datum = new IDatum() {};
+
+        final ScopePath<Scope, Integer> path2 = new ScopePath<Scope, Integer>(root).step(lbl, s1).get();
+        final ScopePath<Scope, Integer> pathRoot = path2.step(lbl, s2).get();
+        final ScopePath<Scope, Integer> path1 = pathRoot.step(lbl, d1).get();
+        final ResolutionPath<Scope, Integer, IDatum> path = path2.resolve(datum);
+
+        // @formatter:off
+        final RecordedQuery<Scope, Integer, IDatum> q1 = recordedQuery(path1, Env.of(path))
+            .labelWf(NoAcceptLabelWf.instance)
+            .build();
+        final RecordedQuery<Scope, Integer, IDatum> qr = recordedQuery(pathRoot, Env.of(path))
+            .labelWf(NoAcceptLabelWf.instance)
+            .build();
+        final RecordedQuery<Scope, Integer, IDatum> q2 = recordedQuery(path2, Env.of(path))
+            .labelWf(NoAcceptLabelWf.instance)
+            .addTransitiveQueries(q1, qr)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child1Result = subResult("/./sub1", root)
+            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, s1)
+                .addEdge(s1, lbl, s2))
+            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, s1)
+                .addEdge(s1, lbl, s2))
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> child2Result = subResult("/./sub2", root)
+            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(s2, lbl, root)
+                .addEdge(s2, lbl, d1)
+                .setDatum(d1, datum))
+            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(s2, lbl, root)
+                .addEdge(s2, lbl, d1)
+                .setDatum(d1, datum))
+            .addQueries(q2)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Unit> parentResult = rootResult()
+            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, s1))
+            .putSubUnitResults("sub1", child1Result)
+            .putSubUnitResults("sub2", child2Result)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future = this.run(
+            new ComposedRootTypeChecker<>(false,
+                new NoopTypeChecker("sub1", false),
+                new NoopTypeChecker("sub2", false)
+            ), Set.Immutable.of(lbl), parentResult);
+        // @formatter:on
+
+        final IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
+        assertTrue(result.failures().isEmpty());
+
+        assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub1").stateTransitionTrace());
+        assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub2").stateTransitionTrace());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Restart conditions
     ///////////////////////////////////////////////////////////////////////////
