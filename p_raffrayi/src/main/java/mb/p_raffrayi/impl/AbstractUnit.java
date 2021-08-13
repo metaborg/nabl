@@ -61,6 +61,7 @@ import mb.p_raffrayi.impl.tokens.DifferResult;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Match;
+import mb.p_raffrayi.impl.tokens.PQuery;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.p_raffrayi.impl.tokens.TypeCheckerState;
@@ -238,13 +239,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, List<S> currentRootScopes,
             List<S> previousRootScopes) {
+        assertDifferEnabled();
+        logger.debug("Initializing differ: {} with scopes: {} ~ {}.", differ, currentRootScopes, previousRootScopes);
         this.differ = differ;
         startDiffer(currentRootScopes, previousRootScopes);
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 
     private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
-        assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
         // Handle diff output
@@ -617,11 +619,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         };
     }
 
-    protected IFuture<Env<S, L, D>> doQueryPrevious(IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path,
-            LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+            IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        logger.debug("rec pquery from {}", sender);
         // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
         final INameResolutionContext<S, L, D> nrc =
-                new StaticNameResolutionContext(scopeGraph, new StaticQueryContext(scopeGraph), dataWF, dataEquiv);
+                new StaticNameResolutionContext(sender, scopeGraph, new StaticQueryContext(sender, scopeGraph), dataWF, dataEquiv);
         final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
 
         return nr.env(path, labelWF, context.cancel());
@@ -631,7 +635,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.scopeId(scope).equals(self.id());
     }
 
-    protected IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
+    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
         final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = context.owner(scope);
         if(future.isDone()) {
             return future;
@@ -802,13 +806,16 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
 
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final DataLeq<S, L, D> dataLeq;
         private final ITypeCheckerContext<S, L, D> queryContext;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
         private final DataWf<S, L, D> dataWf;
 
-        protected StaticNameResolutionContext(IScopeGraph.Immutable<S, L, D> scopeGraph,
-                ITypeCheckerContext<S, L, D> queryContext, DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
+        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                IScopeGraph.Immutable<S, L, D> scopeGraph, ITypeCheckerContext<S, L, D> queryContext,
+                DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
+            this.sender = sender;
             this.queryContext = queryContext;
             this.scopeGraph = scopeGraph;
             this.dataWf = dataWf;
@@ -822,9 +829,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 logger.debug("local p_env {}", scope);
                 return Optional.empty();
             }
-            // TODO logging
             return Optional.of(getOwner(scope).thenCompose(owner -> {
-                return self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq);
+                logger.debug("remote p_env from {}", owner);
+                final ICompletableFuture<Env<S, L, D>> future = new CompletableFuture<>();
+                final PQuery<S, L, D> query = PQuery.of(sender, path, dataWf, future);
+                waitFor(query, owner);
+                self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq).whenComplete((env, ex) -> {
+                    logger.debug("got p_env from {}", sender);
+                    granted(query, owner);
+                    resume();
+                });
+
+                return future;
             }));
         }
 
@@ -851,9 +867,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
 
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
 
-        public StaticQueryContext(IScopeGraph.Immutable<S, L, D> scopeGraph) {
+        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                IScopeGraph.Immutable<S, L, D> scopeGraph) {
+            this.sender = sender;
             this.scopeGraph = scopeGraph;
         }
 
@@ -865,12 +884,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
             final INameResolutionContext<S, L, D> pContext =
-                    new StaticNameResolutionContext(scopeGraph, this, dataWF, dataEquiv);
-            // @formatter::off
+                    new StaticNameResolutionContext(sender, scopeGraph, this, dataWF, dataEquiv);
+            // @formatter:off
             return new NameResolution<>(edgeLabels, labelOrder, pContext)
                 .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
                 .thenApply(CapsuleUtil::toSet);
-            // @formatter::on
+            // @formatter:on
         }
     }
 
@@ -987,6 +1006,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     closeScope -> {},
                     closeLabel -> {},
                     query -> {},
+                    pQuery -> {},
                     confirm -> {},
                     complete -> {},
                     datum -> {},
@@ -1054,6 +1074,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 query -> {
                     logger.error("Unexpected remaining query: " + query);
                     throw new IllegalStateException("Unexpected remaining query: " + query);
+                },
+                pQuery -> {
+                    logger.error("Unexpected remaining query: " + pQuery);
+                    throw new IllegalStateException("Unexpected remaining query: " + pQuery);
                 },
                 confirm -> {
                     logger.error("Unexpected remaining confirmation request: " + confirm);

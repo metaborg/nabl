@@ -178,7 +178,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
@@ -407,6 +407,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     private void doConfirmQueries() {
+        logger.debug("Confirming queries from previous result.");
         assertInState(UnitState.UNKNOWN);
         assertIncrementalEnabled();
         resume();
@@ -417,6 +418,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         }
 
         if(previousResult.queries().isEmpty()) {
+            logger.debug("Releasing - no queries in previous result.");
             doRelease(BiMap.Immutable.of());
             return;
         }
@@ -424,16 +426,22 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         confirmation.getConfirmation(new ConfirmationContext(self)).confirm(previousResult.queries())
                 .whenComplete((r, ex) -> {
                     if(ex == Release.instance) {
+                        logger.debug("Confirmation received release.");
                         // Do nothing, unit is already released by deadlock resolution.
                     } else if(ex != null) {
+                        logger.error("Failure in confirmation.", ex);
                         failures.add(ex);
                     } else {
                         r.visit(() -> {
                             // No confirmation, hence restart
+                            logger.debug("Query confirmation denied - restarting.");
                             if(doRestart()) {
                                 stateTransitionTrace = TransitionTrace.RESTARTED;
                             }
-                        }, this::doRelease);
+                        }, patches -> {
+                            logger.debug("Queries confirmed - releasing.");
+                            this.doRelease(patches);
+                        });
                     }
                 });
     }
@@ -441,6 +449,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     private void doRelease(BiMap.Immutable<S> patches) {
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
+            logger.debug("{} releasing.", this);
+            logger.trace("Patches: {}.", patches);
             assertPreviousResultProvided();
 
             // TODO When a unit has active subunits, the matching differ cannot be used, because these units may add/remove edges.
@@ -457,6 +467,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             initDiffer(differ, this.rootScopes, previousResult.rootScopes());
             this.envDiffer = new EnvDiffer<>(differ, differOps());
 
+            logger.debug("Rebuilding scope graph.");
             final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
             previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
                 final S oldSource = entry.getKey();
@@ -492,6 +503,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
+            logger.debug("Close pending tokens.");
             ownTokens().forEach(wf -> {
                 // @formatter:off
                 wf.visit(IWaitFor.cases(
@@ -499,6 +511,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     closeScope -> {},
                     closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
                     query -> {},
+                    pQuery -> {},
                     confirm -> {},
                     complete -> {},
                     datum -> {},
@@ -523,11 +536,14 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
             resume();
             tryFinish(); // FIXME needed?
+            logger.debug("{} released.", this);
         }
     }
 
     private boolean doRestart() {
+        assertIncrementalEnabled();
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
+            logger.debug("{} restarting.", this);
             state = UnitState.ACTIVE;
             whenActive.complete(Unit.unit);
             confirmationResult.complete(Optional.empty());
@@ -545,6 +561,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             }
             resume();
             tryFinish(); // FIXME needed?
+            logger.debug("{} restarted.", this);
             return true;
         }
         return false;
@@ -554,7 +571,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         // If invoked synchronously, do a implicit transition to ACTIVE
         // runIncremental may not be used anymore!
         if(state == UnitState.INIT_TC && doRestart()) {
-            logger.debug("Performing implicit activation.");
+            logger.debug("{} implicitly activated.");
             this.stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
         }
     }
@@ -566,6 +583,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     @Override protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
             assertInState(UnitState.UNKNOWN);
+            logger.debug("{} self-deadlocked before activation, releasing", this);
             doRelease(BiMap.Immutable.of());
         } else {
             super.handleDeadlock(nodes);
@@ -594,33 +612,41 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         @Override public IFuture<IQueryAnswer<S, L, D>> query(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataEquiv) {
+            logger.debug("query from env differ.");
             return doQuery(sender, scopePath, labelWf, labelOrder, dataWf, dataEquiv, null, null);
         }
 
         @Override public IFuture<Env<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
             assertPreviousResultProvided();
-            return doQueryPrevious(previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder, dataEquiv);
+            logger.debug("previous query from env differ.");
+            return doQueryPrevious(sender, previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder, dataEquiv);
         }
 
         @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
                 DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+            logger.debug("external confirm");
             final S scope = path.getTarget();
             return getOwner(path.getTarget()).thenCompose(owner -> {
                 if(owner.equals(self)) {
+                    logger.debug("local confirm");
                     return CompletableFuture.completedFuture(Optional.empty());
                 }
+                logger.debug("external confirm");
                 final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
                 self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
+                    logger.debug("rec external confirm");
                     granted(confirm, owner);
                     resume();
                     if(ex != null && ex == Release.instance) {
+                        logger.debug("got release, confirming");
                         result.complete(ConfirmResult.confirm(BiMap.Immutable.of()));
                     } else if(ex != null) {
                         result.completeExceptionally(ex);
                     } else {
+                        logger.trace("confirm: {}.", v);
                         result.complete(v);
                     }
                 });
@@ -630,6 +656,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
         @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf) {
+            logger.debug("local env diff");
             return whenDifferActivated
                     .thenCompose(__ -> envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf));
         }

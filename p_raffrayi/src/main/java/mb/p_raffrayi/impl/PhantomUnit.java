@@ -48,7 +48,8 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder, dataEquiv);
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder,
+                dataEquiv);
     }
 
     @Override public IFuture<StateSummary<S>> _requireRestart() {
@@ -68,9 +69,8 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         if(prevEnvEmpty) {
             return CompletableFuture.completedFuture(ConfirmResult.confirm());
         }
-        return doQueryPrevious(previousResult.scopeGraph(), path, labelWF, dataWF, LabelOrder.none(), DataLeq.any()).thenApply(env -> {
-            return env.isEmpty() ? ConfirmResult.confirm() : ConfirmResult.deny();
-        });
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, LabelOrder.none(),
+                DataLeq.any()).thenApply(env -> env.isEmpty() ? ConfirmResult.confirm() : ConfirmResult.deny());
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
