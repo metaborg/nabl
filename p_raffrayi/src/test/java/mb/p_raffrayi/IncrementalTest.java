@@ -664,6 +664,25 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
     }
 
+    @Test(timeout = 10000) public void testRecord_SharedScopeQuery() throws InterruptedException, ExecutionException {
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
+                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
+                    @Override public IFuture<Unit> run(
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit, List<Scope> rootScopes) {
+                        return unit.runIncremental(restarted -> {
+                            final Scope s = unit.freshScope("s", Arrays.asList(), false, false);
+                            return unit.query(s, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.any())
+                                    .thenApply(__ -> Unit.unit);
+                        });
+                    }
+                }, Arrays.asList());
+
+        IUnitResult<Scope, Integer, IDatum, Unit> result = future.asJavaCompletion().get();
+
+        assertTrue(result.failures().isEmpty());
+        assertEquals(1, result.queries().size());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Release behavior
     ///////////////////////////////////////////////////////////////////////////

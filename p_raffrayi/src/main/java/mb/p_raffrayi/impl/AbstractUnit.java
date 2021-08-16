@@ -104,6 +104,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
+    protected final Set.Transient<S> sharedScopes;
     protected final List<S> rootScopes = new ArrayList<>();
 
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
@@ -139,6 +140,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of());
         this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
         this.scopes = CapsuleUtil.transientSet();
+        this.sharedScopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
@@ -451,6 +453,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     LabelOrder<L> labelOrder) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
+                    // TODO: when scope is initialized as shared, record query.
                     logger.debug("local env {}", scope);
                     return Optional.empty();
                 } else {

@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
+import mb.p_raffrayi.APRaffrayiSettings.ConfirmationMode;
 import mb.p_raffrayi.impl.Broker;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
@@ -24,22 +25,24 @@ public abstract class PRaffrayiTestBase {
 
     private final ScopeImpl scopeImpl = new ScopeImpl();
 
+    private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, ConfirmationMode.SIMPLE_ENVIRONMENT);
+
     protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R>> run(String id,
             ITypeChecker<Scope, L, IDatum, R> typeChecker, Iterable<L> edgeLabels) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels,
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels,
                 new NullCancel(), 0.3, 50);
     }
 
     protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> run(String id,
             ITypeChecker<Scope, Integer, IDatum, R> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
             IUnitResult<Scope, Integer, IDatum, R> previousResult) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed,
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed,
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
     protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> run(TestTypeChecker<R> typeChecker,
             Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, R> previousResult) {
-        return Broker.debug(typeChecker.getId(), PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
+        return Broker.debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
                 previousResult, new NullCancel(), 0.3, 50);
     }
 

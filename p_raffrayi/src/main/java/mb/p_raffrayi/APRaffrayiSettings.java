@@ -15,6 +15,10 @@ public abstract class APRaffrayiSettings {
         return incrementalDeadlock() || scopeGraphDiff();
     }
 
+    public static PRaffrayiSettings concurrent() {
+        return PRaffrayiSettings.of(false, false, ConfirmationMode.TRIVIAL);
+    }
+
     public enum ConfirmationMode {
         TRIVIAL, SIMPLE_ENVIRONMENT
     }
