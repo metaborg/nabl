@@ -13,7 +13,9 @@ rules // collect extension constraints
 
   ext-constraints: r@Rule(_, C(x, ps), _) -> c*
     where r-ref := <ext-get-constraint-ref> x
-        ; c* := <ext-params-constraints(|r-ref)> ps
+        ; c-param* := <ext-params-constraints(|r-ref)> ps
+        ; c-decl* := <ext-non-unique-decls-constraints> ps
+        ; c* := <conc> (c-param*, c-decl*)
 
   ext-params-constraints(|r-ref): ps -> c*
     where ((v*, c1*), t*) := < add-indices
@@ -73,3 +75,13 @@ rules // collect extension constraints
   ext-get-term-ref: Var(x) -> ExtVar(r-ref)
     where r-ref := <ext-get-var-ref> x
 
+  ext-non-unique-decls-constraints: args -> c*
+    with groups := <all-vars; group-by(?Var(<id>); strip-annos, \d -> (d, <?Var(<id>); ext-get-var-decl> d) \); map(Snd)> args
+        ; c* := <mapconcat(\[(_, rep)|others] -> <mapconcat(ext-non-unique-decl-constraints(|rep))> others \)> groups
+
+  ext-non-unique-decl-constraints(|rep): (t, d) -> c*
+    with c* := [ ExtRequires(ExtVar(rep), ExtVar(d), t)
+               , ExtRequires(ExtVar(d), ExtVar(rep), t)
+               // FIXME Adding similar ExtProvides constraints again filters out these constraints.
+               // How should we handle provides on non-uniquely declared variables?
+               ]

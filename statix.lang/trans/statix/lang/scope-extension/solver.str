@@ -87,8 +87,8 @@ rules
     where lbls := <ext-get-nonempty(|require*)> s
     with lbls-msg := <pp-Statix-string(prettyprint-Statix-ExtOp)> lbls
        ; msg := $[Scope crosses barrier when extended with [lbls-msg]]
-  
-  
+
+
   ext-get-nonempty(|values*): ExtAll() -> <id>
   ext-get-nonempty(|values*): ExtLit([_|_]) -> <id>
   ext-get-nonempty(|values*): v@ExtVar(_) -> <raw-lookup> (v, values*)
