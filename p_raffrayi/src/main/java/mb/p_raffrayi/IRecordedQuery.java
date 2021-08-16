@@ -1,5 +1,6 @@
 package mb.p_raffrayi;
 
+import java.util.Optional;
 import java.util.Set;
 
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -26,6 +27,6 @@ public interface IRecordedQuery<S, L, D> {
     Set<IRecordedQuery<S, L, D>> predicateQueries();
 
     // TODO: remove result
-    Env<S, L, D> result();
+    Optional<Env<S, L, D>> result();
 
 }

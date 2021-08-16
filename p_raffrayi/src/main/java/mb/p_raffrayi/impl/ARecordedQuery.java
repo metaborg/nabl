@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
@@ -29,21 +30,33 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract DataLeq<S, L, D> dataLeq();
 
-    @Override @Value.Parameter public abstract Env<S, L, D> result();
+    @Override @Value.Parameter public abstract Optional<Env<S, L, D>> result();
 
     @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> transitiveQueries();
 
     @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> predicateQueries();
 
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
+            DataWf<S, L, D> dataWf, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq, Env<S, L, D> result,
+            Set<IRecordedQuery<S, L, D>> transitiveQueries, Set<IRecordedQuery<S, L, D>> predicateQueries) {
+        return RecordedQuery.of(scopePath, labelWf, dataWf, labelOrder, dataLeq, Optional.of(result), transitiveQueries,
+                predicateQueries);
+    }
+
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq, Env<S, L, D> result) {
-        return RecordedQuery.of(path, labelWf, dataWf, labelOrder, dataLeq, result, ImmutableSet.of(),
-                ImmutableSet.of());
+        return of(path, labelWf, dataWf, labelOrder, dataLeq, result, ImmutableSet.of(), ImmutableSet.of());
     }
 
     public static <S, L, D> RecordedQuery<S, L, D> of(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq, Env<S, L, D> result) {
         return of(new ScopePath<S, L>(scope), labelWf, dataWf, labelOrder, dataLeq, result);
+    }
+
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq) {
+        return RecordedQuery.of(path, labelWf, dataWf, labelOrder, dataLeq, Optional.empty(), ImmutableSet.of(),
+                ImmutableSet.of());
     }
 
 }

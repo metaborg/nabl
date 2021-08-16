@@ -18,6 +18,7 @@ import mb.p_raffrayi.impl.Release;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
@@ -58,7 +59,7 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                     }
                 } else if(!m.isPresent()) {
                     logger.error("No match for {}. Confirming if previous environment empty.", scope);
-                    confirmationResult.complete(rq.result().isEmpty());
+                    confirmationResult.complete(rq.result().map(Env::isEmpty).orElse(false));
                 } else {
                     logger.debug("Matched {} ~ {}. Confirming if query in match returns equal results.", m.get(), scope);
                     final IFuture<IQueryAnswer<S, L, D>> queryResult = context.query(new ScopePath<>(m.get()),
@@ -72,13 +73,16 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                                 logger.error("Confirmation completed exceptionally.", ex2);
                                 confirmationResult.completeExceptionally(ex2);
                             }
-                        } else {
+                        } else if(rq.result().isPresent()) {
                             logger.debug("Confirming {} if new environment is equal.", rq);
                             // Query is valid iff environments are equal
                             // TODO: compare environments with scope patches.
-                            java.util.Set<ResolutionPath<S, L, D>> oldPaths = Sets.newHashSet(rq.result());
+                            java.util.Set<ResolutionPath<S, L, D>> oldPaths = Sets.newHashSet(rq.result().get());
                             java.util.Set<ResolutionPath<S, L, D>> newPaths = Sets.newHashSet(env.env());
                             confirmationResult.complete(oldPaths.equals(newPaths));
+                        } else {
+                            logger.debug("Denied {} because no previous environment given.", rq);
+                            confirmationResult.complete(false);
                         }
                     });
                 }

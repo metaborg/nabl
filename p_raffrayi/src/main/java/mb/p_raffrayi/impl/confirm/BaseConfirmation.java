@@ -19,6 +19,7 @@ import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
@@ -47,7 +48,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
-        return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.result().isEmpty());
+        return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.result().map(Env::isEmpty).orElse(false));
     }
 
     @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,

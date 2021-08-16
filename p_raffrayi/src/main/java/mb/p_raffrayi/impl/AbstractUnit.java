@@ -326,6 +326,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         scopes.__insert(scope);
+        if(sharing) {
+            sharedScopes.__insert(scope);
+        }
+
         doAddLocalShare(self, scope);
         doInitShare(self, scope, labels, sharing);
 
@@ -453,8 +457,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     LabelOrder<L> labelOrder) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
-                    // TODO: when scope is initialized as shared, record query.
                     logger.debug("local env {}", scope);
+                    if(!external && sharedScopes.contains(scope)) {
+                        // No need to wait for completion, because local shared scopes are initialized when freshened.
+                        recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv));
+                    }
                     return Optional.empty();
                 } else {
                     return Optional.of(getOwner(scope).thenCompose(owner -> {
@@ -611,8 +618,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 return self.schedule(result).whenComplete((ans, ex) -> {
                     granted(wf, self);
                 }).thenApply(ans -> {
-                    queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env(),
-                            ImmutableSet.of(), ImmutableSet.of()));
+                    queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
                     queries.addAll(ans.transitiveQueries());
                     // TODO can this happen? Is flattening here ok then?
                     queries.addAll(ans.predicateQueries());
