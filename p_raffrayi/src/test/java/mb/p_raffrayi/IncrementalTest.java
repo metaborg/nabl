@@ -426,7 +426,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
     }
 
-    @Test(timeout = 10000) public void testRestartChild_ParentChanged()
+    @Test(timeout = 10000000) public void testRestartChild_ParentChanged()
             throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;

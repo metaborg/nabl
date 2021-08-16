@@ -55,7 +55,6 @@ import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
-import mb.p_raffrayi.impl.tokens.Complete;
 import mb.p_raffrayi.impl.tokens.Datum;
 import mb.p_raffrayi.impl.tokens.DifferResult;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
@@ -336,11 +335,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return scope;
     }
 
-    @Override public IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label) {
-        assertOwnScope(scope);
-        return isComplete(scope, label, self.sender(TYPE));
-    }
-
     @Override public IFuture<Optional<D>> _datum(S scope) {
         assertOwnScope(scope);
         return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenApply(__ -> scopeGraph.get().getData(scope));
@@ -385,11 +379,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             waitFor(CloseScope.of(self, scope), sender);
         }
 
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
+        if(isScopeInitialized(scope)) {
+            releaseDelays(scope);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._initShare(scope, edges, sharing);
         }
     }
@@ -407,11 +401,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
         granted(CloseScope.of(self, scope), sender);
 
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
+        if(isScopeInitialized(scope)) {
+            releaseDelays(scope);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._doneSharing(scope);
         }
     }
@@ -421,11 +415,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
         granted(CloseLabel.of(self, scope, edge), sender);
 
-        if(isOwner(scope)) {
-            if(isEdgeClosed(scope, edge)) {
-                releaseDelays(scope, edge);
-            }
-        } else {
+        if(isEdgeClosed(scope, edge)) {
+            releaseDelays(scope, edge);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._closeEdge(scope, edge);
         }
     }
@@ -787,7 +781,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
             IActorRef<? extends IUnit<S, L, D, ?>> sender) {
-        assertOwnScope(scope);
+        assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
         } else {
@@ -1017,7 +1011,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     query -> {},
                     pQuery -> {},
                     confirm -> {},
-                    complete -> {},
                     datum -> {},
                     match -> {},
                     result  -> {},
@@ -1092,10 +1085,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     logger.error("Unexpected remaining confirmation request: " + confirm);
                     throw new IllegalStateException("Unexpected remaining confirmation request: " + confirm);
                 },
-                complete -> {
-                    logger.error("Unexpected remaining completeness query: " + complete);
-                    self.complete(complete.future(), null, new DeadlockException("Unexpected remaining completeness query: " + complete));
-                },
                 datum -> {
                     logger.error("Unexpected remaining datum query: " + datum);
                     throw new IllegalStateException("Unexpected remaining datum query: " + datum);
@@ -1162,21 +1151,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private class DifferContext implements IDifferContext<S, L, D> {
 
         @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
-            // Most be done via owner, because delays on a shared, non-owned scope are not activated
-            // and not desired to be activated, because not any operation on them can proceed
-            return getOwner(scope).thenCompose(owner -> {
-                final ICompletableFuture<Iterable<S>> future = new CompletableFuture<>();
-                final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label), future);
-
-                waitFor(complete, owner);
-                self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
-                    return scopeGraph.get().getEdges(scope, label);
-                }).whenComplete((r, ex) -> {
-                    granted(complete, owner);
-                    resume();
-                    future.complete(r, ex);
-                });
-                return future;
+            return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
+                return scopeGraph.get().getEdges(scope, label);
             });
         }
 

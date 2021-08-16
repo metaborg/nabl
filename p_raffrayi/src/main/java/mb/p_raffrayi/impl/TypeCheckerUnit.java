@@ -525,7 +525,6 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     query -> {},
                     pQuery -> {},
                     confirm -> {},
-                    complete -> {},
                     datum -> {},
                     match -> {},
                     result -> {},

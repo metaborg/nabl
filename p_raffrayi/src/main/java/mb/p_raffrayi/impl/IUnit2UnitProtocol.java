@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
-import org.metaborg.util.unit.Unit;
 
 import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -37,8 +36,6 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             boolean prevEnvEmpty);
-
-    IFuture<Unit> _isComplete(S scope, EdgeOrData<L> label);
 
     IFuture<Optional<D>> _datum(S scope);
 
