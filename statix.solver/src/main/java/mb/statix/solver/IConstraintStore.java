@@ -28,6 +28,8 @@ public interface IConstraintStore {
         delays.forEach(e -> delay(e.getKey(), e.getValue()));
     }
 
+    Iterable<IConstraint> active();
+
     Map<IConstraint, Delay> delayed();
 
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);

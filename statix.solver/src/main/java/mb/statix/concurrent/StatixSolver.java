@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -149,7 +148,7 @@ public class StatixSolver {
     private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
 
     private final AtomicBoolean inFixedPoint = new AtomicBoolean(false);
-    private final AtomicInteger pendingResults = new AtomicInteger(0);
+    private final Set.Transient<IConstraint> pendingConstraints = CapsuleUtil.transientSet();
     private final CompletableFuture<SolverResult> result;
 
     public StatixSolver(IConstraint constraint, Spec spec, IState.Immutable state, ICompleteness.Immutable completeness,
@@ -180,6 +179,38 @@ public class StatixSolver {
         this.progress = progress;
         this.cancel = cancel;
         this.flags = flags;
+    }
+
+    public StatixSolver(SolverState state, Spec spec, IDebugContext debug, IProgress progress, ICancel cancel,
+            ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags) {
+        if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
+            debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
+            this.spec = spec.precomputeCriticalEdges();
+        } else {
+            this.spec = spec;
+        }
+        this.scopeGraph = scopeGraph;
+        this.debug = debug;
+        this.constraints = new BaseConstraintStore(debug);
+        this.result = new CompletableFuture<>();
+        this.progress = progress;
+        this.cancel = cancel;
+        this.flags = flags;
+
+        this.state = state.state();
+        this.completeness = state.completeness();
+        this.constraints.addAll(state.activeConstraints());
+        this.constraints.delayAll(state.delayedConstraints().entrySet());
+        this.existentials = state.existentials();
+        this.updatedVars.addAll(state.updatedVars());
+        this.failed.putAll(state.failed());
+        try {
+            for(CriticalEdge criticalEdge : state.delayedCloses()) {
+                closeEdge(criticalEdge);
+            }
+        } catch(InterruptedException e) {
+            result.completeExceptionally(e);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -247,8 +278,8 @@ public class StatixSolver {
                     "Expected no remaining active constraints, but got " + constraints.activeSize());
         }
 
-        debug.debug("Has pending: {}, done: {}", pendingResults.get(), result.isDone());
-        if(pendingResults.get() == 0 && !result.isDone()) {
+        debug.debug("Has pending: {}, done: {}", pendingConstraints.size(), result.isDone());
+        if(pendingConstraints.size() == 0 && !result.isDone()) {
             debug.debug("Finished.");
             result.complete(finishSolve());
         } else {
@@ -370,10 +401,10 @@ public class StatixSolver {
         return true;
     }
 
-    private <R> boolean future(IFuture<R> future, K<? super R> k) throws InterruptedException {
-        pendingResults.incrementAndGet();
+    private <R> boolean future(IConstraint constraint, IFuture<R> future, K<? super R> k) throws InterruptedException {
+        pendingConstraints.__insert(constraint);
         future.handle((r, ex) -> {
-            pendingResults.decrementAndGet();
+            pendingConstraints.__remove(constraint);
             if(!result.isDone()) {
                 solveK(k, r, ex);
             }
@@ -634,7 +665,7 @@ public class StatixSolver {
                                 NO_EXISTENTIALS, fuel);
                     }
                 };
-                return future(future, k);
+                return future(c, future, k);
             }
 
             @Override public Boolean caseTellEdge(CTellEdge c) throws InterruptedException {
@@ -773,7 +804,7 @@ public class StatixSolver {
                         }
                     }
                 };
-                return future(subResult, k);
+                return future(c, subResult, k);
             }
 
             @Override public Boolean caseUser(CUser c) throws InterruptedException {
@@ -1269,6 +1300,27 @@ public class StatixSolver {
             return constraint.toString(state.unifier()::toString);
         }
 
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // capture
+    ///////////////////////////////////////////////////////////////////////////
+
+    public SolverState snapshot() {
+        final SolverState.Builder builder = SolverState.builder();
+        builder.state(state);
+        builder.completeness(completeness);
+        builder.addAllActiveConstraints(constraints.active());
+        builder.addAllActiveConstraints(pendingConstraints);
+        builder.delayedConstraints(constraints.delayed());
+        builder.existentials(existentials);
+        builder.updatedVars(updatedVars);
+        builder.failed(failed);
+        final Set.Immutable<CriticalEdge> closes = delayedCloses.freeze();
+        delayedCloses = closes.asTransient();
+        builder.delayedCloses(closes);
+
+        return builder.build();
     }
 
     ///////////////////////////////////////////////////////////////////////////

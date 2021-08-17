@@ -27,8 +27,8 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
     @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult, SolverState> context, List<Scope> rootScopes) {
         // @formatter:off
         return context.runIncremental(
-            restarted -> {
-                return runSolver(context, unit.rule(), rootScopes);
+            initialState -> {
+                return runSolver(context, unit.rule(), initialState, rootScopes);
             },
             UnitResult::solveResult,
             this::patch,

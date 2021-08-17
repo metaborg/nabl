@@ -3,6 +3,7 @@ package mb.statix.concurrent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.IFuture;
@@ -13,6 +14,8 @@ import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.persistent.SolverResult;
+import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 
@@ -39,8 +42,8 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
 
         // @formatter:off
         return context.runIncremental(
-            restarted -> {
-                return runSolver(context, group.rule(), Arrays.asList(parentScope, thisGroupScope));
+            initialState -> {
+                return runSolver(context, group.rule(), initialState, Arrays.asList(parentScope, thisGroupScope));
             },
             GroupResult::solveResult,
             this::patch,

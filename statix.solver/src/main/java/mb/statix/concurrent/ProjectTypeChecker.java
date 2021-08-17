@@ -45,8 +45,8 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
 
         // @formatter:off
         return context.runIncremental(
-            restarted -> {
-                return runSolver(context, project.rule(), Arrays.asList(projectScope));
+            initialState -> {
+                return runSolver(context, project.rule(), initialState, Arrays.asList(projectScope));
             },
             ProjectResult::solveResult,
             this::patch,

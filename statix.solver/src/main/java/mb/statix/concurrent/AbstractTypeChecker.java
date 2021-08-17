@@ -72,7 +72,8 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result =
-                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope), false /* Assume groups don't change directly */);
+                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
+                            false /* Assume groups don't change directly */);
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
@@ -90,7 +91,8 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result =
-                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope), entry.getValue().changed());
+                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
+                            entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
             }));
@@ -123,6 +125,15 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
+            Optional<SolverState> initialState, List<Scope> scopes) {
+        if(initialState.isPresent()) {
+            return runSolver(context, initialState.get(), scopes);
+        } else {
+            return runSolver(context, rule, scopes);
+        }
+    }
+
+    protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
             List<Scope> scopes) {
         if(!rule.isPresent()) {
             for(Scope scope : scopes) {
@@ -149,12 +160,25 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 new NullProgress(), new NullCancel(), context, 0);
         solveResult = solver.solve(scopes);
 
-        return solveResult.thenApply(r -> {
-            logger.debug("checker {}: solver returned.", context.id());
+        return finish(solveResult, context.id());
+    }
+
+    protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context,
+            SolverState initialState, List<Scope> scopes) {
+        solver = new StatixSolver(initialState, spec, debug, new NullProgress(), new NullCancel(), context, 0);
+        solveResult = solver.solve(scopes);
+
+        return finish(solveResult, context.id());
+    }
+
+    private IFuture<SolverResult> finish(IFuture<SolverResult> future, String id) {
+        return future.thenApply(r -> {
+            logger.debug("checker {}: solver returned.", id);
             solver = null; // gc solver
             return r; // FIXME minimize result to what is externally visible
                       //       note that this can make debugging harder, so perhaps optional?
         });
+
     }
 
     protected SolverResult patch(SolverResult previousResult, BiMap.Immutable<Scope> patches) {
@@ -173,7 +197,8 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
         // Patch properties
         // Note that the key is always a termindex * {Type(), Ref() or Prop(name)}, and hence does not need patching
-        final io.usethesource.capsule.Map.Transient<Tuple2<TermIndex, ITerm>, ITermProperty> props = CapsuleUtil.transientMap();
+        final io.usethesource.capsule.Map.Transient<Tuple2<TermIndex, ITerm>, ITermProperty> props =
+                CapsuleUtil.transientMap();
         oldState.termProperties().forEach((k, v) -> props.__put(k, v.replace(repl)));
 
         // Patch scope set.
@@ -214,6 +239,13 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         } else {
             return CompletableFuture.completedFuture(datum);
         }
+    }
+
+    @Override public SolverState snapshot() {
+        if(solver == null) {
+            return null;
+        }
+        return solver.snapshot();
     }
 
 }
