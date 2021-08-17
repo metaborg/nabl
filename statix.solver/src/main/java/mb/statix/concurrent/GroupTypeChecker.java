@@ -27,7 +27,7 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         this.group = group;
     }
 
-    @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult> context,
+    @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult, SolverState> context,
             List<Scope> rootScopes) {
         final Scope parentScope = rootScopes.get(0);
         final Scope thisGroupScope = makeSharedScope(context, "s_grp");

@@ -91,7 +91,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final IUnitContext<S, L, D> context;
 
     private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
-    private final UnitProcess<S, L, D> process;
+    protected final UnitProcess<S, L, D> process;
     private final BrokerProcess<S, L, D> broker = BrokerProcess.of();
 
     private volatile boolean innerResult;
@@ -110,11 +110,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
-    protected ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
+    protected final ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
 
-    private final MultiSet.Transient<String> scopeNameCounters;
+    protected final MultiSet.Transient<String> scopeNameCounters;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
+    private final Ref<StateCapture<S, L, D, ?>> localCapture = new Ref<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
     private final ICompletableFuture<Unit> whenStarted = new CompletableFuture<>();
@@ -663,6 +664,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // Scopegraph Capture
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected void localCapture(StateCapture<S, L, D, ?> capture) {
+        if(localCapture.get() != null) {
+            logger.error("Cannot create multiple local captures.");
+            throw new IllegalStateException("Cannot create multiple local captures.");
+        }
+        localCapture.set(capture);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
@@ -675,6 +688,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected boolean isWaitingFor(IWaitFor<S, L, D> token) {
         return waitFors.contains(token);
+    }
+
+    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> from) {
+        return waitForsByProcess.get(new UnitProcess<>(from)).count(token);
     }
 
     private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {

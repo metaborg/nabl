@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -47,8 +49,11 @@ import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.tokens.Activate;
+import mb.p_raffrayi.impl.tokens.CloseLabel;
+import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Confirm;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
+import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -63,13 +68,13 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
-        implements IIncrementalTypeCheckerContext<S, L, D, R> {
+class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
+        implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
 
-    private final ITypeChecker<S, L, D, R> typeChecker;
+    private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean changed;
     private final @Nullable IUnitResult<S, L, D, R> previousResult;
 
@@ -77,19 +82,20 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
 
     private final BiMap.Transient<S> matchedBySharing = BiMap.Transient.of();
 
-    private final IScopeGraph.Transient<S, L, D> localScopeGraph = ScopeGraph.Transient.of();
+    private final Ref<IScopeGraph.Immutable<S, L, D>> localScopeGraph = new Ref<>(ScopeGraph.Immutable.of());
 
     private final Set.Transient<String> addedUnitIds = CapsuleUtil.transientSet();
 
     private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();
-    private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
+    private final ICompletableFuture<Unit> whenContextActivated = new CompletableFuture<>();
 
     private IEnvDiffer<S, L, D> envDiffer;
 
     private final IConfirmationFactory<S, L, D> confirmation;
+    private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels,
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels,
             boolean inputChanged, IUnitResult<S, L, D, R> previousResult) {
         super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
@@ -107,10 +113,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 throw new IllegalStateException("Unknown confirmation mode: " + context.settings().confirmationMode());
         }
 
+        // TODO: Move to proper deadlock occasion
+        whenContextActivated.complete(Unit.unit);
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R> unitChecker, Iterable<L> edgeLabels) {
+            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels) {
         this(self, parent, context, unitChecker, edgeLabels, true, null);
     }
 
@@ -243,16 +251,16 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         return self.id();
     }
 
-    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q> unitChecker,
+    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q, ?> unitChecker,
             List<S> rootScopes, boolean changed) {
         assertActive();
 
         // No previous result for subunit
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
             this.addedUnitIds.__insert(id);
-            return ifActive(this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
+            return ifActive(whenContextActive(this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
                 return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
-            }, rootScopes, false)._2());
+            }, rootScopes, false)._2()));
         }
 
         @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Q> subUnitPreviousResult =
@@ -297,7 +305,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     subUnitPreviousResult);
         }, rootScopes, false)._2();
 
-        return ifActive(result);
+        return ifActive(whenContextActive(result));
     }
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
@@ -340,7 +348,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         assertActive();
 
         doSetDatum(scope, datum);
-        localScopeGraph.setDatum(scope, datum);
+        localScopeGraph.set(localScopeGraph.get().setDatum(scope, datum));
     }
 
     @Override public void addEdge(S source, L label, S target) {
@@ -348,7 +356,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
         doImplicitActivate();
 
         doAddEdge(self, source, label, target);
-        localScopeGraph.addEdge(source, label, target);
+        localScopeGraph.set(localScopeGraph.get().addEdge(source, label, target));
     }
 
     @Override public void closeEdge(S source, L label) {
@@ -383,12 +391,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             });
         }
         stats.localQueries += 1;
-        return ifActive(ret).thenApply(ans -> {
+        return ifActive(whenContextActive(ret)).thenApply(ans -> {
             return CapsuleUtil.toSet(ans.env());
         });
     }
 
-    @Override public <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
+    @Override public <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
             Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
             Function2<Q, Throwable, IFuture<R>> combine) {
         assertInState(UnitState.INIT_TC);
@@ -397,7 +405,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             logger.debug("Unit changed or no previous result was available.");
             stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
             doRestart();
-            return runLocalTypeChecker.apply(false).compose(combine::apply);
+            return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
         }
 
         doConfirmQueries();
@@ -411,7 +419,8 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                 final Q previousLocalResult = extractLocal.apply(previousResult.analysis());
                 return combine.apply(patch.apply(previousLocalResult, patches.get()), null);
             } else {
-                return runLocalTypeChecker.apply(true).compose(combine::apply);
+                // TODO: run with local capture
+                return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
             }
         });
     }
@@ -493,7 +502,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                         newScopeGraph.addEdge(newSource, label, target);
                     } else {
                         doAddEdge(self, newSource, label, target);
-                        localScopeGraph.addEdge(newSource, label, target);
+                        localScopeGraph.set(localScopeGraph.get().addEdge(newSource, label, target));
                     }
                     if(isOwner(target)) {
                         scopes.__insert(target);
@@ -506,12 +515,12 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
                     newScopeGraph.setDatum(newScope, context.substituteScopes(datum, patches.asMap()));
                 } else {
                     doSetDatum(newScope, datum);
-                    localScopeGraph.setDatum(newScope, datum);
+                    localScopeGraph.set(localScopeGraph.get().setDatum(newScope, datum));
                 }
             });
 
             scopeGraph.set(scopeGraph.get().addAll(newScopeGraph.freeze()));
-            localScopeGraph.addAll(newScopeGraph);
+            localScopeGraph.set(localScopeGraph.get().addAll(newScopeGraph));
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
@@ -590,14 +599,23 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Deadlock handling
+    // Deadlock
     ///////////////////////////////////////////////////////////////////////////
+
+    @Override public java.util.Set<IProcess<S, L, D>> dependentSet() {
+        if(state.active() && inLocalPhase()) {
+            return Collections.singleton(process);
+        }
+        return super.dependentSet();
+    }
 
     @Override protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
             doRelease(BiMap.Immutable.of());
+        } else if(state.active() && inLocalPhase()) {
+            // TODO: capture scope graph, activate context
         } else {
             super.handleDeadlock(nodes);
         }
@@ -608,7 +626,7 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
     ///////////////////////////////////////////////////////////////////////////
 
     @Override protected Immutable<S, L, D> localScopeGraph() {
-        return localScopeGraph.freeze();
+        return localScopeGraph.get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -680,6 +698,57 @@ class TypeCheckerUnit<S, L, D, R> extends AbstractUnit<S, L, D, R>
             return getOwner(scope).thenCompose(owner -> self.async(owner)._match(scope));
         }
 
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Scopegraph Capture
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected boolean inLocalPhase() {
+        return !whenContextActivated.isDone();
+    }
+
+    protected <Q> IFuture<Q> whenContextActive(IFuture<Q> future) {
+        if(!inLocalPhase()) {
+            return future;
+        }
+        return whenContextActivated.thenCompose(__ -> future);
+    }
+
+    private void doCapture() {
+        final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
+        final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
+        builder.scopes(scopes);
+        builder.scopeGraph(localScopeGraph());
+
+        final Set.Immutable<EdgeOrData<L>> edgeLabels = CapsuleUtil.immutableSet(EdgeOrData.data());
+        this.edgeLabels.forEach(lbl -> edgeLabels.__insert(EdgeOrData.edge(lbl)));
+
+        for(S scope : scopes) {
+            final int initCount = countWaitingFor(InitScope.of(self, scope), self);
+            for(int i = 0; i < initCount; i++) {
+                builder.addUnInitializedScopes(scope);
+            }
+
+            final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
+            for(int i = 0; i < closeCount; i++) {
+                builder.addOpenScopes(scope);
+            }
+
+            for(EdgeOrData<L> label : edgeLabels) {
+                final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
+                for(int i = 0; i < closeLabelCount; i++) {
+                    builder.putOpenEdges(scope, label);
+                }
+            }
+        }
+
+        final MultiSet.Transient<String> counters = MultiSet.Transient.of();
+        counters.addAll(this.scopeNameCounters);
+        builder.scopeNameCounters(scopeNameCounters.freeze());
+        builder.typeCheckerState(typeChecker.snapshot());
+
+        localCapture(builder.build());
     }
 
     ///////////////////////////////////////////////////////////////////////////

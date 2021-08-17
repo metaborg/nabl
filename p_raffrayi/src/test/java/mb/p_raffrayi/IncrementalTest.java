@@ -666,9 +666,9 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
     @Test(timeout = 10000) public void testRecord_SharedScopeQuery() throws InterruptedException, ExecutionException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
-                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
+                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit, Unit>() {
                     @Override public IFuture<Unit> run(
-                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit, List<Scope> rootScopes) {
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit, List<Scope> rootScopes) {
                         return unit.runIncremental(restarted -> {
                             final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
                             final IFuture<Unit> future = unit.query(s, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.any())
@@ -1006,10 +1006,10 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> future =
-                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit>() {
+                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Unit, Unit>() {
 
                     @Override public IFuture<Unit>
-                            run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit, List<Scope> roots) {
+                            run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit, List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Arrays.asList(lbl), false, true);
                         final IFuture<IUnitResult<Scope, Integer, IDatum, Unit>> sub1Future =
                                 unit.add("sub1", new NoopTypeChecker("sub1", false), Arrays.asList(s), false);
@@ -1095,7 +1095,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             super(id, changed);
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> roots) {
             return unit.runIncremental(restarted -> CompletableFuture.completedFuture(Unit.unit));
         }
@@ -1112,7 +1112,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             this.datum = datum;
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(lbl), false);
@@ -1137,7 +1137,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             this.datum = datum;
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(lbl), false);
@@ -1164,7 +1164,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             this.lbl = lbl;
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(lbl), false);
@@ -1184,7 +1184,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             super(id, changed);
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(), false);
@@ -1204,7 +1204,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             this.lbl = lbl;
         }
 
-        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit> unit,
+        @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(lbl), false);
@@ -1226,7 +1226,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             super(id, changed);
         }
 
-        @Override public IFuture<Integer> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Integer> unit,
+        @Override public IFuture<Integer> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Integer, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
             unit.initScope(s1, Arrays.asList(), false);
@@ -1250,7 +1250,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             this.typeCheckers = Arrays.asList(typeCheckers);
         }
 
-        @Override public IFuture<R> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R> unit,
+        @Override public IFuture<R> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R, Unit> unit,
                 List<Scope> rootScopes) {
             final Scope root = unit.freshScope("s", rootLabels(), false, true);
 
@@ -1284,7 +1284,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             return Arrays.asList();
         }
 
-        protected void callback(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R> unit, Scope root) {
+        protected void callback(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R, Unit> unit, Scope root) {
             // No-op by default
         }
 
@@ -1304,7 +1304,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             return Arrays.asList(lbl);
         }
 
-        @Override protected void callback(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R> unit, Scope root) {
+        @Override protected void callback(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, R, Unit> unit, Scope root) {
             final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
             unit.addEdge(root, lbl, d);
             unit.closeEdge(root, lbl);

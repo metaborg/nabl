@@ -44,7 +44,7 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
-public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITerm, ITerm, R> {
+public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 

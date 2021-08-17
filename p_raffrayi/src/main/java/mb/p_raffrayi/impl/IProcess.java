@@ -15,6 +15,6 @@ public interface IProcess<S, L, D> {
     /**
      * Provides the broker {@code origin} with an interface to send messages to this process.
      */
-    IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?> origin);
+    IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?, ?> origin);
 
 }

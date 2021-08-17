@@ -2,18 +2,25 @@ package mb.p_raffrayi;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
 /**
  * Represents the user-implemented type checker for a specific unit.
  */
-public interface ITypeChecker<S, L, D, R> {
+public interface ITypeChecker<S, L, D, R, T> {
 
-    IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R> unit, List<S> rootScopes);
+    // FIXME: include local snapshot T in future result instead of AbstractUnit?
+    IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R, T> unit, List<S> rootScopes);
 
     default IFuture<D> getExternalDatum(D datum) {
         return CompletableFuture.completedFuture(datum);
+    }
+
+    default @Nullable T snapshot() {
+        return null;
     }
 
 }

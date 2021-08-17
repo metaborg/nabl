@@ -44,7 +44,7 @@ import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
-public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
+public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
@@ -52,7 +52,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
 
     private final String id;
     private final PRaffrayiSettings settings;
-    private final ITypeChecker<S, L, D, R> typeChecker;
+    private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean rootChanged;
     private final @Nullable IUnitResult<S, L, D, R> previousResult;
     private final IScopeImpl<S, D> scopeImpl;
@@ -77,7 +77,7 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     // https://regex101.com/r/sGeGLs/1
     private static final Pattern RE_ID_SEG = Pattern.compile("\\/(?:\\\\\\\\|\\\\\\/|[^\\\\\\/])+");
 
-    private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R> typeChecker,
+    private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R, T> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean rootChanged,
             @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
@@ -373,43 +373,43 @@ public class Broker<S, L, D, R> implements ChandyMisraHaas.Host<IProcess<S, L, D
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R> previousResult, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R> previousResult, ICancel cancel, int parallelism) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 new WorkStealingScheduler(parallelism)).run();
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel,
             double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R> previousResult, ICancel cancel, double preemptProbability,
             int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+            ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R> previousResult, ICancel cancel, int parallelism, double preemptProbability,
             int scheduleDelayBoundMillis) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,

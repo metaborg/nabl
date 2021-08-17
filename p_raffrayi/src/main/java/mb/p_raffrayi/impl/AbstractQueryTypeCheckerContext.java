@@ -13,7 +13,7 @@ import mb.p_raffrayi.IUnitResult;
 public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
     @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-            ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
+            ITypeChecker<S, L, D, Q, ?> unitChecker, List<S> rootScopes, boolean changed) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 

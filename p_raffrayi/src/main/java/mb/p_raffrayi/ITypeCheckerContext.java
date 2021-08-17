@@ -27,13 +27,13 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub unit with the given type-checker, root scopes and changed marker.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R, ?> unitChecker,
             List<S> rootScopes, boolean changed);
 
     /**
      * Start sub unit with the given type-checker, root scopes, marked as changed.
      */
-    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
+    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R, ?> unitChecker,
             List<S> rootScopes) {
         return add(id, unitChecker, rootScopes, true);
     }
@@ -114,7 +114,7 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
-                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, boolean changed) {
+                    ITypeChecker<S, L, D, R, ?> unitChecker, List<S> rootScopes, boolean changed) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

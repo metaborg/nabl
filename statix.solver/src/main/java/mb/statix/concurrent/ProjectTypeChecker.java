@@ -28,7 +28,7 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
         this.project = project;
     }
 
-    @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult> context,
+    @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult, SolverState> context,
             @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 

@@ -12,6 +12,7 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
@@ -28,13 +29,13 @@ public abstract class PRaffrayiTestBase {
     private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, ConfirmationMode.SIMPLE_ENVIRONMENT);
 
     protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R>> run(String id,
-            ITypeChecker<Scope, L, IDatum, R> typeChecker, Iterable<L> edgeLabels) {
+            ITypeChecker<Scope, L, IDatum, R, Unit> typeChecker, Iterable<L> edgeLabels) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels,
                 new NullCancel(), 0.3, 50);
     }
 
     protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> run(String id,
-            ITypeChecker<Scope, Integer, IDatum, R> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
+            ITypeChecker<Scope, Integer, IDatum, R, Unit> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
             IUnitResult<Scope, Integer, IDatum, R> previousResult) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed,
                 previousResult, new NullCancel(), 0.3, 50);
@@ -48,7 +49,7 @@ public abstract class PRaffrayiTestBase {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, R> {
+    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, R, Unit> {
 
         private final String id;
         private final boolean changed;

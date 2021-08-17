@@ -24,7 +24,7 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
         this.unit = unit;
     }
 
-    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult> context, List<Scope> rootScopes) {
+    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult, SolverState> context, List<Scope> rootScopes) {
         // @formatter:off
         return context.runIncremental(
             restarted -> {
