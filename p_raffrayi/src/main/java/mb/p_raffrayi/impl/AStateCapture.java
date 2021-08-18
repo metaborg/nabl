@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.MultiSet;
 
@@ -11,6 +12,7 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 
 @Value.Immutable
+@Serial.Version(42)
 public abstract class AStateCapture<S, L, D, T> {
 
     @Value.Parameter public abstract Set.Immutable<S> scopes();

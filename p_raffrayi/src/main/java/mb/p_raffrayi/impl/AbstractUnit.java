@@ -214,7 +214,8 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
         waitFor(token, self);
         result.whenComplete(internalResult::complete); // FIXME self.schedule(result)?
         internalResult.whenComplete((r, ex) -> {
-            logger.debug("{} type checker finished", this);
+            final String id = self.id();
+            logger.debug("{} type checker finished", id);
             resume(); // FIXME necessary?
             if(isDifferEnabled()) {
                 whenDifferActivated.thenAccept(__ -> differ.typeCheckerFinished());
@@ -440,7 +441,9 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
     protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
             ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
             DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+        final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
         logger.debug("got _query from {}", sender);
+
         final boolean external = !sender.equals(self);
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> transitiveQueries = ImmutableSet.builder();
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> predicateQueries = ImmutableSet.builder();
@@ -688,6 +691,10 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
 
     protected boolean isWaitingFor(IWaitFor<S, L, D> token) {
         return waitFors.contains(token);
+    }
+
+    protected boolean isWaitingFor(IWaitFor<S, L, D> token, IActor<? extends IUnit<S, L, D, R, T>> from) {
+        return waitForsByProcess.get(new UnitProcess<>(from)).contains(token);
     }
 
     protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> from) {
@@ -959,6 +966,7 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             logger.debug("Received patches: {}.", rors);
             if(rors.stream().noneMatch(this::canProgress)) {
+                logger.debug("No restartable units, doing regular deadlock handling.");
                 handleDeadlockRegular(nodes);
             } else {
                 // @formatter:off

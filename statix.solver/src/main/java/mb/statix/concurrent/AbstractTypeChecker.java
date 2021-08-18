@@ -68,6 +68,10 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> runGroups(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope) {
+        if(groups.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
+
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
@@ -87,6 +91,10 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> runUnits(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope parentScope) {
+        if(units.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
+
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
@@ -107,6 +115,10 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>> runLibraries(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
             Scope parentScope) {
+        if(libraries.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
+
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
@@ -114,13 +126,13 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
             final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit, Unit>> result =
                     context.add(key, library, Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
-                logger.debug("checker {}: group {} returned.", context.id(), key);
+                logger.debug("checker {}: library {} returned.", context.id(), key);
             }));
         }
         return AggregateFuture.of(results)
                 .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
                 .whenComplete((r, ex) -> {
-                    logger.debug("checker {}: all groups returned.", context.id());
+                    logger.debug("checker {}: all libraries returned.", context.id());
                 });
     }
 

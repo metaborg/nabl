@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
@@ -17,6 +18,7 @@ import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
 
 @Value.Immutable
+@Serial.Version(42)
 public abstract class ASolverState {
 
     @Value.Parameter public abstract IState.Immutable state();

@@ -4,6 +4,7 @@ import static com.google.common.collect.Streams.stream;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,9 +115,6 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
             default:
                 throw new IllegalStateException("Unknown confirmation mode: " + context.settings().confirmationMode());
         }
-
-        // TODO: Move to proper deadlock occasion
-        whenContextActivated.complete(Unit.unit);
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
@@ -143,6 +141,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             if(state == UnitState.INIT_TC) {
                 stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
+            }
+            if(inLocalPhase()) {
+                doCapture();
             }
             state = UnitState.DONE;
         });
@@ -261,6 +262,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         // No previous result for subunit
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
             this.addedUnitIds.__insert(id);
+
             return ifActive(whenContextActive(this.<Q, U>doAddSubUnit(id, (subself, subcontext) -> {
                 return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
             }, rootScopes, false)._2()));
@@ -320,7 +322,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
                     return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
                 }, rootScopes, true)._2();
 
-        return ifActive(result);
+        return ifActive(whenContextActive(result));
     }
 
     @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
@@ -412,18 +414,18 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
             return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
         }
 
+        // Invariant: added units are marked as changed.
+        // Therefore, if unit is not changed, previousResult cannot be null.
+        assertPreviousResultProvided();
+
         if(previousResult.localState() != null) {
             doRestore(previousResult.localState());
         }
 
         doConfirmQueries();
 
-        // Invariant: added units are marked as changed.
-        // Therefore, if unit is not changed, previousResult cannot be null.
-
         return confirmationResult.thenCompose(patches -> {
             if(patches.isPresent()) {
-                assertPreviousResultProvided();
                 final Q previousLocalResult = extractLocal.apply(previousResult.analysis());
                 return combine.apply(patch.apply(previousLocalResult, patches.get()), null);
             } else {
@@ -560,8 +562,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
 
             // Cancel all futures waiting for activation
             whenActive.completeExceptionally(Release.instance);
+            self.complete(whenContextActivated, Unit.unit, null);
+            self.complete(confirmationResult, Optional.of(patches), null);
             state = UnitState.RELEASED;
-            confirmationResult.complete(Optional.of(patches));
 
             resume();
             tryFinish(); // FIXME needed?
@@ -624,7 +627,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
             logger.debug("{} self-deadlocked before activation, releasing", this);
             doRelease(BiMap.Immutable.of());
         } else if(state.active() && inLocalPhase()) {
-            // TODO: capture scope graph, activate context
+            doCapture();
+            self.complete(whenContextActivated, Unit.unit, null);
+            resume();
         } else {
             super.handleDeadlock(nodes);
         }
@@ -784,7 +789,28 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         }
 
         // TODO: assert empty?
+        // TODO: patch root scopes?
         this.scopeGraph.set(snapshot.scopeGraph());
+
+        final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
+        final Iterator<S> pScopeIterator = previousResult.rootScopes().iterator();
+        for(S currentScope : rootScopes) {
+            doInitShare(self, currentScope, edges, false);
+            final S previousScope = pScopeIterator.next();
+            for(L label : edgeLabels) {
+                for(S target: snapshot.scopeGraph().getEdges(previousScope, label)) {
+                    self.async(parent)._addEdge(currentScope, label, target);
+                }
+                final CloseLabel<S, L, D> closeEdge = CloseLabel.of(self, currentScope, EdgeOrData.edge(label));
+                if(!snapshot.isOpen(previousScope, EdgeOrData.edge(label)) && isWaitingFor(closeEdge, self)) {
+                    doCloseLabel(self, currentScope, EdgeOrData.edge(label));
+                }
+            }
+        }
+
+        // TODO: patch capture with new root scopes?
+        localCapture(snapshot);
+        self.complete(whenContextActivated, Unit.unit, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////

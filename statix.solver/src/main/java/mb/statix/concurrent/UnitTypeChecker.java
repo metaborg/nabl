@@ -28,11 +28,13 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
         // @formatter:off
         return context.runIncremental(
             initialState -> {
+                logger.debug("unit {}: running. restarted: {}.", context.id(), initialState.isPresent());
                 return runSolver(context, unit.rule(), initialState, rootScopes);
             },
             UnitResult::solveResult,
             this::patch,
             (result, ex) -> {
+                logger.debug("unit {}: building final result.", context.id());
                 return CompletableFuture.completedFuture(UnitResult.of(unit.resource(), result, ex));
             })
             .whenComplete((r, ex) -> {

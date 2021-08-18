@@ -40,12 +40,15 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         // @formatter:off
         return context.runIncremental(
             initialState -> {
+                logger.debug("group {}: running. restarted: {}.", group.resource(), initialState.isPresent());
                 return runSolver(context, group.rule(), initialState, Arrays.asList(parentScope, thisGroupScope));
             },
             GroupResult::solveResult,
             this::patch,
             (result, ex) -> {
+                logger.debug("group {}: combining.", group.resource());
                 return AggregateFuture.apply(groupResults, unitResults).thenApply(e -> {
+                    logger.debug("group {}: returning.", group.resource());
                     return GroupResult.of(group.resource(), e._1(), e._2(), result, ex);
                 });
             })
