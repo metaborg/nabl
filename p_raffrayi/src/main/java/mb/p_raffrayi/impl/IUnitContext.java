@@ -10,6 +10,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Set.Immutable;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.actors.IActor;
@@ -39,7 +40,7 @@ public interface IUnitContext<S, L, D> {
 
     IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> owner(S scope);
 
-    <R, T> Tuple2<IFuture<IUnitResult<S, L, D, R, T>>, IActorRef<? extends IUnit<S, L, D, R, T>>> add(String id,
+    <R extends IResult<S, L, D>, T> Tuple2<IFuture<IUnitResult<S, L, D, R, T>>, IActorRef<? extends IUnit<S, L, D, R, T>>> add(String id,
             Function2<IActor<IUnit<S, L, D, R, T>>, IUnitContext<S, L, D>, IUnit<S, L, D, R, T>> unitProvider,
             List<S> rootScopes);
 

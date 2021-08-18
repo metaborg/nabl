@@ -17,6 +17,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
@@ -34,15 +35,15 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
+class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryUnit.class);
 
     private IScopeGraphLibrary<S, L, D> library;
 
-    private final List<IActorRef<? extends IUnit<S, L, D, Unit, Unit>>> workers;
+    private final List<IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>>> workers;
 
-    ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit, Unit>> self,
+    ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library) {
         super(self, parent, context, edgeLabels);
@@ -60,18 +61,22 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
+    @Override protected D getPreviousDatum(D datum) {
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit, Unit>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
         initDiffer(new MatchingDiffer<>(differOps(), differContext()), Collections.emptyList(),
                 Collections.emptyList());
         startWorkers();
-        return doFinish(CompletableFuture.completedFuture(Unit.unit));
+        return doFinish(CompletableFuture.completedFuture(IResult.Empty.of()));
     }
 
     private void buildScopeGraph(List<S> rootScopes) {
@@ -110,7 +115,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
 
     private void startWorkers() {
         for(int i = 0; i < context.parallelism(); i++) {
-            final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit, Unit>>, IFuture<IUnitResult<S, L, D, Unit, Unit>>> worker =
+            final Tuple2<IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>>, IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>>> worker =
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
                                 scopeGraph.get());
@@ -147,7 +152,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
     @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
-        final IActorRef<? extends IUnit<S, L, D, Unit, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
+        final IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
 
         final IFuture<IQueryAnswer<S, L, D>> result =
                 self.async(worker)._query(path, labelWF, dataWF, labelOrder, dataEquiv);

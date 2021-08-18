@@ -37,21 +37,21 @@ public class DifferTests extends PRaffrayiTestBase {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test(timeout = 10000) public void testEmptyDiff() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Scope, Unit>> future =
-                runSingle(new ITypeChecker<Scope, Integer, IDatum, Scope, Unit>() {
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Scope>, Unit>> future =
+                runSingle(new ITypeChecker<Scope, Integer, IDatum, Result<Integer, Scope>, Unit>() {
 
-                    @Override public IFuture<Scope> run(
-                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Scope, Unit> unit,
+                    @Override public IFuture<Result<Integer, Scope>> run(
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Scope>, Unit> unit,
                             List<Scope> rootScopes) {
                         Scope root = rootScopes.get(0);
                         unit.initScope(root, Arrays.asList(), false);
                         return unit.runIncremental(restarted -> {
-                            return CompletableFuture.completedFuture(root);
+                            return CompletableFuture.completedFuture(Result.of(root));
                         });
                     }
                 }, root, ScopeGraph.Immutable.of());
 
-        IUnitResult<Scope, Integer, IDatum, Scope, Unit> result = future.asJavaCompletion().get();
+        IUnitResult<Scope, Integer, IDatum, Result<Integer, Scope>, Unit> result = future.asJavaCompletion().get();
 
         assertEquals(Arrays.asList(), result.allFailures());
         final ScopeGraphDiff<Scope, Integer, IDatum> diff = result.diff();
@@ -62,16 +62,16 @@ public class DifferTests extends PRaffrayiTestBase {
         assertEquals(CapsuleUtil.immutableMap(), diff.removed().scopes());
         assertEquals(CapsuleUtil.immutableSet(), diff.removed().edges());
 
-        assertEquals(BiMap.Immutable.of(result.analysis(), root), diff.matchedScopes());
+        assertEquals(BiMap.Immutable.of(result.analysis().value(), root), diff.matchedScopes());
         assertEquals(EMPTY_BIMAP, diff.matchedEdges());
     }
 
     @Test(timeout = 10000) public void testAddedEdgeDiff() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, List<Scope>, Unit>> future =
-                runSingle(new ITypeChecker<Scope, Integer, IDatum, List<Scope>, Unit>() {
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, List<Scope>>, Unit>> future =
+                runSingle(new ITypeChecker<Scope, Integer, IDatum, Result<Integer, List<Scope>>, Unit>() {
 
-                    @Override public IFuture<List<Scope>> run(
-                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, List<Scope>, Unit> unit,
+                    @Override public IFuture<Result<Integer, List<Scope>>> run(
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, List<Scope>>, Unit> unit,
                             List<Scope> rootScopes) {
                         Scope root = rootScopes.get(0);
                         unit.initScope(root, Arrays.asList(LBL_1), false);
@@ -79,13 +79,13 @@ public class DifferTests extends PRaffrayiTestBase {
                             final Scope d = unit.freshScope("d", Arrays.asList(), false, false);
                             unit.addEdge(root, LBL_1, d);
                             unit.closeEdge(root, LBL_1);
-                            return CompletableFuture.completedFuture(Arrays.asList(root, d));
+                            return CompletableFuture.completedFuture(Result.of(Arrays.asList(root, d)));
                         });
                     }
                 }, root, ScopeGraph.Immutable.of());
 
-        IUnitResult<Scope, Integer, IDatum, List<Scope>, Unit> result = future.asJavaCompletion().get();
-        List<Scope> resultScopes = result.analysis();
+        IUnitResult<Scope, Integer, IDatum, Result<Integer, List<Scope>>, Unit> result = future.asJavaCompletion().get();
+        List<Scope> resultScopes = result.analysis().value();
 
         assertEquals(Arrays.asList(), result.allFailures());
         final ScopeGraphDiff<Scope, Integer, IDatum> diff = result.diff();
@@ -105,7 +105,7 @@ public class DifferTests extends PRaffrayiTestBase {
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    @SuppressWarnings("unchecked") public <R> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> runSingle(
+    @SuppressWarnings("unchecked") public <R extends IResult<Scope, Integer, IDatum>> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> runSingle(
             ITypeChecker<Scope, Integer, IDatum, R, Unit> typeChecker, Scope prevRoot,
             IScopeGraph.Immutable<Scope, Integer, IDatum> previousGraph) {
         // @formatter:off
@@ -118,7 +118,7 @@ public class DifferTests extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        IUnitResult<Scope, Integer, IDatum, Unit, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit, Unit>builder()
+        IUnitResult<Scope, Integer, IDatum, IResult.Empty<Scope, Integer, IDatum>, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, IResult.Empty<Scope, Integer, IDatum>, Unit>builder()
             .id("/.")
             .scopeGraph(previousGraph) // TODO: remove data?
             .localScopeGraph(ScopeGraph.Immutable.of())
@@ -126,16 +126,16 @@ public class DifferTests extends PRaffrayiTestBase {
             .build();
         // @formatter:on
 
-        return run("/.", new ITypeChecker<Scope, Integer, IDatum, Unit, Unit>() {
+        return run("/.", new ITypeChecker<Scope, Integer, IDatum, IResult.Empty<Scope, Integer, IDatum>, Unit>() {
 
-            @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
+            @Override public IFuture<IResult.Empty<Scope, Integer, IDatum>> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, IResult.Empty<Scope, Integer, IDatum>, Unit> unit,
                     List<Scope> rootScopes) {
                 final Scope root = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
                 final IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> subResult =
                         unit.add("sub", typeChecker, Arrays.asList(root));
                 unit.closeScope(root);
                 return unit.runIncremental(restarted -> {
-                    return subResult.thenApply(__ -> Unit.unit);
+                    return subResult.thenApply(__ -> IResult.Empty.of());
                 });
             }
         }, labels, true, parentResult).thenApply(result -> {

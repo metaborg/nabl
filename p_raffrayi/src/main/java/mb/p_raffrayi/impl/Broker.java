@@ -30,6 +30,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.DeadlockException;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
@@ -44,7 +45,7 @@ import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
-public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
+public class Broker<S, L, D, R extends IResult<S, L, D>, T> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
 
@@ -239,7 +240,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
             }
         }
 
-        @Override public <Q, U> Tuple2<IFuture<IUnitResult<S, L, D, Q, U>>, IActorRef<? extends IUnit<S, L, D, Q, U>>> add(
+        @Override public <Q extends IResult<S, L, D>, U> Tuple2<IFuture<IUnitResult<S, L, D, Q, U>>, IActorRef<? extends IUnit<S, L, D, Q, U>>> add(
                 String id, Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
                 List<S> rootScopes) {
             synchronized(lock) {
@@ -373,34 +374,34 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R, T> previousResult, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 new WorkStealingScheduler(parallelism)).run();
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel,
             double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, double preemptProbability,
             int scheduleDelayBoundMillis) {
@@ -408,7 +409,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism, double preemptProbability,
             int scheduleDelayBoundMillis) {

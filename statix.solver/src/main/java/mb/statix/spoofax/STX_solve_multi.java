@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -153,7 +154,7 @@ public class STX_solve_multi extends StatixPrimitive {
         return resourceResults;
     }
 
-    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit, Unit> result) {
+    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit> result) {
     }
 
     private void flattenGroupResult(Spec spec, String groupId,

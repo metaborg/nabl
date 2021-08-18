@@ -11,6 +11,7 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.base.MoreObjects;
 
 import mb.nabl2.terms.ITerm;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IUnitResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
@@ -21,7 +22,7 @@ public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract String resource();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>> libraryResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>> libraryResults();
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>> groupResults();
 

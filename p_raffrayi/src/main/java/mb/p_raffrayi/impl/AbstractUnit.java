@@ -2,6 +2,7 @@ package mb.p_raffrayi.impl;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ import com.google.common.collect.Lists;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
 import mb.p_raffrayi.IRecordedQuery;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -80,7 +82,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
+public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
@@ -153,6 +155,8 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
     ///////////////////////////////////////////////////////////////////////////
 
     protected abstract IFuture<D> getExternalDatum(D datum);
+
+    protected abstract D getPreviousDatum(D datum);
 
     ///////////////////////////////////////////////////////////////////////////
     // IUnit2UnitProtocol interface, called by IUnit implementations
@@ -276,7 +280,7 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
-    protected <Q, U> Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>> doAddSubUnit(
+    protected <Q extends IResult<S, L, D>, U> Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>> doAddSubUnit(
             String id, Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
             List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
@@ -339,7 +343,22 @@ public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T
 
     @Override public IFuture<Optional<D>> _datum(S scope) {
         assertOwnScope(scope);
-        return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenApply(__ -> scopeGraph.get().getData(scope));
+        return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenCompose(__ -> {
+            final Optional<D> datum = scopeGraph.get().getData(scope);
+            if(!datum.isPresent()) {
+                return CompletableFuture.completedFuture(datum);
+            }
+
+            final ICompletableFuture<Optional<D>> future = new CompletableFuture<>();
+            final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
+            waitFor(state, self);
+            getExternalDatum(datum.get()).whenComplete((r, ex) -> {
+                granted(state, self);
+                // resume() // FIXME necessary?
+                future.complete(Optional.of(r), ex);
+            });
+            return future;
+        });
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {

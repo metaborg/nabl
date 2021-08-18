@@ -26,6 +26,7 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.Replacement;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
@@ -44,7 +45,7 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
-public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
+public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>> implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
@@ -112,18 +113,18 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>> runLibraries(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>>> runLibraries(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
             Scope parentScope) {
         if(libraries.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>>> results = new ArrayList<>();
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
             IStatixLibrary library = entry.getValue();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit, Unit>> result =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>> result =
                     context.add(key, library, Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: library {} returned.", context.id(), key);

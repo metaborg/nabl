@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.IUnitResult;
@@ -70,7 +71,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
+class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUnit<S, L, D, R, T>
         implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
@@ -128,6 +129,11 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         return typeChecker.getExternalDatum(datum);
     }
 
+    @Override protected D getPreviousDatum(D datum) {
+        assertPreviousResultProvided();
+        return previousResult.analysis().getExternalRepresentation(datum);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
@@ -152,7 +158,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 final IUnitResult<S, L, D, ?, ?> subResult = previousResult.subUnitResults().get(removedId);
-                this.<Unit, Unit>doAddSubUnit(removedId,
+                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(removedId,
                         (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
                         new ArrayList<>(), true);
             }
@@ -255,7 +261,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         return self.id();
     }
 
-    @Override public <Q, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id, ITypeChecker<S, L, D, Q, U> unitChecker,
+    @Override public <Q extends IResult<S, L, D>, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id, ITypeChecker<S, L, D, Q, U> unitChecker,
             List<S> rootScopes, boolean changed) {
         assertActive();
 
@@ -313,12 +319,12 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         return ifActive(whenContextActive(result));
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
+    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
             List<S> rootScopes) {
         assertActive();
 
-        final IFuture<IUnitResult<S, L, D, Unit, Unit>> result =
-                this.<Unit, Unit>doAddSubUnit(id, (subself, subcontext) -> {
+        final IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> result =
+                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(id, (subself, subcontext) -> {
                     return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
                 }, rootScopes, true)._2();
 

@@ -28,28 +28,28 @@ public abstract class PRaffrayiTestBase {
 
     private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, ConfirmationMode.SIMPLE_ENVIRONMENT);
 
-    protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R, Unit>> run(String id,
+    protected <L, R extends IResult<Scope, L, IDatum>> IFuture<IUnitResult<Scope, L, IDatum, R, Unit>> run(String id,
             ITypeChecker<Scope, L, IDatum, R, Unit> typeChecker, Iterable<L> edgeLabels) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels,
                 new NullCancel(), 0.3, 50);
     }
 
-    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> run(String id,
+    protected <R extends IResult<Scope, Integer, IDatum>> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> run(String id,
             ITypeChecker<Scope, Integer, IDatum, R, Unit> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
             IUnitResult<Scope, Integer, IDatum, R, Unit> previousResult) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed,
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
-    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> run(TestTypeChecker<R> typeChecker,
-            Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, R, Unit> previousResult) {
+    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, Unit>> run(TestTypeChecker<R> typeChecker,
+            Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, Unit> previousResult) {
         return Broker.debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, R, Unit> {
+    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, Result<Integer, R>, Unit> {
 
         private final String id;
         private final boolean changed;
@@ -66,7 +66,6 @@ public abstract class PRaffrayiTestBase {
         public boolean isChanged() {
             return changed;
         }
-
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -161,5 +160,57 @@ public abstract class PRaffrayiTestBase {
         }
 
     };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected static class Result<L, T> implements IResult<Scope, L, IDatum> {
+
+        private final T value;
+
+        private Result(T value) {
+            this.value = value;
+        }
+
+        public static <L, T> Result<L, T> of(T value) {
+            return new Result<>(value);
+        }
+
+        public T value() {
+            return value;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+    }
+
+    protected static class EmptyO implements IResult<Scope, Object, IDatum> {
+
+        private static final PRaffrayiTestBase.EmptyO instance = new PRaffrayiTestBase.EmptyO();
+
+        public static PRaffrayiTestBase.EmptyO of() {
+            return instance;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+    }
+
+    protected static class EmptyI implements IResult<Scope, Integer, IDatum> {
+
+        private static final PRaffrayiTestBase.EmptyI instance = new PRaffrayiTestBase.EmptyI();
+
+        public static PRaffrayiTestBase.EmptyI of() {
+            return instance;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+    }
 
 }

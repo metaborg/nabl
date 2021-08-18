@@ -10,7 +10,7 @@ import org.metaborg.util.future.IFuture;
 /**
  * Represents the user-implemented type checker for a specific unit.
  */
-public interface ITypeChecker<S, L, D, R, T> {
+public interface ITypeChecker<S, L, D, R extends IResult<S, L, D>, T> {
 
     // FIXME: include local snapshot T in future result instead of AbstractUnit?
     IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R, T> unit, List<S> rootScopes);

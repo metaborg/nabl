@@ -10,7 +10,7 @@ import mb.p_raffrayi.impl.StateCapture;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
-public interface IUnitResult<S, L, D, R, T> {
+public interface IUnitResult<S, L, D, R extends IResult<S, L, D>, T> {
 
     String id();
 

@@ -12,6 +12,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.p_raffrayi.IRecordedQuery;
+import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitStats;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -19,7 +20,7 @@ import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class AUnitResult<S, L, D, R, T> implements IUnitResult<S, L, D, R, T> {
+public abstract class AUnitResult<S, L, D, R extends IResult<S, L, D>, T> implements IUnitResult<S, L, D, R, T> {
 
     @Value.Parameter @Override public abstract String id();
 
