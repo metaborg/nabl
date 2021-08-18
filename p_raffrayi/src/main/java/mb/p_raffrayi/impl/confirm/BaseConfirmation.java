@@ -85,8 +85,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                     // @formatter:on
                 });
 
-                AggregateFuture.<BiMap.Immutable<S>, ConfirmResult<S>>ofShortCircuitable(this::merge,
-                        futures).whenComplete(result::complete);
+                AggregateFuture.ofShortCircuitable(this::merge, futures).whenComplete(result::complete);
             }
         });
 

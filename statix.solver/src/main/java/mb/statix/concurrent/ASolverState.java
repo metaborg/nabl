@@ -12,7 +12,6 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.CriticalEdge;
-import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.ICompleteness;
@@ -25,9 +24,7 @@ public abstract class ASolverState {
 
     @Value.Parameter public abstract ICompleteness.Immutable completeness();
 
-    @Value.Parameter public abstract java.util.Set<IConstraint> activeConstraints();
-
-    @Value.Parameter public abstract Map<IConstraint, Delay> delayedConstraints();
+    @Value.Parameter public abstract java.util.Set<IConstraint> constraints();
 
     @Value.Parameter public abstract @Nullable Map<ITermVar, ITermVar> existentials();
 

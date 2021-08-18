@@ -30,13 +30,13 @@ public class LazyConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
         return confirmSingle(query).thenCompose(res -> {
             logger.debug("Local confirmation result: {}.", res);
             return mapConfirmResultToFuture(res, initialPatches -> {
-                logger.debug("Local query confirmed; confirming transitive queries: {}.", query);
                 // If that succeeds, confirm all transitive queries
+                logger.debug("Local query confirmed; confirming transitive queries: {}.", query);
                 return confirm(query.transitiveQueries()).thenCompose(res2 -> {
                     logger.debug("Transitive confirmation result: {}.", res2);
                     return mapConfirmResultToFuture(res2, transitivePatches -> {
-                        logger.debug("Transitive query confirmed; confirming transitive queries: {}.", query);
                         // If that succeeds, confirm all queries raised by predicates
+                        logger.debug("Transitive query confirmed; confirming predicate queries: {}.", query);
                         return confirm(query.predicateQueries()).thenApply(res3 -> {
                             logger.debug("Predicate query confirmation result: {}.", res3);
                             return mapConfirmResult(res3, __ -> {

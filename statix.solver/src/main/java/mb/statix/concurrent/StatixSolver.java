@@ -199,8 +199,7 @@ public class StatixSolver {
 
         this.state = state.state();
         this.completeness = state.completeness();
-        this.constraints.addAll(state.activeConstraints());
-        this.constraints.delayAll(state.delayedConstraints().entrySet());
+        this.constraints.addAll(state.constraints());
         this.existentials = state.existentials();
         this.updatedVars.addAll(state.updatedVars());
         this.failed.putAll(state.failed());
@@ -1319,9 +1318,9 @@ public class StatixSolver {
         final SolverState.Builder builder = SolverState.builder();
         builder.state(state);
         builder.completeness(completeness);
-        builder.addAllActiveConstraints(constraints.active());
-        builder.addAllActiveConstraints(pendingConstraints);
-        builder.delayedConstraints(constraints.delayed());
+        builder.addAllConstraints(constraints.active());
+        builder.addAllConstraints(pendingConstraints);
+        builder.addAllConstraints(constraints.delayed().keySet());
         builder.existentials(existentials);
         builder.updatedVars(updatedVars);
         builder.failed(failed);

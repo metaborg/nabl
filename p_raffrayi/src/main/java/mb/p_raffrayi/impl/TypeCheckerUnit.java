@@ -738,8 +738,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
             builder.scopeGraph(localScopeGraph.get());
             localScopeGraph.set(ScopeGraph.Immutable.of());
 
-            final Set.Immutable<EdgeOrData<L>> edgeLabels = CapsuleUtil.immutableSet(EdgeOrData.data());
-            this.edgeLabels.forEach(lbl -> edgeLabels.__insert(EdgeOrData.edge(lbl)));
+            final Set.Transient<EdgeOrData<L>> _edgeLabels = CapsuleUtil.transientSet(EdgeOrData.data());
+            this.edgeLabels.forEach(lbl -> _edgeLabels.__insert(EdgeOrData.edge(lbl)));
+            final Set.Immutable<EdgeOrData<L>> edgeLabels = _edgeLabels.freeze();
 
             for(S scope : scopes) {
                 final int initCount = countWaitingFor(InitScope.of(self, scope), self);
