@@ -66,12 +66,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
         return s;
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> runGroups(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> runGroups(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope) {
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>>> results = new ArrayList<>();
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult>> result =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>> result =
                     context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
                             false /* Assume groups don't change directly */);
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
@@ -85,12 +85,12 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> runUnits(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> runUnits(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope parentScope) {
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>>> results = new ArrayList<>();
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult>> result =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>> result =
                     context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
@@ -104,14 +104,14 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>> runLibraries(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
             Scope parentScope) {
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
             IStatixLibrary library = entry.getValue();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit, Unit>> result =
                     context.add(key, library, Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
@@ -127,7 +127,7 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
             Optional<SolverState> initialState, List<Scope> scopes) {
         if(initialState.isPresent()) {
-            return runSolver(context, initialState.get(), scopes);
+            return runSolver(context, initialState.get());
         } else {
             return runSolver(context, rule, scopes);
         }
@@ -164,9 +164,9 @@ public abstract class AbstractTypeChecker<R> implements ITypeChecker<Scope, ITer
     }
 
     protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context,
-            SolverState initialState, List<Scope> scopes) {
+            SolverState initialState) {
         solver = new StatixSolver(initialState, spec, debug, new NullProgress(), new NullCancel(), context, 0);
-        solveResult = solver.solve(scopes);
+        solveResult = solver.continueSolve();
 
         return finish(solveResult, context.id());
     }

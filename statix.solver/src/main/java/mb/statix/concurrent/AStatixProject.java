@@ -27,7 +27,7 @@ public abstract class AStatixProject implements IStatixProject {
 
     @Value.Parameter @Override public abstract boolean changed();
 
-    @Value.Parameter @Override public abstract @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult();
+    @Value.Parameter @Override public abstract @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> previousResult();
 
     @Override public String toString() {
         return "StatixProject@" + System.identityHashCode(this);

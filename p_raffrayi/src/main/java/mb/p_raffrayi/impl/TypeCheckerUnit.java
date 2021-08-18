@@ -5,6 +5,7 @@ import static com.google.common.collect.Streams.stream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -68,7 +69,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
+class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R, T>
         implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
@@ -76,7 +77,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
 
     private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean changed;
-    private final @Nullable IUnitResult<S, L, D, R> previousResult;
+    private final @Nullable IUnitResult<S, L, D, R, T> previousResult;
 
     private volatile UnitState state;
 
@@ -94,9 +95,10 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
     private final IConfirmationFactory<S, L, D> confirmation;
     private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
-    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels,
-            boolean inputChanged, IUnitResult<S, L, D, R> previousResult) {
+    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
+            @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
+            ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels, boolean inputChanged,
+            IUnitResult<S, L, D, R, T> previousResult) {
         super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
         this.changed = inputChanged;
@@ -117,8 +119,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
         whenContextActivated.complete(Unit.unit);
     }
 
-    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R>> self, @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels) {
+    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
+            @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
+            ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels) {
         this(self, parent, context, unitChecker, edgeLabels, true, null);
     }
 
@@ -131,7 +134,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, R>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, R, T>> _start(List<S> rootScopes) {
         assertInState(UnitState.INIT_UNIT);
         resume();
 
@@ -147,8 +150,8 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
         // Start phantom units for all units that have not yet been restarted
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
-                final IUnitResult<S, L, D, ?> subResult = previousResult.subUnitResults().get(removedId);
-                this.<Unit>doAddSubUnit(removedId,
+                final IUnitResult<S, L, D, ?, ?> subResult = previousResult.subUnitResults().get(removedId);
+                this.<Unit, Unit>doAddSubUnit(removedId,
                         (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
                         new ArrayList<>(), true);
             }
@@ -183,7 +186,7 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         assertConfirmationEnabled();
         stats.incomingConfirmations++;
-        final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
+        final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender = self.sender(TYPE);
         final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
         whenActive.whenComplete((__, ex) -> {
             if(ex != null && ex != Release.instance) {
@@ -251,20 +254,20 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
         return self.id();
     }
 
-    @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id, ITypeChecker<S, L, D, Q, ?> unitChecker,
+    @Override public <Q, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id, ITypeChecker<S, L, D, Q, U> unitChecker,
             List<S> rootScopes, boolean changed) {
         assertActive();
 
         // No previous result for subunit
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
             this.addedUnitIds.__insert(id);
-            return ifActive(whenContextActive(this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
+            return ifActive(whenContextActive(this.<Q, U>doAddSubUnit(id, (subself, subcontext) -> {
                 return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
             }, rootScopes, false)._2()));
         }
 
-        @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Q> subUnitPreviousResult =
-                (IUnitResult<S, L, D, Q>) this.previousResult.subUnitResults().get(id);
+        @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Q, U> subUnitPreviousResult =
+                (IUnitResult<S, L, D, Q, U>) this.previousResult.subUnitResults().get(id);
 
 
         // When a scope is shared, the shares must be consistent.
@@ -300,21 +303,22 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
         }
 
         this.addedUnitIds.__insert(id);
-        final IFuture<IUnitResult<S, L, D, Q>> result = this.<Q>doAddSubUnit(id, (subself, subcontext) -> {
-            return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels, changed,
+        final IFuture<IUnitResult<S, L, D, Q, U>> result = this.<Q, U>doAddSubUnit(id, (subself, subcontext) -> {
+            return new TypeCheckerUnit<S, L, D, Q, U>(subself, self, subcontext, unitChecker, edgeLabels, changed,
                     subUnitPreviousResult);
         }, rootScopes, false)._2();
 
         return ifActive(whenContextActive(result));
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
+    @Override public IFuture<IUnitResult<S, L, D, Unit, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
             List<S> rootScopes) {
         assertActive();
 
-        final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
-        }, rootScopes, true)._2();
+        final IFuture<IUnitResult<S, L, D, Unit, Unit>> result =
+                this.<Unit, Unit>doAddSubUnit(id, (subself, subcontext) -> {
+                    return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
+                }, rootScopes, true)._2();
 
         return ifActive(result);
     }
@@ -396,9 +400,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
         });
     }
 
-    @Override public <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
-            Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
-            Function2<Q, Throwable, IFuture<R>> combine) {
+    @Override public <Q> IFuture<R> runIncremental(
+            Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker, Function1<R, Q> extractLocal,
+            Function2<Q, BiMap.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine) {
         assertInState(UnitState.INIT_TC);
         state = UnitState.UNKNOWN;
         if(!isIncrementalEnabled() || changed) {
@@ -406,6 +410,10 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
             stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
             doRestart();
             return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
+        }
+
+        if(previousResult.localState() != null) {
+            doRestore(previousResult.localState());
         }
 
         doConfirmQueries();
@@ -419,8 +427,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
                 final Q previousLocalResult = extractLocal.apply(previousResult.analysis());
                 return combine.apply(patch.apply(previousLocalResult, patches.get()), null);
             } else {
-                // TODO: run with local capture
-                return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
+                final Optional<T> initialState =
+                        Optional.ofNullable(previousResult.localState()).map(StateCapture::typeCheckerState);
+                return runLocalTypeChecker.apply(initialState).compose(combine::apply);
             }
         });
     }
@@ -635,9 +644,9 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
 
     private class ConfirmationContext implements IConfirmationContext<S, L, D> {
 
-        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        private final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
 
-        public ConfirmationContext(IActorRef<? extends IUnit<S, L, D, ?>> sender) {
+        public ConfirmationContext(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
             this.sender = sender;
         }
 
@@ -716,39 +725,66 @@ class TypeCheckerUnit<S, L, D, R, T> extends AbstractUnit<S, L, D, R>
     }
 
     private void doCapture() {
-        final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
-        final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
-        builder.scopes(scopes);
-        builder.scopeGraph(localScopeGraph());
+        final T snapshot;
+        if((snapshot = typeChecker.snapshot()) != null) {
+            final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
+            final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
+            builder.scopes(scopes);
+            builder.scopeGraph(localScopeGraph.get());
+            localScopeGraph.set(ScopeGraph.Immutable.of());
 
-        final Set.Immutable<EdgeOrData<L>> edgeLabels = CapsuleUtil.immutableSet(EdgeOrData.data());
-        this.edgeLabels.forEach(lbl -> edgeLabels.__insert(EdgeOrData.edge(lbl)));
+            final Set.Immutable<EdgeOrData<L>> edgeLabels = CapsuleUtil.immutableSet(EdgeOrData.data());
+            this.edgeLabels.forEach(lbl -> edgeLabels.__insert(EdgeOrData.edge(lbl)));
 
-        for(S scope : scopes) {
-            final int initCount = countWaitingFor(InitScope.of(self, scope), self);
-            for(int i = 0; i < initCount; i++) {
-                builder.addUnInitializedScopes(scope);
-            }
+            for(S scope : scopes) {
+                final int initCount = countWaitingFor(InitScope.of(self, scope), self);
+                for(int i = 0; i < initCount; i++) {
+                    builder.addUnInitializedScopes(scope);
+                }
 
-            final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
-            for(int i = 0; i < closeCount; i++) {
-                builder.addOpenScopes(scope);
-            }
+                final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
+                for(int i = 0; i < closeCount; i++) {
+                    builder.addOpenScopes(scope);
+                }
 
-            for(EdgeOrData<L> label : edgeLabels) {
-                final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
-                for(int i = 0; i < closeLabelCount; i++) {
-                    builder.putOpenEdges(scope, label);
+                for(EdgeOrData<L> label : edgeLabels) {
+                    final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
+                    for(int i = 0; i < closeLabelCount; i++) {
+                        builder.putOpenEdges(scope, label);
+                    }
                 }
             }
+
+            final MultiSet.Transient<String> counters = MultiSet.Transient.of();
+            counters.addAll(this.scopeNameCounters);
+            builder.scopeNameCounters(scopeNameCounters.freeze());
+            builder.typeCheckerState(snapshot);
+
+            localCapture(builder.build());
+        }
+    }
+
+    private void doRestore(StateCapture<S, L, D, T> snapshot) {
+        // TODO: assert only root scopes in this.scopes?
+        this.scopes.__insertAll(snapshot.scopes());
+
+        // TODO assert empty
+        this.scopeNameCounters = snapshot.scopeNameCounters().melt();
+
+        for(S scope : snapshot.unInitializedScopes()) {
+            waitFor(InitScope.of(self, scope), self);
         }
 
-        final MultiSet.Transient<String> counters = MultiSet.Transient.of();
-        counters.addAll(this.scopeNameCounters);
-        builder.scopeNameCounters(scopeNameCounters.freeze());
-        builder.typeCheckerState(typeChecker.snapshot());
+        for(S scope : snapshot.openScopes()) {
+            waitFor(CloseScope.of(self, scope), self);
+        }
 
-        localCapture(builder.build());
+        for(Map.Entry<S, EdgeOrData<L>> openEdge : snapshot.openEdges().entries()) {
+            waitFor(CloseLabel.of(self, openEdge.getKey(), openEdge.getValue()), self);
+        }
+
+        // TODO: assert empty?
+        this.scopeGraph.set(snapshot.scopeGraph());
     }
 
     ///////////////////////////////////////////////////////////////////////////

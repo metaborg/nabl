@@ -23,11 +23,11 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
+class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
-    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
+    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?, ?>> parent,
             IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph) {
         super(self, parent, context, edgeLabels);
 
@@ -43,7 +43,7 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, Unit, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
         // library workers do not need a differ, so don't initialize one here.
         return doFinish(CompletableFuture.completedFuture(Unit.unit));

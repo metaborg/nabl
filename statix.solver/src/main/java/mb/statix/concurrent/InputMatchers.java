@@ -18,7 +18,8 @@ public class InputMatchers {
         return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.previousResult(),
                 M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()),
                 M.map(M.stringValue(), M.req(library())), (t, id, rule, result, groups, units, libs) -> {
-                    return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(), result.orElse(null));
+                    return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(),
+                            result.orElse(null));
                 });
     }
 
@@ -55,11 +56,11 @@ public class InputMatchers {
     }
 
     @SuppressWarnings("unchecked")
-    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>> previousResult() {
+    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>> previousResult() {
         // @formatter:off
-        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>>cases(
+        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>cases(
             M.appl0("Added", appl -> Optional.empty()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>of(result))
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>of(result))
         ));
         // formatter:on
     }

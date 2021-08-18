@@ -230,6 +230,15 @@ public class StatixSolver {
         return result;
     }
 
+    public IFuture<SolverResult> continueSolve() {
+        try {
+            fixedpoint();
+        } catch(Throwable e) {
+            result.completeExceptionally(e);
+        }
+        return result;
+    }
+
     public IFuture<SolverResult> entail() {
         return solve(Collections.emptyList());
     }

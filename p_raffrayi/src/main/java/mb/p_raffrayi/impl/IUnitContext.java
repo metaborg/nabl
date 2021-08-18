@@ -37,10 +37,10 @@ public interface IUnitContext<S, L, D> {
 
     Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum);
 
-    IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope);
+    IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> owner(S scope);
 
-    <R> Tuple2<IFuture<IUnitResult<S, L, D, R>>, IActorRef<? extends IUnit<S, L, D, R>>> add(String id,
-            Function2<IActor<IUnit<S, L, D, R>>, IUnitContext<S, L, D>, IUnit<S, L, D, R>> unitProvider,
+    <R, T> Tuple2<IFuture<IUnitResult<S, L, D, R, T>>, IActorRef<? extends IUnit<S, L, D, R, T>>> add(String id,
+            Function2<IActor<IUnit<S, L, D, R, T>>, IUnitContext<S, L, D>, IUnit<S, L, D, R, T>> unitProvider,
             List<S> rootScopes);
 
     int parallelism();

@@ -18,9 +18,9 @@ public abstract class AGroupResult implements IStatixResult {
 
     @Value.Parameter public abstract String resource();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>> groupResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>> groupResults();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>> unitResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>> unitResults();
 
     @Value.Parameter public abstract @Nullable SolverResult solveResult();
 

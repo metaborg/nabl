@@ -15,7 +15,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 @Value.Immutable(prehash = false)
 public abstract class APQuery<S, L, D> implements IWaitFor<S, L, D> {
 
-    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?, ?>> origin();
 
     @Value.Parameter public abstract IScopePath<S, L> path();
 
@@ -33,7 +33,7 @@ public abstract class APQuery<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((PQuery<S, L, D>) this);
     }
 
-    public static <S, L, D> PQuery<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
+    public static <S, L, D> PQuery<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, IScopePath<S, L> path,
             @SuppressWarnings("unused") LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             @SuppressWarnings("unused") LabelOrder<L> labelOrder,
             @SuppressWarnings("unused") DataLeq<S, L, D> dataEquiv, IFuture<Env<S, L, D>> future) {

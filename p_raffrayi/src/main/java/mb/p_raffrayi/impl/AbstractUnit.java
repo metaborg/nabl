@@ -80,14 +80,14 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
+public abstract class AbstractUnit<S, L, D, R, T> implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
-    protected final TypeTag<IUnit<S, L, D, ?>> TYPE = TypeTag.of(IUnit.class);
+    protected final TypeTag<IUnit<S, L, D, ?, ?>> TYPE = TypeTag.of(IUnit.class);
 
-    protected final IActor<? extends IUnit<S, L, D, R>> self;
-    protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent;
+    protected final IActor<? extends IUnit<S, L, D, R, T>> self;
+    protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent;
     protected final IUnitContext<S, L, D> context;
 
     private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
@@ -97,8 +97,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private volatile boolean innerResult;
     private final Ref<R> analysis;
     protected final List<Throwable> failures;
-    private final Map<String, IUnitResult<S, L, D, ?>> subUnitResults;
-    private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
+    private final Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults;
+    private final ICompletableFuture<IUnitResult<S, L, D, R, T>> unitResult;
 
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
@@ -112,17 +112,17 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
     protected final ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
 
-    protected final MultiSet.Transient<String> scopeNameCounters;
+    protected MultiSet.Transient<String> scopeNameCounters;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
-    private final Ref<StateCapture<S, L, D, ?>> localCapture = new Ref<>();
+    private final Ref<StateCapture<S, L, D, T>> localCapture = new Ref<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
     private final ICompletableFuture<Unit> whenStarted = new CompletableFuture<>();
     protected final Stats stats;
 
-    public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
-            @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
+    public AbstractUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
+            @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
@@ -208,7 +208,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         self.complete(whenStarted, Unit.unit, null);
     }
 
-    protected final IFuture<IUnitResult<S, L, D, R>> doFinish(IFuture<R> result) {
+    protected final IFuture<IUnitResult<S, L, D, R, T>> doFinish(IFuture<R> result) {
         final ICompletableFuture<R> internalResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
         waitFor(token, self);
@@ -275,18 +275,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
-    protected <Q> Tuple2<IActorRef<? extends IUnit<S, L, D, Q>>, IFuture<IUnitResult<S, L, D, Q>>> doAddSubUnit(
-            String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+    protected <Q, U> Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>> doAddSubUnit(
+            String id, Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
             List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
 
-        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
+        final Tuple2<IFuture<IUnitResult<S, L, D, Q, U>>, IActorRef<? extends IUnit<S, L, D, Q, U>>> result_subunit =
                 context.add(id, unitProvider, rootScopes);
-        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
+        final IActorRef<? extends IUnit<S, L, D, Q, U>> subunit = result_subunit._2();
 
-        final ICompletableFuture<IUnitResult<S, L, D, Q>> internalResult = new CompletableFuture<>();
+        final ICompletableFuture<IUnitResult<S, L, D, Q, U>> internalResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
         waitFor(token, subunit);
         result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
@@ -295,7 +295,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             doAddShare(subunit, rootScope);
         }
 
-        final IFuture<IUnitResult<S, L, D, Q>> ret = internalResult.whenComplete((r, ex) -> {
+        final IFuture<IUnitResult<S, L, D, Q, U>> ret = internalResult.whenComplete((r, ex) -> {
             logger.debug("{} subunit {} finished", this, subunit);
             resume();
             granted(token, subunit);
@@ -354,13 +354,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Implementations -- independent of message handling context
     ///////////////////////////////////////////////////////////////////////////
 
-    protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
+    protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         waitFor(InitScope.of(self, scope), sender);
     }
 
-    protected final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
+    protected final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
         doAddLocalShare(sender, scope);
 
         if(!isOwner(scope)) {
@@ -368,7 +368,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
+    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope,
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
@@ -397,7 +397,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         doCloseLabel(self, scope, edge);
     }
 
-    protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
+    protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
@@ -411,7 +411,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeOrData<L> edge) {
+    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
@@ -425,7 +425,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
+    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S source,
             L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
@@ -437,7 +437,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
     }
 
-    protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+    protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
             ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
             DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         logger.debug("got _query from {}", sender);
@@ -623,7 +623,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         };
     }
 
-    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
             IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         logger.debug("rec pquery from {}", sender);
@@ -639,12 +639,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.scopeId(scope).equals(self.id());
     }
 
-    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
-        final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = context.owner(scope);
+    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> getOwner(S scope) {
+        final IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> future = context.owner(scope);
         if(future.isDone()) {
             return future;
         }
-        final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> result = new CompletableFuture<>();
+        final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> result = new CompletableFuture<>();
         final UnitAdd<S, L, D> unitAdd = UnitAdd.of(self, context.scopeId(scope), result);
         waitFor(unitAdd, broker);
         // Due to the synchronous nature of the Broker, this future may be completed by
@@ -667,7 +667,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Scopegraph Capture
     ///////////////////////////////////////////////////////////////////////////
 
-    protected void localCapture(StateCapture<S, L, D, ?> capture) {
+    protected void localCapture(StateCapture<S, L, D, T> capture) {
         if(localCapture.get() != null) {
             logger.error("Cannot create multiple local captures.");
             throw new IllegalStateException("Cannot create multiple local captures.");
@@ -690,7 +690,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return waitFors.contains(token);
     }
 
-    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> from) {
+    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> from) {
         return waitForsByProcess.get(new UnitProcess<>(from)).count(token);
     }
 
@@ -702,7 +702,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return getTokens(process);
     }
 
-    protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+    protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
         waitFor(token, process(actor));
     }
 
@@ -712,7 +712,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         waitForsByProcess = waitForsByProcess.put(process, token);
     }
 
-    protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+    protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
         granted(token, process(actor));
     }
 
@@ -726,7 +726,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         waitForsByProcess = waitForsByProcess.remove(process, token);
     }
 
-    private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+    private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
         return actor == self ? process : new UnitProcess<>(actor);
     }
 
@@ -740,13 +740,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
             // @formatter:off
-            unitResult.complete(UnitResult.<S, L, D, R>builder()
+            unitResult.complete(UnitResult.<S, L, D, R, T>builder()
                 .id(self.id())
                 .scopeGraph(scopeGraph.get())
                 .localScopeGraph(localScopeGraph())
                 .queries(recordedQueries)
                 .rootScopes(rootScopes)
                 .analysis(analysis.get())
+                .localState(localCapture.get())
                 .failures(failures)
                 .subUnitResults(subUnitResults)
                 .stats(stats)
@@ -797,7 +798,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
-            IActorRef<? extends IUnit<S, L, D, ?>> sender) {
+            IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
         assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
@@ -811,9 +812,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private class Delay {
 
         public final ICompletableFuture<org.metaborg.util.unit.Unit> future;
-        public final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        public final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
 
-        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, ?>> sender) {
+        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
             this.future = future;
             this.sender = sender;
         }
@@ -826,13 +827,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
 
-        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        private final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
         private final DataLeq<S, L, D> dataLeq;
         private final ITypeCheckerContext<S, L, D> queryContext;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
         private final DataWf<S, L, D> dataWf;
 
-        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
                 IScopeGraph.Immutable<S, L, D> scopeGraph, ITypeCheckerContext<S, L, D> queryContext,
                 DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
             this.sender = sender;
@@ -887,10 +888,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
 
-        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        private final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
 
-        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
                 IScopeGraph.Immutable<S, L, D> scopeGraph) {
             this.sender = sender;
             this.scopeGraph = scopeGraph;

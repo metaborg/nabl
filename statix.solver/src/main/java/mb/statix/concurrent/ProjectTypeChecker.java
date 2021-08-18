@@ -32,13 +32,13 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
             @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit, Unit>>> libraryResults =
             runLibraries(context, project.libraries(), projectScope);
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults =
             runGroups(context, project.groups(), projectScope);
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults =
             runUnits(context, project.units(), projectScope);
 
         context.closeScope(projectScope);

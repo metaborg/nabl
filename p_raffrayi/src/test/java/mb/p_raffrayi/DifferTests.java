@@ -37,7 +37,7 @@ public class DifferTests extends PRaffrayiTestBase {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test(timeout = 10000) public void testEmptyDiff() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Scope>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Scope, Unit>> future =
                 runSingle(new ITypeChecker<Scope, Integer, IDatum, Scope, Unit>() {
 
                     @Override public IFuture<Scope> run(
@@ -51,7 +51,7 @@ public class DifferTests extends PRaffrayiTestBase {
                     }
                 }, root, ScopeGraph.Immutable.of());
 
-        IUnitResult<Scope, Integer, IDatum, Scope> result = future.asJavaCompletion().get();
+        IUnitResult<Scope, Integer, IDatum, Scope, Unit> result = future.asJavaCompletion().get();
 
         assertEquals(Arrays.asList(), result.allFailures());
         final ScopeGraphDiff<Scope, Integer, IDatum> diff = result.diff();
@@ -67,7 +67,7 @@ public class DifferTests extends PRaffrayiTestBase {
     }
 
     @Test(timeout = 10000) public void testAddedEdgeDiff() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, List<Scope>>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, List<Scope>, Unit>> future =
                 runSingle(new ITypeChecker<Scope, Integer, IDatum, List<Scope>, Unit>() {
 
                     @Override public IFuture<List<Scope>> run(
@@ -84,7 +84,7 @@ public class DifferTests extends PRaffrayiTestBase {
                     }
                 }, root, ScopeGraph.Immutable.of());
 
-        IUnitResult<Scope, Integer, IDatum, List<Scope>> result = future.asJavaCompletion().get();
+        IUnitResult<Scope, Integer, IDatum, List<Scope>, Unit> result = future.asJavaCompletion().get();
         List<Scope> resultScopes = result.analysis();
 
         assertEquals(Arrays.asList(), result.allFailures());
@@ -105,11 +105,11 @@ public class DifferTests extends PRaffrayiTestBase {
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    @SuppressWarnings("unchecked") public <R> IFuture<IUnitResult<Scope, Integer, IDatum, R>> runSingle(
+    @SuppressWarnings("unchecked") public <R> IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> runSingle(
             ITypeChecker<Scope, Integer, IDatum, R, Unit> typeChecker, Scope prevRoot,
             IScopeGraph.Immutable<Scope, Integer, IDatum> previousGraph) {
         // @formatter:off
-        IUnitResult<Scope, Integer, IDatum, R> childResult = UnitResult.<Scope, Integer, IDatum, R>builder()
+        IUnitResult<Scope, Integer, IDatum, R, Unit> childResult = UnitResult.<Scope, Integer, IDatum, R, Unit>builder()
             .id("/./sub")
             .scopeGraph(previousGraph)
             .localScopeGraph(previousGraph)
@@ -118,7 +118,7 @@ public class DifferTests extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        IUnitResult<Scope, Integer, IDatum, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit>builder()
+        IUnitResult<Scope, Integer, IDatum, Unit, Unit> parentResult = UnitResult.<Scope, Integer, IDatum, Unit, Unit>builder()
             .id("/.")
             .scopeGraph(previousGraph) // TODO: remove data?
             .localScopeGraph(ScopeGraph.Immutable.of())
@@ -131,7 +131,7 @@ public class DifferTests extends PRaffrayiTestBase {
             @Override public IFuture<Unit> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Unit, Unit> unit,
                     List<Scope> rootScopes) {
                 final Scope root = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
-                final IFuture<IUnitResult<Scope, Integer, IDatum, R>> subResult =
+                final IFuture<IUnitResult<Scope, Integer, IDatum, R, Unit>> subResult =
                         unit.add("sub", typeChecker, Arrays.asList(root));
                 unit.closeScope(root);
                 return unit.runIncremental(restarted -> {
@@ -139,7 +139,7 @@ public class DifferTests extends PRaffrayiTestBase {
                 });
             }
         }, labels, true, parentResult).thenApply(result -> {
-            return (IUnitResult<Scope, Integer, IDatum, R>) result.subUnitResults().get("sub");
+            return (IUnitResult<Scope, Integer, IDatum, R, Unit>) result.subUnitResults().get("sub");
         });
 
     }

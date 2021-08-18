@@ -54,7 +54,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
     private final PRaffrayiSettings settings;
     private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean rootChanged;
-    private final @Nullable IUnitResult<S, L, D, R> previousResult;
+    private final @Nullable IUnitResult<S, L, D, R, T> previousResult;
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
@@ -62,11 +62,11 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
     private final IActorScheduler scheduler;
     private final ActorSystem system;
 
-    private final Map<String, IActorRef<? extends IUnit<S, L, D, ?>>> units;
+    private final Map<String, IActorRef<? extends IUnit<S, L, D, ?, ?>>> units;
     private final AtomicInteger unfinishedUnits;
     private final AtomicInteger totalUnits;
 
-    private final Map<String, Set<ICompletable<IActorRef<? extends IUnit<S, L, D, ?>>>>> delays;
+    private final Map<String, Set<ICompletable<IActorRef<? extends IUnit<S, L, D, ?, ?>>>>> delays;
     private final Object lock = new Object(); // Used to synchronize updates/queries of `units` and `delays`
 
     private final BrokerProcess<S, L, D> process;
@@ -79,7 +79,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
 
     private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R, T> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean rootChanged,
-            @Nullable IUnitResult<S, L, D, R> previousResult, ICancel cancel, IActorScheduler scheduler) {
+            @Nullable IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, IActorScheduler scheduler) {
         this.id = id;
         this.settings = settings;
         this.typeChecker = typeChecker;
@@ -111,15 +111,15 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
         this.cmh = new ChandyMisraHaas<>(this, this::_deadlocked);
     }
 
-    private IFuture<IUnitResult<S, L, D, R>> run() {
-        final IActor<IUnit<S, L, D, R>> unit =
+    private IFuture<IUnitResult<S, L, D, R, T>> run() {
+        final IActor<IUnit<S, L, D, R, T>> unit =
                 system.add(id, TypeTag.of(IUnit.class), self -> new TypeCheckerUnit<>(self, null, new UnitContext(self),
                         typeChecker, edgeLabels, previousResult == null || rootChanged, previousResult));
         addUnit(unit);
 
-        final IFuture<IUnitResult<S, L, D, R>> unitResult = system.async(unit)._start(Collections.emptyList());
+        final IFuture<IUnitResult<S, L, D, R, T>> unitResult = system.async(unit)._start(Collections.emptyList());
 
-        final IFuture<IUnitResult<S, L, D, R>> runResult = unitResult.compose((r, ex) -> {
+        final IFuture<IUnitResult<S, L, D, R, T>> runResult = unitResult.compose((r, ex) -> {
             finalizeUnit(unit, ex);
             return system.stop().compose((r2, ex2) -> CompletableFuture.completed(r, ex));
         });
@@ -129,7 +129,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
         return runResult;
     }
 
-    private void addUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
+    private void addUnit(IActorRef<? extends IUnit<S, L, D, ?, ?>> unit) {
         unfinishedUnits.incrementAndGet();
         totalUnits.incrementAndGet();
         synchronized(lock) {
@@ -144,7 +144,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
         }
     }
 
-    private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit, Throwable ex) {
+    private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?, ?>> unit, Throwable ex) {
         final String event = ex != null ? "failed" : "finished";
         logger.info("Unit {} {} ({} of {} remaining).", event, unit.id(), unfinishedUnits.decrementAndGet(),
                 totalUnits.get());
@@ -187,9 +187,9 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
 
     private class UnitContext implements IUnitContext<S, L, D> {
 
-        private final IActor<? extends IUnit<S, L, D, ?>> self;
+        private final IActor<? extends IUnit<S, L, D, ?, ?>> self;
 
-        public UnitContext(IActor<? extends IUnit<S, L, D, ?>> self) {
+        public UnitContext(IActor<? extends IUnit<S, L, D, ?, ?>> self) {
             this.self = self;
         }
 
@@ -225,7 +225,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
             return scopeImpl.matchDatums(currentDatum, previousDatum);
         }
 
-        @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope) {
+        @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> owner(S scope) {
             final String id = scopeImpl.id(scope);
             // No synchronization and deadlock handling when unit can be found.
             if(units.containsKey(id)) {
@@ -233,21 +233,21 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
             }
             synchronized(lock) {
                 cmh.exec();
-                final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> result = getActorRef(id);
+                final IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> result = getActorRef(id);
                 cmh.idle();
                 return result;
             }
         }
 
-        @Override public <Q> Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> add(
-                String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+        @Override public <Q, U> Tuple2<IFuture<IUnitResult<S, L, D, Q, U>>, IActorRef<? extends IUnit<S, L, D, Q, U>>> add(
+                String id, Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
                 List<S> rootScopes) {
             synchronized(lock) {
                 cmh.exec();
-                final IActorRef<IUnit<S, L, D, Q>> unit = self.add(id, TypeTag.of(IUnit.class),
+                final IActorRef<IUnit<S, L, D, Q, U>> unit = self.add(id, TypeTag.of(IUnit.class),
                         (subself) -> unitProvider.apply(subself, new UnitContext(subself)));
                 addUnit(unit);
-                final IFuture<IUnitResult<S, L, D, Q>> unitResult = self.async(unit)._start(rootScopes);
+                final IFuture<IUnitResult<S, L, D, Q, U>> unitResult = self.async(unit)._start(rootScopes);
                 unitResult.whenComplete((r, ex) -> finalizeUnit(unit, ex));
                 cmh.idle();
                 return Tuple2.of(unitResult, unit);
@@ -268,7 +268,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
     // Parent Actors
     ///////////////////////////////////////////////////////////////////////////
 
-    private IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getActorRef(String unitId) {
+    private IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> getActorRef(String unitId) {
         final Matcher idMatcher = RE_ID_SEG.matcher(unitId);
         final List<String> segments = new ArrayList<>();
         while(idMatcher.find()) {
@@ -279,7 +279,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
         }
     }
 
-    private IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getActorRef(final List<String> segments) {
+    private IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> getActorRef(final List<String> segments) {
         final String unitId = String.join("", segments);
         if(segments.isEmpty()) {
             throw new IllegalStateException("Invalid unit id.");
@@ -294,7 +294,7 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
                 synchronized(lock) {
                     final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
                     dependentSet.getAndUpdate(ds -> ds.add(origin));
-                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
+                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> future = new CompletableFuture<>();
                     delays.computeIfAbsent(unitId, key -> Sets.newConcurrentHashSet()).add(future);
                     return future.whenComplete((ref, ex) -> {
                         synchronized(lock) {
@@ -373,44 +373,44 @@ public class Broker<S, L, D, R, T> implements ChandyMisraHaas.Host<IProcess<S, L
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R> previousResult, ICancel cancel) {
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R> previousResult, ICancel cancel, int parallelism) {
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 new WorkStealingScheduler(parallelism)).run();
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel,
             double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R> previousResult, ICancel cancel, double preemptProbability,
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, double preemptProbability,
             int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R, T> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R> previousResult, ICancel cancel, int parallelism, double preemptProbability,
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism, double preemptProbability,
             int scheduleDelayBoundMillis) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();

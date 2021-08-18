@@ -21,24 +21,24 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
+public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit, Unit> {
 
-    private final IUnitResult<S, L, D, ?> previousResult;
+    private final IUnitResult<S, L, D, ?, ?> previousResult;
 
-    public PhantomUnit(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ?> previousResult) {
+    public PhantomUnit(IActor<? extends IUnit<S, L, D, Unit, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?, ?>> parent,
+            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ?, ?> previousResult) {
         super(self, parent, context, edgeLabels);
         this.previousResult = previousResult;
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, Unit, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
         initDiffer(new RemovingDiffer<>(previousResult.scopeGraph(), differOps()), rootScopes,
                 previousResult.rootScopes());
 
         // Add Phantom unit for all previous subunits.
-        for(Map.Entry<String, IUnitResult<S, L, D, ?>> entry : previousResult.subUnitResults().entrySet()) {
-            this.<Unit>doAddSubUnit(entry.getKey(),
+        for(Map.Entry<String, IUnitResult<S, L, D, ?, ?>> entry : previousResult.subUnitResults().entrySet()) {
+            this.<Unit, Unit>doAddSubUnit(entry.getKey(),
                     (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, entry.getValue()),
                     new ArrayList<>(), true);
         }

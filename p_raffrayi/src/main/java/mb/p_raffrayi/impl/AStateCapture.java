@@ -1,7 +1,5 @@
 package mb.p_raffrayi.impl;
 
-import javax.annotation.Nullable;
-
 import org.immutables.value.Value;
 import org.metaborg.util.collection.MultiSet;
 
@@ -27,7 +25,7 @@ public abstract class AStateCapture<S, L, D, T> {
 
     @Value.Parameter public abstract MultiSet.Immutable<String> scopeNameCounters();
 
-    @Value.Parameter public abstract @Nullable T typeCheckerState();
+    @Value.Parameter public abstract T typeCheckerState();
 
     public boolean isOpen(S scope, EdgeOrData<L> label) {
         if(!scopes().contains(scope)) {

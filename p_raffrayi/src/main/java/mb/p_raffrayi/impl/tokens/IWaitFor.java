@@ -7,7 +7,7 @@ import mb.p_raffrayi.impl.IUnit;
 
 public interface IWaitFor<S, L, D> {
 
-    IActorRef<? extends IUnit<S, L, D, ?>> origin();
+    IActorRef<? extends IUnit<S, L, D, ?, ?>> origin();
 
     void visit(Cases<S, L, D> cases);
 

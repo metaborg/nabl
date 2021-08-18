@@ -40,6 +40,7 @@ import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.IStatixResult;
 import mb.statix.concurrent.ProjectResult;
 import mb.statix.concurrent.ProjectTypeChecker;
+import mb.statix.concurrent.SolverState;
 import mb.statix.concurrent.UnitResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.concurrent.InputMatchers;
@@ -85,14 +86,15 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final double t0 = System.currentTimeMillis();
 
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
-                    settings, new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(),
-                    project.changed(), project.previousResult(), cancel);
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> futureResult =
+                    Broker.run(project.resource(), settings, new ProjectTypeChecker(project, spec, debug), scopeImpl,
+                            spec.allLabels(), project.changed(), project.previousResult(), cancel);
 
-            final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
+            final IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result =
+                    futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
 
-            final List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults = new ArrayList<>();
+            final List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults = new ArrayList<>();
             final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
@@ -126,8 +128,9 @@ public class STX_solve_multi extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private Map<String, ITerm> flattenResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ProjectResult> result,
-            List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
+    private Map<String, ITerm> flattenResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result,
+            List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
         unitResults.add(result);
         final Map<String, ITerm> resourceResults = new HashMap<>();
         final @Nullable ProjectResult projectResult = result.analysis();
@@ -150,17 +153,19 @@ public class STX_solve_multi extends StatixPrimitive {
         return resourceResults;
     }
 
-    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit> result) {
+    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit, Unit> result) {
     }
 
-    private void flattenGroupResult(Spec spec, String groupId, IUnitResult<Scope, ITerm, ITerm, GroupResult> result,
-            List<SolverResult> groupResults, Map<String, ITerm> resourceResults,
-            List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
+    private void flattenGroupResult(Spec spec, String groupId,
+            IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState> result, List<SolverResult> groupResults,
+            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
         unitResults.add(result);
         final GroupResult groupResult = result.analysis();
         if(groupResult != null) {
-            groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(), gr,
-                    groupResults, resourceResults, unitResults));
+            groupResult.groupResults()
+                    .forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(),
+                            (IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>) gr, groupResults,
+                            resourceResults, unitResults));
             groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
             final SolverResult solveResult = flatSolverResult(spec, result);
             groupResults.add(solveResult);
@@ -170,8 +175,8 @@ public class STX_solve_multi extends StatixPrimitive {
         }
     }
 
-    private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult> result,
-            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults) {
+    private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState> result,
+            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
         unitResults.add(result);
         final UnitResult unitResult = result.analysis();
         if(unitResult != null) {
@@ -183,7 +188,8 @@ public class STX_solve_multi extends StatixPrimitive {
         }
     }
 
-    private SolverResult flatSolverResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult> result) {
+    private SolverResult flatSolverResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult, SolverState> result) {
         final IStatixResult unitResult = result.analysis();
         SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
 
@@ -207,7 +213,8 @@ public class STX_solve_multi extends StatixPrimitive {
         return solveResult;
     }
 
-    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?>> unitResults, TransitionTrace flow) {
+    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults,
+            TransitionTrace flow) {
         return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id)
                 .collect(Collectors.joining(", "));
     }

@@ -9,7 +9,7 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 @Value.Immutable(prehash = true)
 public abstract class ACloseLabel<S, L, D> implements IWaitFor<S, L, D> {
 
-    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?, ?>> origin();
 
     @Value.Parameter public abstract S scope();
 

@@ -19,7 +19,7 @@ import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
+public abstract class AUnitResult<S, L, D, R, T> implements IUnitResult<S, L, D, R, T> {
 
     @Value.Parameter @Override public abstract String id();
 
@@ -37,7 +37,7 @@ public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R>
 
     @Value.Parameter @Override public abstract List<Throwable> failures();
 
-    @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
+    @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults();
 
     @Value.Parameter @Override public abstract @Nullable IUnitStats stats();
 

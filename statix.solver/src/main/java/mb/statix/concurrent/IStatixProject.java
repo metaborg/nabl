@@ -42,6 +42,6 @@ public interface IStatixProject {
     /**
      * Result from previous type-checker run.
      */
-    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult();
+    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> previousResult();
 
 }

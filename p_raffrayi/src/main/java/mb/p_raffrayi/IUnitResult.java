@@ -6,10 +6,11 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import mb.p_raffrayi.impl.StateCapture;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
-public interface IUnitResult<S, L, D, R> {
+public interface IUnitResult<S, L, D, R, T> {
 
     String id();
 
@@ -27,9 +28,11 @@ public interface IUnitResult<S, L, D, R> {
 
     @Nullable ScopeGraphDiff<S, L, D> diff();
 
+    @Nullable StateCapture<S, L, D, T> localState();
+
     List<Throwable> failures();
 
-    Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
+    Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults();
 
     IUnitStats stats();
 
