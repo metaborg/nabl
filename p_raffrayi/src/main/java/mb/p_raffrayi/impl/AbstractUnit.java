@@ -59,6 +59,7 @@ import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Datum;
 import mb.p_raffrayi.impl.tokens.DifferResult;
+import mb.p_raffrayi.impl.tokens.DifferState;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Match;
@@ -349,22 +350,31 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                 return CompletableFuture.completedFuture(datum);
             }
 
-            final ICompletableFuture<Optional<D>> future = new CompletableFuture<>();
+            final ICompletableFuture<D> future = new CompletableFuture<>();
             final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
             waitFor(state, self);
-            getExternalDatum(datum.get()).whenComplete((r, ex) -> {
+            getExternalDatum(datum.get()).whenComplete(future::complete);
+            return future.whenComplete((r, ex) -> {
                 granted(state, self);
                 // resume() // FIXME necessary?
-                future.complete(Optional.of(r), ex);
-            });
-            return future;
+            }).thenApply(Optional::of);
         });
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
+        final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender = self.sender(TYPE);
         if(isDifferEnabled()) {
-            return whenDifferActivated.thenCompose(__ -> differ.match(previousScope));
+            return whenDifferActivated.thenCompose(__ -> {
+                final ICompletableFuture<Optional<S>> future = new CompletableFuture<>();
+                final DifferState<S, L, D> state = DifferState.ofMatch(sender, previousScope, future);
+                waitFor(state, self);
+                differ.match(previousScope).whenComplete(future::complete);
+                future.whenComplete((r, ex) -> {
+                    granted(state, self);
+                });
+                return future;
+            });
         } else {
             return CompletableFuture.completedFuture(Optional.empty());
         }
@@ -884,6 +894,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                 self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq).whenComplete((env, ex) -> {
                     logger.debug("got p_env from {}", sender);
                     granted(query, owner);
+                    future.complete(env, ex);
                     resume();
                 });
 
@@ -892,7 +903,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
         }
 
         @Override public IFuture<Optional<D>> getDatum(S scope) {
-            return CompletableFuture.completedFuture(scopeGraph.getData(scope));
+            return CompletableFuture.completedFuture(scopeGraph.getData(scope).map(AbstractUnit.this::getPreviousDatum));
         }
 
         @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
@@ -1066,6 +1077,18 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                         }
                     },
                     differResult -> {},
+                    differState -> {
+                        if(nodes.contains(process(differState.origin()))) {
+                            logger.debug("{} fail {}", self, differState);
+                            deadlocked.__insert(differState.future());
+                        }
+                    },
+                    envDifferState -> {
+                        if(nodes.contains(process(envDifferState.origin()))) {
+                            logger.debug("{} fail {}", self, envDifferState);
+                            deadlocked.__insert(envDifferState.future());
+                        }
+                    },
                     activate -> {},
                     unitAdd -> {}
                 ));
@@ -1151,6 +1174,14 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                 differResult -> {
                     logger.error("Differ could not complete.");
                     self.complete(differResult.future(), null, new DeadlockException("Type checker deadlocked."));
+                },
+                differState -> {
+                    logger.error("Unexpected remaining differ state.");
+                    self.complete(differState.future(), null, new DeadlockException("Type checker deadlocked."));
+                },
+                envDifferState -> {
+                    logger.error("Unexpected remaining environment differ state.");
+                    self.complete(envDifferState.future(), null, new DeadlockException("Type checker deadlocked."));
                 },
                 activate -> {
                     logger.error("Unit neither activated nor released.");

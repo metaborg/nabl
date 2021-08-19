@@ -11,9 +11,11 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
 
     private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+    private final IDifferDataOps<D> dataOps;
 
-    public StaticDifferContext(IScopeGraph.Immutable<S, L, D> scopeGraph) {
+    public StaticDifferContext(IScopeGraph.Immutable<S, L, D> scopeGraph, IDifferDataOps<D> dataOps) {
         this.scopeGraph = scopeGraph;
+        this.dataOps = dataOps;
     }
 
     @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
@@ -25,7 +27,7 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     }
 
     @Override public IFuture<Optional<D>> datum(S scope) {
-        return CompletableFuture.completedFuture(scopeGraph.getData(scope));
+        return CompletableFuture.completedFuture(scopeGraph.getData(scope).map(dataOps::getExternalRepresentation));
     }
 
 }

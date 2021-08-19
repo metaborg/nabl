@@ -43,7 +43,9 @@ import mb.p_raffrayi.impl.confirm.LazyConfirmation;
 import mb.p_raffrayi.impl.confirm.TrivialConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
+import mb.p_raffrayi.impl.diff.IDifferDataOps;
 import mb.p_raffrayi.impl.diff.IDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeDiff;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
@@ -51,10 +53,13 @@ import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
+import mb.p_raffrayi.impl.envdiff.IEnvDifferContext;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Confirm;
+import mb.p_raffrayi.impl.tokens.DifferState;
+import mb.p_raffrayi.impl.tokens.EnvDifferState;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Query;
@@ -124,9 +129,25 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         this(self, parent, context, unitChecker, edgeLabels, true, null);
     }
 
+    private final io.usethesource.capsule.Map.Transient<D, ICompletableFuture<D>> pendingExternalDatums = CapsuleUtil.transientMap();
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
-        return typeChecker.getExternalDatum(datum);
+        return whenActive.compose((u, ex) -> {
+            if(this.state.equals(UnitState.RELEASED)) {
+                return CompletableFuture.completedFuture(previousResult.analysis().getExternalRepresentation(datum));
+            }
+            final IFuture<D> future = typeChecker.getExternalDatum(datum);
+            if(future.isDone()) {
+                return future;
+            }
+            final ICompletableFuture<D> result = new CompletableFuture<>();
+            pendingExternalDatums.put(datum, result);
+            future.whenComplete(result::complete);
+            result.whenComplete((__, ex2) -> {
+                pendingExternalDatums.__remove(datum);
+            });
+            return result;
+        });
     }
 
     @Override protected D getPreviousDatum(D datum) {
@@ -498,11 +519,11 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
             // @formatter:off
             final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(), patches) :
-                new ScopeGraphDiffer<>(differContext(), new StaticDifferContext<>(previousResult.scopeGraph()), differOps());
+                new ScopeGraphDiffer<>(differContext(), new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()), differOps());
             // @formatter:on
             initDiffer(differ, this.rootScopes, previousResult.rootScopes());
             if(isConfirmationEnabled()) {
-                this.envDiffer = new EnvDiffer<>(differ, differOps());
+                this.envDiffer = new EnvDiffer<>(envDifferContext, differOps());
             }
 
             logger.debug("Rebuilding scope graph.");
@@ -556,10 +577,16 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
                     result -> {},
                     typeCheckerState -> {},
                     differResult -> {},
+                    differState -> {},
+                    envDifferState -> {},
                     activate -> {},
                     unitAdd -> {}
                 ));
                 // @formatter:on
+            });
+
+            pendingExternalDatums.forEach((d, future) -> {
+                future.complete(previousResult.analysis().getExternalRepresentation(d));
             });
 
             // TODO: apply patches on queries?
@@ -567,9 +594,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
             stateTransitionTrace = TransitionTrace.RELEASED;
 
             // Cancel all futures waiting for activation
-            whenActive.completeExceptionally(Release.instance);
-            self.complete(whenContextActivated, Unit.unit, null);
             self.complete(confirmationResult, Optional.of(patches), null);
+            self.complete(whenActive, null, Release.instance);
+            self.complete(whenContextActivated, Unit.unit, null);
             state = UnitState.RELEASED;
 
             resume();
@@ -583,20 +610,20 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
             logger.debug("{} restarting.", this);
             state = UnitState.ACTIVE;
-            whenActive.complete(Unit.unit);
-            confirmationResult.complete(Optional.empty());
+            self.complete(confirmationResult, Optional.empty(), null);
+            self.complete(whenActive, Unit.unit, null);
             if(isDifferEnabled()) {
                 final IDifferContext<S, L, D> context = differContext();
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
-                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph()),
+                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()),
                             differOps), this.rootScopes, previousResult.rootScopes());
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
                             Collections.emptyList());
                 }
                 if(isConfirmationEnabled()) {
-                    this.envDiffer = new EnvDiffer<>(differ, differOps());
+                    this.envDiffer = new EnvDiffer<>(envDifferContext, differOps());
                 }
             }
             resume();
@@ -652,6 +679,27 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
     ///////////////////////////////////////////////////////////////////////////
     // Confirmation
     ///////////////////////////////////////////////////////////////////////////
+
+    private class DifferDataOps implements IDifferDataOps<D> {
+
+        @Override public D getExternalRepresentation(D datum) {
+            return previousResult.analysis().getExternalRepresentation(datum);
+        }
+
+    }
+
+    private final IEnvDifferContext<S, L, D> envDifferContext = new IEnvDifferContext<S, L, D>() {
+
+        @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
+            final ICompletableFuture<IScopeDiff<S, L, D>> future = new CompletableFuture<>();
+            final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, future);
+            waitFor(state, self);
+            differ.scopeDiff(previousScope).whenComplete(future::complete);
+            future.whenComplete((r, ex) -> {
+                granted(state, self);
+            });
+            return future;
+        }};
 
     private class ConfirmationContext implements IConfirmationContext<S, L, D> {
 
@@ -710,8 +758,16 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
                 DataWf<S, L, D> dataWf) {
             assertConfirmationEnabled();
             logger.debug("local env diff");
-            return whenDifferActivated
-                    .thenCompose(__ -> envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf));
+            return whenDifferActivated.thenCompose(__ -> {
+                final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
+                final EnvDifferState<S, L, D> state = EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, dataWf, future);
+                waitFor(state, self);
+                envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf).whenComplete(future::complete);
+                future.whenComplete((r, ex) -> {
+                    granted(state, self);
+                });
+                return future;
+            });
         }
 
         @Override public IFuture<Optional<S>> match(S scope) {

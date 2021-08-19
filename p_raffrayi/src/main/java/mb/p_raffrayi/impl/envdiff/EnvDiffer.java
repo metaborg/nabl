@@ -13,7 +13,6 @@ import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.Edge;
@@ -23,9 +22,9 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
     private static final ILogger logger = LoggerUtils.logger(EnvDiffer.class);
 
     private final IDifferOps<S, L, D> differOps;
-    private final IScopeGraphDiffer<S, L, D> scopeGraphDiffer;
+    private final IEnvDifferContext<S, L, D> scopeGraphDiffer;
 
-    public EnvDiffer(IScopeGraphDiffer<S, L, D> scopeGraphDiffer, IDifferOps<S, L, D> differOps) {
+    public EnvDiffer(IEnvDifferContext<S, L, D> scopeGraphDiffer, IDifferOps<S, L, D> differOps) {
         this.differOps = differOps;
         this.scopeGraphDiffer = scopeGraphDiffer;
     }

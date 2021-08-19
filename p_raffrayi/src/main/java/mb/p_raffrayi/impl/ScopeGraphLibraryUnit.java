@@ -58,7 +58,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
     }
 
     @SuppressWarnings("unused") @Override protected IFuture<D> getExternalDatum(D datum) {
-        throw new UnsupportedOperationException("Not supported by static scope graph units.");
+        return CompletableFuture.completedFuture(datum);
     }
 
     @Override protected D getPreviousDatum(D datum) {

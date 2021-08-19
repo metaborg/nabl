@@ -15,6 +15,7 @@ import org.metaborg.util.future.IFuture;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
+import mb.p_raffrayi.impl.diff.IDifferDataOps;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
@@ -49,10 +50,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, new TestDifferDataOps()), new StaticDifferContext<>(sc1, new TestDifferDataOps()), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -83,10 +84,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, new TestDifferDataOps()), new StaticDifferContext<>(sc1, new TestDifferDataOps()), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -116,10 +117,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, new TestDifferDataOps()), new StaticDifferContext<>(sc1, new TestDifferDataOps()), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.none(), DataWf.any()).thenAccept(diffResult::set);
@@ -149,10 +150,10 @@ public class EnvDiffTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2), new StaticDifferContext<>(sc1), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, new TestDifferDataOps()), new StaticDifferContext<>(sc1, new TestDifferDataOps()), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -214,6 +215,14 @@ public class EnvDiffTest {
 
         @Override public IFuture<Optional<String>> externalMatch(String previousScope) {
             throw new UnsupportedOperationException();
+        }
+
+    }
+
+    private static class TestDifferDataOps implements IDifferDataOps<List<String>> {
+
+        @Override public List<String> getExternalRepresentation(List<String> datum) {
+            return datum;
         }
 
     }

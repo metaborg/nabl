@@ -238,7 +238,9 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     }
 
     @Override public IFuture<ITerm> getExternalDatum(ITerm datum) {
-        if(solver != null) {
+        if(datum.isGround()) {
+            return CompletableFuture.completedFuture(datum);
+        } else if(solver != null) {
             return solver.getExternalRepresentation(datum);
         } else if(solveResult != null) {
             return solveResult.thenCompose(r -> {
@@ -246,11 +248,11 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 if(unifier.isGround(datum)) {
                     return CompletableFuture.completedFuture(unifier.findRecursive(datum));
                 } else {
-                    return new CompletableFuture<>();
+                    return CompletableFuture.noFuture();
                 }
             });
         } else {
-            return CompletableFuture.completedFuture(datum);
+            return CompletableFuture.noFuture();
         }
     }
 

@@ -79,7 +79,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S,
     }
 
     @Override protected D getPreviousDatum(D datum) {
-        return datum;
+        return previousResult.analysis().getExternalRepresentation(datum);
     }
 
 }
