@@ -12,6 +12,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -29,11 +30,14 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
+import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.persistent.SolverResult;
 
@@ -61,17 +65,30 @@ public class STX_delays_as_errors extends StatixPrimitive {
         // @formatter:on
         Set.Immutable<ITermVar> allErrorVars = newErrorVars;
 
+        Set.Immutable<CriticalEdge> newCriticalEdges = CapsuleUtil.immutableSet();
+        Set.Immutable<CriticalEdge> allCriticalEdges = CapsuleUtil.immutableSet();
+
         // Collect all delays that involve variables that do not occur on free variables.
         ImmutableMap<IConstraint, Delay> delays = result.delays();
 
         while(!newErrorVars.isEmpty()) {
             final Set.Transient<ITermVar> _newVars = CapsuleUtil.transientSet();
+            final Set.Transient<CriticalEdge> _newCriticalEdges = CapsuleUtil.transientSet();
             final ImmutableMap.Builder<IConstraint, Delay> retainedDelays = ImmutableMap.builder();
 
             for(Entry<IConstraint, Delay> e : delays.entrySet()) {
-                if(e.getValue().vars().stream().anyMatch(newErrorVars::contains)) {
+                Delay d = e.getValue();
+                if(d.vars().stream().anyMatch(newErrorVars::contains)
+                        || d.criticalEdges().stream().allMatch(newCriticalEdges::contains)) {
                     for(ITermVar var : e.getKey().freeVars()) {
                         _newVars.__insertAll(unifier.findRecursive(var).getVars().__removeAll(allErrorVars));
+                    }
+                    for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> criticalEdges : e.getKey()
+                            .ownCriticalEdges().orElse(Completeness.Immutable.of()).entrySet()) {
+                        final ITerm scope = unifier.findRecursive(criticalEdges.getKey());
+                        final Set.Immutable<CriticalEdge> edges = criticalEdges.getValue().elementSet().stream()
+                                .map(edge -> CriticalEdge.of(scope, edge)).collect(CapsuleCollectors.toSet());
+                        _newCriticalEdges.__insertAll(edges.__removeAll(allCriticalEdges));
                     }
                 } else {
                     retainedDelays.put(e);
@@ -81,6 +98,9 @@ public class STX_delays_as_errors extends StatixPrimitive {
             delays = retainedDelays.build();
             newErrorVars = _newVars.freeze();
             allErrorVars = allErrorVars.__insertAll(newErrorVars);
+
+            newCriticalEdges = _newCriticalEdges.freeze();
+            allCriticalEdges = allCriticalEdges.__insertAll(newCriticalEdges);
         }
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages = ImmutableMap.builder();
