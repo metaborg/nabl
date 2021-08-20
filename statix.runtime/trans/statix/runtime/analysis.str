@@ -70,7 +70,7 @@ rules // single file analysis
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
-          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a
+          with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
              ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
@@ -95,7 +95,7 @@ rules // single file elaboration
     ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(subst, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
-          with (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a
+          with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
              ; file-analysis := FileAnalysis(a, a)
       \})> (resource-ast'*, solve-result*)
@@ -247,7 +247,7 @@ rules // multi file analysis (new)
        ; group*		    := <cstx-collect-groups> project
        ; group-results-msgs := <map({ resource, key, rule: \(resource, GroupResult(state, _)) -> ((key, GroupAnalysis(rule, state)), error*, warning*, note*)
                                   with (key, Group(_, rule, _, _)) := <getfirst(?(_, Group(resource, _, _, _)))> group*
-                                     ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages(|config)> state
+                                     ; (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
                                 \})> group-result*
        ; new-group-result*     := <map(Fst)> group-results-msgs
        ; grp-error*            := <mapconcat(Snd)> group-results-msgs
@@ -265,7 +265,7 @@ rules // multi file analysis (new)
     with (key, _, rule, _) := <getfirst(?(_, resource, _, _))> task*
        ; if (state, res) := <lookup; extract-analysis> (resource, state*) then
            analysis := <mk-analysis> (key, rule, state, res)
-         ; (error*, warning*, note*) := <stx--delays-as-errors; stx--extract-messages(|config)> state
+         ; (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
          ; all-error*   := <conc> (error*, ext-error*)
          ; all-warning* := <conc> (warning*, ext-warning*)
          ; all-note*    := <conc> (note*, ext-note*)
@@ -328,7 +328,7 @@ rules // multi file analysis
       //
     ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _))))> change*
     ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
-    ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> final-project-state
+    ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
     ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state), id, id, id)))> initial-file-result*
     ; switch !project-change
@@ -389,7 +389,7 @@ rules
        ; C     := <stx--exists>([V], C(c-name, [T*, V], NoMessage()))
        ; level := <stx--log-level>
        ; s@Solution(subst, a) := <stx--solve-constraint(|spec, level, (), ())> C
-       ; (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a
+       ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
        ; out := <substitute(stx--is-var);stx--implode> (subst, V)
 
 rules
