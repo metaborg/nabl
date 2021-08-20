@@ -362,7 +362,7 @@ rules // multi file analysis
   stx--solve-multi-project(|spec, state, level, progress, cancel) = prim("STX_solve_multi_project", spec, state, level, progress, cancel)
 
   // @type SolverResult -> SolverResult
-  stx--delays-as-errors = prim("STX_delays_as_errors")
+  stx--delays-as-errors(|config) = <prim("STX_delays_as_errors")> WithConfig(config, <id>)
 
   // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
   stx--extract-messages(|config) = <prim("STX_extract_messages")> WithConfig(config, <id>)

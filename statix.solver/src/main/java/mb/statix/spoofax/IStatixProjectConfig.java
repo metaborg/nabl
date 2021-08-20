@@ -7,7 +7,7 @@ public interface IStatixProjectConfig {
     public static int DEFAULT_MESSAGE_TRACE_LENGTH = 0;
     public static int DEFAULT_MESSAGE_TERM_DEPTH = 3;
 
-    public static IStatixProjectConfig NULL = new StatixProjectConfig(null, null, null, null);
+    public static IStatixProjectConfig NULL = new StatixProjectConfig(null, null, null, null, true);
 
     SolverMode languageMode(String languageId, SolverMode defaultMode);
 
@@ -18,5 +18,7 @@ public interface IStatixProjectConfig {
     Integer messageTermDepth(Integer defaultValue);
 
     String testLogLevel(String defaultValue);
+
+    Boolean suppressCascadingErrors();
 
 }

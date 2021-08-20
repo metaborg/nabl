@@ -11,13 +11,15 @@ public class StatixProjectConfig implements IStatixProjectConfig {
     private final Integer messageStacktraceLength;
     private final Integer messageTermDepth;
     private final String testLogLevel;
+    private final Boolean suppressCascadingErrors;
 
     public StatixProjectConfig(Map<String, SolverMode> languageModes, Integer messageStackTrace,
-            Integer messageTermDepth, String testLogLevel) {
+            Integer messageTermDepth, String testLogLevel, Boolean suppressCascadingErrors) {
         this.languageModes = languageModes != null ? CapsuleUtil.toMap(languageModes) : null;
         this.messageStacktraceLength = messageStackTrace;
         this.messageTermDepth = messageTermDepth;
         this.testLogLevel = testLogLevel;
+        this.suppressCascadingErrors = suppressCascadingErrors;
     }
 
     @Override public Integer messageTraceLength(Integer defaultValue) {
@@ -38,6 +40,10 @@ public class StatixProjectConfig implements IStatixProjectConfig {
 
     @Override public String testLogLevel(String defaultValue) {
         return Optional.ofNullable(testLogLevel).orElse(defaultValue);
+    }
+
+    @Override public Boolean suppressCascadingErrors() {
+        return suppressCascadingErrors;
     }
 
 }

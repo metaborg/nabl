@@ -55,7 +55,9 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
+
     protected static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+    protected static final String WITH_CONFIG_OP = "WithConfig";
 
     final protected int tvars;
 
@@ -263,6 +265,20 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     private static String cleanupString(String string) {
         return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    protected static SolverResult getResult(ITerm current) throws InterpreterException {
+        // @formatter:off
+        return M.cases(
+            M.appl2(WITH_CONFIG_OP, M.term(), M.blobValue(SolverResult.class), (t, c, r) -> r),
+            M.blobValue(SolverResult.class)
+        ).match(current).orElseThrow(() -> new InterpreterException("Expected solver result."));
+        // @formatter:on
+    }
+
+    protected static IStatixProjectConfig getConfig(ITerm current) throws InterpreterException {
+        return M.appl2(WITH_CONFIG_OP, M.blobValue(IStatixProjectConfig.class), M.term(), (t, c, r) -> c).match(current)
+                .orElse(IStatixProjectConfig.NULL);
     }
 
 }

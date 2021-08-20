@@ -94,7 +94,7 @@ rules
          level  := <stx--test-log-level> config;
          body'  := <qualify-names(|a);eliminate-all;stx--index-ast(|""/*path*/)> body;
          s@Solution(_, a') := <solve(concurrent|spec', level)> body';
-         (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a';
+         (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a';
          result := EvalResult(s, error*, warning*, note*)
 
   solve(concurrent|spec', level) = concurrent < cstx--solve-constraint(|spec', level) + stx--solve-constraint(|spec', level)

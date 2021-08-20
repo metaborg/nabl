@@ -1,7 +1,6 @@
 package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
 import java.util.List;
@@ -50,57 +49,60 @@ public class STX_delays_as_errors extends StatixPrimitive {
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
 
-        final SolverResult result = M.blobValue(SolverResult.class).match(term)
-                .orElseThrow(() -> new InterpreterException("Expected solver result."));
+        final IStatixProjectConfig config = getConfig(term);
+        final SolverResult result = getResult(term);
 
-        // Collect all free variables in 'real' errors
-        // @formatter:off
-        final IUniDisunifier.Immutable unifier = result.state().unifier();
-        Set.Immutable<ITermVar> newErrorVars = result.messages().entrySet().stream()
-            .filter(e -> e.getValue().kind().equals(MessageKind.ERROR))
-            .map(Map.Entry::getKey)
-            .flatMap(c -> c.freeVars().stream())
-            .flatMap(v -> unifier.findRecursive(v).getVars().stream())
-            .collect(CapsuleCollectors.toSet());
-        // @formatter:on
-        Set.Immutable<ITermVar> allErrorVars = newErrorVars;
-
-        Set.Immutable<CriticalEdge> newCriticalEdges = CapsuleUtil.immutableSet();
-        Set.Immutable<CriticalEdge> allCriticalEdges = CapsuleUtil.immutableSet();
-
-        // Collect all delays that involve variables that do not occur on free variables.
         ImmutableMap<IConstraint, Delay> delays = result.delays();
 
-        while(!newErrorVars.isEmpty()) {
-            final Set.Transient<ITermVar> _newVars = CapsuleUtil.transientSet();
-            final Set.Transient<CriticalEdge> _newCriticalEdges = CapsuleUtil.transientSet();
-            final ImmutableMap.Builder<IConstraint, Delay> retainedDelays = ImmutableMap.builder();
+        if(config.suppressCascadingErrors()) {
+            // Collect all delays that involve variables that do not occur on free variables.
 
-            for(Entry<IConstraint, Delay> e : delays.entrySet()) {
-                Delay d = e.getValue();
-                if(d.vars().stream().anyMatch(newErrorVars::contains)
-                        || d.criticalEdges().stream().allMatch(newCriticalEdges::contains)) {
-                    for(ITermVar var : e.getKey().freeVars()) {
-                        _newVars.__insertAll(unifier.findRecursive(var).getVars().__removeAll(allErrorVars));
+            // Collect all free variables in 'real' errors
+            // @formatter:off
+            final IUniDisunifier.Immutable unifier = result.state().unifier();
+            Set.Immutable<ITermVar> newErrorVars = result.messages().entrySet().stream()
+                .filter(e -> e.getValue().kind().equals(MessageKind.ERROR))
+                .map(Map.Entry::getKey)
+                .flatMap(c -> c.freeVars().stream())
+                .flatMap(v -> unifier.findRecursive(v).getVars().stream())
+                .collect(CapsuleCollectors.toSet());
+            // @formatter:on
+            Set.Immutable<ITermVar> allErrorVars = newErrorVars;
+
+            Set.Immutable<CriticalEdge> newCriticalEdges = CapsuleUtil.immutableSet();
+            Set.Immutable<CriticalEdge> allCriticalEdges = CapsuleUtil.immutableSet();
+
+            while(!newErrorVars.isEmpty() || !newCriticalEdges.isEmpty()) {
+                final Set.Transient<ITermVar> _newVars = CapsuleUtil.transientSet();
+                final Set.Transient<CriticalEdge> _newCriticalEdges = CapsuleUtil.transientSet();
+                final ImmutableMap.Builder<IConstraint, Delay> retainedDelays = ImmutableMap.builder();
+
+                for(Entry<IConstraint, Delay> e : delays.entrySet()) {
+                    Delay d = e.getValue();
+                    if(d.vars().stream().anyMatch(newErrorVars::contains)
+                            || d.criticalEdges().stream().allMatch(newCriticalEdges::contains)) {
+                        for(ITermVar var : e.getKey().freeVars()) {
+                            _newVars.__insertAll(unifier.findRecursive(var).getVars().__removeAll(allErrorVars));
+                        }
+                        for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> criticalEdges : e.getKey()
+                                .ownCriticalEdges().orElse(Completeness.Immutable.of()).entrySet()) {
+                            final ITerm scope = unifier.findRecursive(criticalEdges.getKey());
+                            final Set.Immutable<CriticalEdge> edges = criticalEdges.getValue().elementSet().stream()
+                                    .map(edge -> CriticalEdge.of(scope, edge)).collect(CapsuleCollectors.toSet());
+                            _newCriticalEdges.__insertAll(edges.__removeAll(allCriticalEdges));
+                        }
+                    } else {
+                        retainedDelays.put(e);
                     }
-                    for(Entry<ITerm, MultiSet.Immutable<EdgeOrData<ITerm>>> criticalEdges : e.getKey()
-                            .ownCriticalEdges().orElse(Completeness.Immutable.of()).entrySet()) {
-                        final ITerm scope = unifier.findRecursive(criticalEdges.getKey());
-                        final Set.Immutable<CriticalEdge> edges = criticalEdges.getValue().elementSet().stream()
-                                .map(edge -> CriticalEdge.of(scope, edge)).collect(CapsuleCollectors.toSet());
-                        _newCriticalEdges.__insertAll(edges.__removeAll(allCriticalEdges));
-                    }
-                } else {
-                    retainedDelays.put(e);
                 }
+
+                delays = retainedDelays.build();
+                newErrorVars = _newVars.freeze();
+                allErrorVars = allErrorVars.__insertAll(newErrorVars);
+
+                newCriticalEdges = _newCriticalEdges.freeze();
+                allCriticalEdges = allCriticalEdges.__insertAll(newCriticalEdges);
             }
-
-            delays = retainedDelays.build();
-            newErrorVars = _newVars.freeze();
-            allErrorVars = allErrorVars.__insertAll(newErrorVars);
-
-            newCriticalEdges = _newCriticalEdges.freeze();
-            allCriticalEdges = allCriticalEdges.__insertAll(newCriticalEdges);
         }
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages = ImmutableMap.builder();

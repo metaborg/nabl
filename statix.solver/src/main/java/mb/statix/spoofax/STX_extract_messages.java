@@ -1,7 +1,6 @@
 package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +17,6 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.solver.persistent.SolverResult;
 
 public class STX_extract_messages extends StatixPrimitive {
-
-    private static final String WITH_CONFIG_OP = "WithConfig";
 
     @Inject public STX_extract_messages() {
         super(STX_extract_messages.class.getSimpleName(), 0);
@@ -42,20 +39,6 @@ public class STX_extract_messages extends StatixPrimitive {
         final IListTerm notes = B.newList(noteList);
         final ITerm resultTerm = B.newTuple(errors, warnings, notes);
         return Optional.of(resultTerm);
-    }
-
-    private static SolverResult getResult(ITerm current) throws InterpreterException {
-        // @formatter:off
-        return M.cases(
-            M.appl2(WITH_CONFIG_OP, M.term(), M.blobValue(SolverResult.class), (t, c, r) -> r),
-            M.blobValue(SolverResult.class)
-        ).match(current).orElseThrow(() -> new InterpreterException("Expected solver result."));
-        // @formatter:on
-    }
-
-    private static IStatixProjectConfig getConfig(ITerm current) throws InterpreterException {
-        return M.appl2(WITH_CONFIG_OP, M.blobValue(IStatixProjectConfig.class), M.term(), (t, c, r) -> c).match(current)
-                .orElse(IStatixProjectConfig.NULL);
     }
 
 
