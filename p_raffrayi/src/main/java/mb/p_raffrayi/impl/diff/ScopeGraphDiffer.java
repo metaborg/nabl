@@ -52,7 +52,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final IDifferContext<S, L, D> previousContext;
     private final IDifferOps<S, L, D> differOps;
     private final CompletableFuture<ScopeGraphDiff<S, L, D>> result = new CompletableFuture<>();
-    private boolean failure = false;
+    private Throwable failure;
 
     // Intermediate match results
 
@@ -250,7 +250,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             fixedpoint();
         } catch(Throwable e) {
             logger.error("Continuation terminated unexpectedly.", e);
-            failure(ex);
+            failure(e);
         }
         logger.trace("Finished continuation");
     }
@@ -460,10 +460,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                    if(ex2 != null) {
                        logger.debug("Error matching edge {} - treat it as undecided.", currentEdge);
                        logger.debug("error:", ex2);
+                       failure(ex2);
                    }
                    // TODO: special category for undecided edges?
-                   currentEdgeCompleteDelays.get(currentEdge).forEach(c -> c.completeExceptionally(ex2));
-                   failure(ex2);
                    matchesResult.complete(Collections.emptyList(), null);
                 });
 
@@ -488,8 +487,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         // Invariant: for all previousEdges, the source should be previousScope
         IFuture<List<Unit>> allCurrentEdgesProcessed = aggregateAll(currentEdges, edge -> {
             ICompletableFuture<Unit> future = new CompletableFuture<>();
-            waitFors.__insert(EdgeCompleted.of(edge));
-            currentEdgeCompleteDelays.put(edge, future);
+            if(!completeIfFailure(future)) {
+                waitFors.__insert(EdgeCompleted.of(edge));
+                currentEdgeCompleteDelays.put(edge, future);
+            }
             return future;
         });
         K<List<Unit>> processPreviousEdges = (__, ex) -> {
@@ -581,6 +582,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                         if(ex2 != null) {
                             logger.trace("Edge matches for {} ~ {} errored.", currentScope, previousScope);
                             logger.trace("error:", ex2);
+                            failure(ex2);
                         } else {
                             logger.debug("All edge matches for {} ~ {} finished.", currentScope, previousScope);
                         }
@@ -748,8 +750,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         }
 
         final ICompletableFuture<Unit> result = new CompletableFuture<>();
-        previousScopeProcessedDelays.put(previousScope, result);
-        waitFors.__insert(ScopeProcessed.of(previousScope));
+        if(!completeIfFailure(result)) {
+            previousScopeProcessedDelays.put(previousScope, result);
+            waitFors.__insert(ScopeProcessed.of(previousScope));
+        }
         return result.thenApply(__ -> {
             logger.trace("Handling PS complete.");
             // When previousScope is released, it should be either in matchedScopes or in removedScopes.
@@ -764,8 +768,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         }
 
         final ICompletableFuture<Unit> result = new CompletableFuture<>();
-        waitFors.__insert(ScopeCompleted.of(previousScope));
-        previousScopeCompletedDelays.put(previousScope, result);
+        if(!completeIfFailure(result)) {
+            waitFors.__insert(ScopeCompleted.of(previousScope));
+            previousScopeCompletedDelays.put(previousScope, result);
+        }
 
         return result.thenApply(__ -> buildScopeDiff(previousScope));
     }
@@ -804,7 +810,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private void failure(Throwable ex) {
-        failure = true;
+        failure = ex;
         result.completeExceptionally(ex);
         previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(d -> {
             d.completeExceptionally(ex);
@@ -817,26 +823,38 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         }));
     }
 
+    private boolean completeIfFailure(ICompletableFuture<?> future) {
+        if(failure != null) {
+            future.completeExceptionally(failure);
+            return true;
+        }
+        return false;
+    }
+
     // Helper methods and classes
 
     private static <T, R> IFuture<List<R>> aggregateAll(Iterable<T> items, Function1<T, IFuture<R>> mapper) {
         return AggregateFuture.of(Streams.stream(items).map(mapper::apply).collect(Collectors.toSet()));
     }
 
+    private boolean successfullyCompleted() {
+        return result.isDone() && failure == null;
+    }
+
     private boolean isCurrentScopeOpen(S scope) {
-        return !result.isDone() && !matchedScopes.containsKey(scope) && !addedScopes.contains(scope);
+        return !successfullyCompleted() && !matchedScopes.containsKey(scope) && !addedScopes.contains(scope);
     }
 
     private boolean isPreviousScopeOpen(S scope) {
-        return !result.isDone() && !matchedScopes.containsValue(scope) && !removedScopes.contains(scope);
+        return !successfullyCompleted() && !matchedScopes.containsValue(scope) && !removedScopes.contains(scope);
     }
 
     private boolean isCurrentEdgeOpen(Edge<S, L> edge) {
-        return !result.isDone() && !matchedEdges.containsKey(edge) && !addedEdges.containsValue(edge);
+        return !successfullyCompleted() && !matchedEdges.containsKey(edge) && !addedEdges.containsValue(edge);
     }
 
     private boolean isPreviousEdgeOpen(Edge<S, L> edge) {
-        return !result.isDone() && !matchedEdges.containsValue(edge) && !removedEdges.containsValue(edge);
+        return !successfullyCompleted() && !matchedEdges.containsValue(edge) && !removedEdges.containsValue(edge);
     }
 
     private void assertCurrentScopeOpen(S scope) {

@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
@@ -129,11 +130,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         this(self, parent, context, unitChecker, edgeLabels, true, null);
     }
 
-    private final io.usethesource.capsule.Map.Transient<D, ICompletableFuture<D>> pendingExternalDatums = CapsuleUtil.transientMap();
+    private final MultiSetMap.Transient<D, ICompletableFuture<D>> pendingExternalDatums = MultiSetMap.Transient.of();
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
         return whenActive.compose((u, ex) -> {
-            if(this.state.equals(UnitState.RELEASED)) {
+            if(this.state.equals(UnitState.RELEASED) || this.state.equals(UnitState.DONE)
+                    && this.stateTransitionTrace.equals(TransitionTrace.RELEASED)) {
                 return CompletableFuture.completedFuture(previousResult.analysis().getExternalRepresentation(datum));
             }
             final IFuture<D> future = typeChecker.getExternalDatum(datum);
@@ -144,7 +146,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
             pendingExternalDatums.put(datum, result);
             future.whenComplete(result::complete);
             result.whenComplete((__, ex2) -> {
-                pendingExternalDatums.__remove(datum);
+                pendingExternalDatums.remove(datum, result);
             });
             return result;
         });
@@ -282,8 +284,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         return self.id();
     }
 
-    @Override public <Q extends IResult<S, L, D>, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id, ITypeChecker<S, L, D, Q, U> unitChecker,
-            List<S> rootScopes, boolean changed) {
+    @Override public <Q extends IResult<S, L, D>, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id,
+            ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();
 
         // No previous result for subunit
@@ -340,8 +342,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         return ifActive(whenContextActive(result));
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
-            List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> add(String id,
+            IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
         assertActive();
 
         final IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> result =
@@ -429,9 +431,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         });
     }
 
-    @Override public <Q> IFuture<R> runIncremental(
-            Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker, Function1<R, Q> extractLocal,
-            Function2<Q, BiMap.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine) {
+    @Override public <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
+            Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
+            Function2<Q, Throwable, IFuture<R>> combine) {
         assertInState(UnitState.INIT_TC);
         state = UnitState.UNKNOWN;
         if(!isIncrementalEnabled() || changed) {
@@ -585,9 +587,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
                 // @formatter:on
             });
 
-            pendingExternalDatums.forEach((d, future) -> {
-                future.complete(previousResult.analysis().getExternalRepresentation(d));
-            });
+            pendingExternalDatums.asMap().forEach((d, futures) -> futures.elementSet().forEach(future -> {
+                self.complete(future, previousResult.analysis().getExternalRepresentation(d), null);
+            }));
 
             // TODO: apply patches on queries?
             recordedQueries.addAll(previousResult.queries());
@@ -616,8 +618,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
                 final IDifferContext<S, L, D> context = differContext();
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
-                    initDiffer(new ScopeGraphDiffer<>(context, new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()),
-                            differOps), this.rootScopes, previousResult.rootScopes());
+                    initDiffer(new ScopeGraphDiffer<>(context,
+                            new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()), differOps),
+                            this.rootScopes, previousResult.rootScopes());
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
                             Collections.emptyList());
@@ -699,7 +702,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
                 granted(state, self);
             });
             return future;
-        }};
+        }
+    };
 
     private class ConfirmationContext implements IConfirmationContext<S, L, D> {
 
@@ -760,7 +764,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
             logger.debug("local env diff");
             return whenDifferActivated.thenCompose(__ -> {
                 final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
-                final EnvDifferState<S, L, D> state = EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, dataWf, future);
+                final EnvDifferState<S, L, D> state =
+                        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, dataWf, future);
                 waitFor(state, self);
                 envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
@@ -861,7 +866,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
             doInitShare(self, currentScope, edges, false);
             final S previousScope = pScopeIterator.next();
             for(L label : edgeLabels) {
-                for(S target: snapshot.scopeGraph().getEdges(previousScope, label)) {
+                for(S target : snapshot.scopeGraph().getEdges(previousScope, label)) {
                     self.async(parent)._addEdge(currentScope, label, target);
                 }
                 final CloseLabel<S, L, D> closeEdge = CloseLabel.of(self, currentScope, EdgeOrData.edge(label));
