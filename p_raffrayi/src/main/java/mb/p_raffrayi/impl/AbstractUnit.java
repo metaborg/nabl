@@ -191,7 +191,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), true, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -488,7 +488,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    if(!record && sharedScopes.contains(scope)) {
+                    if(record && sharedScopes.contains(scope)) {
                         // No need to wait for completion, because local shared scopes are initialized when freshened.
                         recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv));
                     }

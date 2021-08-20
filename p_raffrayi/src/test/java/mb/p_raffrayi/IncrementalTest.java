@@ -683,6 +683,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, Unit> result = future.asJavaCompletion().get();
 
+        assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
         assertTrue(result.failures().isEmpty());
         assertEquals(1, result.queries().size());
     }
