@@ -12,8 +12,8 @@ public abstract class ConfirmResult<S> {
 
     @SuppressWarnings("rawtypes") private static final ConfirmResult.Deny DENY = new ConfirmResult.Deny<>();
 
-    @SuppressWarnings({ "rawtypes", "unchecked" }) private static final ConfirmResult.Confirm EMPTY_CONFIRM =
-            new ConfirmResult.Confirm(BiMap.Immutable.of());
+    @SuppressWarnings({ "rawtypes" }) private static final ConfirmResult.Confirm EMPTY_CONFIRM =
+            new ConfirmResult.Confirm<>(BiMap.Immutable.of());
 
     public abstract <T> T match(Function0<T> onDeny, Function1<BiMap.Immutable<S>, T> onConfirm);
 

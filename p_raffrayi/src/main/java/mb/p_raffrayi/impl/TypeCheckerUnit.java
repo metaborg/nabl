@@ -241,6 +241,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         if(matchedBySharing.containsValue(previousScope)) {
             return CompletableFuture.completedFuture(Optional.of(matchedBySharing.getValue(previousScope)));
         }
+        if(!changed && previousResult.localState() != null && previousResult.localState().scopes().contains(previousScope)) {
+            return CompletableFuture.completedFuture(Optional.of(previousScope));
+        }
         return super._match(previousScope);
     }
 
@@ -830,7 +833,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
 
             final MultiSet.Transient<String> counters = MultiSet.Transient.of();
             counters.addAll(this.scopeNameCounters);
-            builder.scopeNameCounters(scopeNameCounters.freeze());
+            builder.scopeNameCounters(counters.freeze());
             builder.typeCheckerState(snapshot);
 
             localCapture(builder.build());
