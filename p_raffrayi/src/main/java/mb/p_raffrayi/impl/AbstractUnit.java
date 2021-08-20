@@ -83,7 +83,8 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
+public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
+        implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
@@ -190,7 +191,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), true, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -281,9 +282,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
-    protected <Q extends IResult<S, L, D>, U> Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>> doAddSubUnit(
-            String id, Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
-            List<S> rootScopes, boolean ignoreResult) {
+    protected <Q extends IResult<S, L, D>, U>
+            Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>>
+            doAddSubUnit(String id,
+                    Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
+                    List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
@@ -455,8 +458,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
         }
     }
 
-    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S source,
-            L label, S target) {
+    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
+            S source, L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
@@ -468,7 +471,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
     }
 
     protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
-            ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
+            boolean record, ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
             DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
         logger.debug("got _query from {}", sender);
@@ -485,7 +488,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    if(!external && sharedScopes.contains(scope)) {
+                    if(!record && sharedScopes.contains(scope)) {
                         // No need to wait for completion, because local shared scopes are initialized when freshened.
                         recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv));
                     }
@@ -510,7 +513,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
                                         .add(RecordedQuery.of(path, re, dataWF, labelOrder, dataEquiv, ans.env()));
                                 transitiveQueries.addAll(ans.transitiveQueries());
                                 predicateQueries.addAll(ans.predicateQueries());
-                            } else {
+                            } else if(record) {
                                 // For local query, record it as such.
                                 recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv,
                                         ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
@@ -638,7 +641,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
 
                 final ScopePath<S, L> path = new ScopePath<>(scope);
                 final IFuture<IQueryAnswer<S, L, D>> result =
-                        doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                        doQuery(self, true, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
                 final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
                 waitFor(wf, self);
                 stats.localQueries += 1;
@@ -660,8 +663,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         logger.debug("rec pquery from {}", sender);
         // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
-        final INameResolutionContext<S, L, D> nrc =
-                new StaticNameResolutionContext(sender, scopeGraph, new StaticQueryContext(sender, scopeGraph), dataWF, dataEquiv);
+        final INameResolutionContext<S, L, D> nrc = new StaticNameResolutionContext(sender, scopeGraph,
+                new StaticQueryContext(sender, scopeGraph), dataWF, dataEquiv);
         final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
 
         return nr.env(path, labelWF, context.cancel());
@@ -850,7 +853,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
         public final ICompletableFuture<org.metaborg.util.unit.Unit> future;
         public final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
 
-        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
+        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future,
+                IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
             this.future = future;
             this.sender = sender;
         }
@@ -903,7 +907,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T> imple
         }
 
         @Override public IFuture<Optional<D>> getDatum(S scope) {
-            return CompletableFuture.completedFuture(scopeGraph.getData(scope).map(AbstractUnit.this::getPreviousDatum));
+            return CompletableFuture
+                    .completedFuture(scopeGraph.getData(scope).map(AbstractUnit.this::getPreviousDatum));
         }
 
         @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {

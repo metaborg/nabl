@@ -81,7 +81,7 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Emp
         // duplicate of AbstractUnit::_query
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,

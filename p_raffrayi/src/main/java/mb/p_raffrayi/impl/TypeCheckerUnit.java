@@ -414,7 +414,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
         final IFuture<IQueryAnswer<S, L, D>> result =
-                doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                doQuery(self, true, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final IFuture<IQueryAnswer<S, L, D>> ret;
         if(result.isDone()) {
             ret = result;
@@ -716,7 +716,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         @Override public IFuture<IQueryAnswer<S, L, D>> query(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataEquiv) {
             logger.debug("query from env differ.");
-            return doQuery(sender, scopePath, labelWf, labelOrder, dataWf, dataEquiv, null, null);
+            return doQuery(sender, false, scopePath, labelWf, labelOrder, dataWf, dataEquiv, null, null);
         }
 
         @Override public IFuture<Env<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
