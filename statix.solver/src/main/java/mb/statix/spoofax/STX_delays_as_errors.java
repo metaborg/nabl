@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -141,19 +142,27 @@ public class STX_delays_as_errors extends StatixPrimitive {
             if(!msg.isEmpty()) {
                 sb.append(" ");
                 sb.append(msg);
-                sb.append(" ");
+                sb.append(":");
             }
-            sb.append(" delayed on: ");
+            sb.append(" delayed on");
+            boolean first = true;
             if(!delay.vars().isEmpty()) {
-                sb.append("vars ").append(delay.vars());
+                sb.append(" vars: ")
+                        .append(delay.vars().stream().map(ITermVar::toString).collect(Collectors.joining(", ")));
+                first = false;
             }
             if(!delay.criticalEdges().isEmpty()) {
-                if(!delay.vars().isEmpty()) {
-                    sb.append(" and ");
+                if(!first) {
+                    sb.append(" and");
                 }
-                sb.append("critial edges ").append(delay.criticalEdges());
+                sb.append(" critial edges: ").append(
+                        delay.criticalEdges().stream().map(CriticalEdge::toString).collect(Collectors.joining(", ")));
+                first = false;
             }
             if(completeness != null && !completeness.isEmpty()) {
+                if(!first) {
+                    sb.append(",");
+                }
                 sb.append(" preventing completion of ").append(formatCompleteness.apply(completeness));
             }
             return sb.toString();

@@ -219,7 +219,10 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
                     subst.put(var, sub);
                 }
             });
-            return completeness.apply(subst.freeze()).toString();
+            return completeness.apply(subst.freeze()).entrySet().stream().flatMap(e -> {
+                String scope = e.getKey().toString();
+                return e.getValue().elementSet().stream().map(edge -> scope + "-" + edge.toString());
+            }).collect(Collectors.joining(", "));
         }));
 
         // use empty origin if none was found
