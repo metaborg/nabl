@@ -59,6 +59,7 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.AScope;
 import mb.statix.scopegraph.Scope;
@@ -272,9 +273,10 @@ class GreedySolver {
     }
 
     private boolean fail(IConstraint constraint) {
-        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
+        final IMessage message = MessageUtil.findClosestMessage(constraint);
+        failed.put(constraint, message);
         removeCompleteness(constraint);
-        return (flags & RETURN_ON_FIRST_ERROR) == 0;
+        return message.kind() != MessageKind.ERROR || (flags & RETURN_ON_FIRST_ERROR) == 0;
     }
 
     private void removeCompleteness(IConstraint constraint) {

@@ -81,6 +81,7 @@ import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.scopegraph.AScope;
 import mb.statix.scopegraph.Scope;
@@ -382,9 +383,10 @@ public class StatixSolver {
     }
 
     private boolean fail(IConstraint constraint) throws InterruptedException {
-        failed.put(constraint, MessageUtil.findClosestMessage(constraint));
+        final IMessage message = MessageUtil.findClosestMessage(constraint);
+        failed.put(constraint, message);
         removeCompleteness(constraint);
-        return (flags & RETURN_ON_FIRST_ERROR) == 0;
+        return message.kind() != MessageKind.ERROR || (flags & RETURN_ON_FIRST_ERROR) == 0;
     }
 
     private void removeCompleteness(IConstraint constraint) throws InterruptedException {
