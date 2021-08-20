@@ -349,13 +349,13 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                             final Optional<BiMap.Immutable<S>> dataMatch =
                                     differOps.matchDatums(currentData.get(), previousData.get())
                                             .flatMap(scopeMatches -> BiMaps.safeMerge(newReq, scopeMatches));
-                    // @formatter:off
-                    // Calculate transitive closure of consequences.
-                    return Futures.reducePartial(dataMatch, dataMatch.map(BiMap.Immutable::asMap).map(Map.Immutable::entrySet),
-                        (aggMatches, match) -> consequences(match.getKey(), match.getValue(), aggMatches),
-                        BiMaps::safeMerge
-                    );
-                    // @formatter:on
+                            // @formatter:off
+                            // Calculate transitive closure of consequences.
+                            return Futures.reducePartial(dataMatch, dataMatch.map(BiMap.Immutable::asMap).map(Map.Immutable::entrySet),
+                                (aggMatches, match) -> consequences(match.getKey(), match.getValue(), aggMatches),
+                                BiMaps::safeMerge
+                            );
+                            // @formatter:on
                         }
                         // Both scopes don't have data
                         return CompletableFuture.completedFuture(Optional.of(newReq));
@@ -461,9 +461,11 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                        logger.debug("Error matching edge {} - treat it as undecided.", currentEdge);
                        logger.debug("error:", ex2);
                        failure(ex2);
+                       // TODO: special category for undecided edges?
+                       matchesResult.complete(Collections.emptyList(), null);
+                   } else {
+                       matchesResult.complete(u);
                    }
-                   // TODO: special category for undecided edges?
-                   matchesResult.complete(Collections.emptyList(), null);
                 });
 
                 future(matchesResult, k2);
