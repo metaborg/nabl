@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.ScopeGraphUtil;
 
 public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
 
@@ -28,6 +28,10 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
 
     @Override public IFuture<Optional<D>> datum(S scope) {
         return CompletableFuture.completedFuture(scopeGraph.getData(scope).map(dataOps::getExternalRepresentation));
+    }
+
+    @Override public String toString() {
+        return ScopeGraphUtil.toString(scopeGraph, dataOps::getExternalRepresentation);
     }
 
 }

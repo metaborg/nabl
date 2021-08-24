@@ -28,8 +28,9 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Emp
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
-    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?, ?>> parent,
-            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph) {
+    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> self,
+            IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context, Iterable<L> edgeLabels,
+            Set<S> scopes, Immutable<S, L, D> scopeGraph) {
         super(self, parent, context, edgeLabels);
 
         this.scopes.__insertAll(scopes);
@@ -76,12 +77,13 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Emp
     }
 
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin,
+            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
+            DataLeq<S, L, D> dataEquiv) {
         // duplicate of AbstractUnit::_query
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), origin, false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,

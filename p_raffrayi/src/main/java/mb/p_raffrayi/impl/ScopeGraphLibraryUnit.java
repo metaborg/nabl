@@ -149,13 +149,15 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin,
+            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
+            DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
-        final IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
+        final IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> worker =
+                workers.get(stats.incomingQueries % workers.size());
 
         final IFuture<IQueryAnswer<S, L, D>> result =
-                self.async(worker)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
+                self.async(worker)._query(origin, path, labelWF, dataWF, labelOrder, dataEquiv);
         final Query<S, L, D> token = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(token, worker);
         return result.whenComplete((r, ex) -> {
@@ -165,7 +167,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
+        return _query(self.sender(TYPE), path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
     }
 
     @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,

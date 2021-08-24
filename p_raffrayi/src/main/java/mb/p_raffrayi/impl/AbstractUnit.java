@@ -187,11 +187,12 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin,
+            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
+            DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), origin, false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -471,15 +472,16 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
-            boolean record, ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
-            DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, boolean record, ScopePath<S, L> path, LabelWf<L> labelWF,
+            LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
         logger.debug("got _query from {}", sender);
 
         final boolean external = !sender.equals(self);
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> transitiveQueries = ImmutableSet.builder();
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> predicateQueries = ImmutableSet.builder();
-        final ITypeCheckerContext<S, L, D> queryContext = queryContext(predicateQueries);
+        final ITypeCheckerContext<S, L, D> queryContext = queryContext(predicateQueries, origin);
 
         final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
@@ -498,7 +500,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
                         final IFuture<IQueryAnswer<S, L, D>> result =
-                                self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                                self.async(owner)._query(origin, path, re, dataWF, labelOrder, dataEquiv);
                         final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                         waitFor(wf, owner);
                         if(external) {
@@ -627,7 +629,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         return result.thenApply(env -> QueryAnswer.of(env, transitiveQueries.build(), predicateQueries.build()));
     }
 
-    private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries) {
+    private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries,
+            IActorRef<? extends IUnit<S, L, D, ?, ?>> origin) {
         return new AbstractQueryTypeCheckerContext<S, L, D, R>() {
 
             @Override public String id() {
@@ -640,15 +643,22 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 // does not require the Unit to be ACTIVE
 
                 final ScopePath<S, L> path = new ScopePath<>(scope);
-                final IFuture<IQueryAnswer<S, L, D>> result =
-                        doQuery(self, true, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                // If record is true, a potentially hidden scope from the predicate may leak to the recordedQueries of the receiver.
+                final IFuture<IQueryAnswer<S, L, D>> result = doQuery(self, origin, false, path, labelWF, labelOrder,
+                        dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
                 final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
                 waitFor(wf, self);
                 stats.localQueries += 1;
                 return self.schedule(result).whenComplete((ans, ex) -> {
                     granted(wf, self);
                 }).thenApply(ans -> {
-                    queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                    // Type-checkers can embed scopes in their predicates that are not accessible from the outside.
+                    // If such a query is confirmed, the scope graph differ will never produce a scope diff for it,
+                    // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
+                    // Hence, we just ignore it.
+                    if(!context.scopeId(path.getTarget()).equals(origin.id())) {
+                        queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                    }
                     queries.addAll(ans.transitiveQueries());
                     // TODO can this happen? Is flattening here ok then?
                     queries.addAll(ans.predicateQueries());
