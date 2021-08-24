@@ -9,14 +9,14 @@ import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
+import mb.p_raffrayi.ITypeCheckerState;
 import mb.p_raffrayi.IUnitResult;
 
 public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
-    @SuppressWarnings("unused")  @Override public <Q extends IResult<S, L, D>, T> IFuture<IUnitResult<S, L, D, Q, T>> add(String id,
+    @SuppressWarnings("unused")  @Override public <Q extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, Q, T>> add(String id,
             ITypeChecker<S, L, D, Q, T> unitChecker, List<S> rootScopes, boolean changed) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
     @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> add(String id,

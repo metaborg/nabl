@@ -32,6 +32,7 @@ import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
+import mb.p_raffrayi.ITypeCheckerState;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.APRaffrayiSettings.ConfirmationMode;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -77,7 +78,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUnit<S, L, D, R, T>
+class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> extends AbstractUnit<S, L, D, R, T>
         implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
@@ -133,6 +134,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
     private final MultiSetMap.Transient<D, ICompletableFuture<D>> pendingExternalDatums = MultiSetMap.Transient.of();
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
+        if(!changed && previousResult.localState() != null) {
+            final Optional<D> datumOpt = previousResult.localState().typeCheckerState().tryGetExternalDatum(datum);
+            if(datumOpt.isPresent()) {
+                return CompletableFuture.completedFuture(datumOpt.get());
+            }
+        }
         return whenActive.compose((u, ex) -> {
             if(this.state.equals(UnitState.RELEASED) || this.state.equals(UnitState.DONE)
                     && this.stateTransitionTrace.equals(TransitionTrace.RELEASED)) {
@@ -288,7 +295,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T> extends AbstractUn
         return self.id();
     }
 
-    @Override public <Q extends IResult<S, L, D>, U> IFuture<IUnitResult<S, L, D, Q, U>> add(String id,
+    @Override public <Q extends IResult<S, L, D>, U extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, Q, U>> add(String id,
             ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();
 

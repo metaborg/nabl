@@ -1009,6 +1009,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
+            if(ex != null) {
+                failures.add(ex);
+                return;
+            }
             logger.debug("Received patches: {}.", rors);
             if(rors.stream().noneMatch(this::canProgress)) {
                 logger.debug("No restartable units, doing regular deadlock handling.");
@@ -1018,9 +1022,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 rors.stream().reduce(StateSummary::combine).get().accept(
                     () -> {
                         logger.debug("Restarting all involved units: {}.", nodes);
-                        if(ex != null) {
-                            failures.add(ex);
-                        }
                         nodes.forEach(node -> node.from(self, context)._restart());
                     },
                     ptcs -> {
