@@ -42,7 +42,7 @@ public abstract class PRaffrayiTestBase {
 
     protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>> run(TestTypeChecker<R> typeChecker,
             Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI> previousResult) {
-        return Broker.<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
+        return Broker.debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
