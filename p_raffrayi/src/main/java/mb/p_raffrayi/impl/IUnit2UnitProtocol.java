@@ -38,8 +38,6 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             boolean prevEnvEmpty);
 
-    IFuture<Optional<D>> _datum(S scope);
-
     IFuture<Optional<S>> _match(S previousScope);
 
 }

@@ -58,7 +58,6 @@ import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
-import mb.p_raffrayi.impl.tokens.Datum;
 import mb.p_raffrayi.impl.tokens.DifferResult;
 import mb.p_raffrayi.impl.tokens.DifferState;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
@@ -345,25 +344,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         doInitShare(self, scope, labels, sharing);
 
         return scope;
-    }
-
-    @Override public IFuture<Optional<D>> _datum(S scope) {
-        assertOwnScope(scope);
-        return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenCompose(__ -> {
-            final Optional<D> datum = scopeGraph.get().getData(scope);
-            if(!datum.isPresent()) {
-                return CompletableFuture.completedFuture(datum);
-            }
-
-            final ICompletableFuture<D> future = new CompletableFuture<>();
-            final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
-            waitFor(state, self);
-            getExternalDatum(datum.get()).whenComplete(future::complete);
-            return future.whenComplete((r, ex) -> {
-                granted(state, self);
-                // resume() // FIXME necessary?
-            }).thenApply(Optional::of);
-        });
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
@@ -1103,7 +1083,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     query -> {},
                     pQuery -> {},
                     confirm -> {},
-                    datum -> {},
                     match -> {},
                     result  -> {},
                     typeCheckerState -> {
@@ -1189,10 +1168,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     logger.error("Unexpected remaining confirmation request: " + confirm);
                     throw new IllegalStateException("Unexpected remaining confirmation request: " + confirm);
                 },
-                datum -> {
-                    logger.error("Unexpected remaining datum query: " + datum);
-                    throw new IllegalStateException("Unexpected remaining datum query: " + datum);
-                },
                 match -> {
                     logger.error("Unexpected remaining match query: " + match);
                     throw new IllegalStateException("Unexpected remaining match query: " + match);
@@ -1275,14 +1250,21 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
 
         @Override public IFuture<Optional<D>> datum(S scope) {
-            // TODO is it needed to fetch data from remote scope????
-            return getOwner(scope).thenCompose(owner -> {
-                final Datum<S, L, D> datum = Datum.of(self, scope);
-                waitFor(datum, owner);
-                return self.async(owner)._datum(scope).whenComplete((__, ___) -> {
-                    granted(datum, owner);
-                    resume();
-                });
+            assertOwnScope(scope);
+            return isComplete(scope, EdgeOrData.data(), self).thenCompose(__ -> {
+                final Optional<D> datum = scopeGraph.get().getData(scope);
+                if(!datum.isPresent()) {
+                    return CompletableFuture.completedFuture(datum);
+                }
+
+                final ICompletableFuture<D> future = new CompletableFuture<>();
+                final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
+                waitFor(state, self);
+                getExternalDatum(datum.get()).whenComplete(future::complete);
+                return future.whenComplete((r, ex) -> {
+                    granted(state, self);
+                    // resume() // FIXME necessary?
+                }).thenApply(Optional::of);
             });
         }
     }

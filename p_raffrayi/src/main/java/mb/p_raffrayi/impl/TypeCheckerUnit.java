@@ -273,6 +273,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override public void _restart() {
+        assertIncrementalEnabled();
         if(doRestart()) {
             stateTransitionTrace = TransitionTrace.RESTARTED;
         }
@@ -585,7 +586,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                     query -> {},
                     pQuery -> {},
                     confirm -> {},
-                    datum -> {},
                     match -> {},
                     result -> {},
                     typeCheckerState -> {},
@@ -619,7 +619,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     private boolean doRestart() {
-        assertIncrementalEnabled();
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
             logger.debug("{} restarting.", this);
             state = UnitState.ACTIVE;

@@ -70,15 +70,17 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         if(!seenScopes.contains(scope)) {
             seenScopes.__insert(scope);
 
-            IFuture<Optional<D>> datumFuture = context.datum(scope);
-            K<Optional<D>> processDatum = d -> {
-                addedScopes.__put(scope, d.orElse(differOps.embed(scope)));
-                d.ifPresent(datum -> {
-                    differOps.getScopes(datum).forEach(this::addScope);
-                });
-            };
-            logger.trace("Schedule datum {}: {}", scope, datumFuture);
-            future(datumFuture, processDatum);
+            if(differOps.ownScope(scope)) {
+                IFuture<Optional<D>> datumFuture = context.datum(scope);
+                K<Optional<D>> processDatum = d -> {
+                    addedScopes.__put(scope, d.orElse(differOps.embed(scope)));
+                    d.ifPresent(datum -> {
+                        differOps.getScopes(datum).forEach(this::addScope);
+                    });
+                };
+                logger.trace("Schedule datum {}: {}", scope, datumFuture);
+                future(datumFuture, processDatum);
+            }
 
             if(differOps.ownOrSharedScope(scope)) {
                 IFuture<Set.Immutable<L>> labelsFuture = context.labels(scope);

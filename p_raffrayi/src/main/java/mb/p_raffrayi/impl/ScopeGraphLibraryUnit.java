@@ -73,8 +73,10 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
-        initDiffer(new MatchingDiffer<>(differOps(), differContext()), Collections.emptyList(),
-                Collections.emptyList());
+        if(isDifferEnabled()) {
+            initDiffer(new MatchingDiffer<>(differOps(), differContext()), Collections.emptyList(),
+                    Collections.emptyList());
+        }
         startWorkers();
         return doFinish(CompletableFuture.completedFuture(IResult.Empty.of()));
     }
