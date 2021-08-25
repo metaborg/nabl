@@ -255,21 +255,21 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         return super._match(previousScope);
     }
 
-    @Override public IFuture<StateSummary<S>> _requireRestart() {
+    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
         if(state.equals(UnitState.ACTIVE)
                 || (state == UnitState.DONE && stateTransitionTrace != TransitionTrace.RELEASED)) {
-            return CompletableFuture.completedFuture(StateSummary.restart());
+            return CompletableFuture.completedFuture(StateSummary.restart(process, dependentSet()));
         }
 
         if(state.equals(UnitState.RELEASED)
                 || (state == UnitState.DONE && stateTransitionTrace == TransitionTrace.RELEASED)) {
-            return CompletableFuture.completedFuture(StateSummary.released(BiMap.Immutable.from(matchedBySharing)));
+            return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
         }
 
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
         // TODO Re-validate when a more sophisticated confirmation algorithm is implemented.
-        return CompletableFuture.completedFuture(StateSummary.release(BiMap.Immutable.from(matchedBySharing)));
+        return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
     }
 
     @Override public void _restart() {

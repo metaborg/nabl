@@ -97,8 +97,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Emp
         return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 
-    @Override public IFuture<StateSummary<S>> _requireRestart() {
-        return CompletableFuture.completedFuture(StateSummary.release());
+    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
+        return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {

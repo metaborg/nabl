@@ -329,10 +329,10 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         cmh.reply(i, m, R);
     }
 
-    @Override public IFuture<StateSummary<S>> _requireRestart() {
+    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
         // When broker is involved in a deadlock, there is a unit waiting for
         // another unit to be added. Just releasing such a unit is not safe.
-        return CompletableFuture.completedFuture(StateSummary.restart());
+        return CompletableFuture.completedFuture(StateSummary.restart(process, dependentSet()));
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {

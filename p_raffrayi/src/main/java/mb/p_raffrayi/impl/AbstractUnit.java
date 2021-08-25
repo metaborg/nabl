@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -1014,31 +1015,50 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 return;
             }
             logger.debug("Received patches: {}.", rors);
-            if(rors.stream().noneMatch(this::canProgress)) {
+            if(rors.stream().noneMatch(this::isRestartable)) {
                 logger.debug("No restartable units, doing regular deadlock handling.");
                 handleDeadlockRegular(nodes);
+                return;
+            }
+            final Map<Boolean, java.util.Set<StateSummary<S, L, D>>> units =
+                    rors.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
+            if(units.get(true).isEmpty()) {
+                // No restarted units in cluster, release all involved units.
+                BiMap.Immutable<S> ptcs = rors.stream().map(this::patches).reduce(BiMap.Immutable::putAll).get();
+                logger.debug("Releasing all involved units: {}.", ptcs);
+                nodes.forEach(node -> node.from(self, context)._release(ptcs));
             } else {
                 // @formatter:off
-                rors.stream().reduce(StateSummary::combine).get().accept(
-                    () -> {
-                        logger.debug("Restarting all involved units: {}.", nodes);
-                        nodes.forEach(node -> node.from(self, context)._restart());
-                    },
-                    ptcs -> {
-                        logger.debug("Releasing all involved units: {}.", ptcs);
-                        nodes.forEach(node -> node.from(self, context)._release(ptcs));
-                    },
-                    ptcs -> {
-                        logger.error("Cannot make progress when all units are already released.");
-                        throw new IllegalStateException("Cannot make progress when all units are already released.");
-                    });
+                final java.util.Set<IProcess<S, L, D>> activeProcesses = units.get(true).stream()
+                    .map(StateSummary::getSelf)
+                    .collect(Collectors.toSet());
+                final java.util.Set<IProcess<S, L, D>> restarts = units.get(false).stream()
+                    .filter(state -> state.getDependencies().stream().anyMatch(activeProcesses::contains))
+                    .map(StateSummary::getSelf)
+                    .collect(Collectors.toSet());
                 // @formatter:on
+                logger.debug("Restarting {}.", restarts);
+                restarts.forEach(node -> node.from(self, context)._restart());
             }
         });
     }
 
-    private boolean canProgress(StateSummary<S> state) {
+    private boolean isRestartable(StateSummary<S, L, D> state) {
         return state.match(() -> false, __ -> true, __ -> false);
+    }
+
+    private boolean isRestarted(StateSummary<S, L, D> state) {
+        return state.match(() -> true, __ -> false, __ -> false);
+    }
+
+    private BiMap.Immutable<S> patches(StateSummary<S, L, D> state) {
+        // @formatter:off
+        return state.match(
+            () -> { throw new IllegalStateException("No patches for restarted state."); },
+            ptcs -> ptcs,
+            ptcs -> ptcs
+        );
+        // @formatter:on
     }
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
