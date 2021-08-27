@@ -2,6 +2,7 @@ package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -27,7 +28,7 @@ import mb.nabl2.terms.unification.u.IUnifier.Immutable;
 import mb.nabl2.terms.unification.u.IUnifier.Result;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 
-public class Diseq {
+public class Diseq implements Serializable {
 
     @SuppressWarnings("unused") private static ILogger logger = LoggerUtils.logger(Diseq.class);
 
