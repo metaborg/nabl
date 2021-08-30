@@ -25,7 +25,7 @@ public final class ScopeGraphUtil {
 
         final SetView<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
 
-        final StringBuilder sb = new StringBuilder("StaticDifferContext:");
+        final StringBuilder sb = new StringBuilder();
         for(S source : scopes) {
             sb.append(source);
             if(scopeGraph.getData(source).isPresent()) {
@@ -36,7 +36,7 @@ public final class ScopeGraphUtil {
                 sb.append("\n");
                 continue;
             }
-            sb.append(" {");
+            sb.append(" {\n");
             for(Map.Entry<L, Iterable<S>> edges: groupedScopes.get(source)) {
                 sb.append("  ");
                 sb.append(edges.getKey());
@@ -46,6 +46,7 @@ public final class ScopeGraphUtil {
                 for(S target: edges.getValue()) {
                     if(first) {
                         sb.append("[ ");
+                        first = false;
                     } else {
                         sb.append(",\n");
                         sb.append(String.join("", Collections.nCopies(indent, " ")));
@@ -54,6 +55,7 @@ public final class ScopeGraphUtil {
                 }
                 sb.append("]\n");
             }
+            sb.append("}\n");
         }
 
         return sb.toString();

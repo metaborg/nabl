@@ -256,6 +256,13 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         }
     }
 
+    @Override public ITerm internalData(ITerm datum) {
+        if(solver != null) {
+            return solver.internalData(datum);
+        }
+        return datum;
+    }
+
     @Override public SolverState snapshot() {
         if(solver == null) {
             return null;

@@ -19,6 +19,10 @@ public interface ITypeChecker<S, L, D, R extends IResult<S, L, D>, T extends ITy
         return CompletableFuture.completedFuture(datum);
     }
 
+    default D internalData(D datum) {
+        return datum;
+    }
+
     default @Nullable T snapshot() {
         return null;
     }

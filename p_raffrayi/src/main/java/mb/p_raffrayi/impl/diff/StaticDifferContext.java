@@ -31,7 +31,7 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     }
 
     @Override public String toString() {
-        return ScopeGraphUtil.toString(scopeGraph, dataOps::getExternalRepresentation);
+        return "StaticDifferContext:\n" + ScopeGraphUtil.toString(scopeGraph, dataOps::getExternalRepresentation);
     }
 
 }

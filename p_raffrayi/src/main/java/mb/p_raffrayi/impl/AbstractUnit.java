@@ -20,6 +20,7 @@ import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -75,6 +76,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.ScopeGraphUtil;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
@@ -1099,16 +1101,16 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     },
                     differResult -> {},
                     differState -> {
-                        if(nodes.contains(process(differState.origin()))) {
+                        /* if(nodes.contains(process(differState.origin()))) {
                             logger.debug("{} fail {}", self, differState);
                             deadlocked.__insert(differState.future());
-                        }
+                        } */
                     },
                     envDifferState -> {
-                        if(nodes.contains(process(envDifferState.origin()))) {
+                        /* if(nodes.contains(process(envDifferState.origin()))) {
                             logger.debug("{} fail {}", self, envDifferState);
                             deadlocked.__insert(envDifferState.future());
-                        }
+                        } */
                     },
                     activate -> {},
                     unitAdd -> {}
@@ -1241,92 +1243,84 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     // Scope graph diffing
     ///////////////////////////////////////////////////////////////////////////
 
-    private class DifferContext implements IDifferContext<S, L, D> {
+    protected IDifferContext<S, L, D> differContext(Function1<D, D> instantiateData) {
+        return new IDifferContext<S, L, D>() {
 
-        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
-            return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
-                return scopeGraph.get().getEdges(scope, label);
-            });
-        }
-
-        @Override public IFuture<Set.Immutable<L>> labels(S scope) {
-            assertOwnOrSharedScope(scope);
-            // TODO make more precise with labels for which scope was initialized.
-            return CompletableFuture.completedFuture(edgeLabels);
-        }
-
-        @Override public IFuture<Optional<D>> datum(S scope) {
-            assertOwnScope(scope);
-            return isComplete(scope, EdgeOrData.data(), self).thenCompose(__ -> {
-                final Optional<D> datum = scopeGraph.get().getData(scope);
-                if(!datum.isPresent()) {
-                    return CompletableFuture.completedFuture(datum);
-                }
-
-                final ICompletableFuture<D> future = new CompletableFuture<>();
-                final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
-                waitFor(state, self);
-                getExternalDatum(datum.get()).whenComplete(future::complete);
-                return future.whenComplete((r, ex) -> {
-                    granted(state, self);
-                    // resume() // FIXME necessary?
-                }).thenApply(Optional::of);
-            });
-        }
-    }
-
-    private class DifferOps implements IDifferOps<S, L, D> {
-
-        private DifferOps() {
-        }
-
-        @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
-            return context.scopeId(previousScope).equals(context.scopeId(currentScope));
-        }
-
-        @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
-            return context.matchDatums(currentDatum, previousDatum);
-        }
-
-        @Override public Collection<S> getScopes(D d) {
-            return context.getScopes(d);
-        }
-
-        @Override public D embed(S scope) {
-            return context.embed(scope);
-        }
-
-        @Override public boolean ownScope(S scope) {
-            return context.scopeId(scope).equals(self.id());
-        }
-
-        @Override public boolean ownOrSharedScope(S currentScope) {
-            return scopes.contains(currentScope);
-        }
-
-        @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
-            return getOwner(previousScope).thenCompose(owner -> {
-                final Match<S, L, D> match = Match.of(self, previousScope);
-                waitFor(match, owner);
-                return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
-                    granted(match, owner);
-                    resume();
+            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+                return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
+                    return scopeGraph.get().getEdges(scope, label);
                 });
-            });
-        }
+            }
+
+            @Override public IFuture<Set.Immutable<L>> labels(S scope) {
+                assertOwnOrSharedScope(scope);
+                // TODO make more precise with labels for which scope was initialized.
+                return CompletableFuture.completedFuture(edgeLabels);
+            }
+
+            @Override public IFuture<Optional<D>> datum(S scope) {
+                assertOwnScope(scope);
+                return isComplete(scope, EdgeOrData.data(), self).thenCompose(__ -> {
+                    final Optional<D> datum = scopeGraph.get().getData(scope);
+                    if(!datum.isPresent()) {
+                        return CompletableFuture.completedFuture(datum);
+                    }
+
+                    final ICompletableFuture<D> future = new CompletableFuture<>();
+                    final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
+                    waitFor(state, self);
+                    getExternalDatum(datum.get()).whenComplete(future::complete);
+                    return future.whenComplete((r, ex) -> {
+                        granted(state, self);
+                        // resume() // FIXME necessary?
+                    }).thenApply(Optional::of);
+                });
+            }
+
+            @Override public String toString() {
+                // TODO Auto-generated method stub
+                return "DifferContext(" + self.id() + "):\n" + ScopeGraphUtil.toString(scopeGraph.get(), instantiateData);
+            }
+        };
     }
-
-
-    private IDifferContext<S, L, D> differContext = new DifferContext();
-
-    protected IDifferContext<S, L, D> differContext() {
-        return differContext;
-    }
-
-    private IDifferOps<S, L, D> differOps = new DifferOps();
 
     protected IDifferOps<S, L, D> differOps() {
-        return differOps;
+        return new IDifferOps<S, L, D>() {
+            @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
+                return context.scopeId(previousScope).equals(context.scopeId(currentScope));
+            }
+
+            @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
+                return context.matchDatums(currentDatum, previousDatum);
+            }
+
+            @Override public Collection<S> getScopes(D d) {
+                return context.getScopes(d);
+            }
+
+            @Override public D embed(S scope) {
+                return context.embed(scope);
+            }
+
+            @Override public boolean ownScope(S scope) {
+                return context.scopeId(scope).equals(self.id());
+            }
+
+            @Override public boolean ownOrSharedScope(S currentScope) {
+                return scopes.contains(currentScope);
+            }
+
+            @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
+                return getOwner(previousScope).thenCompose(owner -> {
+                    final Match<S, L, D> match = Match.of(self, previousScope);
+                    waitFor(match, owner);
+                    return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
+                        granted(match, owner);
+                        resume();
+                    });
+                });
+            }
+        };
     }
 
     ///////////////////////////////////////////////////////////////////////////
