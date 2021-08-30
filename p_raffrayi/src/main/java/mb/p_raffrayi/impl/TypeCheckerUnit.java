@@ -780,6 +780,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
                     granted(state, self);
+                    resume(); // FIXME needed?
                 });
                 return future;
             });

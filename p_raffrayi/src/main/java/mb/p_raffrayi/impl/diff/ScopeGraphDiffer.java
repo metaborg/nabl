@@ -470,10 +470,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     .map(x -> Tuple2.of(x._1(), consistent(x._2())))
                     // Filter for consistent matches
                     .filter(x -> x._2().isPresent())
-                    // Unwrap matches
-                    .map(x -> Tuple2.of(x._1(), x._2().get()))
                     // Add all remaining candidates to set.
-                    .forEach(x -> matchingPreviousEdges.__put(x._1(), x._2()));
+                    .forEach(x -> matchingPreviousEdges.__put(x._1(), x._2().get()));
                 // @formatter:on
 
                 return queue(new EdgeMatch(currentEdge, matchingPreviousEdges.freeze()));

@@ -357,6 +357,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 differ.match(previousScope).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
                     granted(state, self);
+                    resume(); // FIXME needed?
                 });
                 return future;
             });
@@ -1017,8 +1018,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     .map(StateSummary::getSelf)
                     .collect(Collectors.toSet());
                 // @formatter:on
-                logger.debug("Restarting {}.", restarts);
-                restarts.forEach(node -> node.from(self, context)._restart());
+                if(restarts.isEmpty()) {
+                    logger.debug("Restarting {} (full).", nodes);
+                    nodes.forEach(node -> node.from(self, context)._restart());
+                } else {
+                    logger.debug("Restarting {} (conservative).", restarts);
+                    restarts.forEach(node -> node.from(self, context)._restart());
+                }
             }
         });
     }
