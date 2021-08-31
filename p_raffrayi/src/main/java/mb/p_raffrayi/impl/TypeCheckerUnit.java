@@ -183,6 +183,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 doCapture();
             }
             state = UnitState.DONE;
+            resume();
+            tryFinish();
         });
 
         // Start phantom units for all units that have not yet been restarted
@@ -439,6 +441,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             waitFor(wf, self);
             ret = result.whenComplete((env, ex) -> {
                 granted(wf, self);
+                resume();
             });
         }
         stats.localQueries += 1;
@@ -715,6 +718,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             differ.scopeDiff(previousScope).whenComplete(future::complete);
             future.whenComplete((r, ex) -> {
                 granted(state, self);
+                resume(); // FIXME necessary?
             });
             return future;
         }

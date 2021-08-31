@@ -274,6 +274,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 diffResult.set(r);
             }
             granted(result, self);
+            resume();
             tryFinish();
         });
     }
@@ -309,8 +310,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
         final IFuture<IUnitResult<S, L, D, Q, U>> ret = internalResult.whenComplete((r, ex) -> {
             logger.debug("{} subunit {} finished", this, subunit);
-            resume();
             granted(token, subunit);
+            resume();
             if(ex != null) {
                 failures.add(new Exception("No result for sub unit " + id));
             } else if(!ignoreResult) {
@@ -391,6 +392,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         assertOwnOrSharedScope(scope);
 
         granted(InitScope.of(self, scope), sender);
+        resume(); // FIXME necessary?
+
         for(EdgeOrData<L> edge : edges) {
             waitFor(CloseLabel.of(self, scope, edge), sender);
         }
@@ -419,6 +422,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
+        resume(); // FIXME necessary?
 
         if(isScopeInitialized(scope)) {
             releaseDelays(scope);
@@ -433,6 +437,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
+        resume(); // FIXME necessary?
 
         if(isEdgeClosed(scope, edge)) {
             releaseDelays(scope, edge);
@@ -507,8 +512,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             return ans.env();
                         }).whenComplete((env, ex) -> {
                             logger.debug("got answer from {}", sender);
-                            resume();
                             granted(wf, owner);
+                            resume();
                         });
                     }));
                 }
@@ -535,6 +540,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             ret = internalResult.whenComplete((rep, ex) -> {
                                 self.assertOnActorThread();
                                 granted(token, self);
+                                resume();
                             });
                         }
                         return ret.thenApply(rep -> {
@@ -621,7 +627,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 return self.id() + "#query";
             }
 
-            @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+            @Override public IFuture<Set.Immutable<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                     LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                     @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
                 // does not require the Unit to be ACTIVE
@@ -633,9 +639,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
                 waitFor(wf, self);
                 stats.localQueries += 1;
-                return self.schedule(result).whenComplete((ans, ex) -> {
-                    granted(wf, self);
-                }).thenApply(ans -> {
+                return self.schedule(result).thenApply(ans -> {
                     // Type-checkers can embed scopes in their predicates that are not accessible from the outside.
                     // If such a query is confirmed, the scope graph differ will never produce a scope diff for it,
                     // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
@@ -646,7 +650,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     queries.addAll(ans.transitiveQueries());
                     // TODO can this happen? Is flattening here ok then?
                     queries.addAll(ans.predicateQueries());
-                    return CapsuleUtil.toSet(ans.env());
+                    return CapsuleUtil.<IResolutionPath<S, L, D>>toSet(ans.env());
+                }).whenComplete((ans, ex) -> {
+                    granted(wf, self);
+                    resume(); // FIXME needed?
                 });
             }
         };
@@ -1272,7 +1279,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     getExternalDatum(datum.get()).whenComplete(future::complete);
                     return future.whenComplete((r, ex) -> {
                         granted(state, self);
-                        // resume() // FIXME necessary?
+                        resume(); // FIXME necessary?
                     }).thenApply(Optional::of);
                 });
             }

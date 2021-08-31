@@ -482,7 +482,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     .forEach(x -> matchingPreviousEdges.__put(x._1(), x._2().get()));
                 // @formatter:on
 
-                logger.trace("{}: possible candidates: {}.", currentEdge, matchingPreviousEdges);
+                if(logger.traceEnabled()) {
+                    logger.trace("{}: possible candidates: {}.", currentEdge, CapsuleUtil.toSet(matchingPreviousEdges.entrySet()));
+                }
                 return queue(new EdgeMatch(currentEdge, matchingPreviousEdges.freeze()));
             };
 
@@ -811,11 +813,22 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private void tryFinalizeDiff() {
-        // logger.debug("Marking all open scopes as added/removed.");
-        /* openCurrentScopes.forEach(this::added);
-        openPreviousScopes.forEach(this::removed); */
+        // When an edge is added/removed, parts of a scope graph may become disconnected, and delays on those will never fire.
+        // Therefore, when there is no opportunity for progress, we should conservatively mark these scopes as added/removed.
+        do {
+            // External information can provide opportunities for progress.
+            if(pendingResults.get() != 0 || !typeCheckerFinished.get()) {
+                return;
+            }
+            openCurrentScopes.forEach(this::added);
+            openPreviousScopes.forEach(this::removed);
+        } while(edgeMatches.isEmpty() && (!openCurrentScopes.isEmpty() || !openPreviousScopes.isEmpty()));
+        logger.debug("Marked all open scopes as added/removed.");
 
-        // TODO: properly handle open scopes
+        if(!edgeMatches.isEmpty()) {
+            return;
+        }
+
         if(openCurrentScopes.size() == 0 && openPreviousScopes.size() == 0 && pendingResults.get() == 0 && typeCheckerFinished.get() && !result.isDone() && edgeMatches.isEmpty()) {
             logger.debug("Finalizing diff.");
             Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
