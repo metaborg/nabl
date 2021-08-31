@@ -42,9 +42,13 @@ public abstract class ADiffTree<S, L, D> implements IEnvDiff<S, L, D> {
 
     @Override @Value.Lazy public Immutable<S> patches() {
         // @formatter:off
+        final BiMap.Immutable<S> initial = newScope().equals(oldScope()) ?
+            BiMap.Immutable.of() :
+            BiMap.Immutable.of(newScope(), oldScope());
+
         return edges().valueSet().stream()
             .map(IEnvDiff::patches)
-            .reduce(BiMap.Immutable.of(newScope(), oldScope()), (m1, m2) -> m1.putAll(m2));
+            .reduce(initial, (m1, m2) -> m1.putAll(m2));
         // @formatter:on
     }
 
