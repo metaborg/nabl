@@ -13,6 +13,8 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.oopsla20.path.IStep;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
@@ -57,6 +59,19 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataLeq) {
         return RecordedQuery.of(path, labelWf, dataWf, labelOrder, dataLeq, Optional.empty(), ImmutableSet.of(),
                 ImmutableSet.of());
+    }
+
+    @Override public IRecordedQuery<S, L, D> patch(BiMap.Immutable<S> patches) {
+        if(patches.isEmpty()) {
+            return this;
+        }
+        final RecordedQuery<S, L, D> self = (RecordedQuery<S, L, D>) this;
+        ScopePath<S, L> newPath = new ScopePath<>(patches.getValueOrDefault(scopePath().getSource(), scopePath().getSource()));
+        for(IStep<S, L> step : scopePath()) {
+            newPath = newPath.step(step.getLabel(), step.getTarget()).get();
+        }
+
+        return self.withScopePath(newPath);
     }
 
 }

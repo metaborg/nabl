@@ -78,8 +78,8 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> extends AbstractUnit<S, L, D, R, T>
-        implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
+class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+        extends AbstractUnit<S, L, D, R, T> implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
@@ -102,6 +102,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private IEnvDiffer<S, L, D> envDiffer;
 
     private final IConfirmationFactory<S, L, D> confirmation;
+    private final BiMap.Transient<S> externalMatches = BiMap.Transient.of();
     private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
@@ -263,13 +264,15 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         if(state.equals(UnitState.RELEASED)
                 || (state == UnitState.DONE && stateTransitionTrace == TransitionTrace.RELEASED)) {
-            return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
+            return CompletableFuture.completedFuture(
+                    StateSummary.released(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
         }
 
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
         // TODO Re-validate when a more sophisticated confirmation algorithm is implemented.
-        return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
+        return CompletableFuture
+                .completedFuture(StateSummary.release(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
     }
 
     @Override public void _restart() {
@@ -296,8 +299,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         return self.id();
     }
 
-    @Override public <Q extends IResult<S, L, D>, U extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, Q, U>> add(String id,
-            ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
+    @Override public <Q extends IResult<S, L, D>, U extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Q, U>>
+            add(String id, ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();
 
         // No previous result for subunit
@@ -603,7 +607,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             }));
 
             // TODO: apply patches on queries?
-            recordedQueries.addAll(previousResult.queries());
+            recordedQueries
+                    .addAll(previousResult.queries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet()));
             stateTransitionTrace = TransitionTrace.RELEASED;
 
             // Cancel all futures waiting for activation
@@ -671,7 +676,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
-            doRelease(BiMap.Immutable.of());
+            doRelease(BiMap.Immutable.<S>of().putAll(externalMatches));
         } else if(state.active() && inLocalPhase()) {
             doCapture();
             self.complete(whenContextActivated, Unit.unit, null);
@@ -739,27 +744,30 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
                 DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-            logger.debug("external confirm");
+            logger.debug("{} try external confirm.", this);
             final S scope = path.getTarget();
             return getOwner(path.getTarget()).thenCompose(owner -> {
                 if(owner.equals(self)) {
-                    logger.debug("local confirm");
+                    logger.debug("{} local confirm.", this);
                     return CompletableFuture.completedFuture(Optional.empty());
                 }
-                logger.debug("external confirm");
+                logger.debug("{} external confirm.", this);
                 final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
                 self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
-                    logger.debug("rec external confirm");
+                    logger.trace("{} rec external confirm: {}.", this, v);
                     granted(confirm, owner);
                     resume();
                     if(ex != null && ex == Release.instance) {
-                        logger.debug("got release, confirming");
-                        result.complete(ConfirmResult.confirm(BiMap.Immutable.of()));
+                        logger.debug("{} got release, confirming.", this);
+                        result.complete(ConfirmResult.confirm());
                     } else if(ex != null) {
                         result.completeExceptionally(ex);
                     } else {
+                        // @formatter:off
+                        v.visit(() -> {}, externalMatches::putAll);
+                        // @formatter:on
                         logger.trace("confirm: {}.", v);
                         result.complete(v);
                     }
@@ -771,7 +779,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf) {
             assertConfirmationEnabled();
-            logger.debug("local env diff");
+            logger.debug("{} local env diff: {}/{}.", this, path.getTarget(), labelWf);
             return whenDifferActivated.thenCompose(__ -> {
                 final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
                 final EnvDifferState<S, L, D> state =
@@ -779,6 +787,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 waitFor(state, self);
                 envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
+                    logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
                     granted(state, self);
                     resume(); // FIXME needed?
                 });

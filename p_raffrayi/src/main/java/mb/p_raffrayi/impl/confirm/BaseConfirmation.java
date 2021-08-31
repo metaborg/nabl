@@ -71,6 +71,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 logger.trace("value: {}.", envDiff);
                 final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>> futures =
                         new ArrayList<>();
+                futures.add(CompletableFuture.completedFuture(SC.of(envDiff.patches())));
                 envDiff.diffPaths().forEach(diffPath -> {
                     // @formatter:off
                     futures.add(diffPath.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>>match(
