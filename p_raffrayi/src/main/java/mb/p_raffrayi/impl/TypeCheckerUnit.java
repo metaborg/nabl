@@ -47,9 +47,9 @@ import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferDataOps;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.p_raffrayi.impl.diff.IScopeDiff;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
+import mb.p_raffrayi.impl.diff.ScopeDiff;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.envdiff.EnvDiffer;
@@ -711,17 +711,25 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
     private final IEnvDifferContext<S, L, D> envDifferContext = new IEnvDifferContext<S, L, D>() {
 
-        @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
-            final ICompletableFuture<IScopeDiff<S, L, D>> future = new CompletableFuture<>();
-            final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, future);
+        @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
+            final ICompletableFuture<ScopeDiff<S, L, D>> future = new CompletableFuture<>();
+            final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, label, future);
             waitFor(state, self);
-            differ.scopeDiff(previousScope).whenComplete(future::complete);
+            differ.scopeDiff(previousScope, label).whenComplete(future::complete);
             future.whenComplete((r, ex) -> {
                 granted(state, self);
                 resume(); // FIXME necessary?
             });
             return future;
         }
+
+        @Override public IFuture<Optional<S>> match(S previousScope) {
+            return differ.match(previousScope);
+        };
+
+        @Override public Set.Immutable<L> edgeLabels() {
+            return edgeLabels;
+        };
     };
 
     private class ConfirmationContext implements IConfirmationContext<S, L, D> {

@@ -1,14 +1,9 @@
 package mb.p_raffrayi.impl.diff;
 
-import io.usethesource.capsule.Set;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
@@ -60,23 +55,13 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return CompletableFuture.completedFuture(Optional.of(previousScope));
     }
 
-    @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
+    @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
         assertOwnScope(previousScope);
         final S currentScope = getCurrent(previousScope);
-        return context.labels(currentScope).thenCompose(labels -> {
-            final ArrayList<IFuture<Set.Immutable<Edge<S, L>>>> edgeFutures = new ArrayList<>();
-            for(L label : labels) {
-                edgeFutures.add(context.getEdges(currentScope, label).thenApply(tgts -> {
-                    final Set.Transient<Edge<S, L>> _edges = CapsuleUtil.transientSet();
-                    tgts.forEach(tgt -> _edges.__insert(new Edge<S, L>(currentScope, label, tgt)));
-                    return _edges.freeze();
-                }));
-            }
-            return AggregateFuture.of(edgeFutures).thenApply(edgeSets -> {
-                final Matched.Builder<S, L, D> builder = Matched.<S, L, D>builder().currentScope(currentScope);
-                edgeSets.forEach(builder::addAllMatchedEdges);
-                return builder.build();
-            });
+        return context.getEdges(currentScope, label).thenApply(tgts -> {
+            final ScopeDiff.Builder<S, L, D> builder = ScopeDiff.builder();
+            tgts.forEach(tgt -> builder.addMatchedEdges(new Edge<S, L>(currentScope, label, tgt)));
+            return builder.build();
         });
     }
 

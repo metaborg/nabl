@@ -38,6 +38,10 @@ public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>>, Serializ
         return EMPTY;
     }
 
+    @Override public String toString() {
+        return "Env{paths=" + paths + "}";
+    }
+
     public static <S, L, D> Env<S, L, D> of(ResolutionPath<S, L, D> path) {
         return new Env<>(CapsuleUtil.immutableSet(path));
     }

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.Test;
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -15,6 +16,7 @@ import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
+import mb.p_raffrayi.impl.envdiff.DifferBasedContext;
 import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
@@ -39,6 +41,8 @@ public class EnvDiffTest extends BaseDifferTest {
 
     private static final Integer l1 = 1;
 
+    private static final Set.Immutable<Integer> edgeLabels = CapsuleUtil.immutableSet(l1);
+
     @Test public void testAddedEdge() {
         // @formatter:off
         final IScopeGraph.Immutable<String, Integer, List<String>> sc1 =
@@ -52,7 +56,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -86,7 +90,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -119,7 +123,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.none(), DataWf.any()).thenAccept(diffResult::set);
@@ -152,7 +156,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(differ::scopeDiff, TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);

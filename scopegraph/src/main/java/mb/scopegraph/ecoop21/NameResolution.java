@@ -89,19 +89,19 @@ public class NameResolution<S, L, D>  {
     private IFuture<Env<S, L, D>> env_lL(ScopePath<S, L> path, LabelWf<L> re, EdgeOrData<L> l,
             Set.Immutable<EdgeOrData<L>> L, ICancel cancel) {
         final IFuture<Env<S, L, D>> env1 = env_L(path, re, L, cancel);
-        logger.trace("env_L {} {} {}: env1: {}", path, re, L, env1);
-        env1.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result1: {}", path, re, L, env1));
+        logger.trace("env_lL {} {} {}: env1: {}", path, re, L, env1);
+        env1.whenComplete((r, ex) -> logger.trace("env_lL {} {} {}: result1: {}", path, re, L, r));
         return env1.thenCompose(e1 -> {
             final IFuture<Boolean> envComplete =
                     e1.isEmpty() ? CompletableFuture.completedFuture(false) : context.dataLeqAlwaysTrue(cancel);
             return envComplete.thenCompose(complete -> {
                 if(complete) {
-                    logger.trace("env_L {} {} {}: env2 fully shadowed", path, re, L);
+                    logger.trace("env_lL {} {} {}: env2 fully shadowed", path, re, L);
                     return CompletableFuture.completedFuture(e1);
                 }
                 final IFuture<Env<S, L, D>> env2 = env_l(path, re, l, cancel);
-                logger.trace("env_L {} {} {}: env2: {}", path, re, L, env2);
-                env2.whenComplete((r, ex) -> logger.trace("env_L {} {} {}: result2 {}", path, re, L, env2));
+                logger.trace("env_lL {} {} {}: env2: {}", path, re, L, env2);
+                env2.whenComplete((r, ex) -> logger.trace("env_lL {} {} {}: result2 {}", path, re, L, r));
                 return env2.thenCompose(e2 -> {
                     return shadows(e1, e2, cancel);
                 });

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.immutables.value.Value;
 import org.metaborg.util.future.ICompletableFuture;
+import org.metaborg.util.tuple.Tuple2;
 
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.IUnit;
@@ -16,7 +17,7 @@ public abstract class ADifferState<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract Set<S> matches();
 
-    @Value.Parameter public abstract Set<S> diffs();
+    @Value.Parameter public abstract Set<Tuple2<S, L>> diffs();
 
     @Value.Parameter public abstract ICompletableFuture<?> future();
 
@@ -30,8 +31,8 @@ public abstract class ADifferState<S, L, D> implements IWaitFor<S, L, D> {
     }
 
     public static <S, L, D> DifferState<S, L, D> ofDiff(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, S scope,
-            ICompletableFuture<?> future) {
-        return DifferState.of(origin, Collections.emptySet(), Collections.singleton(scope), future);
+            L label, ICompletableFuture<?> future) {
+        return DifferState.of(origin, Collections.emptySet(), Collections.singleton(Tuple2.of(scope, label)), future);
     }
 
 }

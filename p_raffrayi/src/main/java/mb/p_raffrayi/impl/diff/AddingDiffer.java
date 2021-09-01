@@ -155,7 +155,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         tryFinalize();
     }
 
-    @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
+    @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
         throw new UnsupportedOperationException("There can be no previous scopes for an added unit.");
     }
 

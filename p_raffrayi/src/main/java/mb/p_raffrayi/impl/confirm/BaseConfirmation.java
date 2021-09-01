@@ -32,13 +32,11 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         this.context = context;
     }
 
-    private final SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>> DENY =
-            SC.shortCircuit(ConfirmResult.deny());
-    private final SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>> ACC_NO_PATCHES =
-            SC.of(BiMap.Immutable.of());
+    private final SC<BiMap.Immutable<S>, ConfirmResult<S>> DENY = SC.shortCircuit(ConfirmResult.deny());
+    private final SC<BiMap.Immutable<S>, ConfirmResult<S>> ACC_NO_PATCHES = SC.of(BiMap.Immutable.of());
 
     @Override public IFuture<ConfirmResult<S>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
-        final List<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>> futures =
+        final List<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>> futures =
                 queries.stream().map(this::confirm).map(this::toSCFuture).collect(Collectors.toList());
 
         return AggregateFuture.ofShortCircuitable(this::merge, futures);
@@ -48,7 +46,8 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
-        return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.result().map(Env::isEmpty).orElse(false));
+        return confirm(query.scopePath(), query.labelWf(), query.dataWf(),
+                query.result().map(Env::isEmpty).orElse(false));
     }
 
     @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
@@ -69,12 +68,11 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
             } else {
                 logger.debug("Environment diff for {}/{} completed.", path, labelWf, ex);
                 logger.trace("value: {}.", envDiff);
-                final ArrayList<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>> futures =
-                        new ArrayList<>();
+                final ArrayList<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>> futures = new ArrayList<>();
                 futures.add(CompletableFuture.completedFuture(SC.of(envDiff.patches())));
                 envDiff.diffPaths().forEach(diffPath -> {
                     // @formatter:off
-                    futures.add(diffPath.getDatum().<IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>>match(
+                    futures.add(diffPath.getDatum().<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>>match(
                         addedEdge -> handleAddedEdge(addedEdge),
                         removedEdge -> handleRemovedEdge(removedEdge, prevEnvEmpty),
                         external -> handleExternal(external),
@@ -95,29 +93,26 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         });
     }
 
-    protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
-            handleAddedEdge(AddedEdge<S, L, D> addedEdge);
+    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge);
 
-    protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
+    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, boolean prevEnvEnpty);
 
-    protected abstract IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
-            handleExternal(External<S, L, D> external);
+    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external);
 
-    protected SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>> deny() {
+    protected SC<BiMap.Immutable<S>, ConfirmResult<S>> deny() {
         return DENY;
     }
 
-    protected SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>> accept() {
+    protected SC<BiMap.Immutable<S>, ConfirmResult<S>> accept() {
         return ACC_NO_PATCHES;
     }
 
-    protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>> acceptFuture() {
+    protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> acceptFuture() {
         return CompletableFuture.completedFuture(ACC_NO_PATCHES);
     }
 
-    protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
-            accept(BiMap.Immutable<S> patches) {
+    protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> accept(BiMap.Immutable<S> patches) {
         return CompletableFuture.completedFuture(SC.of(patches));
     }
 
@@ -130,8 +125,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), SC::of);
     }
 
-    private IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
-            toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
+    private IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
     }
 

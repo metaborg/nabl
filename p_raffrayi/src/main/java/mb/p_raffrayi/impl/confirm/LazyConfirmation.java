@@ -62,14 +62,14 @@ public class LazyConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
         return res.match(() -> ConfirmResult.deny(), patches -> ConfirmResult.confirm(mapper.apply(patches)));
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
+    @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
             handleAddedEdge(AddedEdge<S, L, D> addedEdge) {
         logger.debug("Handling added edge by regular query: {}.", addedEdge);
         return context.query(new ScopePath<>(addedEdge.scope()), addedEdge.labelWf(), LabelOrder.none(),
                 addedEdge.dataWf(), DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
+    @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, boolean prevEnvEnpty) {
         if(prevEnvEnpty) {
             logger.debug("Confirming removed edge: previous environment empty.");
@@ -80,8 +80,7 @@ public class LazyConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
                 LabelOrder.none(), DataLeq.none()).thenApply(env -> env.isEmpty() ? accept() : deny());
     }
 
-    @Override protected IFuture<SC<? extends BiMap.Immutable<S>, ? extends ConfirmResult<S>>>
-            handleExternal(External<S, L, D> external) {
+    @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external) {
         // External env diff validated by transitively recorded query
         logger.debug("Trivially accepting external env diff.");
         return acceptFuture();
