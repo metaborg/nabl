@@ -2,6 +2,7 @@ package mb.p_raffrayi.impl;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -66,12 +67,22 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
             return this;
         }
         final RecordedQuery<S, L, D> self = (RecordedQuery<S, L, D>) this;
-        ScopePath<S, L> newPath = new ScopePath<>(patches.getValueOrDefault(scopePath().getSource(), scopePath().getSource()));
-        for(IStep<S, L> step : scopePath()) {
-            newPath = newPath.step(step.getLabel(), step.getTarget()).get();
+        ScopePath<S, L> newPath = scopePath();
+        final S previousSource = newPath.getSource();
+        if(scopePath().size() != 0) {
+            newPath = new ScopePath<>(patches.getValueOrDefault(previousSource, previousSource));
+            for(IStep<S, L> step : scopePath()) {
+                final S previousTarget = step.getTarget();
+                newPath = newPath.step(step.getLabel(), patches.getValueOrDefault(previousTarget, previousTarget)).get();
+            }
+        } else if(patches.containsValue(previousSource)) {
+            newPath = new ScopePath<>(patches.getValue(previousSource));
         }
 
-        return self.withScopePath(newPath);
+        final Set<IRecordedQuery<S, L, D>> transitiveQueries = transitiveQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
+        final Set<IRecordedQuery<S, L, D>> predicateQueries = predicateQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
+
+        return self.withScopePath(newPath).withTransitiveQueries(transitiveQueries).withPredicateQueries(predicateQueries);
     }
 
 }

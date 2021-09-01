@@ -50,6 +50,14 @@ public abstract class BiMap<E> {
             return fwd.isEmpty();
         }
 
+        public E getKey(E key) {
+            return fwd.get(key);
+        }
+
+        public E getValue(E value) {
+            return bwd.get(value);
+        }
+
         public E getKeyOrDefault(E key, E def) {
             return fwd.getOrDefault(key, def);
         }
