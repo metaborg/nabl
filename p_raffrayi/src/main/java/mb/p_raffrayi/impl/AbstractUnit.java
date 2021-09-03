@@ -1002,6 +1002,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
+    private static final boolean RESTART_INCOMING = true;
+
     private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
             if(ex != null) {
@@ -1023,17 +1025,16 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 nodes.forEach(node -> node.from(self, context)._release(ptcs));
             } else {
                 // @formatter:off
-                final java.util.Set<IProcess<S, L, D>> activeProcesses = units.get(true).stream()
-                    .map(StateSummary::getSelf)
+                final java.util.Set<StateSummary<S, L, D>> activeProcesses = units.get(true).stream()
                     .collect(Collectors.toSet());
                 // @formatter:on
                 final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
                         .collect(Collectors.partitioningBy(
-                                state -> state.getDependencies().stream().anyMatch(activeProcesses::contains),
+                                node -> shouldRestart(node, activeProcesses),
                                 Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
-                if(restarts.isEmpty()) {
-                    logger.debug("Restarting {} (full).", nodes);
-                    nodes.forEach(node -> node.from(self, context)._restart());
+                if(restarts.get(true).isEmpty()) {
+                    logger.error("Active units have no {} dependencies elegible for restart.", RESTART_INCOMING ? "incoming" : "outgoing");
+                    throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing") + " dependencies elegible for restart.");
                 } else {
                     logger.debug("Restarting {} (conservative).", restarts);
                     restarts.get(true).forEach(node -> node.from(self, context)._restart());
@@ -1059,6 +1060,24 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             ptcs -> ptcs
         );
         // @formatter:on
+    }
+
+    private boolean shouldRestart(StateSummary<S, L, D> node, Collection<StateSummary<S, L, D>> activeProcesses) {
+        if(RESTART_INCOMING) {
+            // @formatter:off
+            java.util.Set<IProcess<S, L, D>> activeNodes = activeProcesses.stream()
+                .map(StateSummary::getSelf)
+                .collect(Collectors.toSet());
+            // @formatter:on
+            return node.getDependencies().stream().anyMatch(activeNodes::contains);
+        } else {
+            // @formatter:off
+            return activeProcesses.stream()
+                .map(StateSummary::getDependencies)
+                .flatMap(ImmutableSet::stream)
+                .anyMatch(node.getSelf()::equals);
+            // @formatter:on
+        }
     }
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
