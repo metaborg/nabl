@@ -986,6 +986,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
+    @Override public void _resume() {
+        resume();
+    }
+
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
         if(!nodes.contains(process)) {
@@ -1022,17 +1026,18 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 final java.util.Set<IProcess<S, L, D>> activeProcesses = units.get(true).stream()
                     .map(StateSummary::getSelf)
                     .collect(Collectors.toSet());
-                final java.util.Set<IProcess<S, L, D>> restarts = units.get(false).stream()
-                    .filter(state -> state.getDependencies().stream().anyMatch(activeProcesses::contains))
-                    .map(StateSummary::getSelf)
-                    .collect(Collectors.toSet());
                 // @formatter:on
+                final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
+                        .collect(Collectors.partitioningBy(
+                                state -> state.getDependencies().stream().anyMatch(activeProcesses::contains),
+                                Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
                 if(restarts.isEmpty()) {
                     logger.debug("Restarting {} (full).", nodes);
                     nodes.forEach(node -> node.from(self, context)._restart());
                 } else {
                     logger.debug("Restarting {} (conservative).", restarts);
-                    restarts.forEach(node -> node.from(self, context)._restart());
+                    restarts.get(true).forEach(node -> node.from(self, context)._restart());
+                    restarts.get(false).forEach(node -> node.from(self, context)._resume());
                 }
             }
         });
@@ -1274,7 +1279,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     }
 
                     final ICompletableFuture<D> future = new CompletableFuture<>();
-                    final TypeCheckerState<S, L, D> state = TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
+                    final TypeCheckerState<S, L, D> state =
+                            TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
                     waitFor(state, self);
                     getExternalDatum(datum.get()).whenComplete(future::complete);
                     return future.whenComplete((r, ex) -> {
@@ -1285,8 +1291,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             }
 
             @Override public String toString() {
-                // TODO Auto-generated method stub
-                return "DifferContext(" + self.id() + "):\n" + ScopeGraphUtil.toString(scopeGraph.get(), instantiateData);
+                return "DifferContext(" + self.id() + "):\n"
+                        + ScopeGraphUtil.toString(scopeGraph.get(), instantiateData);
             }
         };
     }

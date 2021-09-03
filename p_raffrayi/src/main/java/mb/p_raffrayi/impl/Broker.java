@@ -345,6 +345,10 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         // Ignore
     }
 
+    @Override public void _resume() {
+        cmh.exec();
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // ChandyMisrahaas.Host
     ///////////////////////////////////////////////////////////////////////////
