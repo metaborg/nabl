@@ -9,15 +9,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Random;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.metaborg.util.Ref;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletable;
@@ -34,7 +28,6 @@ import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
-@RunWith(Parameterized.class)
 public class ScopeGraphDifferTest extends BaseDifferTest {
 
     private final String s0o = "s0o";
@@ -51,19 +44,6 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
 
     private final Integer l1 = 1;
 
-    private final long seed;
-
-    private final static int TEST_CASE_COUNT = 100;
-
-    @Parameters public static Object[] seeds() {
-        final Random init = new Random();
-        return LongStream.generate(init::nextLong).limit(TEST_CASE_COUNT).boxed().toArray();
-    }
-
-    public ScopeGraphDifferTest(long seed) {
-        this.seed = seed;
-    }
-
     @Test public void testAdded() {
         // @formatter:off
         final IScopeGraph.Immutable<String, Integer, List<String>> currentGraph = ScopeGraph.Immutable.<String, Integer, List<String>>of()
@@ -72,7 +52,7 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
         // @formatter:on
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
-                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance), seed);
+                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext =
                 new StaticDifferContext<>(ScopeGraph.Immutable.of(), TestDifferDataOps.instance);
 
@@ -103,7 +83,7 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
         // @formatter:on
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
-                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance), seed);
+                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext =
                 new StaticDifferContext<>(ScopeGraph.Immutable.of(), TestDifferDataOps.instance);
 
@@ -138,7 +118,7 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
         // @formatter:on
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
-                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance), seed);
+                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext =
                 new StaticDifferContext<>(ScopeGraph.Immutable.of(), TestDifferDataOps.instance);
 
@@ -167,9 +147,9 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
         private final LinkedList<ICompletable<Unit>> queue = new LinkedList<>();
         private final Random rand;
 
-        public TestDifferContext(IDifferContext<S, L, D> inner, long seed) {
+        public TestDifferContext(IDifferContext<S, L, D> inner) {
             this.inner = inner;
-            this.rand = new Random(seed);
+            this.rand = new Random();
         }
 
         @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
@@ -184,9 +164,13 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
             return signal().thenCompose(__ -> inner.datum(scope));
         }
 
+        @Override public boolean available(S scope) {
+            return true;
+        }
+
         private IFuture<Unit> signal() {
             final ICompletableFuture<Unit> signal = new CompletableFuture<>();
-            queue.add(rand.nextInt(queue.size()  + 1), signal);
+            queue.add(rand.nextInt(queue.size() + 1), signal);
             return signal;
         }
 
