@@ -982,7 +982,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
         if(!failDelays(nodes)) {
             logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
-            resume();
         }
     }
 

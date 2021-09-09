@@ -51,8 +51,8 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                     futures.add(context.scopeDiff(scope, label));
                 }
 
-                final ArrayList<IFuture<Unit>> subEnvFutures = new ArrayList<>();
                 return AggregateFuture.of(futures).thenCompose(diffs -> {
+                    final ArrayList<IFuture<Unit>> subEnvFutures = new ArrayList<>();
                     final DiffTreeBuilder<S, L, D> treeBuilder = new DiffTreeBuilder<>(scope, currentScope);
                     for(ScopeDiff<S,L,D> diff : diffs) {
                         // Process all added/removed edges
@@ -75,15 +75,14 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                             }));
                         });
                         // @formatter:on
-
-                        return AggregateFuture.of(subEnvFutures).thenApply(__ -> {
-                            logger.debug("env diff for {} ~ {} complete.", scope, labelWf);
-                            final IEnvDiff<S, L, D> diffTree = treeBuilder.build();
-                            logger.trace("diff value: {}", diffTree);
-                            return diffTree;
-                        });
                     }
-                    return CompletableFuture.<IEnvDiff<S, L, D>>noFuture();
+
+                    return AggregateFuture.of(subEnvFutures).thenApply(__ -> {
+                        logger.debug("env diff for {} ~ {} complete.", scope, labelWf);
+                        final IEnvDiff<S, L, D> diffTree = treeBuilder.build();
+                        logger.trace("diff value: {}", diffTree);
+                        return diffTree;
+                    });
                 });
             }).orElseGet(() -> {
                 logger.debug("{} removed", scope);
