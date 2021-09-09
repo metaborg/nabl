@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -19,6 +20,9 @@ import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -59,6 +63,7 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
 
     private StatixSolver solver;
     private IFuture<SolverResult> solveResult;
+    private final Multimap<ITerm, ICompletableFuture<ITerm>> pendingData = ArrayListMultimap.create();
 
     protected Scope makeSharedScope(ITypeCheckerContext<Scope, ITerm, ITerm> context, String name) {
         final Scope s = context.freshScope(name, Collections.emptyList(), true, true);
@@ -180,6 +185,8 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
             SolverState initialState) {
         solver = new StatixSolver(initialState, spec, debug, new NullProgress(), new NullCancel(), context, 0);
         solveResult = solver.continueSolve();
+        pendingData.forEach((d, future) -> solver.getExternalRepresentation(d).whenComplete(future::complete));
+        pendingData.clear();
 
         return finish(solveResult, context.id());
     }
@@ -252,7 +259,9 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 }
             });
         } else {
-            return CompletableFuture.noFuture();
+            final ICompletableFuture<ITerm> future = new CompletableFuture<>();
+            pendingData.put(datum, future);
+            return future;
         }
     }
 

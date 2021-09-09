@@ -135,7 +135,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private final MultiSetMap.Transient<D, ICompletableFuture<D>> pendingExternalDatums = MultiSetMap.Transient.of();
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
-        if(!changed && previousResult.localState() != null) {
+        if(previousResult != null && previousResult.localState() != null) {
             final Optional<D> datumOpt = previousResult.localState().typeCheckerState().tryGetExternalDatum(datum);
             if(datumOpt.isPresent()) {
                 return CompletableFuture.completedFuture(datumOpt.get());
@@ -272,7 +272,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
-        // TODO Re-validate when a more sophisticated confirmation algorithm is implemented.
         return CompletableFuture
                 .completedFuture(StateSummary.release(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
     }
@@ -647,6 +646,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                     this.envDiffer = new EnvDiffer<>(envDifferContext, differOps());
                 }
             }
+            pendingExternalDatums.asMap().forEach((d, futures) -> {
+                typeChecker.getExternalDatum(d).whenComplete((d2, ex) -> futures.forEach(future -> {
+                    future.complete(d2, ex);
+                }));
+            });
+
             resume();
             tryFinish(); // FIXME needed?
             logger.debug("{} restarted.", this);
