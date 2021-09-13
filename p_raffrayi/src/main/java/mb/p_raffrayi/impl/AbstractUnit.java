@@ -786,6 +786,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 .localScopeGraph(localScopeGraph())
                 .queries(recordedQueries)
                 .rootScopes(rootScopes)
+                .scopes(scopes.freeze())
                 .analysis(analysis.get())
                 .localState(localCapture.get())
                 .failures(failures)
@@ -1306,6 +1307,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         resume(); // FIXME necessary?
                     }).thenApply(Optional::of);
                 });
+            }
+
+            @Override public boolean available(S scope) {
+                return scopes.contains(scope);
             }
 
             @Override public String toString() {

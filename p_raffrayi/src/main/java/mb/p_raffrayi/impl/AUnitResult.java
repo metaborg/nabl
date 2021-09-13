@@ -32,7 +32,11 @@ public abstract class AUnitResult<S, L, D, R extends IResult<S, L, D>, T> implem
 
     @Value.Parameter @Override public abstract List<S> rootScopes();
 
+    @Value.Parameter @Override public abstract Set<S> scopes();
+
     @Value.Parameter @Override public abstract @Nullable R analysis();
+
+    @Value.Parameter @Override public abstract @Nullable StateCapture<S, L, D, T> localState();
 
     @Value.Auxiliary @Override public abstract @Nullable ScopeGraphDiff<S, L, D> diff();
 

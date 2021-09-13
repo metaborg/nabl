@@ -53,10 +53,13 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
+                TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer =
+                new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -70,7 +73,7 @@ public class EnvDiffTest extends BaseDifferTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s2n, /* CapsuleUtil.immutableSet(s1o, s2n), */ LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s2n, LabelWf.any(), DataWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
@@ -87,10 +90,13 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o, s3o), TestDifferDataOps.instance),
+                TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer =
+                new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -120,10 +126,13 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
+                TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer =
+                new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.none(), DataWf.any()).thenAccept(diffResult::set);
@@ -153,10 +162,13 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, TestDifferDataOps.instance), new StaticDifferContext<>(sc1, TestDifferDataOps.instance), TestDifferOps.instance);
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n, s3n), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o), TestDifferDataOps.instance),
+                TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
-        final IEnvDiffer<String, Integer, List<String>> envDiffer = new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
+        final IEnvDiffer<String, Integer, List<String>> envDiffer =
+                new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
         envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
@@ -170,7 +182,7 @@ public class EnvDiffTest extends BaseDifferTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s3n, /* CapsuleUtil.toSet(s1o, s2o, s3n), */LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s3n, LabelWf.any(), DataWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }

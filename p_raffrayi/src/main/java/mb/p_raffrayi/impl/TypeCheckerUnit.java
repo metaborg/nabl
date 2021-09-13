@@ -539,7 +539,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             // @formatter:off
             final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), patches) :
-                new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()), differOps());
+                new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
+                        previousResult.scopes(), new DifferDataOps()), differOps());
             // @formatter:on
             initDiffer(differ, this.rootScopes, previousResult.rootScopes());
             if(isConfirmationEnabled()) {
@@ -635,9 +636,10 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 final IDifferContext<S, L, D> context = differContext(typeChecker::internalData);
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
-                    initDiffer(new ScopeGraphDiffer<>(context,
-                            new StaticDifferContext<>(previousResult.scopeGraph(), new DifferDataOps()), differOps),
-                            this.rootScopes, previousResult.rootScopes());
+                    final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
+                            previousResult.scopes(), new DifferDataOps());
+                    initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), this.rootScopes,
+                            previousResult.rootScopes());
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
                             Collections.emptyList());

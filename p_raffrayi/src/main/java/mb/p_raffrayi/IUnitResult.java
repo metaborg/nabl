@@ -24,6 +24,8 @@ public interface IUnitResult<S, L, D, R extends IResult<S, L, D>, T> {
 
     List<S> rootScopes();
 
+    Set<S> scopes();
+
     @Nullable R analysis();
 
     @Nullable ScopeGraphDiff<S, L, D> diff();

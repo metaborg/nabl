@@ -28,4 +28,12 @@ public abstract class AEnvDifferState<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((EnvDifferState<S, L, D>) this);
     }
 
+    @Override public boolean equals(Object obj) {
+        return this == obj;
+    }
+
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
 }

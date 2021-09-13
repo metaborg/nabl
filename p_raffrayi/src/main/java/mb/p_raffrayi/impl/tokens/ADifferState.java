@@ -25,6 +25,15 @@ public abstract class ADifferState<S, L, D> implements IWaitFor<S, L, D> {
         cases.on((DifferState<S, L, D>) this);
     }
 
+    @Override public boolean equals(Object obj) {
+        return this == obj;
+    }
+
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
+
     public static <S, L, D> DifferState<S, L, D> ofMatch(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, S scope,
             ICompletableFuture<?> future) {
         return DifferState.of(origin, Collections.singleton(scope), Collections.emptySet(), future);

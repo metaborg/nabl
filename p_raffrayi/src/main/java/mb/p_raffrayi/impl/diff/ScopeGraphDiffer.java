@@ -881,6 +881,11 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     // Queries
 
     @Override public IFuture<Optional<S>> match(S previousScope) {
+        if(!previousContext.available(previousScope)) {
+            logger.error("Scope {} is not available in previous context.");
+            throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
+        }
+
         if(matchedScopes.containsValue(previousScope)) {
             final S currentScope = matchedScopes.getValue(previousScope);
             return CompletableFuture.completedFuture(Optional.of(currentScope));
@@ -904,6 +909,11 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
+        if(!previousContext.available(previousScope)) {
+            logger.error("Scope {} is not available in previous context.");
+            throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
+        }
+
         if(completedPreviousScopes.containsEntry(previousScope, label)) {
             return CompletableFuture.completedFuture(buildScopeDiff(previousScope, label));
         }
