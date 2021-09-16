@@ -116,7 +116,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return CompletableFuture.completedFuture(SC.of(patches));
     }
 
-    private ConfirmResult<S> merge(List<BiMap.Immutable<S>> patchSets) {
+    protected ConfirmResult<S> merge(List<BiMap.Immutable<S>> patchSets) {
         // Patch sets should be build from matches by scope differ, so just adding them is safe.
         return ConfirmResult.confirm(patchSets.stream().reduce(BiMap.Immutable.of(), BiMap.Immutable::putAll));
     }
@@ -125,7 +125,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), SC::of);
     }
 
-    private IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
+    protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
     }
 

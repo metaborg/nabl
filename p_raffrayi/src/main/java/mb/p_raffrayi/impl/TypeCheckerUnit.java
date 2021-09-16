@@ -21,8 +21,10 @@ import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.Sets;
@@ -39,9 +41,9 @@ import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.confirm.ConfirmResult;
+import mb.p_raffrayi.impl.confirm.EagerConfirmation;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
-import mb.p_raffrayi.impl.confirm.LazyConfirmation;
 import mb.p_raffrayi.impl.confirm.TrivialConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
@@ -119,7 +121,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 confirmation = TrivialConfirmation.factory();
                 break;
             case SIMPLE_ENVIRONMENT:
-                confirmation = LazyConfirmation.factory();
+                confirmation = EagerConfirmation.factory();
                 break;
             default:
                 throw new IllegalStateException("Unknown confirmation mode: " + context.settings().confirmationMode());
@@ -174,6 +176,16 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         resume();
 
         doStart(rootScopes);
+        if(previousResult != null) {
+            if(previousResult.rootScopes().size() != rootScopes.size()) {
+                throw new IllegalStateException("Root scope counts do not match.");
+            }
+            Iterables2.zip(rootScopes, previousResult.rootScopes(), Tuple2::of).forEach(match -> {
+                matchedBySharing.put(match._1(), match._2());
+                externalMatches.put(match._1(), match._2());
+            });
+        }
+
         state = UnitState.INIT_TC;
         final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
             if(state == UnitState.INIT_TC) {
