@@ -4,11 +4,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 
 import org.junit.Test;
@@ -22,7 +27,9 @@ import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 
 public class ChandyMisraHaasTest {
 
-    private static class Process implements ChandyMisraHaas.Host<Process> {
+    private final Random random = new Random();
+
+    private class Process implements ChandyMisraHaas.Host<Process> {
 
         private final String name;
 
@@ -69,6 +76,15 @@ public class ChandyMisraHaasTest {
             if(queue.isEmpty()) {
                 messages.remove(sender);
             }
+        }
+
+        public boolean step() {
+            if(messages.isEmpty()) {
+                return false;
+            }
+            final Process sender = new ArrayList<>(messages.keySet()).get(random.nextInt(messages.size()));
+            step(sender);
+            return true;
         }
 
         private Queue<Action0> getQueue(Process sender) {
@@ -190,6 +206,44 @@ public class ChandyMisraHaasTest {
         p3.step(p2);
         p1.step(p3);
 
+        assertTrue(detectedDeadlocks.isEmpty());
+    }
+
+    @Test public void testNoInvalidDeadlockRandom() {
+        final Multimap<Process, Set<Process>> detectedDeadlocks = ArrayListMultimap.create();
+
+        final Process p1 = new Process("1", detectedDeadlocks::put);
+        final Process p2 = new Process("2", detectedDeadlocks::put);
+        final Process p3 = new Process("3", detectedDeadlocks::put);
+
+        p1.setDependencies(p1, p2, p3);
+        p2.setDependencies(p2, p3);
+        p3.setDependencies(p2, p3);
+
+        p2.cmh.idle();
+        p3.cmh.idle();
+
+        boolean progress;
+        do {
+            progress = p2.processAll() || p3.processAll();
+        } while (progress);
+
+        // No messages for p1 whatsoever
+        assertFalse(p1.processAll());
+
+        // Both p2 and p3 detected deadlock
+        assertEquals(2, detectedDeadlocks.size());
+        detectedDeadlocks.clear();
+
+        p1.cmh.idle();
+        List<Process> processes = Arrays.asList(p1, p2, p3);
+        do {
+            progress = false;
+            Collections.shuffle(processes, random);
+            for(Process process : processes) {
+                progress |= process.step();
+            }
+        } while (progress);
 
         assertTrue(detectedDeadlocks.isEmpty());
     }
