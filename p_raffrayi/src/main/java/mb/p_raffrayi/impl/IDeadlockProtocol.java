@@ -10,9 +10,9 @@ public interface IDeadlockProtocol<S, L, D> {
 
     // Deadlock detection
 
-    void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k);
+    void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> j);
 
-    void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> r);
+    void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> r, IProcess<S, L, D> j);
 
     void _deadlocked(Set<IProcess<S, L, D>> nodes);
 

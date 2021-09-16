@@ -191,6 +191,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             if(state == UnitState.INIT_TC) {
                 stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
             }
+            doRestart();
             if(inLocalPhase()) {
                 doCapture();
             }

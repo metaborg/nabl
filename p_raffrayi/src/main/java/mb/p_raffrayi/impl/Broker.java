@@ -325,8 +325,8 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         cmh.query(i, m, k);
     }
 
-    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
-        cmh.reply(i, m, R);
+    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R, IProcess<S, L, D> j) {
+        cmh.reply(i, m, R, j);
     }
 
     @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
@@ -368,7 +368,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     }
 
     @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, Set<IProcess<S, L, D>> R) {
-        k.from(this)._deadlockReply(i, m, R);
+        k.from(this)._deadlockReply(i, m, R, process);
     }
 
     public IDeadlockProtocol<S, L, D> deadlock(IActorRef<? extends IDeadlockProtocol<S, L, D>> unit) {

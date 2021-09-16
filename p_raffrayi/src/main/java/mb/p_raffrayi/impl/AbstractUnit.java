@@ -225,7 +225,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         internalResult.whenComplete((r, ex) -> {
             final String id = self.id();
             logger.debug("{} type checker finished", id);
-            resume(); // FIXME necessary?
             if(isDifferEnabled()) {
                 whenDifferActivated.thenAccept(__ -> differ.typeCheckerFinished());
             }
@@ -241,6 +240,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
             innerResult = true;
+            resume(); // FIXME necessary?
         });
         return unitResult;
     }
@@ -972,12 +972,12 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
-        cmh.query(i, m, k);
+    @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> j) {
+        cmh.query(i, m, j);
     }
 
-    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {
-        cmh.reply(i, m, R);
+    @Override public void _deadlockReply(IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R, IProcess<S, L, D> j) {
+        cmh.reply(i, m, R, j);
     }
 
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
@@ -996,6 +996,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
         if(isIncrementalDeadlockEnabled()) {
+            resume();
             handleDeadlockIncremental(nodes);
         } else {
             handleDeadlockRegular(nodes);
@@ -1267,7 +1268,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     @Override public void reply(IProcess<S, L, D> k, IProcess<S, L, D> i, int m, java.util.Set<IProcess<S, L, D>> R) {
-        k.from(self, context)._deadlockReply(i, m, R);
+        k.from(self, context)._deadlockReply(i, m, R, process);
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -11,14 +11,14 @@ import io.usethesource.capsule.SetMultimap;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
- * 
+ *
  * Open questions:
  * <ul>
  * <li>What happens if the dependent set of an idle host contains itself?
  * <li>Is deadlock detected if an idle host only depends on itself?
  * <li>What happens if the dependent set of an idle host is empty? What should happen?
  * </ul>
- * 
+ *
  * [1] Chandy, K. Mani, Jayadev Misra, and Laura M. Haas. “Distributed Deadlock Detection.” ACM Transactions on Computer
  * Systems 1, no. 2 (May 1, 1983): 144–156. https://doi.org/10.1145/357360.357365.
  */
@@ -86,7 +86,7 @@ public class ChandyMisraHaas<P> {
 
     /**
      * Receive query.
-     * 
+     *
      * @param i
      *            Idle host P_i.
      * @param m
@@ -98,8 +98,9 @@ public class ChandyMisraHaas<P> {
         if(state.equals(State.EXECUTING)) {
             return;
         }
-        logger.debug("{} query {}.{} from {}", self, i, m, j);
+        // logger.debug("{} query {}.{} from {}", self, i, m, j);
         final P k = self.process();
+        logger.debug("query(i={}, m={}, j={}, k={})", i, m, j, k);
         if(m > latest.count(i)) {
             latest.set(i, m);
             engager.put(i, j);
@@ -116,7 +117,7 @@ public class ChandyMisraHaas<P> {
 
     /**
      * Receive reply.
-     * 
+     *
      * @param i
      *            Idle host P_i.
      * @param m
@@ -124,15 +125,16 @@ public class ChandyMisraHaas<P> {
      * @param r
      *            Replying hosts R.
      */
-    public void reply(P i, int m, java.util.Set<P> R) {
+    public void reply(P i, int m, java.util.Set<P> R, P r) {
         if(state.equals(State.EXECUTING)) {
             return;
         }
-        logger.debug("{} reply {}.{} from {}", self, i, m, R);
+        // logger.debug("{} reply {}.{} from {}/{}", self, i, m, r, R);
         final P k = self.process();
+        logger.debug("reply(i={}, m={}, r={}, k={})", i, m, r, k);
         if(m == latest.count(i) && wait.containsKey(i)) {
-            for(P r : R) {
-                wait.__insert(i, r);
+            for(P tr : R) {
+                wait.__insert(i, tr);
             }
             if(num.remove(i) == 1) {
                 final Set.Immutable<P> Q = wait.get(i);
@@ -155,7 +157,7 @@ public class ChandyMisraHaas<P> {
 
         /**
          * Query.
-         * 
+         *
          * @param k
          *            Receiving host P_k.
          * @param i
@@ -167,7 +169,7 @@ public class ChandyMisraHaas<P> {
 
         /**
          * Reply.
-         * 
+         *
          * @param k
          *            Receiving host P_k.
          * @param i
