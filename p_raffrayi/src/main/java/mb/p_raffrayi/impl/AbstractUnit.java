@@ -544,6 +544,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                                 granted(token, self);
                                 resume();
                             });
+                            resume();
                         }
                         return ret.thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());

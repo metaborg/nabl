@@ -155,10 +155,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             final ICompletableFuture<D> result = new CompletableFuture<>();
             pendingExternalDatums.put(datum, result);
             future.whenComplete(result::complete);
-            result.whenComplete((__, ex2) -> {
+            return result.whenComplete((__, ex2) -> {
                 pendingExternalDatums.remove(datum, result);
             });
-            return result;
         });
     }
 
