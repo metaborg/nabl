@@ -14,8 +14,8 @@ import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class StateSummary<S, L, D> {
 
-    protected final IProcess<S, L, D> self;
-    protected final ImmutableSet<IProcess<S, L, D>> dependencies;
+    private final IProcess<S, L, D> self;
+    private final ImmutableSet<IProcess<S, L, D>> dependencies;
 
     private StateSummary(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
         this.self = self;
@@ -79,7 +79,7 @@ public abstract class StateSummary<S, L, D> {
         }
 
         @Override public String toString() {
-            return "Restart{self=" + self + ", dependencies=" + dependencies + "}";
+            return "Restart{self=" + getSelf() + ", dependencies=" + getDependencies() + "}";
         }
 
     }
@@ -99,7 +99,7 @@ public abstract class StateSummary<S, L, D> {
         }
 
         @Override public String toString() {
-            return "Release{self=" + self + ", patches=" + patches + ", dependencies=" + dependencies + "}";
+            return "Release{self=" + getSelf() + ", patches=" + patches + ", dependencies=" + getDependencies() + "}";
         }
 
     }
@@ -119,7 +119,7 @@ public abstract class StateSummary<S, L, D> {
         }
 
         @Override public String toString() {
-            return "Released{self=" + self + ", patches=" + patches + ", dependencies=" + dependencies + "}";
+            return "Released{self=" + getSelf() + ", patches=" + patches + ", dependencies=" + getDependencies() + "}";
         }
 
     }

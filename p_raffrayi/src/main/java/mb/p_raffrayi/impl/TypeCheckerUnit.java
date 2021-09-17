@@ -270,7 +270,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         return super._match(previousScope);
     }
 
-    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
+    @Override public IFuture<StateSummary<S, L, D>> _state() {
         if(state.equals(UnitState.ACTIVE)
                 || (state == UnitState.DONE && stateTransitionTrace != TransitionTrace.RELEASED)) {
             return CompletableFuture.completedFuture(StateSummary.restart(process, dependentSet()));

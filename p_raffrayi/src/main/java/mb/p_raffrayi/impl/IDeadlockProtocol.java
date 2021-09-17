@@ -18,7 +18,7 @@ public interface IDeadlockProtocol<S, L, D> {
 
     // Deadlock analysis
 
-    IFuture<StateSummary<S, L, D>> _requireRestart();
+    IFuture<StateSummary<S, L, D>> _state();
 
     // Deadlock resolution
 

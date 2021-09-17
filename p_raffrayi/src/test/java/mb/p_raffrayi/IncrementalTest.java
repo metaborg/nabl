@@ -1068,7 +1068,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .localScopeGraph(sg2)
             .scopeGraph(sg2)
             .addScopes(root, s2)
-            .addQueries(q3)
+            .addQueries(q1, q3)
             .build();
         // @formatter:on
 
@@ -1077,7 +1077,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .localScopeGraph(sg3)
             .scopeGraph(sg3)
             .addScopes(root, s3)
-            .addQueries(q2)
+            .addQueries(q1, q2)
             .build();
         // @formatter:on
 
@@ -1101,7 +1101,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unit,
                             List<Scope> rootScopes) {
                         unit.initScope(rootScopes.get(0), Arrays.asList(), false);
-                        return CompletableFuture.completedFuture(Result.of(Unit.unit));
+                        return unit.runIncremental(p -> CompletableFuture.completedFuture(Result.of(Unit.unit)));
                     }
 
                 },
@@ -1120,6 +1120,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub1").stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub2").stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub3").stateTransitionTrace());
+
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -182,7 +182,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         return CompletableFuture.completedFuture(Optional.of(previousScope));
     }
 
-    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
+    @Override public IFuture<StateSummary<S, L, D>> _state() {
         return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet()));
     }
 

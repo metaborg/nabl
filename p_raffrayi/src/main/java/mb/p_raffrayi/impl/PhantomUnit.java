@@ -53,7 +53,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S,
                 dataEquiv);
     }
 
-    @Override public IFuture<StateSummary<S, L, D>> _requireRestart() {
+    @Override public IFuture<StateSummary<S, L, D>> _state() {
         return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 

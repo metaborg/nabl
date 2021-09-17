@@ -54,6 +54,8 @@ import mb.p_raffrayi.actors.IActorStats;
 import mb.p_raffrayi.actors.TypeTag;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
+import mb.p_raffrayi.impl.DeadlockUtils.GraphBuilder;
+import mb.p_raffrayi.impl.DeadlockUtils.IGraph;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
@@ -992,56 +994,72 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
-        if(!nodes.contains(process)) {
-            throw new IllegalStateException("Deadlock unrelated to this unit.");
-        }
-        if(isIncrementalDeadlockEnabled()) {
-            handleDeadlockIncremental(nodes);
-        } else {
-            handleDeadlockRegular(nodes);
-        }
-    }
-
-    private static final boolean RESTART_INCOMING = true;
-
-    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
-        AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
+        AggregateFuture.forAll(nodes, node -> node.from(self, context)._state()).whenComplete((states, ex) -> {
             if(ex != null) {
                 failures.add(ex);
                 return;
             }
-            logger.debug("Received patches: {}.", rors);
-            if(rors.stream().noneMatch(this::isRestartable)) {
-                logger.debug("No restartable units, doing regular deadlock handling.");
-                handleDeadlockRegular(nodes);
+            final GraphBuilder<IProcess<S, L, D>> invWFGBuilder = GraphBuilder.of();
+            states.forEach(state -> {
+                final IProcess<S, L, D> self = state.getSelf();
+                invWFGBuilder.addVertex(self);
+                state.getDependencies().forEach(dep -> {
+                    invWFGBuilder.addEdge(dep, self);
+                });
+            });
+
+            final IGraph<IProcess<S, L, D>> invWFG = invWFGBuilder.build();
+
+            if(!DeadlockUtils.connectedToAll(process, invWFG)) {
+                logger.debug("{} not part of wfg SCC, ignoring detected deadlock.");
                 return;
             }
-            final Map<Boolean, java.util.Set<StateSummary<S, L, D>>> units =
-                    rors.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
-            if(units.get(true).isEmpty()) {
-                // No restarted units in cluster, release all involved units.
-                BiMap.Immutable<S> ptcs = rors.stream().map(this::patches).reduce(BiMap.Immutable::putAll).get();
-                logger.debug("Releasing all involved units: {}.", ptcs);
-                nodes.forEach(node -> node.from(self, context)._release(ptcs));
+
+            if(!nodes.contains(process)) {
+                throw new IllegalStateException("Deadlock unrelated to this unit.");
+            }
+            if(isIncrementalDeadlockEnabled()) {
+                handleDeadlockIncremental(nodes, states);
             } else {
-                // @formatter:off
-                final java.util.Set<StateSummary<S, L, D>> activeProcesses = units.get(true).stream()
-                    .collect(Collectors.toSet());
-                // @formatter:on
-                final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
-                        .collect(Collectors.partitioningBy(
-                                node -> shouldRestart(node, activeProcesses),
-                                Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
-                if(restarts.get(true).isEmpty()) {
-                    logger.error("Active units have no {} dependencies elegible for restart.", RESTART_INCOMING ? "incoming" : "outgoing");
-                    throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing") + " dependencies elegible for restart.");
-                } else {
-                    logger.debug("Restarting {} (conservative).", restarts);
-                    restarts.get(true).forEach(node -> node.from(self, context)._restart());
-                    restarts.get(false).forEach(node -> node.from(self, context)._resume());
-                }
+                handleDeadlockRegular(nodes);
             }
         });
+    }
+
+    private static final boolean RESTART_INCOMING = true;
+
+    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes, List<StateSummary<S, L, D>> states) {
+        logger.debug("Received patches: {}.", states);
+        if(states.stream().noneMatch(this::isRestartable)) {
+            logger.debug("No restartable units, doing regular deadlock handling.");
+            handleDeadlockRegular(nodes);
+            return;
+        }
+        final Map<Boolean, java.util.Set<StateSummary<S, L, D>>> units =
+                states.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
+        if(units.get(true).isEmpty()) {
+            // No restarted units in cluster, release all involved units.
+            BiMap.Immutable<S> ptcs = states.stream().map(this::patches).reduce(BiMap.Immutable::putAll).get();
+            logger.debug("Releasing all involved units: {}.", ptcs);
+            nodes.forEach(node -> node.from(self, context)._release(ptcs));
+        } else {
+            // @formatter:off
+            final java.util.Set<StateSummary<S, L, D>> activeProcesses = units.get(true).stream()
+                .collect(Collectors.toSet());
+            // @formatter:on
+            final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
+                    .collect(Collectors.partitioningBy(
+                            node -> shouldRestart(node, activeProcesses),
+                            Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
+            if(restarts.get(true).isEmpty()) {
+                logger.error("Active units have no {} dependencies elegible for restart.", RESTART_INCOMING ? "incoming" : "outgoing");
+                throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing") + " dependencies elegible for restart.");
+            } else {
+                logger.debug("Restarting {} (conservative).", restarts);
+                restarts.get(true).forEach(node -> node.from(self, context)._restart());
+                restarts.get(false).forEach(node -> node.from(self, context)._resume());
+            }
+        }
     }
 
     private boolean isRestartable(StateSummary<S, L, D> state) {
