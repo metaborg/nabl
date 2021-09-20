@@ -90,6 +90,15 @@ public class CResolveQuery implements IConstraint, Serializable {
         return cases.caseResolveQuery(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars.__insertAll(filter.getVars());
+        vars.__insertAll(min.getVars());
+        vars.__insertAll(scopeTerm.getVars());
+        vars.__insertAll(resultTerm.getVars());
+        return vars.freeze();
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

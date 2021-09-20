@@ -55,6 +55,13 @@ public class CNew implements IConstraint, Serializable {
         return cases.caseNew(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            scopeTerm.getVars(),
+            datumTerm.getVars()
+        );
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }

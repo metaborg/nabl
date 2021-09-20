@@ -69,6 +69,8 @@ public interface IConstraint {
 
     <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
 
+    Set.Immutable<ITermVar> getVars();
+
     Set.Immutable<ITermVar> freeVars();
 
     void visitFreeVars(Action1<ITermVar> onFreeVar);

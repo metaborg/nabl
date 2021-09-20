@@ -90,6 +90,12 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            vars,
+            constraint.getVars()
+        );
+    }
 
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;

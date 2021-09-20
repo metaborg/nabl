@@ -59,6 +59,13 @@ public class CConj implements IConstraint, Serializable {
         return cases.caseConj(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            left.getVars(),
+            right.getVars()
+        );
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

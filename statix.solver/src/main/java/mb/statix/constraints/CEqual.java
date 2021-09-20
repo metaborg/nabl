@@ -78,6 +78,13 @@ public class CEqual implements IConstraint, Serializable {
         return cases.caseEqual(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            term1.getVars(),
+            term2.getVars()
+        );
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);
