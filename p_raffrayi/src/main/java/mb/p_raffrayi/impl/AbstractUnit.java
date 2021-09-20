@@ -989,10 +989,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    @Override public void _resume() {
-        resume();
-    }
-
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._state()).whenComplete((states, ex) -> {
@@ -1058,7 +1054,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             } else {
                 logger.debug("Restarting {} (conservative).", restarts);
                 restarts.get(true).forEach(node -> node.from(self, context)._restart());
-                restarts.get(false).forEach(node -> node.from(self, context)._resume());
             }
         }
     }

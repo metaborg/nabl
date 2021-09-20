@@ -26,6 +26,4 @@ public interface IDeadlockProtocol<S, L, D> {
 
     void _restart();
 
-    void _resume();
-
 }

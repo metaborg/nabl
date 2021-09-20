@@ -1120,7 +1120,6 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.subUnitResults().get("sub1").stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub2").stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub3").stateTransitionTrace());
-
     }
 
     ///////////////////////////////////////////////////////////////////////////
