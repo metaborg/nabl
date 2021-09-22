@@ -295,8 +295,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override public void _release(BiMap.Immutable<S> patches) {
-        // TODO: what if message received, but not part of 'real' deadlock cluster?
-        // Then in state `ACTIVE`, and hence doRelease won't do anything automatically?
         doRelease(patches);
     }
 

@@ -98,7 +98,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent;
     protected final IUnitContext<S, L, D> context;
 
-    private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
+    protected final ChandyMisraHaas<IProcess<S, L, D>> cmh;
     protected final UnitProcess<S, L, D> process;
     private final BrokerProcess<S, L, D> broker = BrokerProcess.of();
 
@@ -985,7 +985,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
         if(!failDelays(nodes)) {
-            logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
+            if(nodes.size() == 1) {
+                failAll();
+            } else {
+                logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
+            }
         }
     }
 
@@ -996,10 +1000,14 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 failures.add(ex);
                 return;
             }
+
+            if(!nodes.contains(process)) {
+                throw new IllegalStateException("Deadlock unrelated to this unit.");
+            }
+
             final GraphBuilder<IProcess<S, L, D>> invWFGBuilder = GraphBuilder.of();
             states.forEach(state -> {
                 final IProcess<S, L, D> self = state.getSelf();
-                invWFGBuilder.addVertex(self);
                 state.getDependencies().forEach(dep -> {
                     invWFGBuilder.addEdge(dep, self);
                 });
@@ -1007,25 +1015,42 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
             final IGraph<IProcess<S, L, D>> invWFG = invWFGBuilder.build();
 
+            final java.util.Set<IProcess<S, L, D>> deadlocked;
+            final Collection<StateSummary<S, L, D>> deadlockedStates;
             if(!DeadlockUtils.connectedToAll(process, invWFG)) {
-                logger.debug("{} not part of wfg SCC, ignoring detected deadlock.");
-                return;
-            }
+                logger.debug("{} not part of wfg SCC, computing SCC.");
+                final Set.Transient<IProcess<S, L, D>> _nodes = Set.Transient.of();
+                final Set.Transient<StateSummary<S, L, D>> _states = Set.Transient.of();
+                for(StateSummary<S, L, D> state : states) {
+                    if(state.getSelf() == this.process) {
+                        continue;
+                    }
 
-            if(!nodes.contains(process)) {
-                throw new IllegalStateException("Deadlock unrelated to this unit.");
+                    if(DeadlockUtils.connectedToAll(process, invWFG)) {
+                        _nodes.__insert(state.getSelf());
+                        _states.__insert(state);
+                    }
+                }
+                if(_nodes.isEmpty()) {
+                    return;
+                }
+                deadlocked = _nodes.freeze();
+                deadlockedStates = _states.freeze();
+            } else {
+                deadlocked = nodes;
+                deadlockedStates = states;
             }
             if(isIncrementalDeadlockEnabled()) {
-                handleDeadlockIncremental(nodes, states);
+                handleDeadlockIncremental(deadlocked, deadlockedStates);
             } else {
-                handleDeadlockRegular(nodes);
+                handleDeadlockRegular(deadlocked);
             }
         });
     }
 
     private static final boolean RESTART_INCOMING = true;
 
-    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes, List<StateSummary<S, L, D>> states) {
+    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes, Collection<StateSummary<S, L, D>> states) {
         logger.debug("Received patches: {}.", states);
         if(states.stream().noneMatch(this::isRestartable)) {
             logger.debug("No restartable units, doing regular deadlock handling.");
@@ -1096,7 +1121,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
         // All units are already active, proceed with regular deadlock handling
-        if(nodes.size() == 1) {
+        if(nodes.size() == 1 && nodes.contains(process)) {
             logger.debug("{} self-deadlocked with {}", this, getTokens(process));
             if(failDelays(nodes)) {
                 resume(); // resume to ensure further deadlock detection after these are handled

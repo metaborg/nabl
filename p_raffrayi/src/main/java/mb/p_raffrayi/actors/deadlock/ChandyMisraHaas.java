@@ -11,14 +11,14 @@ import io.usethesource.capsule.SetMultimap;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
- * 
+ *
  * Open questions:
  * <ul>
  * <li>What happens if the dependent set of an idle host contains itself?
  * <li>Is deadlock detected if an idle host only depends on itself?
  * <li>What happens if the dependent set of an idle host is empty? What should happen?
  * </ul>
- * 
+ *
  * [1] Chandy, K. Mani, Jayadev Misra, and Laura M. Haas. “Distributed Deadlock Detection.” ACM Transactions on Computer
  * Systems 1, no. 2 (May 1, 1983): 144–156. https://doi.org/10.1145/357360.357365.
  */
@@ -86,7 +86,7 @@ public class ChandyMisraHaas<P> {
 
     /**
      * Receive query.
-     * 
+     *
      * @param i
      *            Idle host P_i.
      * @param m
@@ -116,7 +116,7 @@ public class ChandyMisraHaas<P> {
 
     /**
      * Receive reply.
-     * 
+     *
      * @param i
      *            Idle host P_i.
      * @param m
@@ -155,7 +155,7 @@ public class ChandyMisraHaas<P> {
 
         /**
          * Query.
-         * 
+         *
          * @param k
          *            Receiving host P_k.
          * @param i
@@ -167,7 +167,7 @@ public class ChandyMisraHaas<P> {
 
         /**
          * Reply.
-         * 
+         *
          * @param k
          *            Receiving host P_k.
          * @param i

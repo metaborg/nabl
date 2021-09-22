@@ -314,7 +314,6 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _deadlocked(Set<IProcess<S, L, D>> nodes) {
-        // Nothing to do (yet)
         delays.entrySet().forEach(delays -> delays.getValue().forEach(future -> future.completeExceptionally(
                 new DeadlockException("Deadlocked while waiting for unit " + delays.getKey() + " to be added."))));
         dependentSet.set(MultiSet.Immutable.of());
