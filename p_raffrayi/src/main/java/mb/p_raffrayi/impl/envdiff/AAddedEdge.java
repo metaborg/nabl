@@ -5,7 +5,6 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
-import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -18,8 +17,6 @@ public abstract class AAddedEdge<S, L, D> implements IEnvDiff<S, L, D> {
     // @Value.Parameter public abstract Set.Immutable<S> seenScopes(); // TODO required?
 
     @Value.Parameter public abstract LabelWf<L> labelWf();
-
-    @Value.Parameter public abstract DataWf<S, L, D> dataWf();
 
     @Override public boolean isEmpty() {
         return false;

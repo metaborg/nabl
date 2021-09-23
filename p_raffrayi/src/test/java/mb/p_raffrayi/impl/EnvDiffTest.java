@@ -21,7 +21,6 @@ import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
-import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
@@ -62,7 +61,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
-        envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
+        envDiffer.diff(s1o, LabelWf.any()).thenAccept(diffResult::set);
 
         assertNotNull(diffResult.get());
 
@@ -73,7 +72,7 @@ public class EnvDiffTest extends BaseDifferTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s2n, LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s2n, LabelWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
@@ -99,7 +98,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
-        envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
+        envDiffer.diff(s1o, LabelWf.any()).thenAccept(diffResult::set);
 
         assertNotNull(diffResult.get());
 
@@ -110,7 +109,7 @@ public class EnvDiffTest extends BaseDifferTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3o).get(), path.getPath());
-        assertEquals(RemovedEdge.of(s3o, LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(RemovedEdge.of(s3o, LabelWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }
@@ -135,7 +134,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
-        envDiffer.diff(s1o, LabelWf.none(), DataWf.any()).thenAccept(diffResult::set);
+        envDiffer.diff(s1o, LabelWf.none()).thenAccept(diffResult::set);
 
         assertNotNull(diffResult.get());
 
@@ -171,7 +170,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
 
         final Ref<IEnvDiff<String, Integer, List<String>>> diffResult = new Ref<>();
-        envDiffer.diff(s1o, LabelWf.any(), DataWf.any()).thenAccept(diffResult::set);
+        envDiffer.diff(s1o, LabelWf.any()).thenAccept(diffResult::set);
 
         assertNotNull(diffResult.get());
 
@@ -182,7 +181,7 @@ public class EnvDiffTest extends BaseDifferTest {
         ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
 
         assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s3n, LabelWf.any(), DataWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s3n, LabelWf.any()), path.getDatum());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }

@@ -805,16 +805,15 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             });
         }
 
-        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf,
-                DataWf<S, L, D> dataWf) {
+        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf) {
             assertConfirmationEnabled();
             logger.debug("{} local env diff: {}/{}.", this, path.getTarget(), labelWf);
             return whenDifferActivated.thenCompose(__ -> {
                 final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
                 final EnvDifferState<S, L, D> state =
-                        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, dataWf, future);
+                        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, future);
                 waitFor(state, self);
-                envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf, dataWf).whenComplete(future::complete);
+                envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
                     logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
                     granted(state, self);

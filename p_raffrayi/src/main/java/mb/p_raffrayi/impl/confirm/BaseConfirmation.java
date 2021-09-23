@@ -61,7 +61,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     private IFuture<ConfirmResult<S>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             boolean prevEnvEmpty) {
         final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
-        context.envDiff(path, labelWf, dataWf).whenComplete((envDiff, ex) -> {
+        context.envDiff(path, labelWf).whenComplete((envDiff, ex) -> {
             if(ex != null) {
                 logger.error("Environment diff for {}/{} failed.", path, labelWf, ex);
                 result.completeExceptionally(ex);
@@ -73,9 +73,9 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 envDiff.diffPaths().forEach(diffPath -> {
                     // @formatter:off
                     futures.add(diffPath.getDatum().<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>>match(
-                        addedEdge -> handleAddedEdge(addedEdge),
-                        removedEdge -> handleRemovedEdge(removedEdge, prevEnvEmpty),
-                        external -> handleExternal(external),
+                        addedEdge -> handleAddedEdge(addedEdge, dataWf),
+                        removedEdge -> handleRemovedEdge(removedEdge, dataWf, prevEnvEmpty),
+                        external -> handleExternal(external, dataWf),
                         diffTree -> {
                             logger.error("Diff path cannot end in subtree: {}.", diffPath);
                             throw new IllegalStateException("Diff path cannot end in subtree");
@@ -93,12 +93,14 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         });
     }
 
-    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge);
+    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge,
+            DataWf<S, L, D> dataWf);
 
     protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
-            handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, boolean prevEnvEnpty);
+            handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, DataWf<S, L, D> dataWf, boolean prevEnvEnpty);
 
-    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external);
+    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external,
+            DataWf<S, L, D> dataWf);
 
     protected SC<BiMap.Immutable<S>, ConfirmResult<S>> deny() {
         return DENY;
@@ -125,7 +127,8 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), SC::of);
     }
 
-    protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
+    protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
+            toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
     }
 

@@ -15,7 +15,6 @@ import org.metaborg.util.unit.Unit;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.ScopeDiff;
-import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.Edge;
 
@@ -31,45 +30,44 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         this.context = context;
     }
 
-    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf) {
-        return diff(scope, CapsuleUtil.immutableSet(scope), labelWf, dataWf);
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf) {
+        return diff(scope, CapsuleUtil.immutableSet(scope), labelWf);
     }
 
-    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf,
-            DataWf<S, L, D> dataWf) {
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {
         logger.debug("Computing env diff for {} ~ {}.", scope, labelWf);
         if(!differOps.ownScope(scope)) {
             logger.debug("{} external", scope);
-            return CompletableFuture.completedFuture(External.of(scope, labelWf, dataWf));
+            return CompletableFuture.completedFuture(External.of(scope, labelWf));
         }
 
         return context.match(scope).thenCompose(match_opt -> {
             return match_opt.map(currentScope -> {
                 logger.debug("{} matched", scope);
                 final List<IFuture<ScopeDiff<S, L, D>>> futures = new ArrayList<>();
-                for(L label: this.context.edgeLabels()) {
+                for(L label : this.context.edgeLabels()) {
                     futures.add(context.scopeDiff(scope, label));
                 }
 
                 return AggregateFuture.of(futures).thenCompose(diffs -> {
                     final ArrayList<IFuture<Unit>> subEnvFutures = new ArrayList<>();
                     final DiffTreeBuilder<S, L, D> treeBuilder = new DiffTreeBuilder<>(scope, currentScope);
-                    for(ScopeDiff<S,L,D> diff : diffs) {
+                    for(ScopeDiff<S, L, D> diff : diffs) {
                         // Process all added/removed edges
                         // @formatter:off
                         traverseApplicable(diff.addedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} added", scope, label, target);
-                            treeBuilder.addSubTree(label, target, AddedEdge.of(target, newLabelWf, dataWf));
+                            treeBuilder.addSubTree(label, target, AddedEdge.of(target, newLabelWf));
                         });
                         traverseApplicable(diff.removedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} removed", scope, label, target);
-                            treeBuilder.addSubTree(label, target, RemovedEdge.of(target, newLabelWf, dataWf));
+                            treeBuilder.addSubTree(label, target, RemovedEdge.of(target, newLabelWf));
                         });
 
                         // Asynchronously collect all sub environment diffs
                         traverseApplicable(diff.matchedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} matched. Computing difftree step.", scope, label, target);
-                            subEnvFutures.add(diff(target, newSeenScopes, newLabelWf, dataWf).thenApply(subDiff -> {
+                            subEnvFutures.add(diff(target, newSeenScopes, newLabelWf).thenApply(subDiff -> {
                                 treeBuilder.addSubTree(label, target, subDiff);
                                 return Unit.unit;
                             }));
@@ -86,7 +84,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                 });
             }).orElseGet(() -> {
                 logger.debug("{} removed", scope);
-                return CompletableFuture.completedFuture(RemovedEdge.of(scope, labelWf, dataWf));
+                return CompletableFuture.completedFuture(RemovedEdge.of(scope, labelWf));
             });
         });
     }

@@ -6,7 +6,6 @@ import org.metaborg.util.future.ICompletableFuture;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.IUnit;
-import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
 
 @Value.Immutable
@@ -19,8 +18,6 @@ public abstract class AEnvDifferState<S, L, D> implements IWaitFor<S, L, D> {
     @Value.Parameter public abstract Set.Immutable<S> seenScopes();
 
     @Value.Parameter public abstract LabelWf<L> labelWf();
-
-    @Value.Parameter public abstract DataWf<S, L, D> dataWf();
 
     @Value.Parameter public abstract ICompletableFuture<?> future();
 
