@@ -100,3 +100,17 @@ rules
   solve(concurrent|spec', level) = concurrent < cstx--solve-constraint(|spec', level) + stx--solve-constraint(|spec', level)
 
   stx--test-log-level = prim("STX_test_log_level")
+
+rules
+
+  compile-test-body(|fspecs* /* <= compiled modules */): ast@Test(_, _) -> (constraintTerm, specTerm)
+    with
+      a                   := <nabl2-get-ast-analysis> ast;
+      CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
+      ast'                := <normalize(|a)> ast;
+      Test(body, _)       := ast';
+      constraintTerm      := <qualify-names(|a);eliminate-all;stx--index-ast(|"")> body;
+      spec                := <core-ast-to-spec-aterm(|a)> (ast', ext);
+      specTerm            := <stx--merge-spec-aterms> [spec | fspecs*]
+
+  prettyprint-test-result = pp-Statix-string(prettyprint-Statix-TestResult)
