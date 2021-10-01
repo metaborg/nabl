@@ -2,6 +2,7 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
+import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,6 +16,8 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.ICompleteness;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
@@ -228,14 +231,21 @@ public class RuleUtil {
 
             final List<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImmutableList.toImmutableList());
 
+
             // we initialized FreshVars to make sure these do not capture any free variables,
             // or shadow any pattern variables. We can therefore use the original body without any
             // renaming
             final Set.Immutable<ITermVar> newBodyVars = paramVars.__removeAll(paramsTerm.getVars());
-            final IConstraint body =
-                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
+            final IConstraint newBody = Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body());
+            final @Nullable ICompleteness.Immutable newBodyCriticalEdges =
+                !rule.body().bodyCriticalEdges().isPresent() ? null : rule.body().bodyCriticalEdges().get().removeAll(newBodyVars, unifier);
+            final IConstraint ruleBody = newBodyVars.isEmpty() ? newBody : new CExists(newBodyVars, newBody, null, newBodyCriticalEdges);
 
-            final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
+            final Rule newRule = Rule.builder()
+                .from(rule)
+                .params(params)
+                .body(ruleBody)
+                .build();
 
             newRules.add(newRule);
         }
@@ -288,11 +298,11 @@ public class RuleUtil {
 
     /**
      * Transform rule such that constraints and have a single top-level existential.
-     * 
+     *
      * Head patterns are preserved.
-     * 
+     *
      * For example:
-     * 
+     *
      * <pre>
      *   { x :- {y} {y} x == Id(y) }  --->  { x :- {y y1} x == Id(y1) }
      * </pre>
@@ -305,7 +315,7 @@ public class RuleUtil {
     /**
      * Transform rule such that head patterns are maximally instantiated based on the body. This implicitly applies
      * hoisting.
-     * 
+     *
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {
