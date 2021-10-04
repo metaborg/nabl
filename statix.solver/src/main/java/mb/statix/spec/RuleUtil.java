@@ -233,7 +233,8 @@ public class RuleUtil {
             // renaming
             final Set.Immutable<ITermVar> newBodyVars = paramVars.__removeAll(paramsTerm.getVars());
             final IConstraint body =
-                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
+                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()))
+                            .withBodyCriticalEdges(rule.bodyCriticalEdges());
 
             final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
 
@@ -288,11 +289,11 @@ public class RuleUtil {
 
     /**
      * Transform rule such that constraints and have a single top-level existential.
-     * 
+     *
      * Head patterns are preserved.
-     * 
+     *
      * For example:
-     * 
+     *
      * <pre>
      *   { x :- {y} {y} x == Id(y) }  --->  { x :- {y y1} x == Id(y1) }
      * </pre>
@@ -305,7 +306,7 @@ public class RuleUtil {
     /**
      * Transform rule such that head patterns are maximally instantiated based on the body. This implicitly applies
      * hoisting.
-     * 
+     *
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {

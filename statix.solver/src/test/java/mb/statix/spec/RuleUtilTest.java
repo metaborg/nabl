@@ -19,6 +19,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -26,6 +27,8 @@ import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
+import mb.statix.solver.completeness.Completeness;
+import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.spec.ApplyMode.Safety;
 
 public class RuleUtilTest {
@@ -36,6 +39,7 @@ public class RuleUtilTest {
         testUnorderedRules0();
         testUnorderedRules1();
         testUnorderedRules2();
+        testUnorderedRules3();
         testInlineRules1();
         testInlineRules2();
         testInlineRules3();
@@ -81,6 +85,30 @@ public class RuleUtilTest {
         final List<Rule> rules = Arrays.asList(
           Rule.of("c", Arrays.asList(p1, P.newAs(v1, P.newInt(1))), body)
         , Rule.of("c", Arrays.asList(p1, p2), body)
+        );
+        // @formatter:on
+        testUnorderedRules(rules);
+    }
+
+    private static void testUnorderedRules3() {
+        final ITermVar s = B.newVar("", "s");
+        final ITermVar e1 = B.newVar("", "e1");
+        final ITermVar e2 = B.newVar("", "e2");
+        final Pattern ps = P.newVar(s);
+        final Pattern p1 = P.newVar(e1);
+        final Pattern p2 = P.newVar(e2);
+        final IConstraint body = new CTrue();
+
+        // criticalEdges
+        final ICompleteness.Transient _completeness = Completeness.Transient.of();
+        _completeness.add(s, EdgeOrData.edge(B.newString("lbl")), PersistentUnifier.Immutable.of());
+        final ICompleteness.Immutable completeness = _completeness.freeze();
+
+        // @formatter:off
+        final List<Rule> rules = Arrays.asList(
+          Rule.of("c", Arrays.asList(ps, P.newAppl("Add", p1, p2)), body).withBodyCriticalEdges(completeness)
+        , Rule.of("c", Arrays.asList(ps, P.newAppl("Var", p1)), body).withBodyCriticalEdges(completeness)
+        , Rule.of("c", Arrays.asList(ps, P.newWld()), body).withBodyCriticalEdges(completeness)
         );
         // @formatter:on
         testUnorderedRules(rules);
