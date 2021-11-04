@@ -6,6 +6,7 @@ imports
 
   signatures/statix/lang/-
   statix/lang/-
+  statix/lang/statics/desugar
   statix/lang/statics/rule-order
   statix/lang/pp
   pp

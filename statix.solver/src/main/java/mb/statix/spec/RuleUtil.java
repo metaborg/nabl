@@ -236,16 +236,11 @@ public class RuleUtil {
             // or shadow any pattern variables. We can therefore use the original body without any
             // renaming
             final Set.Immutable<ITermVar> newBodyVars = paramVars.__removeAll(paramsTerm.getVars());
-            final IConstraint newBody = Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body());
-            final @Nullable ICompleteness.Immutable newBodyCriticalEdges =
-                !rule.body().bodyCriticalEdges().isPresent() ? null : rule.body().bodyCriticalEdges().get().removeAll(newBodyVars, unifier);
-            final IConstraint ruleBody = newBodyVars.isEmpty() ? newBody : new CExists(newBodyVars, newBody, null, newBodyCriticalEdges);
+            final IConstraint body =
+                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()))
+                            .withBodyCriticalEdges(rule.bodyCriticalEdges());
 
-            final Rule newRule = Rule.builder()
-                .from(rule)
-                .params(params)
-                .body(ruleBody)
-                .build();
+            final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
 
             newRules.add(newRule);
         }
