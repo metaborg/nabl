@@ -687,7 +687,12 @@ public final class Constraints {
 
     public static IConstraint exists(Iterable<ITermVar> vars, IConstraint body) {
         final io.usethesource.capsule.Set.Immutable<ITermVar> varSet = CapsuleUtil.toSet(vars);
-        return varSet.isEmpty() ? body : new CExists(varSet, body);
+        if(varSet.isEmpty()) return body;
+        CExists existsConstraint = new CExists(varSet, body);
+        if(body.bodyCriticalEdges().isPresent()) {
+            existsConstraint = existsConstraint.withBodyCriticalEdges(body.bodyCriticalEdges().get());
+        }
+        return existsConstraint;
     }
 
     /**
