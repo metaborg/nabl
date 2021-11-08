@@ -233,10 +233,14 @@ public class RuleUtil {
             // renaming
             final Set.Immutable<ITermVar> newBodyVars = paramVars.__removeAll(paramsTerm.getVars());
             final IConstraint body =
-                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()))
-                            .withBodyCriticalEdges(rule.bodyCriticalEdges());
+                    Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
 
-            final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
+            final Rule newRule = Rule.builder()
+                .from(rule)
+                .params(params)
+                .body(body)
+                .bodyCriticalEdges(rule.bodyCriticalEdges())
+                .build();
 
             newRules.add(newRule);
         }
