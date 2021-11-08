@@ -56,6 +56,13 @@ public abstract class ARule {
         return null;
     }
 
+    /**
+     * Determines whether this rule is always true or false.
+     *
+     * @return {@code true} when this rule is always true;
+     * {@code false} when the rule is always false;
+     * otherwise, none
+     */
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
         final List<ITermVar> args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
                 .collect(Collectors.toList());
@@ -63,14 +70,18 @@ public abstract class ARule {
         try {
             if((applyResult = RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null,
                     ApplyMode.STRICT, Safety.SAFE).orElse(null)) == null) {
+                // We could not apply the rule to the given variables,
+                // this rule is not unconditional
                 return Optional.empty();
             }
         } catch(Delay d) {
             return Optional.empty();
         }
         if(applyResult.guard().isPresent()) {
+            // This rule is not unconditional
             return Optional.empty();
         }
+        // Return whether the rule is always true or false; otherwise nothing
         return Constraints.trivial(body());
     }
 

@@ -13,10 +13,13 @@ public class RegExpLabelWF<L> implements LabelWF<L> {
     }
 
     @Override public Optional<LabelWF<L>> step(L l) throws ResolutionException, InterruptedException {
+        // Try to match the symbol on the regular expression
         final IRegExpMatcher<L> re = this.re.match(l);
         if(re.isEmpty()) {
+            // Match failed
             return Optional.empty();
         } else {
+            // Match succeeded, return the new regex wellformedness object
             return Optional.of(new RegExpLabelWF<>(re));
         }
     }
