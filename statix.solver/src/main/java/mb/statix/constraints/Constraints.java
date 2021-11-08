@@ -690,6 +690,14 @@ public final class Constraints {
         return varSet.isEmpty() ? body : new CExists(varSet, body);
     }
 
+    /**
+     * Checks whether the constraint is {@link CTrue} or {@link CFalse}.
+     *
+     * @param constraint the constraint to check
+     * @return {@code true} when the constraint is {@link CTrue};
+     * {@code false} when the constraint is {@link CFalse};
+     * otherwise, none
+     */
     public static Optional<Boolean> trivial(IConstraint constraint) {
         return Optional.ofNullable(
                 constraint.match(Constraints.cases(c -> null, c -> null, c -> null, c -> null, c -> false, c -> null,
