@@ -56,9 +56,9 @@ import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
 import mb.p_raffrayi.impl.DeadlockUtils.GraphBuilder;
 import mb.p_raffrayi.impl.DeadlockUtils.IGraph;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.DifferResult;
@@ -126,7 +126,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     private final Ref<StateCapture<S, L, D, T>> localCapture = new Ref<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
-    private final ICompletableFuture<Unit> whenStarted = new CompletableFuture<>();
     protected final Stats stats;
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
@@ -216,7 +215,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
         }
-        self.complete(whenStarted, Unit.unit, null);
     }
 
     protected final IFuture<IUnitResult<S, L, D, R, T>> doFinish(IFuture<R> result) {
@@ -481,7 +479,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    if(record && sharedScopes.contains(scope)) {
+                    if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
                         // No need to wait for completion, because local shared scopes are initialized when freshened.
                         recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv));
                     }
@@ -500,16 +498,18 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             stats.outgoingQueries += 1;
                         }
                         return result.thenApply(ans -> {
-                            if(external) {
-                                // For external queries, track this query as transitive.
-                                transitiveQueries
-                                        .add(RecordedQuery.of(path, re, dataWF, labelOrder, dataEquiv, ans.env()));
-                                transitiveQueries.addAll(ans.transitiveQueries());
-                                predicateQueries.addAll(ans.predicateQueries());
-                            } else if(record) {
-                                // For local query, record it as such.
-                                recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv,
-                                        ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
+                            if(isQueryRecordingEnabled()) {
+                                if(external) {
+                                    // For external queries, track this query as transitive.
+                                    transitiveQueries
+                                            .add(RecordedQuery.of(path, re, dataWF, labelOrder, dataEquiv, ans.env()));
+                                    transitiveQueries.addAll(ans.transitiveQueries());
+                                    predicateQueries.addAll(ans.predicateQueries());
+                                } else if(record) {
+                                    // For local query, record it as such.
+                                    recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv,
+                                            ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
+                                }
                             }
                             return ans.env();
                         }).whenComplete((env, ex) -> {
@@ -643,16 +643,18 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 waitFor(wf, self);
                 stats.localQueries += 1;
                 return self.schedule(result).thenApply(ans -> {
-                    // Type-checkers can embed scopes in their predicates that are not accessible from the outside.
-                    // If such a query is confirmed, the scope graph differ will never produce a scope diff for it,
-                    // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
-                    // Hence, we just ignore it.
-                    if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                        queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                    if(isQueryRecordingEnabled()) {
+                        // Type-checkers can embed scopes in their predicates that are not accessible from the outside.
+                        // If such a query is confirmed, the scope graph differ will never produce a scope diff for it,
+                        // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
+                        // Hence, we just ignore it.
+                        if(!context.scopeId(path.getTarget()).equals(origin.id())) {
+                            queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                        }
+                        queries.addAll(ans.transitiveQueries());
+                        // TODO can this happen? Is flattening here ok then?
+                        queries.addAll(ans.predicateQueries());
                     }
-                    queries.addAll(ans.transitiveQueries());
-                    // TODO can this happen? Is flattening here ok then?
-                    queries.addAll(ans.predicateQueries());
                     return CapsuleUtil.<IResolutionPath<S, L, D>>toSet(ans.env());
                 }).whenComplete((ans, ex) -> {
                     granted(wf, self);
@@ -984,25 +986,28 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
-        if(!failDelays(nodes)) {
-            if(nodes.size() == 1) {
-                failAll();
-            } else {
-                logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
-            }
+        if(!nodes.contains(process)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
+        }
+
+        if(nodes.size() == 1) {
+            handleDeadlock(nodes);
+        } else if(failDelays(nodes)) {
+            resume();
         }
     }
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
+
+        if(!nodes.contains(process)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
+        }
+
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._state()).whenComplete((states, ex) -> {
             if(ex != null) {
                 failures.add(ex);
                 return;
-            }
-
-            if(!nodes.contains(process)) {
-                throw new IllegalStateException("Deadlock unrelated to this unit.");
             }
 
             final GraphBuilder<IProcess<S, L, D>> invWFGBuilder = GraphBuilder.of();
@@ -1026,7 +1031,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         continue;
                     }
 
-                    if(DeadlockUtils.connectedToAll(process, invWFG)) {
+                    if(DeadlockUtils.connectedToAll(state.getSelf(), invWFG)) {
                         _nodes.__insert(state.getSelf());
                         _states.__insert(state);
                     }
@@ -1079,6 +1084,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             } else {
                 logger.debug("Restarting {} (conservative).", restarts);
                 restarts.get(true).forEach(node -> node.from(self, context)._restart());
+                logger.debug("Restarted {} (conservative).", restarts);
             }
         }
     }
@@ -1129,7 +1135,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 failAll();
             }
         } else {
-            // nodes will include self
             for(IProcess<S, L, D> node : nodes) {
                 node.from(self, context)._deadlocked(nodes);
             }
@@ -1283,6 +1288,14 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             ));
             // @formatter:on
         }
+    }
+
+    protected boolean isIncrementalEnabled() {
+        return context.settings().incremental();
+    }
+
+    protected boolean isQueryRecordingEnabled() {
+        return context.settings().incremental();
     }
 
     protected boolean isIncrementalDeadlockEnabled() {

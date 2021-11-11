@@ -961,10 +961,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     // Incremental settings
     ///////////////////////////////////////////////////////////////////////////
 
-    protected boolean isIncrementalEnabled() {
-        return context.settings().incremental();
-    }
-
     protected void assertIncrementalEnabled() {
         if(!isIncrementalEnabled()) {
             logger.error("Incremental analysis is not enabled");

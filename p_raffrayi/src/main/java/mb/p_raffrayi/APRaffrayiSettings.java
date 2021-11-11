@@ -5,6 +5,8 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class APRaffrayiSettings {
 
+    @Value.Parameter public abstract boolean recording();
+
     @Value.Parameter public abstract boolean incrementalDeadlock();
 
     @Value.Parameter public abstract boolean scopeGraphDiff();
@@ -16,7 +18,11 @@ public abstract class APRaffrayiSettings {
     }
 
     public static PRaffrayiSettings concurrent() {
-        return PRaffrayiSettings.of(false, false, ConfirmationMode.TRIVIAL);
+        return PRaffrayiSettings.of(false, false, false, ConfirmationMode.TRIVIAL);
+    }
+
+    public static PRaffrayiSettings concurrentWithRecording() {
+        return PRaffrayiSettings.of(true, false, false, ConfirmationMode.TRIVIAL);
     }
 
     public enum ConfirmationMode {

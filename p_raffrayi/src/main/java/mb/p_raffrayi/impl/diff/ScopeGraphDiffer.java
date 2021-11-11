@@ -376,8 +376,14 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     logger.trace("{} ~ {}: data match, calculating consequent matches.", currentScope, previousScope);
                     // @formatter:off
                     // Calculate transitive closure of consequences.
-                    return Futures.reducePartial(dataMatch, dataMatch.map(BiMap.Immutable::asMap).map(Map.Immutable::entrySet),
+                    return Futures.reducePartial(
+                        // Use current set of verified requirement as initial value.
+                        Optional.of(newReq),
+                        // calculate consequences for each match in data match
+                        dataMatch.map(BiMap.Immutable::asMap).map(Map.Immutable::entrySet),
+                        // for each match, calculate consequences, consistent with aggregates set of matches
                         (aggMatches, match) -> consequences(match.getKey(), match.getValue(), aggMatches),
+                        // merge aggregates and new consequences
                         BiMaps::safeMerge
                     );
                     // @formatter:on
@@ -386,21 +392,32 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 return CompletableFuture.completedFuture(Optional.of(newReq));
             });
         } else {
+            if(removedScopes.contains(previousScope)) {
+                return CompletableFuture.completedFuture(Optional.empty());
+            }
+            if(matchedScopes.containsValue(previousScope)) {
+                return matchedScopes.getValue(previousScope).equals(currentScope)
+                        ? CompletableFuture.completedFuture(Optional.of(BiMap.Immutable.of()))
+                        : CompletableFuture.completedFuture(Optional.empty());
+            }
             // We do not own the scope, hence ask owner to which current scope it is matched.
             return waitFor(differOps.externalMatch(previousScope)).thenApply(match -> {
-                return match.flatMap(target -> {
-                    logger.trace("{} ~ {}: rec external match.", currentScope, previousScope);
-                    // Insert new remote match
-                    match(target, previousScope);
-                    if(target.equals(currentScope)) {
-                        return Optional.of(BiMap.Immutable.of());
-                    }
+                if(!match.isPresent()) {
+                    removed(previousScope);
                     return Optional.empty();
-                });
+                }
+
+                final S target = match.get();
+                logger.trace("{} ~ {}: rec external match.", target, previousScope);
+                // Insert new remote match
+                match(target, previousScope);
+                if(target.equals(currentScope)) {
+                    return Optional.of(BiMap.Immutable.of());
+                }
+                return Optional.empty();
             });
         }
     }
-
 
     /**
      * Schedule edge matches from the given source scopes.
@@ -775,7 +792,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 failure(ex);
             }
             waitFor(previousContext.labels(previousScope)).thenAccept(lbls -> {
-                for(L lbl: lbls) {
+                for(L lbl : lbls) {
                     previousScopeComplete(previousScope, lbl);
                 }
             });
@@ -1015,25 +1032,33 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void assertCurrentScopeOpen(S scope) {
         if(!isCurrentScopeOpen(scope)) {
-            throw new IllegalStateException("Scope " + scope + " is already matched/added.");
+            final String reason = successfullyCompleted() ? "closed because differ completed"
+                    : addedScopes.contains(scope) ? "marked as added" : "matched to " + matchedScopes.getKey(scope);
+            throw new IllegalStateException("Scope " + scope + " is already " + reason + ".");
         }
     }
 
     private void assertPreviousScopeOpen(S scope) {
         if(!isPreviousScopeOpen(scope)) {
-            throw new IllegalStateException("Scope " + scope + " is already matched/removed.");
+            final String reason = successfullyCompleted() ? "closed because differ completed"
+                    : removedScopes.contains(scope) ? "marked as removed" : "matched to " + matchedScopes.getValue(scope);
+            throw new IllegalStateException("Scope " + scope + " is already " + reason +".");
         }
     }
 
     private void assertCurrentEdgeOpen(Edge<S, L> edge) {
         if(!isCurrentEdgeOpen(edge)) {
-            throw new IllegalStateException("Edge " + edge + " is already matched/added.");
+            final String reason = successfullyCompleted() ? "closed because differ completed"
+                    : addedEdges.containsValue(edge) ? "marked as added" : "matched to " + matchedEdges.getKey(edge);
+            throw new IllegalStateException("Edge " + edge + " is already " + reason + ".");
         }
     }
 
     private void assertPreviousEdgeOpen(Edge<S, L> edge) {
         if(!isPreviousEdgeOpen(edge)) {
-            throw new IllegalStateException("Edge " + edge + " is already matched/removed.");
+            final String reason = successfullyCompleted() ? "closed because differ completed"
+                    : removedEdges.containsValue(edge) ? "marked as removed" : "matched to " + matchedEdges.getValue(edge);
+            throw new IllegalStateException("Edge " + edge + " is already " + reason + ".");
         }
     }
 

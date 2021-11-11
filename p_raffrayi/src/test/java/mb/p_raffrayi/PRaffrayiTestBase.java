@@ -25,7 +25,7 @@ public abstract class PRaffrayiTestBase {
 
     private final ScopeImpl scopeImpl = new ScopeImpl();
 
-    private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, ConfirmationMode.SIMPLE_ENVIRONMENT);
+    private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, true, ConfirmationMode.SIMPLE_ENVIRONMENT);
 
     protected <L, R extends IResult<Scope, L, IDatum> & ITypeCheckerState<Scope, L, IDatum>> IFuture<IUnitResult<Scope, L, IDatum, R, R>> run(String id,
             ITypeChecker<Scope, L, IDatum, R, R> typeChecker, Iterable<L> edgeLabels) {

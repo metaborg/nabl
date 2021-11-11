@@ -234,6 +234,7 @@ public class STX_solve_multi extends StatixPrimitive {
             .incrementalDeadlock(mode.deadlock)
             .scopeGraphDiff(mode.sgDiff)
             .confirmationMode(mode.confirmation ? ConfirmationMode.SIMPLE_ENVIRONMENT : ConfirmationMode.TRIVIAL)
+            .recording(true)
             .build();
         // @formatter:on
     }
