@@ -183,7 +183,7 @@ public class STX_solve_multi extends StatixPrimitive {
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
             resourceResults.put(unitResult.resource(),
-                    B.newAppl("FileResult", B.newBlob(solveResult), B.newBlob(result)));
+                    B.newAppl("UnitResult", B.newBlob(solveResult), B.newBlob(result)));
         } else {
             logger.error("Missing result for unit {}", result.id());
         }

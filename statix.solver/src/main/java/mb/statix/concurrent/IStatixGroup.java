@@ -18,6 +18,11 @@ public interface IStatixGroup {
     Optional<Rule> rule();
 
     /**
+     * true if the constraint for this group changed, false otherwise
+     */
+    boolean changed();
+
+    /**
      * Direct sub groups of this group.
      */
     Map<String, IStatixGroup> groups();

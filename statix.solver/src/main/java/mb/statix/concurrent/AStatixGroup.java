@@ -14,6 +14,8 @@ public abstract class AStatixGroup implements IStatixGroup {
 
     @Value.Parameter @Override public abstract Optional<Rule> rule();
 
+    @Value.Parameter @Override public abstract boolean changed();
+
     @Value.Parameter @Override public abstract Map<String, IStatixGroup> groups();
 
     @Value.Parameter @Override public abstract Map<String, IStatixUnit> units();
