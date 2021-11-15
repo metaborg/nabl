@@ -1,13 +1,19 @@
 package mb.statix.concurrent;
 
-import java.util.Arrays;
+
+
+
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
@@ -29,19 +35,19 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
 
     @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult, SolverState> context,
             List<Scope> rootScopes) {
-        final Scope parentScope = rootScopes.get(0);
-        final Scope thisGroupScope = makeSharedScope(context, "s_grp");
+
+        final List<Scope> thisGroupScopes = group.scopeNames().stream().map(name -> makeSharedScope(context, name)).collect(Collectors.toList());
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults =
-            runGroups(context, group.groups(), thisGroupScope);
+            runGroups(context, group.groups(), thisGroupScopes);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults =
-            runUnits(context, group.units(), thisGroupScope);
-        context.closeScope(thisGroupScope);
+            runUnits(context, group.units(), thisGroupScopes);
+        thisGroupScopes.forEach(context::closeScope);
 
         // @formatter:off
         return context.runIncremental(
             initialState -> {
                 logger.debug("group {}: running. restarted: {}.", group.resource(), initialState.isPresent());
-                return runSolver(context, group.rule(), initialState, Arrays.asList(parentScope, thisGroupScope));
+                return runSolver(context, group.rule(), initialState, ImmutableList.copyOf(Iterables.concat(rootScopes, thisGroupScopes)));
             },
             GroupResult::solveResult,
             this::patch,

@@ -1161,7 +1161,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                     @Override public IFuture<Result<Integer, Unit>> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unit,
                             List<Scope> roots) {
-                        final Scope s = unit.freshScope("s", Arrays.asList(lbl), false, true);
+                        final Scope s = unit.stableFreshScope("s", Arrays.asList(lbl), false);
                         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Future =
                                 unit.add("sub1", new NoopTypeChecker("sub1", false), Arrays.asList(s), false);
 
@@ -1414,7 +1414,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         @Override public IFuture<Result<Integer, R>> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, R>, EmptyI> unit,
                 List<Scope> rootScopes) {
-            final Scope root = unit.freshScope("s", rootLabels(), false, true);
+            final Scope root = unit.stableFreshScope("s", rootLabels(), false);
 
             // Start subunits
             final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>> result =

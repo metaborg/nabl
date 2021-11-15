@@ -27,6 +27,8 @@ public abstract class AStateCapture<S, L, D, T> {
 
     @Value.Parameter public abstract MultiSet.Immutable<String> scopeNameCounters();
 
+    @Value.Parameter public abstract Set.Immutable<String> usedStableScopes();
+
     @Value.Parameter public abstract T typeCheckerState();
 
     public boolean isOpen(S scope, EdgeOrData<L> label) {

@@ -121,6 +121,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     protected final ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
 
     protected MultiSet.Transient<String> scopeNameCounters;
+    protected Set.Transient<String> usedStableScopes;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
     private final Ref<StateCapture<S, L, D, T>> localCapture = new Ref<>();
@@ -151,6 +152,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
+        this.usedStableScopes = Set.Transient.of();
 
         this.stats = new Stats(self.stats());
     }
@@ -207,6 +209,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         final int n = scopeNameCounters.add(name);
         final S scope = context.makeScope(name + "-" + n);
         return scope;
+    }
+
+    protected final S makeStableScope(String name) {
+        return context.makeScope(name + "!");
     }
 
     protected final void doStart(List<S> currentRootScopes) {
@@ -325,6 +331,19 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final S scope = makeScope(baseName);
 
+        return doPrepareScope(scope, edgeLabels, data, sharing);
+    }
+
+    protected final S doStableFreshScope(String name, Iterable<L> edgeLabels, boolean data) {
+        if(!usedStableScopes.__insert(name)) {
+            throw new IllegalStateException("Stable scope identity " + name + " already used.");
+        }
+        final S scope = makeStableScope(name);
+
+        return doPrepareScope(scope, edgeLabels, data, true);
+    }
+
+    private S doPrepareScope(final S scope, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final List<EdgeOrData<L>> labels = Lists.newArrayList();
         for(L l : edgeLabels) {
             labels.add(EdgeOrData.edge(l));
@@ -986,6 +1005,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
+        self.assertOnActorThread();
         if(!nodes.contains(process)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }

@@ -37,10 +37,10 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
             runLibraries(context, project.libraries(), projectScope);
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults =
-            runGroups(context, project.groups(), projectScope);
+            runGroups(context, project.groups(), Arrays.asList(projectScope));
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults =
-            runUnits(context, project.units(), projectScope);
+            runUnits(context, project.units(), Arrays.asList(projectScope));
 
         context.closeScope(projectScope);
 

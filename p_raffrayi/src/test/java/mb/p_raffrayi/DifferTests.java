@@ -129,7 +129,7 @@ public class DifferTests extends PRaffrayiTestBase {
 
             @Override public IFuture<IResult.Empty<Scope, Integer, IDatum>> run(IIncrementalTypeCheckerContext<Scope, Integer, IDatum, IResult.Empty<Scope, Integer, IDatum>, EmptyI> unit,
                     List<Scope> rootScopes) {
-                final Scope root = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
+                final Scope root = unit.stableFreshScope("s", CapsuleUtil.immutableSet(), false);
                 final IFuture<IUnitResult<Scope, Integer, IDatum, R, EmptyI>> subResult =
                         unit.add("sub", typeChecker, Arrays.asList(root));
                 unit.closeScope(root);

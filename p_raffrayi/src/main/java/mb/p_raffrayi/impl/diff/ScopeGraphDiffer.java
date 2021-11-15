@@ -779,6 +779,11 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private Unit removed(S previousScope) {
+        if(removedScopes.contains(previousScope)) {
+            // External scopes might be marked as removed multiple times.
+            // Asserting they are open leads to IllegalStateExceptions.
+            return Unit.unit;
+        }
         assertPreviousScopeOpen(previousScope);
         schedulePreviousData(previousScope);
 

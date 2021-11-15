@@ -1,5 +1,6 @@
 package mb.statix.concurrent;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,6 +12,8 @@ import mb.statix.spec.Rule;
 public abstract class AStatixGroup implements IStatixGroup {
 
     @Value.Parameter @Override public abstract String resource();
+
+    @Value.Parameter @Override public abstract List<String> scopeNames();
 
     @Value.Parameter @Override public abstract Optional<Rule> rule();
 

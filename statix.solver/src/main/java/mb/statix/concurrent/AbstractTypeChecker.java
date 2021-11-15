@@ -67,14 +67,14 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     private final Multimap<ITerm, ICompletableFuture<ITerm>> pendingData = ArrayListMultimap.create();
 
     protected Scope makeSharedScope(ITypeCheckerContext<Scope, ITerm, ITerm> context, String name) {
-        final Scope s = context.freshScope(name, Collections.emptyList(), true, true);
+        final Scope s = context.stableFreshScope(name, Collections.emptyList(), true);
         context.setDatum(s, s);
         context.shareLocal(s);
         return s;
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> runGroups(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, Scope parentScope) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, List<Scope> parentScopes) {
         if(groups.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
@@ -84,7 +84,7 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>> result =
-                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
+                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
@@ -98,7 +98,7 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     }
 
     protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> runUnits(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, Scope parentScope) {
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units, List<Scope> parentScopes) {
         if(units.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
@@ -108,7 +108,7 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>> result =
-                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), Arrays.asList(parentScope),
+                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);

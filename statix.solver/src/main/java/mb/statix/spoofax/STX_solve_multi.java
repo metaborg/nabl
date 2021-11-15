@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -135,13 +136,20 @@ public class STX_solve_multi extends StatixPrimitive {
         unitResults.add(result);
         final Map<String, ITerm> resourceResults = new HashMap<>();
         final @Nullable ProjectResult projectResult = result.analysis();
+        final Ref<SolverResult> mergedResult = new Ref<>(flatSolverResult(spec, result));
         if(projectResult != null) {
             final String resource = projectResult.resource();
             final List<SolverResult> groupResults = new ArrayList<>();
             projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
-            projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, resource + "/" + k, gr,
-                    groupResults, resourceResults, unitResults));
-            projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
+            projectResult.groupResults().forEach((k, gr) -> {
+                mergedResult.set(mergedResult.get()
+                        .combine(flattenGroupResult(spec,
+                                (IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>) gr, groupResults,
+                                resourceResults, unitResults)));
+            });
+            projectResult.unitResults().forEach((k, ur) -> {
+                mergedResult.set(mergedResult.get().combine(flattenUnitResult(spec, ur, resourceResults, unitResults)));
+            });
 
             SolverResult solveResult = flatSolverResult(spec, result);
             for(SolverResult groupResult : groupResults) {
@@ -154,29 +162,37 @@ public class STX_solve_multi extends StatixPrimitive {
         return resourceResults;
     }
 
-    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit> result) {
+    private void flattenLibraryResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit> result) {
     }
 
-    private void flattenGroupResult(Spec spec, String groupId,
+    private SolverResult flattenGroupResult(Spec spec,
             IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState> result, List<SolverResult> groupResults,
             Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
         unitResults.add(result);
         final GroupResult groupResult = result.analysis();
+        final Ref<SolverResult> mergedResult = new Ref<>(flatSolverResult(spec, result));
         if(groupResult != null) {
-            groupResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(),
-                            (IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>) gr, groupResults,
-                            resourceResults, unitResults));
-            groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
-            final SolverResult solveResult = flatSolverResult(spec, result);
+            groupResult.groupResults().forEach((k, gr) -> {
+                mergedResult.set(mergedResult.get()
+                        .combine(flattenGroupResult(spec,
+                                (IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>) gr, groupResults,
+                                resourceResults, unitResults)));
+            });
+            groupResult.unitResults().forEach((k, ur) -> {
+                mergedResult.set(mergedResult.get().combine(flattenUnitResult(spec, ur, resourceResults, unitResults)));
+            });
+            SolverResult solveResult = mergedResult.get();
             groupResults.add(solveResult);
-            resourceResults.put(groupId, B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
+            resourceResults.put(groupResult.resource(),
+                    B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
         } else {
             logger.error("Missing result for group {}", result.id());
         }
+        return mergedResult.get();
     }
 
-    private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState> result,
+    private SolverResult flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState> result,
             Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
         unitResults.add(result);
         final UnitResult unitResult = result.analysis();
@@ -187,6 +203,8 @@ public class STX_solve_multi extends StatixPrimitive {
         } else {
             logger.error("Missing result for unit {}", result.id());
         }
+
+        return unitResult.solveResult();
     }
 
     private SolverResult flatSolverResult(Spec spec,

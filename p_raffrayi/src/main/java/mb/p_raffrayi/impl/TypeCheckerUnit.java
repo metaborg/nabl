@@ -27,6 +27,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
@@ -137,7 +138,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private final MultiSetMap.Transient<D, ICompletableFuture<D>> pendingExternalDatums = MultiSetMap.Transient.of();
 
     @Override protected IFuture<D> getExternalDatum(D datum) {
-        if(previousResult != null && previousResult.localState() != null) {
+        if(!changed && previousResult != null && previousResult.localState() != null) {
+            // when previous result is present, reliable (i.e., !changed), and has local state
+            // try to find datum from previous state
             final Optional<D> datumOpt = previousResult.localState().typeCheckerState().tryGetExternalDatum(datum);
             if(datumOpt.isPresent()) {
                 return CompletableFuture.completedFuture(datumOpt.get());
@@ -391,11 +394,17 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
     @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         assertActive();
-        if(!sharing) {
-            doImplicitActivate();
-        }
+        doImplicitActivate();
 
         final S scope = doFreshScope(baseName, edgeLabels, data, sharing);
+
+        return scope;
+    }
+
+    @Override public S stableFreshScope(String name, Iterable<L> edgeLabels, boolean data) {
+        assertActive();
+
+        final S scope = doStableFreshScope(name, edgeLabels, data);
 
         return scope;
     }
@@ -879,8 +888,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             final MultiSet.Transient<String> counters = MultiSet.Transient.of();
             counters.addAll(this.scopeNameCounters);
             builder.scopeNameCounters(counters.freeze());
-            builder.typeCheckerState(snapshot);
 
+            final Set.Transient<String> stableIdentities = CapsuleUtil.transientSet();
+            stableIdentities.__insertAll(usedStableScopes);
+            builder.usedStableScopes(stableIdentities.freeze());
+
+            builder.typeCheckerState(snapshot);
             localCapture(builder.build());
         }
     }
@@ -889,7 +902,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         // TODO: assert only root scopes in this.scopes?
         this.scopes.__insertAll(snapshot.scopes());
 
-        // TODO assert empty
+        final Set.Transient<String> currentIdentities = CapsuleUtil.transientSet();
+        currentIdentities.__insertAll(usedStableScopes);
+        final Set.Immutable<String> stableScopes = Set.Immutable.intersect(snapshot.usedStableScopes(), currentIdentities.freeze());
         this.scopeNameCounters = snapshot.scopeNameCounters().melt();
 
         for(S scope : snapshot.unInitializedScopes()) {
@@ -908,14 +923,33 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         // TODO: patch root scopes?
         this.scopeGraph.set(snapshot.scopeGraph());
 
-        final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
+        final BiMap.Transient<S> scopesToProcess = BiMap.Transient.of();
+        stableScopes.forEach(name -> {
+            final S scope = makeStableScope(name);
+            scopesToProcess.put(scope, scope);
+        });
+
         final Iterator<S> pScopeIterator = previousResult.rootScopes().iterator();
         for(S currentScope : rootScopes) {
-            doInitShare(self, currentScope, edges, false);
             final S previousScope = pScopeIterator.next();
+            scopesToProcess.put(currentScope, previousScope);
+        }
+        for(Map.Entry<S, S> pair : scopesToProcess.entrySet()) {
+            final S currentScope = pair.getKey();
+            final S previousScope = pair.getValue();
+            // @formatter:off
+            final List<EdgeOrData<L>> edges = edgeLabels.stream()
+                .filter(label -> !Iterables.isEmpty(snapshot.scopeGraph().getEdges(previousScope, label)))
+                .map(EdgeOrData::edge)
+                .collect(Collectors.toList());
+            // @formatter:on
+            doInitShare(self, currentScope, edges, false);
             for(L label : edgeLabels) {
                 for(S target : snapshot.scopeGraph().getEdges(previousScope, label)) {
-                    self.async(parent)._addEdge(currentScope, label, target);
+                    if(!context.scopeId(currentScope).equals(self.id())) {
+                        final S newTarget = matchedBySharing.getValueOrDefault(target, target);
+                        self.async(parent)._addEdge(currentScope, label, newTarget);
+                    }
                 }
                 final CloseLabel<S, L, D> closeEdge = CloseLabel.of(self, currentScope, EdgeOrData.edge(label));
                 if(!snapshot.isOpen(previousScope, EdgeOrData.edge(label)) && isWaitingFor(closeEdge, self)) {

@@ -25,10 +25,10 @@ public class InputMatchers {
 
     public static IMatcher<IStatixGroup> group() {
         return M.req("Expected Group",
-                M.casesFix(m -> Iterables2.singleton(M.appl5("Group", M.stringValue(), StatixTerms.hoconstraint(),
-                        changed(), M.map(M.stringValue(), m), M.map(M.stringValue(), unit()),
-                        (t, resource, rule, changed, groups, units) -> {
-                            return StatixGroup.of(resource, Optional.of(rule), changed, groups, units);
+                M.casesFix(m -> Iterables2.singleton(M.appl6("Group", M.stringValue(), M.listElems(M.stringValue()),
+                        StatixTerms.hoconstraint(), changed(), M.map(M.stringValue(), m),
+                        M.map(M.stringValue(), unit()), (t, resource, scopeNames, rule, changed, groups, units) -> {
+                            return StatixGroup.of(resource, scopeNames, Optional.of(rule), changed, groups, units);
                         }))));
     }
 

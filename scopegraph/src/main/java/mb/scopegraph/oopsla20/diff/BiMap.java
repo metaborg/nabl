@@ -228,6 +228,14 @@ public abstract class BiMap<E> {
             return bwd.get(value);
         }
 
+        public E getKeyOrDefault(E key, E def) {
+            return fwd.getOrDefault(key, def);
+        }
+
+        public E getValueOrDefault(E value, E def) {
+            return bwd.getOrDefault(value, def);
+        }
+
     }
 
 }

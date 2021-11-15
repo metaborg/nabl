@@ -14,13 +14,14 @@ import mb.p_raffrayi.IUnitResult;
 
 public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
-    @SuppressWarnings("unused")  @Override public <Q extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, Q, T>> add(String id,
-            ITypeChecker<S, L, D, Q, T> unitChecker, List<S> rootScopes, boolean changed) {
+    @SuppressWarnings("unused") @Override public <Q extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Q, T>>
+            add(String id, ITypeChecker<S, L, D, Q, T> unitChecker, List<S> rootScopes, boolean changed) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
-    @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> add(String id,
-            IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
+    @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>>
+            add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
@@ -28,8 +29,11 @@ public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITy
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
-    @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels,
-            boolean data, boolean sharing) {
+    @Override public S freshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
+        throw new UnsupportedOperationException("Unsupported in query context.");
+    }
+
+    @SuppressWarnings("unused") @Override public S stableFreshScope(String name, Iterable<L> labels, boolean data) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
