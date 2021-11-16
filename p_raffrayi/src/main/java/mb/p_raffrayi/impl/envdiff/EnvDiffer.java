@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl.envdiff;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action4;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -28,10 +27,6 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
     public EnvDiffer(IEnvDifferContext<S, L, D> context, IDifferOps<S, L, D> differOps) {
         this.differOps = differOps;
         this.context = context;
-    }
-
-    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf) {
-        return diff(scope, CapsuleUtil.immutableSet(scope), labelWf);
     }
 
     @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {

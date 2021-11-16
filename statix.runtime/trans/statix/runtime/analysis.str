@@ -233,7 +233,7 @@ rules // cstx -- file tasks
 
   cstx--sub-result(|name): () -> ()
   cstx--sub-result(|name): SubAnalysis(_, _, _, _, sub-analysis) -> sub-result
-    with sub-result := <lookup <+ !()> (name, sub-analysis)
+    with sub-result := <lookup' <+ !()> (name, sub-analysis)
 
   cstx--sub-result(|name) = report-failure(|$[Failed to find analysis for [name]: ], <id>)
 
@@ -260,7 +260,7 @@ rules // cstx -- project/group tasks
        ; units  := <filter(?(_, Unit(_, _, _)))> subs
 
   // Every name maps to same term
-  cstx--keys-consistent = ?keys; map(?GroupKey(<id>, _)); make-set; map({ n: \ n -> n with <filter(?GroupKey(n, <id>)); make-set> keys => [_] \})
+  cstx--keys-consistent = ?keys; strip-annos; map(?GroupKey(<id>, _)); make-set; map({ n: \ n -> n with <filter(?GroupKey(n, <id>)); make-set> keys => [_] \})
 
   cstx--make-sub(|key, parent-res, grp-c-name): file-task* -> grp
     with GroupKey(grp-id, _) := key
@@ -291,7 +291,7 @@ rules // cstx -- project/group tasks
 rules // cstx -- results
 
   cstx--mk-project-result(|config, analysis*): (project-res, ast, change) -> (project-res, result)
-    with if ProjectResult(state, unit-result) := <lookup> (project-res, analysis*) then
+    with if ProjectResult(state, unit-result) := <lookup'> (project-res, analysis*) then
          (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
        ; analysis := ProjectAnalysis(state, unit-result)
        ; switch !change
@@ -306,7 +306,7 @@ rules // cstx -- results
 
   cstx--mk-file-result(post|config, file-task*, analysis*): (resource, change) -> (resource, result)
     with task@FileTask(_, key, ast, sub-task) := <getfirst(?(_, FileTask(resource, _, _, _))); Snd> file-task*
-       ; if (sub-result, error*, warning*, note*) := <lookup; cstx--mk-subfile-result(|config, analysis*, sub-task, resource)> (resource, analysis*) then
+       ; if (sub-result, error*, warning*, note*) := <lookup'; cstx--mk-subfile-result(|config, analysis*, sub-task, resource)> (resource, analysis*) then
            analysis := FileAnalysis(key, task, ast, sub-result)
          ; switch !change
              case ?Added(_) + ?Changed(_, _):
@@ -337,7 +337,7 @@ rules // cstx -- results
 
   cstx--mk-subtask-result(|config, analysis*, resource): (name, sub-task) -> (name, sub-result, error', warning', note')
     with resource' := $[[resource]/[name]]
-       ; (sub-result, error', warning', note') := <lookup; cstx--mk-subfile-result(|config, analysis*, sub-task, resource')> (resource', analysis*)
+       ; (sub-result, error', warning', note') := <lookup'; cstx--mk-subfile-result(|config, analysis*, sub-task, resource')> (resource', analysis*)
 
 
 rules // multi file analysis

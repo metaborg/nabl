@@ -272,18 +272,16 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private Unit matchEdge(Edge<S, L> currentEdge, Immutable<Edge<S, L>, BiMap.Immutable<S>> previousEdges) {
         logger.debug("{}: matching with candidates {}", currentEdge, previousEdges);
-        if(previousEdges.isEmpty()) {
-            return added(currentEdge);
-        }
-        final Entry<Edge<S, L>, BiMap.Immutable<S>> previousEdge = previousEdges.entrySet().iterator().next();
 
-        if(matchScopes(previousEdge.getValue())) {
-            logger.trace("{}: matched with {}.", currentEdge, previousEdge);
-            return match(currentEdge, previousEdge.getKey());
-        } else {
-            logger.trace("{}: matching with {} failed, queueing match for remainder.", currentEdge, previousEdge);
-            return queue(new EdgeMatch(currentEdge, previousEdges.__remove(previousEdge.getKey())));
+        for(Entry<Edge<S, L>, BiMap.Immutable<S>>previousEdge : previousEdges.entrySet()) {
+            if(matchScopes(previousEdge.getValue())) {
+                logger.trace("{}: matched with {}.", currentEdge, previousEdge);
+                return match(currentEdge, previousEdge.getKey());
+            } else {
+                logger.trace("{}: matching with {} failed.", currentEdge, previousEdge);
+            }
         }
+        return added(currentEdge);
     }
 
     /**
@@ -474,7 +472,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         previousEdges.forEach(edge -> seenPreviousEdges.put(edge.source, edge.label, edge.target));
         currentEdges.forEach(edge -> seenCurrentEdges.put(edge.source, edge.label, edge.target));
 
-        for(Edge<S, L> currentEdge : currentEdges) {
+        for(final Edge<S, L> edge : currentEdges) {
+            final Edge<S, L> currentEdge = edge; // FIXME indirection needed for capture?
             // For each candidate edge, compute which scopes must be matched in order to make the edge match
             // This involves the target scopes, but also the scopes in the data of these target scopes.
             IFuture<List<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>>> matchesFuture =

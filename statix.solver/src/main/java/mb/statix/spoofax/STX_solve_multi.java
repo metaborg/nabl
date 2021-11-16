@@ -94,13 +94,14 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result =
                     futureResult.asJavaCompletion().get();
+
             final double dt = System.currentTimeMillis() - t0;
+            logger.info("Files analyzed in {} s", (dt / 1_000d));
 
             final List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults = new ArrayList<>();
             final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
-            logger.info("Files analyzed in {} s", (dt / 1_000d));
             if(settings.incremental()) {
                 logger.info("* Initially changed units : {}",
                         flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));

@@ -59,6 +59,7 @@ import mb.p_raffrayi.impl.envdiff.EnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDifferContext;
+import mb.p_raffrayi.impl.envdiff.IndexedEnvDiffer;
 import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
@@ -563,7 +564,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             // @formatter:on
             initDiffer(differ, this.rootScopes, previousResult.rootScopes());
             if(isConfirmationEnabled()) {
-                this.envDiffer = new EnvDiffer<>(envDifferContext, differOps());
+                this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
             }
 
             logger.debug("Rebuilding scope graph.");
@@ -664,7 +665,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                             Collections.emptyList());
                 }
                 if(isConfirmationEnabled()) {
-                    this.envDiffer = new EnvDiffer<>(envDifferContext, differOps());
+                    this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
                 }
             }
             pendingExternalDatums.asMap().forEach((d, futures) -> {
