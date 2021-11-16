@@ -14,7 +14,6 @@ import org.metaborg.util.future.AggregateFuture.SC;
 
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
-import mb.p_raffrayi.impl.envdiff.External;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
@@ -70,16 +69,11 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 logger.trace("value: {}.", envDiff);
                 final ArrayList<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>> futures = new ArrayList<>();
                 futures.add(CompletableFuture.completedFuture(SC.of(envDiff.patches())));
-                envDiff.diffPaths().forEach(diffPath -> {
+                envDiff.changes().forEach(diff -> {
                     // @formatter:off
-                    futures.add(diffPath.getDatum().<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>>match(
+                    futures.add(diff.<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>>match(
                         addedEdge -> handleAddedEdge(addedEdge, dataWf),
-                        removedEdge -> handleRemovedEdge(removedEdge, dataWf, prevEnvEmpty),
-                        external -> handleExternal(external, dataWf),
-                        diffTree -> {
-                            logger.error("Diff path cannot end in subtree: {}.", diffPath);
-                            throw new IllegalStateException("Diff path cannot end in subtree");
-                        }
+                        removedEdge -> handleRemovedEdge(removedEdge, dataWf, prevEnvEmpty)
                     ));
                     // @formatter:on
                 });
@@ -98,9 +92,6 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, DataWf<S, L, D> dataWf, boolean prevEnvEnpty);
-
-    protected abstract IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external,
-            DataWf<S, L, D> dataWf);
 
     protected SC<BiMap.Immutable<S>, ConfirmResult<S>> deny() {
         return DENY;

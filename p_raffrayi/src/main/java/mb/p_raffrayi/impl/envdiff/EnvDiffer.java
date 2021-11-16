@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl.envdiff;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action4;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -15,6 +16,7 @@ import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.ScopeDiff;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 
 public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
@@ -33,7 +35,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         logger.debug("Computing env diff for {} ~ {}.", scope, labelWf);
         if(!differOps.ownScope(scope)) {
             logger.debug("{} external", scope);
-            return CompletableFuture.completedFuture(External.of(scope, labelWf));
+            return CompletableFuture.completedFuture(EnvDiff.empty());
         }
 
         return context.match(scope).thenCompose(match_opt -> {
@@ -46,24 +48,24 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
 
                 return AggregateFuture.of(futures).thenCompose(diffs -> {
                     final ArrayList<IFuture<Unit>> subEnvFutures = new ArrayList<>();
-                    final DiffTreeBuilder<S, L, D> treeBuilder = new DiffTreeBuilder<>(scope, currentScope);
+                    final EnvDiffBuilder<S, L, D> envDiffBuilder = new EnvDiffBuilder<>(scope, currentScope);
                     for(ScopeDiff<S, L, D> diff : diffs) {
                         // Process all added/removed edges
                         // @formatter:off
                         traverseApplicable(diff.addedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} added", scope, label, target);
-                            treeBuilder.addSubTree(label, target, AddedEdge.of(target, newLabelWf));
+                            envDiffBuilder.addChange(AddedEdge.of(target, newLabelWf));
                         });
                         traverseApplicable(diff.removedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} removed", scope, label, target);
-                            treeBuilder.addSubTree(label, target, RemovedEdge.of(target, newLabelWf));
+                            envDiffBuilder.addChange(RemovedEdge.of(target, newLabelWf));
                         });
 
                         // Asynchronously collect all sub environment diffs
                         traverseApplicable(diff.matchedEdges(), labelWf, seenScopes, (label, target, newSeenScopes, newLabelWf) -> {
                             logger.debug("{} -{}-> {} matched. Computing difftree step.", scope, label, target);
                             subEnvFutures.add(diff(target, newSeenScopes, newLabelWf).thenApply(subDiff -> {
-                                treeBuilder.addSubTree(label, target, subDiff);
+                                envDiffBuilder.addEnvDiff(subDiff);
                                 return Unit.unit;
                             }));
                         });
@@ -72,14 +74,15 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
 
                     return AggregateFuture.of(subEnvFutures).thenApply(__ -> {
                         logger.debug("env diff for {} ~ {} complete.", scope, labelWf);
-                        final IEnvDiff<S, L, D> diffTree = treeBuilder.build();
+                        final IEnvDiff<S, L, D> diffTree = envDiffBuilder.build();
                         logger.trace("diff value: {}", diffTree);
                         return diffTree;
                     });
                 });
             }).orElseGet(() -> {
                 logger.debug("{} removed", scope);
-                return CompletableFuture.completedFuture(RemovedEdge.of(scope, labelWf));
+                final Set.Immutable<IEnvChange<S, L, D>> change = CapsuleUtil.immutableSet(RemovedEdge.of(scope, labelWf));
+                return CompletableFuture.completedFuture(EnvDiff.of(BiMap.Immutable.of(), change));
             });
         });
     }

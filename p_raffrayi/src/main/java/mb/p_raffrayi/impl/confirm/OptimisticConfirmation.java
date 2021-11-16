@@ -6,7 +6,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
-import mb.p_raffrayi.impl.envdiff.External;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -25,7 +24,7 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
     @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge,
             DataWf<S, L, D> dataWf) {
         logger.debug("Handling added edge by regular query: {}.", addedEdge);
-        return context.query(new ScopePath<>(addedEdge.scope()), addedEdge.labelWf(), LabelOrder.none(), dataWf,
+        return context.query(new ScopePath<>(addedEdge.target()), addedEdge.labelWf(), LabelOrder.none(), dataWf,
                 DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
     }
 
@@ -36,15 +35,8 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
             return acceptFuture();
         }
         logger.debug("Confirming removed edge by previous result query: {}.", removedEdge);
-        return context.queryPrevious(new ScopePath<>(removedEdge.scope()), removedEdge.labelWf(), dataWf,
+        return context.queryPrevious(new ScopePath<>(removedEdge.target()), removedEdge.labelWf(), dataWf,
                 LabelOrder.none(), DataLeq.none()).thenApply(env -> env.isEmpty() ? accept() : deny());
-    }
-
-    @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleExternal(External<S, L, D> external,
-            DataWf<S, L, D> dataWf) {
-        // External env diff validated by transitively recorded query
-        logger.debug("Trivially accepting external env diff.");
-        return acceptFuture();
     }
 
 }

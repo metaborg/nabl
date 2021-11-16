@@ -18,6 +18,7 @@ import mb.p_raffrayi.impl.diff.StaticDifferContext;
 import mb.p_raffrayi.impl.envdiff.AddedEdge;
 import mb.p_raffrayi.impl.envdiff.DifferBasedContext;
 import mb.p_raffrayi.impl.envdiff.EnvDiffer;
+import mb.p_raffrayi.impl.envdiff.IEnvChange;
 import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
@@ -25,8 +26,6 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
-import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
-import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class EnvDiffTest extends BaseDifferTest {
 
@@ -65,14 +64,12 @@ public class EnvDiffTest extends BaseDifferTest {
 
         assertNotNull(diffResult.get());
 
-        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
-                diffResult.get().diffPaths();
+        Set.Immutable<IEnvChange<String, Integer, List<String>>> changes = diffResult.get().changes();
 
-        assertEquals(1, paths.size());
-        ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
+        assertEquals(1, changes.size());
+        IEnvChange<String, Integer, List<String>> change = changes.iterator().next();
 
-        assertEquals(new ScopePath<>(s1o).step(l1, s2n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s2n, LabelWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s2n, LabelWf.any()), change);
 
         assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
@@ -102,14 +99,12 @@ public class EnvDiffTest extends BaseDifferTest {
 
         assertNotNull(diffResult.get());
 
-        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
-                diffResult.get().diffPaths();
+        Set.Immutable<IEnvChange<String, Integer, List<String>>> changes = diffResult.get().changes();
 
-        assertEquals(1, paths.size());
-        ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
+        assertEquals(1, changes.size());
+        IEnvChange<String, Integer, List<String>> change = changes.iterator().next();
 
-        assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3o).get(), path.getPath());
-        assertEquals(RemovedEdge.of(s3o, LabelWf.any()), path.getDatum());
+        assertEquals(RemovedEdge.of(s3o, LabelWf.any()), change);
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }
@@ -138,10 +133,9 @@ public class EnvDiffTest extends BaseDifferTest {
 
         assertNotNull(diffResult.get());
 
-        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
-                diffResult.get().diffPaths();
+        Set.Immutable<IEnvChange<String, Integer, List<String>>> changes = diffResult.get().changes();
 
-        assertEquals(0, paths.size());
+        assertEquals(0, changes.size());
 
         assertEquals(BiMap.Immutable.of(s1n, s1o), diffResult.get().patches());
     }
@@ -174,14 +168,12 @@ public class EnvDiffTest extends BaseDifferTest {
 
         assertNotNull(diffResult.get());
 
-        Set.Immutable<ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>>> paths =
-                diffResult.get().diffPaths();
+        Set.Immutable<IEnvChange<String, Integer, List<String>>> changes =  diffResult.get().changes();
 
-        assertEquals(1, paths.size());
-        ResolutionPath<String, Integer, IEnvDiff<String, Integer, List<String>>> path = paths.iterator().next();
+        assertEquals(1, changes.size());
+        IEnvChange<String, Integer, List<String>> change = changes.iterator().next();
 
-        assertEquals(new ScopePath<>(s1o).step(l1, s2o).get().step(l1, s3n).get(), path.getPath());
-        assertEquals(AddedEdge.of(s3n, LabelWf.any()), path.getDatum());
+        assertEquals(AddedEdge.of(s3n, LabelWf.any()), change);
 
         assertEquals(BiMap.Immutable.of(s1n, s1o).put(s2n, s2o), diffResult.get().patches());
     }
