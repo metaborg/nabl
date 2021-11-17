@@ -19,6 +19,7 @@ dependencies {
   api(project(":nabl2.terms"))
 
   api("com.google.guava:guava")
+  api("com.google.guava:failureaccess")
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 
