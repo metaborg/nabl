@@ -567,7 +567,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, EmptyI, EmptyI> result = future.asJavaCompletion().get();
     }
 
-    @Ignore @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
+    @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
                 run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
 

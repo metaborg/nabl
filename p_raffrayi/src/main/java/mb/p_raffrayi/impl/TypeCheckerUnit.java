@@ -189,25 +189,31 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             });
         }
 
-        state = UnitState.INIT_TC;
-        final IFuture<R> result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
-            if(state == UnitState.INIT_TC) {
-                stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
-            }
-            if(inLocalPhase()) {
-                doCapture();
-            }
-            state = UnitState.DONE;
-            resume();
-            tryFinish();
-        });
+        final IFuture<R> result;
+        try {
+            state = UnitState.INIT_TC;
+            result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
+                if(state == UnitState.INIT_TC) {
+                    stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
+                }
+                if(inLocalPhase()) {
+                    doCapture();
+                }
+                state = UnitState.DONE;
+                resume();
+                tryFinish();
+            });
+        } catch(Exception e) {
+            logger.error("Exception starting type-checker {}.", e);
+            return doFinish(CompletableFuture.completedExceptionally(e));
+        }
 
         // Start phantom units for all units that have not yet been restarted
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 final IUnitResult<S, L, D, ?, ?> subResult = previousResult.subUnitResults().get(removedId);
-                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(removedId,
-                        (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
+                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(removedId, (subself,
+                        subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
                         new ArrayList<>(), true);
             }
         }
@@ -905,7 +911,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         final Set.Transient<String> currentIdentities = CapsuleUtil.transientSet();
         currentIdentities.__insertAll(usedStableScopes);
-        final Set.Immutable<String> stableScopes = Set.Immutable.intersect(snapshot.usedStableScopes(), currentIdentities.freeze());
+        final Set.Immutable<String> stableScopes =
+                Set.Immutable.intersect(snapshot.usedStableScopes(), currentIdentities.freeze());
         this.scopeNameCounters = snapshot.scopeNameCounters().melt();
 
         for(S scope : snapshot.unInitializedScopes()) {

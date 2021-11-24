@@ -90,6 +90,9 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         if(previousResult != null) {
             if(!previousResult.allFailures().isEmpty()) {
                 logger.warn("Initial state contains failures, discarding it.");
+                for(Throwable ex : previousResult.allFailures()) {
+                    logger.debug("* ", ex);
+                }
                 this.previousResult = null;
             } else {
                 this.previousResult = previousResult;
@@ -140,9 +143,6 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
                 futures.forEach(f -> f.complete(unit));
                 return null; // remove mapping
             });
-        }
-        if(logger.warnEnabled() && dependentSet.get().contains(new UnitProcess<>(unit))) {
-            logger.warn("Race condition in request for actor {}.", unit.id());
         }
     }
 
