@@ -581,6 +581,79 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO> result = future.asJavaCompletion().get();
     }
 
+    @Test(timeout = 10000) public void testFailureInIncrementalRun() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
+                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+
+                    @Override public IFuture<EmptyO>
+                            run(IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit, List<Scope> roots) {
+                        return unit.runIncremental(__ -> { throw new ExpectedFailure(); });
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO> result = future.asJavaCompletion().get();
+    }
+
+    @Test(timeout = 10000) public void testFailureInExtractLocal() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
+                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+
+                    @Override public IFuture<EmptyO>
+                            run(IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit, List<Scope> roots) {
+                        // formatter:off
+                        return unit.<EmptyO>runIncremental(
+                            __ -> CompletableFuture.completedFuture(EmptyO.of()),
+                            x -> { throw new ExpectedFailure(); },
+                            CompletableFuture::completed);
+                        // formatter:on
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO> result = future.asJavaCompletion().get();
+    }
+
+    @Test(timeout = 10000) public void testFailureInCombine() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
+                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+
+                    @Override public IFuture<EmptyO>
+                            run(IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit, List<Scope> roots) {
+                        // formatter:off
+                        return unit.<EmptyO>runIncremental(
+                            __ -> CompletableFuture.completedFuture(EmptyO.of()),
+                            x -> x,
+                            (r, ex) -> { throw new ExpectedFailure(); });
+                        // formatter:on
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO> result = future.asJavaCompletion().get();
+    }
+
+    @Test(timeout = 10000) public void testFailurePatch() throws ExecutionException, InterruptedException {
+        final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
+                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+
+                    @Override public IFuture<EmptyO>
+                            run(IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit, List<Scope> roots) {
+                        // formatter:off
+                        return unit.<EmptyO>runIncremental(
+                            __ -> CompletableFuture.completedFuture(EmptyO.of()),
+                            x -> x,
+                            (r, ptcs) -> { throw new ExpectedFailure(); },
+                            CompletableFuture::completed
+                        );
+                        // formatter:on
+                    }
+
+                }, Set.Immutable.of());
+
+        final IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO> result = future.asJavaCompletion().get();
+    }
+
     @Test(timeout = 10000) public void testNoRunResult() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, EmptyO, EmptyO>> future =
                 run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
