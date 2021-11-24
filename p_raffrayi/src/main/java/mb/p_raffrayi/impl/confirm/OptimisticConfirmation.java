@@ -24,6 +24,7 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
     @Override protected IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge,
             DataWf<S, L, D> dataWf) {
         logger.debug("Handling added edge by regular query: {}.", addedEdge);
+        // TODO: use path prefix to prevent false positives on cyclic edges
         return context.query(new ScopePath<>(addedEdge.target()), addedEdge.labelWf(), LabelOrder.none(), dataWf,
                 DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
     }
@@ -35,6 +36,7 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
             return acceptFuture();
         }
         logger.debug("Confirming removed edge by previous result query: {}.", removedEdge);
+        // TODO: use path prefix to prevent false positives on cyclic edges
         return context.queryPrevious(new ScopePath<>(removedEdge.target()), removedEdge.labelWf(), dataWf,
                 LabelOrder.none(), DataLeq.none()).thenApply(env -> env.isEmpty() ? accept() : deny());
     }

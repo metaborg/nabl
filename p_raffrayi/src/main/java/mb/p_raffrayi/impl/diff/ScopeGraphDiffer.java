@@ -1010,8 +1010,12 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     // Helper methods and classes
 
-    private static <T, R> IFuture<List<R>> aggregateAll(Iterable<T> items, Function1<T, IFuture<R>> mapper) {
-        return AggregateFuture.of(Streams.stream(items).map(mapper::apply).collect(Collectors.toSet()));
+    private static <T, R> IFuture<List<R>> aggregateAll(Collection<T> items, Function1<T, IFuture<R>> mapper) {
+        final ArrayList<IFuture<R>> futures = new ArrayList<>(items.size());
+        for(T item : items) {
+            futures.add(mapper.apply(item));
+        }
+        return AggregateFuture.of(futures);
     }
 
     private boolean successfullyCompleted() {

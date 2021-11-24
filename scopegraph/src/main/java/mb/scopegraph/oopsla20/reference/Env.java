@@ -31,7 +31,7 @@ public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>>, Serializ
     }
 
     @Override public Iterator<ResolutionPath<S, L, D>> iterator() {
-        return Iterators.transform(paths.iterator(), p -> p);
+        return paths.iterator();
     }
 
     @SuppressWarnings("unchecked") public static <S, L, D> Env<S, L, D> empty() {
