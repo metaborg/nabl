@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
@@ -22,6 +23,7 @@ import com.google.common.collect.Lists;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.impl.RecordedQuery;
+import mb.p_raffrayi.impl.StateCapture;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -156,7 +158,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
-    @Ignore("Requires early validation of shared edges") @Test(timeout = 10000) public void
+    @Test(timeout = 10000) public void
             testRelease_MutualDep_ParentChanged() throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
@@ -167,10 +169,20 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Env<Scope, Integer, IDatum> env = Env.of(path);
 
         // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> subLocalSG = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, d)
+                .setDatum(d, d);
         final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
             .addScopes(d)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+            .scopeGraph(subLocalSG)
+            .localScopeGraph(subLocalSG)
+            .localState(StateCapture.<Scope, Integer, IDatum, EmptyI>builder()
+                .scopes(CapsuleUtil.immutableSet(d))
+                .scopeGraph(subLocalSG)
+                .scopeNameCounters(MultiSet.Immutable.of("d"))
+                .usedStableScopes(CapsuleUtil.immutableSet())
+                .typeCheckerState(EmptyI.of())
+                .build())
             .addQueries(recordedQuery(root, env).build())
             .build();
         // @formatter:on
