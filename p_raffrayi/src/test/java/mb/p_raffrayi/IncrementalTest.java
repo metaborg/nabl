@@ -1524,9 +1524,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         return RecordedQuery.<Scope, Integer, IDatum>builder()
             .labelWf(LabelWf.any())
             .dataWf(DataWf.any())
-            .labelOrder(LabelOrder.none())
-            .dataLeq(DataLeq.any())
-            .result(Env.empty());
+            .empty(true);
         // @formatter:on
     }
 
@@ -1540,11 +1538,11 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path,
             Env<Scope, Integer, IDatum> env) {
-        return recordedQuery(path).result(env);
+        return recordedQuery(path).empty(env.isEmpty());
     }
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(Scope root, Env<Scope, Integer, IDatum> env) {
-        return recordedQuery(root).result(env);
+        return recordedQuery(root).empty(env.isEmpty());
     }
 
     ///////////////////////////////////////////////////////////////////////////

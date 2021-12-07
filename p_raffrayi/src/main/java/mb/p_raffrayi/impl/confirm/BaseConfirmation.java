@@ -17,7 +17,6 @@ import mb.p_raffrayi.impl.envdiff.AddedEdge;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
@@ -47,8 +46,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
-        return confirm(query.scopePath(), query.labelWf(), query.dataWf(),
-                query.result().map(Env::isEmpty).orElse(false));
+        return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty());
     }
 
     @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
@@ -108,7 +106,8 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return CompletableFuture.completedFuture(ACC_NO_PATCHES);
     }
 
-    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> accept(IPatchCollection.Immutable<S> patches) {
+    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+            accept(IPatchCollection.Immutable<S> patches) {
         return CompletableFuture.completedFuture(SC.of(patches));
     }
 

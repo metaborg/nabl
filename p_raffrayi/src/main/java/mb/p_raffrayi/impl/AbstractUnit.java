@@ -501,7 +501,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     logger.debug("local env {}", scope);
                     if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
                         // No need to wait for completion, because local shared scopes are initialized when freshened.
-                        recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv));
+                        // TODO: wait for 'real' query answer?
+                        recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF));
                     }
                     return Optional.empty();
                 } else {
@@ -521,14 +522,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             if(isQueryRecordingEnabled()) {
                                 if(external) {
                                     // For external queries, track this query as transitive.
-                                    transitiveQueries
-                                            .add(RecordedQuery.of(path, re, dataWF, labelOrder, dataEquiv, ans.env()));
+                                    transitiveQueries.add(RecordedQuery.of(path, re, dataWF, ans.env()));
                                     transitiveQueries.addAll(ans.transitiveQueries());
                                     predicateQueries.addAll(ans.predicateQueries());
                                 } else if(record) {
                                     // For local query, record it as such.
-                                    recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv,
-                                            ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
+                                    recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, ans.env(),
+                                            ans.transitiveQueries(), ans.predicateQueries()));
                                 }
                             }
                             return ans.env();
@@ -669,7 +669,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
                         // Hence, we just ignore it.
                         if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                            queries.add(RecordedQuery.of(path, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                            queries.add(RecordedQuery.of(path, labelWF, dataWF, ans.env()));
                         }
                         queries.addAll(ans.transitiveQueries());
                         // TODO can this happen? Is flattening here ok then?
@@ -1088,7 +1088,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 states.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
         if(units.get(true).isEmpty()) {
             // No restarted units in cluster, release all involved units.
-            final IPatchCollection.Immutable<S> ptcs = states.stream().map(this::patches).reduce(IPatchCollection.Immutable::putAll).get();
+            final IPatchCollection.Immutable<S> ptcs =
+                    states.stream().map(this::patches).reduce(IPatchCollection.Immutable::putAll).get();
             logger.debug("Releasing all involved units: {}.", ptcs);
             nodes.forEach(node -> node.from(self, context)._release(ptcs));
         } else {

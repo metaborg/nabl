@@ -10,18 +10,17 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Sets;
-
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.impl.IQueryAnswer;
 import mb.p_raffrayi.impl.Release;
+import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.reference.Env;
-import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.PatchCollection;
 
+// TODO: remove completely
 public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(TrivialConfirmation.class);
@@ -59,11 +58,11 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                     }
                 } else if(!m.isPresent()) {
                     logger.error("No match for {}. Confirming if previous environment empty.", scope);
-                    confirmationResult.complete(rq.result().map(Env::isEmpty).orElse(false));
+                    confirmationResult.complete(rq.empty());
                 } else {
                     logger.debug("Matched {} ~ {}. Confirming if query in match returns equal results.", m.get(), scope);
                     final IFuture<IQueryAnswer<S, L, D>> queryResult = context.query(new ScopePath<>(m.get()),
-                            rq.labelWf(), rq.labelOrder(), rq.dataWf(), rq.dataLeq());
+                            rq.labelWf(), LabelOrder.none(), rq.dataWf(), DataLeq.none());
                     queryResult.whenComplete((env, ex2) -> {
                         if(ex2 != null) {
                             if(ex2 == Release.instance) {
@@ -73,13 +72,6 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                                 logger.error("Confirmation completed exceptionally.", ex2);
                                 confirmationResult.completeExceptionally(ex2);
                             }
-                        } else if(rq.result().isPresent()) {
-                            logger.debug("Confirming {} if new environment is equal.", rq);
-                            // Query is valid iff environments are equal
-                            // TODO: compare environments with scope patches.
-                            java.util.Set<ResolutionPath<S, L, D>> oldPaths = Sets.newHashSet(rq.result().get());
-                            java.util.Set<ResolutionPath<S, L, D>> newPaths = Sets.newHashSet(env.env());
-                            confirmationResult.complete(oldPaths.equals(newPaths));
                         } else {
                             logger.debug("Denied {} because no previous environment given.", rq);
                             confirmationResult.complete(false);
