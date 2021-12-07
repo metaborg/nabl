@@ -86,6 +86,7 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
 
 public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
@@ -1075,7 +1076,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     private static final boolean RESTART_INCOMING = true;
 
-    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes, Collection<StateSummary<S, L, D>> states) {
+    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes,
+            Collection<StateSummary<S, L, D>> states) {
         logger.debug("Received patches: {}.", states);
         if(states.stream().noneMatch(this::isRestartable)) {
             logger.debug("No restartable units, doing regular deadlock handling.");
@@ -1086,7 +1088,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 states.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
         if(units.get(true).isEmpty()) {
             // No restarted units in cluster, release all involved units.
-            BiMap.Immutable<S> ptcs = states.stream().map(this::patches).reduce(BiMap.Immutable::putAll).get();
+            final IPatchCollection.Immutable<S> ptcs = states.stream().map(this::patches).reduce(IPatchCollection.Immutable::putAll).get();
             logger.debug("Releasing all involved units: {}.", ptcs);
             nodes.forEach(node -> node.from(self, context)._release(ptcs));
         } else {
@@ -1095,12 +1097,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 .collect(Collectors.toSet());
             // @formatter:on
             final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
-                    .collect(Collectors.partitioningBy(
-                            node -> shouldRestart(node, activeProcesses),
+                    .collect(Collectors.partitioningBy(node -> shouldRestart(node, activeProcesses),
                             Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
             if(restarts.get(true).isEmpty()) {
-                logger.error("Active units have no {} dependencies elegible for restart.", RESTART_INCOMING ? "incoming" : "outgoing");
-                throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing") + " dependencies elegible for restart.");
+                logger.error("Active units have no {} dependencies elegible for restart.",
+                        RESTART_INCOMING ? "incoming" : "outgoing");
+                throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing")
+                        + " dependencies elegible for restart.");
             } else {
                 logger.debug("Restarting {} (conservative).", restarts);
                 restarts.get(true).forEach(node -> node.from(self, context)._restart());
@@ -1117,7 +1120,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         return state.match(() -> true, __ -> false, __ -> false);
     }
 
-    private BiMap.Immutable<S> patches(StateSummary<S, L, D> state) {
+    private IPatchCollection.Immutable<S> patches(StateSummary<S, L, D> state) {
         // @formatter:off
         return state.match(
             () -> { throw new IllegalStateException("No patches for restarted state."); },

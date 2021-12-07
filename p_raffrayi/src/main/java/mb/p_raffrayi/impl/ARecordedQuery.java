@@ -14,10 +14,10 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.path.IStep;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -62,7 +62,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
                 ImmutableSet.of());
     }
 
-    @Override public IRecordedQuery<S, L, D> patch(BiMap.Immutable<S> patches) {
+    @Override public IRecordedQuery<S, L, D> patch(IPatchCollection.Immutable<S> patches) {
         if(patches.isEmpty()) {
             return this;
         }
@@ -70,13 +70,13 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
         ScopePath<S, L> newPath = scopePath();
         final S previousSource = newPath.getSource();
         if(scopePath().size() != 0) {
-            newPath = new ScopePath<>(patches.getValueOrDefault(previousSource, previousSource));
+            newPath = new ScopePath<>(patches.patch(previousSource));
             for(IStep<S, L> step : scopePath()) {
                 final S previousTarget = step.getTarget();
-                newPath = newPath.step(step.getLabel(), patches.getValueOrDefault(previousTarget, previousTarget)).get();
+                newPath = newPath.step(step.getLabel(), patches.patch(previousTarget)).get();
             }
-        } else if(patches.containsValue(previousSource)) {
-            newPath = new ScopePath<>(patches.getValue(previousSource));
+        } else if(!patches.isIdentity(previousSource)) {
+            newPath = new ScopePath<>(patches.patch(previousSource));
         }
 
         final Set<IRecordedQuery<S, L, D>> transitiveQueries = transitiveQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());

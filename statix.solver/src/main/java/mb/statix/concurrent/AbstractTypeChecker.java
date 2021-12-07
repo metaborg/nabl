@@ -34,7 +34,7 @@ import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IState;
@@ -205,14 +205,14 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
 
     }
 
-    protected SolverResult patch(SolverResult previousResult, BiMap.Immutable<Scope> patches) {
+    protected SolverResult patch(SolverResult previousResult, IPatchCollection.Immutable<Scope> patches) {
         if(patches.isEmpty()) {
             return previousResult;
         }
 
         // Convert patches to replacement
         final Replacement.Builder builder = Replacement.builder();
-        patches.asMap().forEach(builder::put);
+        patches.patches().asMap().forEach(builder::put);
         final IReplacement repl = builder.build();
 
         // Patch unifier
@@ -228,9 +228,9 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         // Patch scope set.
         // TODO: required, or only set for locally created scopes?
         final Set.Transient<Scope> scopes = oldState.scopes().asTransient();
-        patches.keySet().forEach(s -> {
+        patches.patchDomain().forEach(s -> {
             if(scopes.__remove(s)) {
-                scopes.__insert(patches.asMap().get(s));
+                scopes.__insert(patches.patch(s));
             }
         });
 

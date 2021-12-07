@@ -7,7 +7,7 @@ import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
 
 public interface IIncrementalTypeCheckerContext<S, L, D, R, T> extends ITypeCheckerContext<S, L, D> {
 
@@ -48,7 +48,7 @@ public interface IIncrementalTypeCheckerContext<S, L, D, R, T> extends ITypeChec
      *            implementation.
      */
     <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker, Function1<R, Q> extractLocal,
-            Function2<Q, BiMap.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine);
+            Function2<Q, IPatchCollection.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine);
 
     /**
      * Default {@link runIncremental} implementation that applies no scope patching.

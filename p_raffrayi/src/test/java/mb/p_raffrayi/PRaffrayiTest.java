@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;

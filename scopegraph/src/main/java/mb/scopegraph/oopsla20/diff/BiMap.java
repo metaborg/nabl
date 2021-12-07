@@ -14,6 +14,8 @@ public abstract class BiMap<E> {
 
     public abstract boolean containsEntry(E key, E value);
 
+    public abstract int size();
+
     public abstract boolean isEmpty();
 
     public abstract Set<E> keySet();
@@ -44,6 +46,10 @@ public abstract class BiMap<E> {
 
         @Override public boolean containsEntry(E key, E value) {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
+        }
+
+        @Override public int size() {
+            return fwd.size();
         }
 
         @Override public boolean isEmpty() {
@@ -162,6 +168,10 @@ public abstract class BiMap<E> {
             return fwd.containsKey(key) && fwd.get(key).equals(value);
         }
 
+        @Override public int size() {
+            return fwd.size();
+        }
+
         @Override public boolean isEmpty() {
             return fwd.isEmpty();
         }
@@ -188,20 +198,28 @@ public abstract class BiMap<E> {
             return true;
         }
 
-        public void put(E key, E value) {
+        public boolean put(E key, E value) {
+            if(containsEntry(key, value)) {
+                return false;
+            }
             if(!canPut(key, value)) {
                 throw new IllegalArgumentException("Key or value already set.");
             }
             fwd.__put(key, value);
             bwd.__put(value, key);
+            return true;
         }
 
-        public void putAll(BiMap<E> other) {
-            putAll(other.entrySet());
+        public boolean putAll(BiMap<E> other) {
+            return putAll(other.entrySet());
         }
 
-        public void putAll(Iterable<Entry<E, E>> entries) {
-            entries.forEach(e -> put(e.getKey(), e.getValue()));
+        public boolean putAll(Iterable<Entry<E, E>> entries) {
+            boolean changed = false;
+            for(Entry<E, E> e : entries) {
+                changed |= put(e.getKey(), e.getValue());
+            }
+            return changed;
         }
 
         public Immutable<E> freeze() {

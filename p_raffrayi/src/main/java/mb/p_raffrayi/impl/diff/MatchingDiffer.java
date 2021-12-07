@@ -31,6 +31,17 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         this.scopeMatches = scopeMatches;
     }
 
+    public MatchingDiffer(IDifferOps<S, L, D> differOps, IDifferContext<S, L, D> context, Iterable<Map.Entry<S, S>> scopeMatches) {
+        this.differOps = differOps;
+        this.context = context;
+
+        final BiMap.Transient<S> _scopeMatches = BiMap.Transient.of();
+        for(Map.Entry<S, S> match : scopeMatches) {
+            _scopeMatches.put(match.getKey(), match.getValue());
+        }
+        this.scopeMatches = _scopeMatches.freeze();
+    }
+
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes) {
         return CompletableFuture.completedFuture(ScopeGraphDiff.empty());
     }

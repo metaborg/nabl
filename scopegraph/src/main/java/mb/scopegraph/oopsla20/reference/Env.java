@@ -5,8 +5,6 @@ import java.util.Iterator;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.Iterators;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 

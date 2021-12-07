@@ -81,6 +81,9 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
+import mb.scopegraph.patching.PatchCollection;
+import mb.scopegraph.patching.Patcher;
 
 class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
         extends AbstractUnit<S, L, D, R, T> implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
@@ -106,8 +109,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private IEnvDiffer<S, L, D> envDiffer;
 
     private final IConfirmationFactory<S, L, D> confirmation;
-    private final BiMap.Transient<S> externalMatches = BiMap.Transient.of();
-    private final ICompletableFuture<Optional<BiMap.Immutable<S>>> confirmationResult = new CompletableFuture<>();
+    private final IPatchCollection.Transient<S> externalMatches = PatchCollection.Transient.of();
+    private final ICompletableFuture<Optional<IPatchCollection.Immutable<S>>> confirmationResult = new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
@@ -224,7 +227,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         } else if(state == UnitState.DONE) {
             // Completed synchronously
             whenActive.complete(Unit.unit);
-            confirmationResult.complete(Optional.of(BiMap.Immutable.of()));
+            confirmationResult.complete(Optional.of(PatchCollection.Immutable.of()));
         }
 
         if(!whenActive.isDone()) {
@@ -289,13 +292,13 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         if(state.equals(UnitState.RELEASED)
                 || (state == UnitState.DONE && stateTransitionTrace == TransitionTrace.RELEASED)) {
             return CompletableFuture.completedFuture(
-                    StateSummary.released(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
+                    StateSummary.released(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
         }
 
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
         return CompletableFuture
-                .completedFuture(StateSummary.release(process, dependentSet(), BiMap.Immutable.from(matchedBySharing)));
+                .completedFuture(StateSummary.release(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
     }
 
     @Override public void _restart() {
@@ -305,7 +308,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         }
     }
 
-    @Override public void _release(BiMap.Immutable<S> patches) {
+    @Override public void _release(IPatchCollection.Immutable<S> patches) {
         doRelease(patches);
     }
 
@@ -476,7 +479,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override public <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
-            Function1<R, Q> extractLocal, Function2<Q, BiMap.Immutable<S>, Q> patch,
+            Function1<R, Q> extractLocal, Function2<Q, IPatchCollection.Immutable<S>, Q> patch,
             Function2<Q, Throwable, IFuture<R>> combine) {
         assertInState(UnitState.INIT_TC);
         state = UnitState.UNKNOWN;
@@ -522,7 +525,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         if(previousResult.queries().isEmpty()) {
             logger.debug("Releasing - no queries in previous result.");
-            doRelease(BiMap.Immutable.of());
+            doRelease(PatchCollection.Immutable.of());
             return;
         }
 
@@ -549,7 +552,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 });
     }
 
-    private void doRelease(BiMap.Immutable<S> patches) {
+    private void doRelease(IPatchCollection.Immutable<S> patches) {
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             logger.debug("{} releasing.", this);
@@ -564,7 +567,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
             // @formatter:off
             final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
-                new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), patches) :
+                new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), patches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
                         previousResult.scopes(), new DifferDataOps()), differOps());
             // @formatter:on
@@ -574,38 +577,35 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             }
 
             logger.debug("Rebuilding scope graph.");
-            final IScopeGraph.Transient<S, L, D> newScopeGraph = ScopeGraph.Transient.of();
-            previousResult.localScopeGraph().getEdges().forEach((entry, targets) -> {
-                final S oldSource = entry.getKey();
-                final S newSource = patches.getValueOrDefault(oldSource, oldSource);
-                final L label = entry.getValue();
-                final boolean local = isOwner(newSource);
-                targets.forEach(targetScope -> {
-                    final S target = patches.getValueOrDefault(targetScope, targetScope);
-                    if(local) {
-                        scopes.__insert(newSource);
-                        newScopeGraph.addEdge(newSource, label, target);
-                    } else {
-                        doAddEdge(self, newSource, label, target);
-                        localScopeGraph.set(localScopeGraph.get().addEdge(newSource, label, target));
-                    }
-                    if(isOwner(target)) {
-                        scopes.__insert(target);
-                    }
-                });
-            });
-            previousResult.localScopeGraph().getData().forEach((oldScope, datum) -> {
-                final S newScope = patches.getValueOrDefault(oldScope, oldScope);
-                if(isOwner(newScope)) {
-                    newScopeGraph.setDatum(newScope, context.substituteScopes(datum, patches.asMap()));
-                } else {
-                    doSetDatum(newScope, datum);
-                    localScopeGraph.set(localScopeGraph.get().setDatum(newScope, datum));
-                }
-            });
+            final PatchCollection.Immutable<S> localPatches = PatchCollection.Immutable.of(matchedBySharing);
+            // @formatter:off
+            final Patcher<S, L, D> patcher = new Patcher.Builder<S, L, D>()
+                .patchSources(localPatches)
+                .patchEdgeTargets(patches)
+                .patchDatumSources(localPatches)
+                .patchDatums(patches, context::substituteScopes)
+                .build();
 
-            scopeGraph.set(scopeGraph.get().addAll(newScopeGraph.freeze()));
-            localScopeGraph.set(localScopeGraph.get().addAll(newScopeGraph));
+            final IScopeGraph.Immutable<S, L, D> patchedLocalScopeGraph = patcher.<Boolean>apply(
+                previousResult.localScopeGraph(),
+                (oldSource, newSource) -> {
+                    final boolean local = isOwner(newSource);
+                    scopes.__insert(newSource);
+                    return local;
+                },
+                (oldSource, newSource, lbl, oldTarget, newTarget, sourceLocal) -> {
+                    if(!sourceLocal) {
+                        doAddEdge(self, newSource, lbl, newTarget);
+                    }
+                    if(isOwner(newTarget)) {
+                        scopes.__insert(newTarget);
+                    }
+                },
+                Patcher.DataPatchCallback.noop()
+            );
+
+            scopeGraph.set(scopeGraph.get().addAll(patchedLocalScopeGraph));
+            localScopeGraph.set(localScopeGraph.get().addAll(patchedLocalScopeGraph));
 
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
@@ -712,7 +712,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
-            doRelease(BiMap.Immutable.<S>of().putAll(externalMatches));
+            doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches));
         } else if(state.active() && inLocalPhase()) {
             doCapture();
             self.complete(whenContextActivated, Unit.unit, null);

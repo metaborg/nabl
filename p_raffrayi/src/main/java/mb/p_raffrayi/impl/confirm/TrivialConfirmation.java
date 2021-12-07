@@ -17,10 +17,10 @@ import mb.p_raffrayi.impl.IQueryAnswer;
 import mb.p_raffrayi.impl.Release;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.PatchCollection;
 
 public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
@@ -92,7 +92,7 @@ public class TrivialConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         Futures.noneMatch(futures, p -> p.thenApply(v -> !v)).thenAccept(confirmed -> {
             if(confirmed) {
                 logger.debug("All queries confirmed.");
-                result.complete(ConfirmResult.confirm(BiMap.Immutable.of()));
+                result.complete(ConfirmResult.confirm(PatchCollection.Immutable.of()));
             } else {
                 logger.debug("Some queries denied, propagating denial.");
                 result.complete(ConfirmResult.deny());

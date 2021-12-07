@@ -19,10 +19,10 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
 
 class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
 
@@ -101,7 +101,7 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, IResult.Emp
         return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 
-    @Override public void _release(BiMap.Immutable<S> patches) {
+    @Override public void _release(IPatchCollection.Immutable<S> patches) {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 

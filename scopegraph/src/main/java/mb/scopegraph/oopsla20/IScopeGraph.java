@@ -34,6 +34,8 @@ public interface IScopeGraph<S, L, D> {
 
     interface Transient<S, L, D> extends IScopeGraph<S, L, D> {
 
+        @Override Set.Transient<L> getLabels();
+
         boolean addEdge(S sourceScope, L label, S targetScope);
 
         boolean setDatum(S scope, D datum);

@@ -8,7 +8,7 @@ import org.metaborg.util.future.AggregateFuture.SC;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.IRecordedQuery;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
 
 public class EagerConfirmation<S, L, D> extends OptimisticConfirmation<S, L, D> {
 
@@ -18,8 +18,8 @@ public class EagerConfirmation<S, L, D> extends OptimisticConfirmation<S, L, D> 
 
     @Override public IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query) {
         final int size = 1 + query.transitiveQueries().size() + query.predicateQueries().size();
-        final List<IFuture<SC<BiMap.Immutable<S>, ConfirmResult<S>>>> futures = new ArrayList<>(size);
-        
+        final List<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures = new ArrayList<>(size);
+
         futures.add(toSCFuture(confirmSingle(query)));
         query.transitiveQueries().forEach(q -> futures.add(toSCFuture(confirmSingle(q))));
         query.predicateQueries().forEach(q -> futures.add(toSCFuture(confirmSingle(q))));

@@ -10,7 +10,8 @@ import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableSet;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
+import mb.scopegraph.patching.PatchCollection;
 
 public abstract class StateSummary<S, L, D> {
 
@@ -22,8 +23,8 @@ public abstract class StateSummary<S, L, D> {
         this.dependencies = ImmutableSet.copyOf(dependencies);
     }
 
-    public abstract <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-            Function1<BiMap.Immutable<S>, T> onReleased);
+    public abstract <T> T match(Function0<T> onRestart, Function1<IPatchCollection.Immutable<S>, T> onRelease,
+            Function1<IPatchCollection.Immutable<S>, T> onReleased);
 
     public IProcess<S, L, D> getSelf() {
         return self;
@@ -33,8 +34,8 @@ public abstract class StateSummary<S, L, D> {
         return dependencies;
     }
 
-    public void accept(Action0 onRestart, Action1<BiMap.Immutable<S>> onRelease,
-            Action1<BiMap.Immutable<S>> onReleased) {
+    public void accept(Action0 onRestart, Action1<IPatchCollection.Immutable<S>> onRelease,
+            Action1<IPatchCollection.Immutable<S>> onReleased) {
         this.match(() -> {
             onRestart.apply();
             return Unit.unit;
@@ -51,20 +52,23 @@ public abstract class StateSummary<S, L, D> {
         return new Restart<>(self, dependencies);
     }
 
-    public static <S, L, D> StateSummary<S, L, D> release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, BiMap.Immutable<S> patches) {
+    public static <S, L, D> StateSummary<S, L, D> release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies,
+            IPatchCollection.Immutable<S> patches) {
         return new Release<>(self, dependencies, patches);
     }
 
-    public static <S, L, D> StateSummary<S, L, D> released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, BiMap.Immutable<S> patches) {
+    public static <S, L, D> StateSummary<S, L, D> released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies,
+            IPatchCollection.Immutable<S> patches) {
         return new Released<>(self, dependencies, patches);
     }
 
     public static <S, L, D> StateSummary<S, L, D> release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
-        return release(self, dependencies, BiMap.Immutable.of());
+        return release(self, dependencies, PatchCollection.Immutable.of());
     }
 
-    public static <S, L, D> StateSummary<S, L, D> released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
-        return released(self, dependencies, BiMap.Immutable.of());
+    public static <S, L, D> StateSummary<S, L, D> released(IProcess<S, L, D> self,
+            Set<IProcess<S, L, D>> dependencies) {
+        return released(self, dependencies, PatchCollection.Immutable.of());
     }
 
     private static class Restart<S, L, D> extends StateSummary<S, L, D> {
@@ -73,8 +77,8 @@ public abstract class StateSummary<S, L, D> {
             super(self, dependencies);
         }
 
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
+        @Override public <T> T match(Function0<T> onRestart, Function1<IPatchCollection.Immutable<S>, T> onRelease,
+                Function1<IPatchCollection.Immutable<S>, T> onReleased) {
             return onRestart.apply();
         }
 
@@ -86,15 +90,15 @@ public abstract class StateSummary<S, L, D> {
 
     private static class Release<S, L, D> extends StateSummary<S, L, D> {
 
-        private BiMap.Immutable<S> patches;
+        private IPatchCollection.Immutable<S> patches;
 
-        Release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, BiMap.Immutable<S> patches) {
+        Release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, IPatchCollection.Immutable<S> patches) {
             super(self, dependencies);
             this.patches = patches;
         }
 
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
+        @Override public <T> T match(Function0<T> onRestart, Function1<IPatchCollection.Immutable<S>, T> onRelease,
+                Function1<IPatchCollection.Immutable<S>, T> onReleased) {
             return onRelease.apply(patches);
         }
 
@@ -106,15 +110,15 @@ public abstract class StateSummary<S, L, D> {
 
     private static class Released<S, L, D> extends StateSummary<S, L, D> {
 
-        private BiMap.Immutable<S> patches;
+        private IPatchCollection.Immutable<S> patches;
 
-        Released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, BiMap.Immutable<S> patches) {
+        Released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies, IPatchCollection.Immutable<S> patches) {
             super(self, dependencies);
             this.patches = patches;
         }
 
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
+        @Override public <T> T match(Function0<T> onRestart, Function1<IPatchCollection.Immutable<S>, T> onRelease,
+                Function1<IPatchCollection.Immutable<S>, T> onReleased) {
             return onReleased.apply(patches);
         }
 

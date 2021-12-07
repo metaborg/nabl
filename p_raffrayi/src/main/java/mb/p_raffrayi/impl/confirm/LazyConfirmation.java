@@ -7,7 +7,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.future.CompletableFuture;
 
 import mb.p_raffrayi.IRecordedQuery;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
 
 public class LazyConfirmation<S, L, D> extends OptimisticConfirmation<S, L, D> {
 
@@ -46,12 +46,12 @@ public class LazyConfirmation<S, L, D> extends OptimisticConfirmation<S, L, D> {
     }
 
     private IFuture<ConfirmResult<S>> mapConfirmResultToFuture(ConfirmResult<S> res,
-            Function1<BiMap.Immutable<S>, IFuture<ConfirmResult<S>>> mapper) {
+            Function1<IPatchCollection.Immutable<S>, IFuture<ConfirmResult<S>>> mapper) {
         return res.match(() -> CompletableFuture.completedFuture(ConfirmResult.deny()), mapper);
     }
 
     private ConfirmResult<S> mapConfirmResult(ConfirmResult<S> res,
-            Function1<BiMap.Immutable<S>, BiMap.Immutable<S>> mapper) {
+            Function1<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> mapper) {
         return res.match(() -> ConfirmResult.deny(), patches -> ConfirmResult.confirm(mapper.apply(patches)));
     }
 
