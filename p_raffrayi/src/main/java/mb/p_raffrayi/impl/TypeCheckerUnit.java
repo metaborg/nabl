@@ -18,9 +18,11 @@ import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.future.AggregateFuture.SC;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -42,6 +44,7 @@ import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.confirm.EagerConfirmation;
+import mb.p_raffrayi.impl.confirm.IConfirmation;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
@@ -106,9 +109,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
     private IEnvDiffer<S, L, D> envDiffer;
 
-    private final IConfirmationFactory<S, L, D> confirmation;
     private final IPatchCollection.Transient<S> externalMatches = PatchCollection.Transient.of();
-    private final ICompletableFuture<Optional<IPatchCollection.Immutable<S>>> confirmationResult = new CompletableFuture<>();
+
+    private final IConfirmationFactory<S, L, D> confirmation;
+    private final IPatchCollection.Transient<S> patches = PatchCollection.Transient.of();
+    private final ICompletableFuture<Optional<IPatchCollection.Immutable<S>>> confirmationResult =
+            new CompletableFuture<>();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
@@ -204,8 +210,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 final IUnitResult<S, L, D, ?, ?> subResult = previousResult.subUnitResults().get(removedId);
-                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(removedId, (subself,
-                        subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
+                this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(removedId,
+                        (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
                         new ArrayList<>(), true);
             }
         }
@@ -286,8 +292,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         // When these patches are used, *all* involved units re-use their old scope graph.
         // Hence only patching the root scopes is sufficient.
-        return CompletableFuture
-                .completedFuture(StateSummary.release(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
+        return CompletableFuture.completedFuture(
+                StateSummary.release(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
     }
 
     @Override public void _restart() {
@@ -298,7 +304,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override public void _release(IPatchCollection.Immutable<S> patches) {
-        doRelease(patches);
+        doRelease(patches.putAll(this.patches));
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -518,27 +524,47 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             return;
         }
 
-        confirmation.getConfirmation(new ConfirmationContext(self)).confirm(previousResult.queries())
-                .whenComplete((r, ex) -> {
-                    if(ex == Release.instance) {
-                        logger.debug("Confirmation received release.");
-                        // Do nothing, unit is already released by deadlock resolution.
-                    } else if(ex != null) {
-                        logger.error("Failure in confirmation.", ex);
-                        failures.add(ex);
-                    } else {
-                        r.visit(() -> {
-                            // No confirmation, hence restart
-                            logger.debug("Query confirmation denied - restarting.");
-                            if(doRestart()) {
-                                stateTransitionTrace = TransitionTrace.RESTARTED;
-                            }
-                        }, patches -> {
-                            logger.debug("Queries confirmed - releasing.");
-                            this.doRelease(patches);
-                        });
-                    }
-                });
+        final IConfirmation<S, L, D> confirmaton = confirmation.getConfirmation(new ConfirmationContext(self));
+
+        // @formatter:off
+        final List<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures = previousResult.queries().stream()
+                .map(confirmaton::confirm)
+                .map(intermediateFuture -> {
+                    return intermediateFuture.thenApply(intermediate -> intermediate.match(
+                        () -> SC.<IPatchCollection.Immutable<S>, ConfirmResult<S>>shortCircuit(ConfirmResult.deny()),
+                        patches -> {
+                            // Store intermediate set of patches, to be used on deadlock.
+                            this.patches.putAll(patches);
+                            return SC.<IPatchCollection.Immutable<S>, ConfirmResult<S>>of(patches);
+                        }
+                    ));
+                }).collect(Collectors.toList());
+        // @formatter:on
+
+        // @formatter:off
+        AggregateFuture.ofShortCircuitable(patchSets -> ConfirmResult.confirm(patchSets.stream()
+                .reduce(PatchCollection.Immutable.of(), IPatchCollection.Immutable::putAll)), futures)
+            .whenComplete((r, ex) -> {
+                if(ex == Release.instance) {
+                    logger.debug("Confirmation received release.");
+                    // Do nothing, unit is already released by deadlock resolution.
+                } else if(ex != null) {
+                    logger.error("Failure in confirmation.", ex);
+                    failures.add(ex);
+                } else {
+                    r.visit(() -> {
+                        // No confirmation, hence restart
+                        logger.debug("Query confirmation denied - restarting.");
+                        if(doRestart()) {
+                            stateTransitionTrace = TransitionTrace.RESTARTED;
+                        }
+                    }, patches -> {
+                        logger.debug("Queries confirmed - releasing.");
+                        this.doRelease(patches);
+                    });
+                }
+            });
+        // @formatter:on
     }
 
     private void doRelease(IPatchCollection.Immutable<S> patches) {

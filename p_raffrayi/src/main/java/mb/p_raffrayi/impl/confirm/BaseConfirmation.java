@@ -42,13 +42,6 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     private final SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> ACC_NO_PATCHES =
             SC.of(PatchCollection.Immutable.of());
 
-    @Override public IFuture<ConfirmResult<S>> confirm(java.util.Set<IRecordedQuery<S, L, D>> queries) {
-        final List<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures =
-                queries.stream().map(this::confirm).map(this::toSCFuture).collect(Collectors.toList());
-
-        return AggregateFuture.ofShortCircuitable(this::merge, futures);
-    }
-
     public abstract IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query);
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
