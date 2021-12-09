@@ -635,7 +635,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 self.complete(future, previousResult.analysis().getExternalRepresentation(d), null);
             }));
 
-            // TODO: apply patches on queries?
             recordedQueries
                     .addAll(previousResult.queries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet()));
             stateTransitionTrace = TransitionTrace.RELEASED;
@@ -840,6 +839,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         }
 
         @Override public IFuture<Optional<S>> match(S scope) {
+            // FIXME Do we require a token here?
             return getOwner(scope).thenCompose(owner -> self.async(owner)._match(scope));
         }
 

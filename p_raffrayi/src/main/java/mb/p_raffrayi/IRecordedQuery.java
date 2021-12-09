@@ -11,6 +11,8 @@ public interface IRecordedQuery<S, L, D> {
 
     ScopePath<S, L> scopePath();
 
+    Set<S> datumScopes();
+
     LabelWf<L> labelWf();
 
     DataWf<S, L, D> dataWf();

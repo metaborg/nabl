@@ -3,6 +3,7 @@ package mb.statix.concurrent;
 import static com.google.common.collect.Streams.stream;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.nabl2.terms.matching.Transform.T;
 import static mb.statix.constraints.Constraints.disjoin;
 import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
@@ -41,6 +42,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -63,6 +65,8 @@ import mb.scopegraph.ecoop21.RegExpLabelWf;
 import mb.scopegraph.ecoop21.RelationLabelOrder;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
+import mb.statix.concurrent.util.Patching;
 import mb.statix.concurrent.util.VarIndexedCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -935,7 +939,7 @@ public class StatixSolver {
         });
     }
 
-    private <T> IFuture<T> absorbDelays(Function0<IFuture<T>> f) {
+    @SuppressWarnings("hiding") private <T> IFuture<T> absorbDelays(Function0<IFuture<T>> f) {
         return f.apply().compose((r, ex) -> {
             if(ex != null) {
                 try {
@@ -1101,6 +1105,14 @@ public class StatixSolver {
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
+        }
+
+        @Override public Immutable<Scope> scopes() {
+            return Patching.ruleScopes(constraint);
+        }
+
+        @Override public DataWf<Scope, ITerm, ITerm> patch(IPatchCollection.Immutable<Scope> patches) {
+            return new ConstraintDataWF(spec, Patching.patch(constraint, patches));
         }
 
         @Override public String toString() {

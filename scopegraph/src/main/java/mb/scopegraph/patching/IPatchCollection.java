@@ -1,5 +1,6 @@
 package mb.scopegraph.patching;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,7 +55,7 @@ public interface IPatchCollection<S> {
 
         Immutable<S> putAll(Map<S, S> patches) throws InvalidPatchCompositionException;
 
-        Immutable<S> putAll(Set<Map.Entry<S, S>> patches) throws InvalidPatchCompositionException;
+        Immutable<S> putAll(Collection<? extends Map.Entry<S, S>> patches) throws InvalidPatchCompositionException;
 
         Immutable<S> putAll(IPatchCollection<S> patches) throws InvalidPatchCompositionException;
 
@@ -68,7 +69,7 @@ public interface IPatchCollection<S> {
 
         boolean putAll(Map<S, S> patches) throws InvalidPatchCompositionException;
 
-        boolean putAll(Set<Map.Entry<S, S>> patches) throws InvalidPatchCompositionException;
+        boolean putAll(Collection<? extends Map.Entry<S, S>> patches) throws InvalidPatchCompositionException;
 
         boolean putAll(IPatchCollection<S> patches) throws InvalidPatchCompositionException;
 

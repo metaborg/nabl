@@ -2,14 +2,21 @@ package mb.p_raffrayi.impl.confirm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
+
+import io.usethesource.capsule.Set;
+
 import org.metaborg.util.future.AggregateFuture.SC;
 
 import mb.p_raffrayi.IRecordedQuery;
@@ -46,7 +53,28 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
-        return confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty());
+        CompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
+        confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
+            if(ex != null) {
+                result.completeExceptionally(ex);
+            }
+            r.visit(() -> result.complete(r), patches -> {
+                Futures.<S, IPatchCollection.Immutable<S>>reduce(patches, query.datumScopes(), (acc, scope) -> {
+                    return context.match(scope).thenApply(newScopeOpt -> {
+                        final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
+                                "Cannot have a missing datum scope match when all edge are confirmed."));
+                        return acc.put(newScope, scope);
+                    });
+                }).whenComplete((accPatches, ex2) -> {
+                    if(ex2 != null) {
+                        result.completeExceptionally(ex2);
+                    }
+                    result.complete(ConfirmResult.confirm(accPatches));
+                });
+            });
+        });
+
+        return result;
     }
 
     @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
@@ -69,11 +97,16 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 logger.trace("value: {}.", envDiff);
                 final ArrayList<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures =
                         new ArrayList<>();
+
+                // Include patches of path into patch set
                 futures.add(CompletableFuture.completedFuture(SC.of(PatchCollection.Immutable.of(envDiff.patches()))));
+                final LazyFuture<Optional<DataWf<S, L, D>>> patchedDataWf = new LazyFuture<>(() -> patchDataWf(dataWf));
+
+                // Verify each added/removed edge.
                 envDiff.changes().forEach(diff -> {
                     // @formatter:off
                     futures.add(diff.<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>>match(
-                        addedEdge -> handleAddedEdge(addedEdge, dataWf),
+                        addedEdge -> handleAddedEdge(addedEdge, patchedDataWf),
                         removedEdge -> handleRemovedEdge(removedEdge, dataWf, prevEnvEmpty)
                     ));
                     // @formatter:on
@@ -89,7 +122,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     }
 
     protected abstract IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
-            handleAddedEdge(AddedEdge<S, L, D> addedEdge, DataWf<S, L, D> dataWf);
+            handleAddedEdge(AddedEdge<S, L, D> addedEdge, LazyFuture<Optional<DataWf<S, L, D>>> dataWf);
 
     protected abstract IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, DataWf<S, L, D> dataWf, boolean prevEnvEnpty);
@@ -100,6 +133,10 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
 
     protected SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> accept() {
         return ACC_NO_PATCHES;
+    }
+
+    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> denyFuture() {
+        return CompletableFuture.completedFuture(DENY);
     }
 
     protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> acceptFuture() {
@@ -124,6 +161,48 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
             toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
+    }
+
+    private IFuture<Optional<DataWf<S, L, D>>> patchDataWf(DataWf<S, L, D> dataWf) {
+        final Set.Immutable<S> scopes = dataWf.scopes();
+        if(scopes.isEmpty()) {
+            return CompletableFuture.completedFuture(Optional.of(dataWf));
+        }
+
+        final List<IFuture<SC<Tuple2<S, S>, Optional<DataWf<S, L, D>>>>> futures = new ArrayList<>();
+        for(S scope : scopes) {
+            // @formatter:off
+            futures.add(context.match(scope)
+                .<SC<Tuple2<S, S>, Optional<DataWf<S, L, D>>>>thenApply(match -> match
+                    .map(m -> SC.<Tuple2<S, S>, Optional<DataWf<S, L, D>>>of(Tuple2.of(scope, m)))
+                    .orElse(SC.shortCircuit(Optional.empty()))
+                ));
+            // @formatter:on
+        }
+
+        return AggregateFuture.<Tuple2<S, S>, Optional<DataWf<S, L, D>>>ofShortCircuitable(patches -> {
+            return Optional.of(dataWf.patch(PatchCollection.Immutable.<S>of().putAll(patches)));
+        }, futures);
+    }
+
+    class LazyFuture<T> {
+
+        private Supplier<IFuture<T>> supplier;
+
+        private IFuture<T> value;
+
+        public LazyFuture(Supplier<IFuture<T>> supplier) {
+            this.supplier = supplier;
+        }
+
+        public IFuture<T> get() {
+            if(value == null) {
+                value = supplier.get();
+                supplier = null;
+            }
+            return value;
+        }
+
     }
 
 }

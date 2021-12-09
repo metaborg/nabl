@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
@@ -85,6 +86,7 @@ import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 
@@ -494,19 +496,20 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
         final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
-            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
-                    LabelOrder<L> labelOrder) {
+            @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
+                    LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
-                        // No need to wait for completion, because local shared scopes are initialized when freshened.
-                        // TODO: wait for 'real' query answer?
-                        recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF));
-                    }
-                    return Optional.empty();
+                    return context.localEnv(path, re, cancel).thenApply(ans -> {
+                        if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
+                            recordedQueries.add(RecordedQuery.of(path, datumScopes(ans), re, dataWF, ans));
+                        }
+
+                        return ans;
+                    });
                 } else {
-                    return Optional.of(getOwner(scope).thenCompose(owner -> {
+                    return getOwner(scope).thenCompose(owner -> {
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
                         final IFuture<IQueryAnswer<S, L, D>> result =
@@ -522,13 +525,14 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             if(isQueryRecordingEnabled()) {
                                 if(external) {
                                     // For external queries, track this query as transitive.
-                                    transitiveQueries.add(RecordedQuery.of(path, re, dataWF, ans.env()));
+                                    transitiveQueries
+                                            .add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF, ans.env()));
                                     transitiveQueries.addAll(ans.transitiveQueries());
                                     predicateQueries.addAll(ans.predicateQueries());
                                 } else if(record) {
                                     // For local query, record it as such.
-                                    recordedQueries.add(RecordedQuery.of(path, labelWF, dataWF, ans.env(),
-                                            ans.transitiveQueries(), ans.predicateQueries()));
+                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF,
+                                            ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
                                 }
                             }
                             return ans.env();
@@ -537,7 +541,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                             granted(wf, owner);
                             resume();
                         });
-                    }));
+                    });
                 }
             }
 
@@ -669,7 +673,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
                         // Hence, we just ignore it.
                         if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                            queries.add(RecordedQuery.of(path, labelWF, dataWF, ans.env()));
+                            queries.add(RecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env()));
                         }
                         queries.addAll(ans.transitiveQueries());
                         // TODO can this happen? Is flattening here ok then?
@@ -722,6 +726,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     protected boolean canAnswer(S scope) {
         return isOwner(scope);
+    }
+
+    private Set<S> datumScopes(Env<S, L, D> env) {
+        return Streams.stream(env).map(ResolutionPath::getDatum).map(context::getScopes)
+                .reduce(CapsuleUtil.immutableSet(), Set.Immutable::__insertAll);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -910,14 +919,14 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             this.dataLeq = dataLeq;
         }
 
-        @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
-                LabelOrder<L> labelOrder) {
+        @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
+                LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
             final S scope = path.getTarget();
             if(canAnswer(scope)) {
                 logger.debug("local p_env {}", scope);
-                return Optional.empty();
+                return context.localEnv(path, re, cancel);
             }
-            return Optional.of(getOwner(scope).thenCompose(owner -> {
+            return getOwner(scope).thenCompose(owner -> {
                 logger.debug("remote p_env from {}", owner);
                 final ICompletableFuture<Env<S, L, D>> future = new CompletableFuture<>();
                 final PQuery<S, L, D> query = PQuery.of(sender, path, dataWf, future);
@@ -930,7 +939,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 });
 
                 return future;
-            }));
+            });
         }
 
         @Override public IFuture<Optional<D>> getDatum(S scope) {

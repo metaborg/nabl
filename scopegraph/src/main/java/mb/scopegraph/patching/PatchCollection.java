@@ -1,5 +1,6 @@
 package mb.scopegraph.patching;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -98,7 +99,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
             return putAll(patches.entrySet());
         }
 
-        @Override public PatchCollection.Immutable<S> putAll(java.util.Set<Entry<S, S>> patches)
+        @Override public PatchCollection.Immutable<S> putAll(Collection<? extends Entry<S, S>> patches)
                 throws InvalidPatchCompositionException {
             if(patches.isEmpty()) {
                 return this;
@@ -112,7 +113,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
             return _patches.freeze();
         }
 
-        private PatchCollection.Immutable<S> putAllUnchecked(java.util.Set<Entry<S, S>> patches)
+        private PatchCollection.Immutable<S> putAllUnchecked(Collection<Entry<S, S>> patches)
                 throws InvalidPatchCompositionException {
             if(patches.isEmpty()) {
                 return this;
@@ -256,7 +257,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
             return putAll(patches.entrySet());
         }
 
-        @Override public boolean putAll(java.util.Set<Entry<S, S>> patches) throws InvalidPatchCompositionException {
+        @Override public boolean putAll(Collection<? extends Entry<S, S>> patches) throws InvalidPatchCompositionException {
             boolean changed = false;
             for(Entry<S, S> entry : patches) {
                 changed |= put(entry.getKey(), entry.getValue());
@@ -264,7 +265,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
             return changed;
         }
 
-        private boolean putAllUnchecked(java.util.Set<Entry<S, S>> patches) throws InvalidPatchCompositionException {
+        private boolean putAllUnchecked(Collection<Entry<S, S>> patches) throws InvalidPatchCompositionException {
             boolean changed = false;
             for(Entry<S, S> entry : patches) {
                 changed |= putUnchecked(entry.getValue(), entry.getKey()); // Entries in map are reversed, so pass value to `oldScope` parameter.

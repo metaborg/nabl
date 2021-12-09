@@ -7,6 +7,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -22,6 +23,8 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract ScopePath<S, L> scopePath();
 
+    @Override @Value.Parameter public abstract Set<S> datumScopes();
+
     @Override @Value.Parameter public abstract LabelWf<L> labelWf();
 
     @Override @Value.Parameter public abstract DataWf<S, L, D> dataWf();
@@ -32,51 +35,78 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> predicateQueries();
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf, Env<S, L, D> result, Set<IRecordedQuery<S, L, D>> transitiveQueries,
             Set<IRecordedQuery<S, L, D>> predicateQueries) {
-        return RecordedQuery.of(scopePath, labelWf, dataWf, result.isEmpty(), transitiveQueries, predicateQueries);
+        return RecordedQuery.of(scopePath, datumScopes, labelWf, dataWf, result.isEmpty(), transitiveQueries, predicateQueries);
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             Env<S, L, D> result) {
-        return of(path, labelWf, dataWf, result, ImmutableSet.of(), ImmutableSet.of());
+        return of(path, datumScopes, labelWf, dataWf, result, ImmutableSet.of(), ImmutableSet.of());
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(S scope, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             Env<S, L, D> result) {
-        return of(new ScopePath<S, L>(scope), labelWf, dataWf, result);
+        return of(new ScopePath<S, L>(scope), datumScopes, labelWf, dataWf, result);
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
-        return RecordedQuery.of(path, labelWf, dataWf, false, ImmutableSet.of(), ImmutableSet.of());
+        return RecordedQuery.of(path, datumScopes, labelWf, dataWf, false, ImmutableSet.of(), ImmutableSet.of());
     }
 
     @Override public IRecordedQuery<S, L, D> patch(IPatchCollection.Immutable<S> patches) {
-        if(patches.isEmpty()) {
+        if(patches.isIdentity()) {
             return this;
         }
-        final RecordedQuery<S, L, D> self = (RecordedQuery<S, L, D>) this;
-        ScopePath<S, L> newPath = scopePath();
-        final S previousSource = newPath.getSource();
-        if(scopePath().size() != 0) {
+
+        // Patch path
+        ScopePath<S, L> newPath;
+        if(!Sets.intersection(scopePath().scopeSet(), patches.patchDomain()).isEmpty()) {
+            final S previousSource = scopePath().getSource();
             newPath = new ScopePath<>(patches.patch(previousSource));
-            for(IStep<S, L> step : scopePath()) {
-                final S previousTarget = step.getTarget();
-                newPath = newPath.step(step.getLabel(), patches.patch(previousTarget)).get();
+            if(scopePath().size() != 0) {
+                for(IStep<S, L> step : scopePath()) {
+                    final S previousTarget = step.getTarget();
+                    newPath = newPath.step(step.getLabel(), patches.patch(previousTarget)).get();
+                }
             }
-        } else if(!patches.isIdentity(previousSource)) {
-            newPath = new ScopePath<>(patches.patch(previousSource));
+        } else {
+            newPath = scopePath();
         }
 
+        // Patch datumScopes
+        final Set<S> newDatumScopes;
+        if(Sets.intersection(datumScopes(), patches.patchDomain()).isEmpty()) {
+            newDatumScopes = datumScopes();
+        } else {
+            newDatumScopes = datumScopes().stream().map(patches::patch).collect(ImmutableSet.toImmutableSet());
+        }
+
+        // Patch dataWf
+        final DataWf<S, L, D> newDataWf;
+        if(Sets.intersection(dataWf().scopes(), patches.patchDomain()).isEmpty()) {
+            newDataWf = dataWf();
+        } else {
+            newDataWf = dataWf().patch(patches);
+        }
+
+        // Patch queries
         final Set<IRecordedQuery<S, L, D>> transitiveQueries =
                 transitiveQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
         final Set<IRecordedQuery<S, L, D>> predicateQueries =
                 predicateQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
 
-        return self.withScopePath(newPath).withTransitiveQueries(transitiveQueries)
-                .withPredicateQueries(predicateQueries);
+        // @formatter:off
+        return RecordedQuery.<S, L, D>builder().from(this)
+            .dataWf(newDataWf)
+            .scopePath(newPath)
+            .datumScopes(newDatumScopes)
+            .transitiveQueries(transitiveQueries)
+            .predicateQueries(predicateQueries)
+            .build();
+        // @formatter:on
     }
 
 }

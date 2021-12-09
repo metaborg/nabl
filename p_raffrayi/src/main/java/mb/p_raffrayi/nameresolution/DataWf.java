@@ -1,15 +1,27 @@
 package mb.p_raffrayi.nameresolution;
 
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.ITypeCheckerContext;
+import mb.scopegraph.patching.IPatchCollection;
 
 public interface DataWf<S, L, D> {
 
     IFuture<Boolean> wf(D d, ITypeCheckerContext<S, L, D> context, ICancel cancel) throws InterruptedException;
+
+    default Set.Immutable<S> scopes() {
+        return CapsuleUtil.immutableSet();
+    }
+
+    default DataWf<S, L, D> patch(IPatchCollection.Immutable<S> patches) {
+        return this;
+    }
 
     @SuppressWarnings("unchecked") static <S, L, D> DataWf<S, L, D> any() {
         return ANY;
@@ -30,6 +42,14 @@ public interface DataWf<S, L, D> {
             return "any";
         }
 
+        @Override public Immutable scopes() {
+            return CapsuleUtil.immutableSet();
+        }
+
+        @Override public DataWf patch(IPatchCollection.Immutable patches) {
+            return this;
+        }
+
     };
 
     @SuppressWarnings("rawtypes") static final DataWf NONE = new DataWf() {
@@ -41,6 +61,14 @@ public interface DataWf<S, L, D> {
 
         @Override public String toString() {
             return "none";
+        }
+
+        @Override public Immutable scopes() {
+            return CapsuleUtil.immutableSet();
+        }
+
+        @Override public DataWf patch(IPatchCollection.Immutable patches) {
+            return this;
         }
 
     };

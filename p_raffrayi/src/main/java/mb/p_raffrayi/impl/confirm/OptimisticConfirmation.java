@@ -1,5 +1,7 @@
 package mb.p_raffrayi.impl.confirm;
 
+import java.util.Optional;
+
 import org.metaborg.util.future.AggregateFuture.SC;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -21,12 +23,16 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
         super(context);
     }
 
-    @Override protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> handleAddedEdge(AddedEdge<S, L, D> addedEdge,
-            DataWf<S, L, D> dataWf) {
+    @Override protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+            handleAddedEdge(AddedEdge<S, L, D> addedEdge, LazyFuture<Optional<DataWf<S, L, D>>> dataWf) {
         logger.debug("Handling added edge by regular query: {}.", addedEdge);
         // TODO: use path prefix to prevent false positives on cyclic edges
-        return context.query(new ScopePath<>(addedEdge.target()), addedEdge.labelWf(), LabelOrder.none(), dataWf,
-                DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
+        return dataWf.get().thenCompose(newDataWfOpt -> {
+            return newDataWfOpt.map(newDataWf -> {
+                return context.query(new ScopePath<>(addedEdge.target()), addedEdge.labelWf(), LabelOrder.none(),
+                        newDataWf, DataLeq.none()).thenApply(ans -> ans.env().isEmpty() ? accept() : deny());
+            }).orElse(denyFuture());
+        });
     }
 
     @Override protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>

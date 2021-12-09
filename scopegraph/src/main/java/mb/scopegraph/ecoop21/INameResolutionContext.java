@@ -11,7 +11,7 @@ import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public interface INameResolutionContext<S, L, D> {
 
-    Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re, LabelOrder<L> labelOrder);
+    IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path, LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel);
 
     IFuture<Optional<D>> getDatum(S scope);
 
@@ -22,5 +22,9 @@ public interface INameResolutionContext<S, L, D> {
     IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException;
 
     IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel);
+
+    interface LocalEnv<S, L, D> {
+        IFuture<Env<S, L, D>> localEnv(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel);
+    }
 
 }

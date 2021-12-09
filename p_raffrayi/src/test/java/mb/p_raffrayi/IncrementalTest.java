@@ -158,8 +158,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
-    @Test(timeout = 10000) public void
-            testRelease_MutualDep_ParentChanged() throws InterruptedException, ExecutionException {
+    @Test(timeout = 10000) public void testRelease_MutualDep_ParentChanged()
+            throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d = new Scope("/./sub", 1);
