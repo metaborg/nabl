@@ -11,22 +11,18 @@ public abstract class APRaffrayiSettings {
 
     @Value.Parameter public abstract boolean scopeGraphDiff();
 
-    @Value.Parameter public abstract ConfirmationMode confirmationMode();
+    @Value.Parameter public abstract boolean confirmation();
 
     public boolean incremental() {
         return incrementalDeadlock() || scopeGraphDiff();
     }
 
     public static PRaffrayiSettings concurrent() {
-        return PRaffrayiSettings.of(false, false, false, ConfirmationMode.TRIVIAL);
+        return PRaffrayiSettings.of(false, false, false, false);
     }
 
     public static PRaffrayiSettings concurrentWithRecording() {
-        return PRaffrayiSettings.of(true, false, false, ConfirmationMode.TRIVIAL);
-    }
-
-    public enum ConfirmationMode {
-        TRIVIAL, SIMPLE_ENVIRONMENT
+        return PRaffrayiSettings.of(true, false, false, false);
     }
 
 }

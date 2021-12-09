@@ -34,7 +34,6 @@ import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.PRaffrayiSettings;
-import mb.p_raffrayi.APRaffrayiSettings.ConfirmationMode;
 import mb.p_raffrayi.impl.Broker;
 import mb.statix.concurrent.GroupResult;
 import mb.statix.concurrent.IStatixProject;
@@ -233,7 +232,7 @@ public class STX_solve_multi extends StatixPrimitive {
         return PRaffrayiSettings.builder()
             .incrementalDeadlock(mode.deadlock)
             .scopeGraphDiff(mode.sgDiff)
-            .confirmationMode(mode.confirmation ? ConfirmationMode.SIMPLE_ENVIRONMENT : ConfirmationMode.TRIVIAL)
+            .confirmation(mode.confirmation)
             .recording(true)
             .build();
         // @formatter:on

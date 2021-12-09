@@ -37,7 +37,6 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerState;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.APRaffrayiSettings.ConfirmationMode;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -45,7 +44,6 @@ import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.confirm.EagerConfirmation;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
-import mb.p_raffrayi.impl.confirm.TrivialConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferDataOps;
@@ -121,16 +119,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         this.changed = inputChanged;
         this.previousResult = previousResult;
         this.state = UnitState.INIT_UNIT;
-        switch(context.settings().confirmationMode()) {
-            case TRIVIAL:
-                confirmation = TrivialConfirmation.factory();
-                break;
-            case SIMPLE_ENVIRONMENT:
-                confirmation = EagerConfirmation.factory();
-                break;
-            default:
-                throw new IllegalStateException("Unknown confirmation mode: " + context.settings().confirmationMode());
-        }
+        this.confirmation = EagerConfirmation.factory();
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
@@ -1018,7 +1007,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     protected boolean isConfirmationEnabled() {
-        return context.settings().confirmationMode() != ConfirmationMode.TRIVIAL;
+        return context.settings().confirmation();
     }
 
     protected void assertConfirmationEnabled() {
