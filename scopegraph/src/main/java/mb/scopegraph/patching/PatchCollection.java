@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.metaborg.util.RefBool;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -19,6 +20,34 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     @Override public java.util.Set<Entry<S, S>> allPatches() {
         return Sets.union(patches().entrySet(), new IdentityMappingEntrySet<>(identityPatches()));
+    }
+
+    @Override public String toString() {
+        final StringBuilder sb = new StringBuilder("{");
+        final RefBool first = new RefBool(true);
+
+        patches().asMap().forEach((newScope, oldScope) -> {
+            if(!first.get()) {
+                sb.append(", ");
+            }
+            sb.append(newScope);
+            sb.append(" <-| ");
+            sb.append(oldScope);
+            first.set(false);
+        });
+
+        identityPatches().forEach(scope -> {
+            if(!first.get()) {
+                sb.append(", ");
+            }
+            sb.append(scope);
+            sb.append(" <-| ");
+            sb.append(scope);
+            first.set(false);
+        });
+
+        sb.append("}");
+        return sb.toString();
     }
 
     public static class Immutable<S> extends PatchCollection<S> implements IPatchCollection.Immutable<S> {
