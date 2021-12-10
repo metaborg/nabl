@@ -15,6 +15,9 @@ imports
   pp/statix/runtime/-
 
 signature
+  sorts
+    ScopeGraph
+    Analysis
   constructors
     Analysis : ScopeGraph -> Analysis // duplicate from statix/test/Result
 

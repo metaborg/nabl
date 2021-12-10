@@ -6,10 +6,12 @@ imports
 imports
 
 signature
+  sorts
+    AstProperty
   constructors
     Ref  :           AstProperty
     Type :           AstProperty
-    Prop : String -> AstProperty
+    Prop : string -> AstProperty
 
 rules
 

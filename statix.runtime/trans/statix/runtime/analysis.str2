@@ -19,14 +19,33 @@ imports
   statix/api
 
 signature
+  sorts
+    GroupKey
+    Scope
+    SolverResult
+    UnitResult
+    GroupAnalysis
+    ProjectInitialState
+    UnitState
+    Rule
+    ID
+    Integer
+    Spec
+    Solution
+    Config
+    WithConfig
+    StatixGroup
+    StatixUnit
+    StatixProject
+    StatixLibrary
   constructors
 
-    : List(String) -> GroupKey
+    : List(string) -> GroupKey
 
     ProjectAnalysis : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
     FileAnalysis    : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
 
-    ProjectAnalysis : Analysis * UnitResult * List(GroupKey, GroupAnalysis) -> AnalysisResult // cstx -- concurrent version
+    ProjectAnalysis : Analysis * UnitResult * List(GroupKey * GroupAnalysis) -> AnalysisResult // cstx -- concurrent version
     FileAnalysis    : GroupKey * Constraint * Analysis -> AnalysisResult // cstx -- concurrent version
     GroupAnalysis   : Constraint * Analysis -> GroupAnalysis
 
@@ -38,19 +57,19 @@ signature
     Cached          : UnitResult -> ProjectInitialState
     Changed         : UnitResult -> ProjectInitialState
 
-    Cached 	        : UnitState
+    Cached          : UnitState
     Changed         : UnitState
 
-    FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
-    Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
-    Solution : List(Var, Term) * SolverResult -> Solution
+    FileSpec : List(string) * List(Label) * List(Label) * Label * List(Rule) * List(ID * Integer * Label) -> Spec
+    Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID * Integer * Label) -> Spec
+    Solution : List(Var * Term) * SolverResult -> Solution
 
     WithConfig : Config * Term -> WithConfig
 
-    Project : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
+    Project : /*resource*/string * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(string * StatixGroup) * /*subUnits*/List(string * StatixUnit) * /*libraries*/List(string * StatixLibrary) -> StatixProject
     Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
-    Group   : /*resource*/String * /*ast*/Term * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
-    Unit    : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult -> StatixUnit
+    Group   : /*resource*/string * /*ast*/Term * /*subGroups*/List(string * StatixGroup) * /*subUnits*/List(string * StatixUnit) -> StatixGroup
+    Unit    : /*resource*/string * /*ast*/Term * /*cached result*/UnitResult -> StatixUnit
 
     EOP : Label // duplicate from statix.lang
 
@@ -238,7 +257,7 @@ rules // multi file analysis (new)
 
   // @param spec  : Spec
   // @param level : LogLevel
-  // @type StatixProject -> [(String, SolverResult)]
+  // @type StatixProject -> [(string, SolverResult)]
   cstx--solve-multi(|solver-mode, spec, level, progress, cancel) =
     prim("STX_solve_multi", solver-mode, spec, level, progress, cancel)
 
@@ -353,7 +372,7 @@ rules // multi file analysis
 
   // @param state : SolverResult
   // @param level : LogLevel
-  // @type [(String, Constraint)] -> [SolverResult]
+  // @type [(string, Constraint)] -> [SolverResult]
   stx--solve-multi-file(|spec, state, level, progress, cancel) = prim("STX_solve_multi_file", spec, state, level, progress, cancel)
 
   // @param state : SolverResult
