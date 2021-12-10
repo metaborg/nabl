@@ -603,21 +603,18 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
             final IScopeGraph.Immutable<S, L, D> patchedLocalScopeGraph = patcher.<Boolean>apply(
                 previousResult.localScopeGraph(),
-                (oldSource, newSource) -> {
-                    final boolean local = isOwner(newSource);
-                    scopes.__insert(newSource);
-                    return local;
-                },
+                (oldSource, newSource) -> isOwner(newSource),
                 (oldSource, newSource, lbl, oldTarget, newTarget, sourceLocal) -> {
                     if(!sourceLocal) {
                         doAddEdge(self, newSource, lbl, newTarget);
                     }
-                    if(isOwner(newTarget)) {
-                        scopes.__insert(newTarget);
-                    }
                 },
                 Patcher.DataPatchCallback.noop()
             );
+
+            // Copy scopes
+            // No need to patch, because they can only be local, and local state is reused.
+            this.scopes.__insertAll(previousResult.scopes());
 
             scopeGraph.set(scopeGraph.get().addAll(patchedLocalScopeGraph));
             localScopeGraph.set(localScopeGraph.get().addAll(patchedLocalScopeGraph));
