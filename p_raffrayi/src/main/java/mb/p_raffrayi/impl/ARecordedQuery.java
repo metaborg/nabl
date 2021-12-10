@@ -1,7 +1,6 @@
 package mb.p_raffrayi.impl;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -31,19 +30,16 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract boolean empty();
 
-    @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> transitiveQueries();
-
-    @Override @Value.Parameter public abstract Set<IRecordedQuery<S, L, D>> predicateQueries();
+    @Override @Value.Parameter public abstract boolean includePatches();
 
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, Set<S> datumScopes, LabelWf<L> labelWf,
-            DataWf<S, L, D> dataWf, Env<S, L, D> result, Set<IRecordedQuery<S, L, D>> transitiveQueries,
-            Set<IRecordedQuery<S, L, D>> predicateQueries) {
-        return RecordedQuery.of(scopePath, datumScopes, labelWf, dataWf, result.isEmpty(), transitiveQueries, predicateQueries);
+            DataWf<S, L, D> dataWf, Env<S, L, D> result, boolean predicate) {
+        return RecordedQuery.of(scopePath, datumScopes, labelWf, dataWf, result.isEmpty(), predicate);
     }
 
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             Env<S, L, D> result) {
-        return of(path, datumScopes, labelWf, dataWf, result, ImmutableSet.of(), ImmutableSet.of());
+        return of(path, datumScopes, labelWf, dataWf, result, false);
     }
 
     public static <S, L, D> RecordedQuery<S, L, D> of(S scope, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
@@ -53,7 +49,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
-        return RecordedQuery.of(path, datumScopes, labelWf, dataWf, false, ImmutableSet.of(), ImmutableSet.of());
+        return RecordedQuery.of(path, datumScopes, labelWf, dataWf, false, false);
     }
 
     @Override public IRecordedQuery<S, L, D> patch(IPatchCollection.Immutable<S> patches) {
@@ -92,19 +88,11 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
             newDataWf = dataWf().patch(patches);
         }
 
-        // Patch queries
-        final Set<IRecordedQuery<S, L, D>> transitiveQueries =
-                transitiveQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
-        final Set<IRecordedQuery<S, L, D>> predicateQueries =
-                predicateQueries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet());
-
         // @formatter:off
         return RecordedQuery.<S, L, D>builder().from(this)
             .dataWf(newDataWf)
             .scopePath(newPath)
             .datumScopes(newDatumScopes)
-            .transitiveQueries(transitiveQueries)
-            .predicateQueries(predicateQueries)
             .build();
         // @formatter:on
     }

@@ -531,8 +531,9 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                                     predicateQueries.addAll(ans.predicateQueries());
                                 } else if(record) {
                                     // For local query, record it as such.
-                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF,
-                                            ans.env(), ans.transitiveQueries(), ans.predicateQueries()));
+                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF, ans.env(), false));
+                                    recordedQueries.addAll(ans.transitiveQueries());
+                                    recordedQueries.addAll(ans.predicateQueries());
                                 }
                             }
                             return ans.env();
@@ -673,10 +674,9 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
                         // Hence, we just ignore it.
                         if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                            queries.add(RecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env()));
+                            queries.add(ARecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env(), true));
                         }
-                        queries.addAll(ans.transitiveQueries());
-                        // TODO can this happen? Is flattening here ok then?
+                        ans.transitiveQueries().forEach(q -> queries.add(q.withIncludePatches(false)));
                         queries.addAll(ans.predicateQueries());
                     }
                     return CapsuleUtil.<IResolutionPath<S, L, D>>toSet(ans.env());

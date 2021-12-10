@@ -304,18 +304,17 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path = scopePath.step(lbl, d1).get().resolve(d1);
 
         // @formatter:off
-        final RecordedQuery<Scope, Integer, IDatum> rqTrans = recordedQuery(scopePath, Env.of(path))
+        final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(scopePath, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
             .build();
-        final RecordedQuery<Scope, Integer, IDatum> rq = recordedQuery(scopePath, Env.of(path))
+        final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(scopePath, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
-            .addTransitiveQueries(rqTrans)
             .build();
         // @formatter:on
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
-            .addQueries(rq)
+            .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
@@ -377,12 +376,11 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final RecordedQuery<Scope, Integer, IDatum> q1 = recordedQuery(path1, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
             .build();
-        final RecordedQuery<Scope, Integer, IDatum> qr = recordedQuery(pathRoot, Env.of(path))
+        final RecordedQuery<Scope, Integer, IDatum> q2 = recordedQuery(pathRoot, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
             .build();
-        final RecordedQuery<Scope, Integer, IDatum> q2 = recordedQuery(path2, Env.of(path))
+        final RecordedQuery<Scope, Integer, IDatum> q3 = recordedQuery(path2, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
-            .addTransitiveQueries(q1, qr)
             .build();
         // @formatter:on
 
@@ -409,7 +407,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 .addEdge(s2, lbl, root)
                 .addEdge(s2, lbl, d1)
                 .setDatum(d1, datum))
-            .addQueries(q2)
+            .addQueries(q1, q2, q3)
             .build();
         // @formatter:on
 
@@ -500,13 +498,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         final ScopePath<Scope, Integer> scopePath = new ScopePath<Scope, Integer>(root).step(lbl, d1).get();
         final ResolutionPath<Scope, Integer, IDatum> path = scopePath.resolve(d1);
-        final RecordedQuery<Scope, Integer, IDatum> rqTrans = recordedQuery(scopePath, Env.of(path)).build();
-        final RecordedQuery<Scope, Integer, IDatum> rq =
-                recordedQuery(scopePath, Env.of(path)).addTransitiveQueries(rqTrans).build();
+        final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(scopePath, Env.of(path)).build();
+        final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(scopePath, Env.of(path)).build();
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
-            .addQueries(rq)
+            .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
@@ -608,13 +605,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ScopePath<Scope, Integer> scopePath = new ScopePath<Scope, Integer>(root).step(lbl, si).get();
         final ResolutionPath<Scope, Integer, IDatum> path = scopePath.step(lbl, d1).get().resolve(d1);
 
-        final RecordedQuery<Scope, Integer, IDatum> rqTrans = recordedQuery(scopePath, Env.of(path)).build();
-        final RecordedQuery<Scope, Integer, IDatum> rq =
-                recordedQuery(scopePath, Env.of(path)).addTransitiveQueries(rqTrans).build();
+        final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(scopePath, Env.of(path)).build();
+        final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(scopePath, Env.of(path)).build();
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
-            .addQueries(rq)
+            .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
@@ -696,8 +692,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(result.failures().isEmpty());
         assertEquals(1, (int) result.analysis().value());
 
-        assertEquals(1, result.subUnitResults().get("sub1").queries().size());
-        assertEquals(1, result.subUnitResults().get("sub1").queries().iterator().next().transitiveQueries().size());
+        assertEquals(2, result.subUnitResults().get("sub1").queries().size());
         assertEquals(0, result.queries().size());
 
     }
@@ -1524,7 +1519,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         return RecordedQuery.<Scope, Integer, IDatum>builder()
             .labelWf(LabelWf.any())
             .dataWf(DataWf.any())
-            .empty(true);
+            .empty(true)
+            .includePatches(true);
         // @formatter:on
     }
 
