@@ -122,7 +122,7 @@ rules // single file elaboration
 
 rules // multi file analysis (new)
 
-  stx--no-grouping: (resource, ast) -> [(key, ast)]
+  stx--no-grouping: (resource, ast) -> key
     with key := [<current-language-relative-source-or-include-path> resource]
 
   cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
