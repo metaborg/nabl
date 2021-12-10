@@ -249,10 +249,10 @@ rules // multi file analysis (new)
                                   with (key, Group(_, rule, _, _)) := <getfirst(?(_, Group(resource, _, _, _)))> group*
                                      ; (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
                                 \})> group-result*
-       ; new-group-result*     := <map(Fst)> group-results-msgs
-       ; grp-error*            := <mapconcat(Snd)> group-results-msgs
-       ; grp-warning*          := <mapconcat(Third)> group-results-msgs
-       ; grp-note*             := <mapconcat(Ttl; Third)> group-results-msgs
+       ; new-group-result*     := <map(Thd)> group-results-msgs
+       ; grp-error*            := <mapconcat(Ttl; Thd)> group-results-msgs
+       ; grp-warning*          := <mapconcat(Ttl; Ttl; Thd)> group-results-msgs
+       ; grp-note*             := <mapconcat(Ttl; Ttl; Ttl; Thd)> group-results-msgs
 
   cstx-collect-groups = ?Project(_, _, _, <mapconcat(cstx-collect-groups(|[]))>, _, _)
 
@@ -428,7 +428,7 @@ rules
   stx--mk-qualified-name(|""): name -> name
 
   stx--mk-qualified-name(|qname): name -> name'
-    with if <elem> ("!", <explode-string> name) then
+    with if <elem> ('!', <explode-string> name) then
            name' := name
          else
            name' := $[[qname]![name]]
