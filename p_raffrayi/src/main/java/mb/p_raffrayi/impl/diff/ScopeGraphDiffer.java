@@ -272,7 +272,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private Unit matchEdge(Edge<S, L> currentEdge, Immutable<Edge<S, L>, BiMap.Immutable<S>> previousEdges) {
         logger.debug("{}: matching with candidates {}", currentEdge, previousEdges);
 
-        for(Entry<Edge<S, L>, BiMap.Immutable<S>>previousEdge : previousEdges.entrySet()) {
+        for(Entry<Edge<S, L>, BiMap.Immutable<S>> previousEdge : previousEdges.entrySet()) {
             if(matchScopes(previousEdge.getValue())) {
                 logger.trace("{}: matched with {}.", currentEdge, previousEdge);
                 return match(currentEdge, previousEdge.getKey());
@@ -477,8 +477,18 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             // This involves the target scopes, but also the scopes in the data of these target scopes.
             IFuture<List<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>>> matchesFuture =
                     aggregateAll(previousEdges, previousEdge -> {
-                        return consequences(currentEdge.target, previousEdge.target)
-                                .thenApply(matchedScopes -> Tuple2.of(previousEdge, matchedScopes));
+                        ICompletableFuture<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>> result =
+                                new CompletableFuture<>();
+                        consequences(currentEdge.target, previousEdge.target).whenComplete((matchedScopes, ex) -> {
+                            if(ex != null) {
+                                logger.debug("Error computing consequences for {} ~ {}. Treat as not matchable.",
+                                        currentEdge.target, previousEdge.target);
+                                logger.debug("* Error.", ex);
+                                result.complete(Tuple2.of(previousEdge, Optional.empty()));
+                            }
+                            result.complete(Tuple2.of(previousEdge, matchedScopes));
+                        });
+                        return result;
                     });
 
             // When match computation is complete, schedule edge matches for processing.
@@ -513,10 +523,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     new CompletableFuture<>();
             matchesFuture.whenComplete((u, ex2) -> {
                 if(ex2 != null) {
-                    logger.debug("Error matching edge {} - treat it as undecided.", currentEdge);
-                    logger.debug("error:", ex2);
-                    failure(ex2);
-                    // TODO: special category for undecided edges?
+                    logger.debug("Error matching edge " + currentEdge + " - treat it as added.", ex2);
                     matchesResult.complete(Collections.emptyList(), null);
                 } else {
                     matchesResult.complete(u);
@@ -577,7 +584,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
                     dataScopes.forEach(this::scheduleCurrentData);
                 } else {
-                    failure(ex);
+                    logger.debug("Error retrieving current data.", ex);
                 }
                 return Unit.unit;
             };
@@ -600,7 +607,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
                     dataScopes.forEach(this::schedulePreviousData);
                 } else {
-                    failure(ex);
+                    logger.debug("Error retrieving previous data.", ex);
                 }
                 return Unit.unit;
             };
@@ -902,7 +909,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<Optional<S>> match(S previousScope) {
         if(!previousContext.available(previousScope)) {
-            logger.error("Scope {} is not available in previous context.");
+            logger.error("Scope {} is not available in previous context.", previousScope);
             throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
         }
 
@@ -930,7 +937,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
         if(!previousContext.available(previousScope)) {
-            logger.error("Scope {} is not available in previous context.");
+            logger.error("Scope {} is not available in previous context.", previousScope);
             throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
         }
 
@@ -1047,9 +1054,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void assertPreviousScopeOpen(S scope) {
         if(!isPreviousScopeOpen(scope)) {
-            final String reason = successfullyCompleted() ? "closed because differ completed"
-                    : removedScopes.contains(scope) ? "marked as removed" : "matched to " + matchedScopes.getValue(scope);
-            throw new IllegalStateException("Scope " + scope + " is already " + reason +".");
+            final String reason =
+                    successfullyCompleted() ? "closed because differ completed" : removedScopes.contains(scope)
+                            ? "marked as removed" : "matched to " + matchedScopes.getValue(scope);
+            throw new IllegalStateException("Scope " + scope + " is already " + reason + ".");
         }
     }
 
@@ -1063,8 +1071,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void assertPreviousEdgeOpen(Edge<S, L> edge) {
         if(!isPreviousEdgeOpen(edge)) {
-            final String reason = successfullyCompleted() ? "closed because differ completed"
-                    : removedEdges.containsValue(edge) ? "marked as removed" : "matched to " + matchedEdges.getValue(edge);
+            final String reason =
+                    successfullyCompleted() ? "closed because differ completed" : removedEdges.containsValue(edge)
+                            ? "marked as removed" : "matched to " + matchedEdges.getValue(edge);
             throw new IllegalStateException("Edge " + edge + " is already " + reason + ".");
         }
     }
