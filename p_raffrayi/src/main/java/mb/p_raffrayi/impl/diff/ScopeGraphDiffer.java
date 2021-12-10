@@ -131,7 +131,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             logger.debug("Start scope graph differ");
             if(currentRootScopes.size() != previousRootScopes.size()) {
                 logger.error("Current and previous root scope number differ.");
-                throw new IllegalStateException("Current and previous root scope number differ.");
+                return CompletableFuture.completedExceptionally(new IllegalStateException("Current and previous root scope number differ."));
             }
 
             final BiMap.Transient<S> rootMatches = BiMap.Transient.of();
@@ -143,7 +143,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             BiMap.Immutable<S> initialMatches;
             if((initialMatches = consistent(rootMatches.freeze()).orElse(null)) == null) {
                 logger.error("Current and previous root scope number differ.");
-                throw new IllegalStateException("Provided root scopes cannot be matched.");
+                return CompletableFuture.completedExceptionally(new IllegalStateException("Provided root scopes cannot be matched."));
             }
 
             List<IFuture<Unit>> futures = new ArrayList<>();
@@ -910,7 +910,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     @Override public IFuture<Optional<S>> match(S previousScope) {
         if(!previousContext.available(previousScope)) {
             logger.error("Scope {} is not available in previous context.", previousScope);
-            throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
+            return CompletableFuture.completedExceptionally(new IllegalStateException("Scope " + previousScope + " is not available in previous context."));
         }
 
         if(matchedScopes.containsValue(previousScope)) {
@@ -938,7 +938,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
         if(!previousContext.available(previousScope)) {
             logger.error("Scope {} is not available in previous context.", previousScope);
-            throw new IllegalStateException("Scope " + previousScope + " is not available in previous context.");
+            return CompletableFuture.completedExceptionally(new IllegalStateException("Scope " + previousScope + " is not available in previous context."));
         }
 
         if(completedPreviousScopes.containsEntry(previousScope, label)) {
