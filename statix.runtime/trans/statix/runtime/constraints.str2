@@ -10,12 +10,16 @@ imports
   statix/runtime/terms
 
 signature
+  sorts
+    Constraint
+    HoConstraint
+    Message
   constructors
     CNew    : List(Term) -> Constraint
     CTrue   : Constraint
     CConj   : Constraint * Constraint -> Constraint
     CExists : List(Var) * Constraint -> Constraint
-    C       : String * List(Term) * Message -> Constraint
+    C       : string * List(Term) * Message -> Constraint
   constructors
     LLam    : List(Term) * Constraint -> HoConstraint
 

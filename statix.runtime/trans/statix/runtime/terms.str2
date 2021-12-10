@@ -7,15 +7,19 @@ imports
 // Term duplicates from statix.lang
 
 signature
+  sorts
+    Term
+    Var
   constructors
-    Op    : String * List(Term) -> Term
+    Op    : string * List(Term) -> Term
     Tuple : List(Term)          -> Term
     List  : List(Term)          -> Term
-    Str   : String              -> Term
-    Int   : String              -> Term
-    Var   : String              -> Term
+    Str   : string              -> Term
+    Int   : string              -> Term
+    Var   : string              -> Var
+    : Var -> Term
 
-    Scope : String * String -> Term
+    Scope : string * string -> Term
 
 rules
 
