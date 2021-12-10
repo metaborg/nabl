@@ -1394,6 +1394,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                 });
             }
 
+            @Override public Optional<D> rawDatum(S scope) {
+                return scopeGraph.get().getData(scope).map(instantiateData::apply);
+            }
+
             @Override public boolean available(S scope) {
                 return scopes.contains(scope);
             }

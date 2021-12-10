@@ -167,6 +167,10 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
             return signal().thenCompose(__ -> inner.datum(scope));
         }
 
+        @Override public Optional<D> rawDatum(S scope) {
+            return inner.rawDatum(scope);
+        }
+
         @Override public boolean available(S scope) {
             return inner.available(scope);
         }

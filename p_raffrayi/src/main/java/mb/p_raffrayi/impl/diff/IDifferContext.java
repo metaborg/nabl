@@ -14,5 +14,7 @@ public interface IDifferContext<S, L, D> {
 
     IFuture<Optional<D>> datum(S scope);
 
+    Optional<D> rawDatum(S scope);
+
     boolean available(S scope);
 }

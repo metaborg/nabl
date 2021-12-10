@@ -32,7 +32,11 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     }
 
     @Override public IFuture<Optional<D>> datum(S scope) {
-        return CompletableFuture.completedFuture(scopeGraph.getData(scope).map(dataOps::getExternalRepresentation));
+        return CompletableFuture.completedFuture(rawDatum(scope));
+    }
+
+    @Override public Optional<D> rawDatum(S scope) {
+        return scopeGraph.getData(scope).map(dataOps::getExternalRepresentation);
     }
 
     @Override public boolean available(S scope) {

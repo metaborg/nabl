@@ -575,17 +575,17 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             openCurrentScopes.__insert(currentScope);
             IFuture<Optional<D>> cd = currentContext.datum(currentScope);
             K<Optional<D>> insertCS = (d, ex) -> {
-                if(ex == null) {
-                    logger.trace("{} (C): data complete: {}.", currentScope, d);
-                    currentScopeData.__put(currentScope, d);
-
-                    Collection<S> dataScopes = d.map(differOps::getScopes).orElse(CapsuleUtil.immutableSet());
-                    logger.trace("{} (C): scopes observed in datum: {}", currentScope, dataScopes);
-
-                    dataScopes.forEach(this::scheduleCurrentData);
-                } else {
+                if(ex != null) {
                     logger.debug("Error retrieving current data.", ex);
+                    d = currentContext.rawDatum(currentScope);
                 }
+                logger.trace("{} (C): data complete: {}.", currentScope, d);
+                currentScopeData.__put(currentScope, d);
+
+                Collection<S> dataScopes = d.map(differOps::getScopes).orElse(CapsuleUtil.immutableSet());
+                logger.trace("{} (C): scopes observed in datum: {}", currentScope, dataScopes);
+
+                dataScopes.forEach(this::scheduleCurrentData);
                 return Unit.unit;
             };
             future(cd, insertCS);
@@ -598,17 +598,17 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             openPreviousScopes.__insert(previousScope);
             IFuture<Optional<D>> pd = previousContext.datum(previousScope);
             K<Optional<D>> insertPS = (d, ex) -> {
-                if(ex == null) {
-                    logger.trace("{} (P): data complete: {}.", previousScope, d);
-                    previousScopeData.__put(previousScope, d);
-
-                    Collection<S> dataScopes = d.map(differOps::getScopes).orElse(Set.Immutable.of());
-                    logger.trace("{} (P): scopes observed in datum: {}", previousScope, dataScopes);
-
-                    dataScopes.forEach(this::schedulePreviousData);
-                } else {
+                if(ex != null) {
                     logger.debug("Error retrieving previous data.", ex);
+                    d = previousContext.rawDatum(previousScope);
                 }
+                logger.trace("{} (P): data complete: {}.", previousScope, d);
+                previousScopeData.__put(previousScope, d);
+
+                Collection<S> dataScopes = d.map(differOps::getScopes).orElse(CapsuleUtil.immutableSet());
+                logger.trace("{} (P): scopes observed in datum: {}", previousScope, dataScopes);
+
+                dataScopes.forEach(this::schedulePreviousData);
                 return Unit.unit;
             };
             future(pd, insertPS);
