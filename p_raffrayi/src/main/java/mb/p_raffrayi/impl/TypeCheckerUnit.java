@@ -112,9 +112,11 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private final IPatchCollection.Transient<S> externalMatches = PatchCollection.Transient.of();
 
     private final IConfirmationFactory<S, L, D> confirmation;
-    private final IPatchCollection.Transient<S> patches = PatchCollection.Transient.of();
     private final ICompletableFuture<Optional<IPatchCollection.Immutable<S>>> confirmationResult =
             new CompletableFuture<>();
+
+    private final IPatchCollection.Transient<S> resultPatches = PatchCollection.Transient.of();
+    private final IPatchCollection.Transient<S> globalPatches = PatchCollection.Transient.of();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
@@ -304,7 +306,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override public void _release(IPatchCollection.Immutable<S> patches) {
-        doRelease(patches.putAll(this.patches));
+        doRelease(patches.putAll(this.resultPatches), PatchCollection.Immutable.<S>of().putAll(globalPatches));
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -520,31 +522,36 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         if(previousResult.queries().isEmpty()) {
             logger.debug("Releasing - no queries in previous result.");
-            doRelease(PatchCollection.Immutable.of());
+            doRelease(PatchCollection.Immutable.of(), PatchCollection.Immutable.of());
             return;
         }
 
         final IConfirmation<S, L, D> confirmaton = confirmation.getConfirmation(new ConfirmationContext(self));
 
         // @formatter:off
-        final List<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures = previousResult.queries().stream()
+        final List<IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>> futures = previousResult.queries().stream()
                 .map(confirmaton::confirm)
-                .map(intermediateFuture -> {
+                .<IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>>map(intermediateFuture -> {
                     return intermediateFuture.thenApply(intermediate -> intermediate.match(
-                        () -> SC.<IPatchCollection.Immutable<S>, ConfirmResult<S>>shortCircuit(ConfirmResult.deny()),
-                        patches -> {
+                        () -> SC.shortCircuit(ConfirmResult.deny()),
+                        (resultPatches, globalPatches) -> {
                             // Store intermediate set of patches, to be used on deadlock.
-                            this.patches.putAll(patches);
-                            return SC.<IPatchCollection.Immutable<S>, ConfirmResult<S>>of(patches);
+                            this.resultPatches.putAll(resultPatches);
+                            this.globalPatches.putAll(globalPatches);
+                            return SC.of(Tuple2.of(resultPatches, globalPatches));
                         }
                     ));
                 }).collect(Collectors.toList());
         // @formatter:on
 
         // @formatter:off
-        AggregateFuture.ofShortCircuitable(patchSets -> ConfirmResult.confirm(patchSets.stream()
-                .reduce(PatchCollection.Immutable.of(), IPatchCollection.Immutable::putAll)), futures)
-            .whenComplete((r, ex) -> {
+        AggregateFuture.ofShortCircuitable(patchCollections -> {
+            final Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> aggregatedPatches = patchCollections.stream().reduce(
+                    Tuple2.of(PatchCollection.Immutable.of(), PatchCollection.Immutable.of()),
+                    (set1, set2) -> Tuple2.of(set1._1().putAll(set2._1()), set1._2().putAll(set2._2()))
+                );
+            return ConfirmResult.confirm(aggregatedPatches._1(), aggregatedPatches._2());
+        }, futures).whenComplete((r, ex) -> {
                 if(ex == Release.instance) {
                     logger.debug("Confirmation received release.");
                     // Do nothing, unit is already released by deadlock resolution.
@@ -558,20 +565,20 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                         if(doRestart()) {
                             stateTransitionTrace = TransitionTrace.RESTARTED;
                         }
-                    }, patches -> {
+                    }, (resultPatches, globalPatches) -> {
                         logger.debug("Queries confirmed - releasing.");
-                        this.doRelease(patches);
+                        this.doRelease(resultPatches, globalPatches);
                     });
                 }
             });
         // @formatter:on
     }
 
-    private void doRelease(IPatchCollection.Immutable<S> patches) {
+    private void doRelease(IPatchCollection.Immutable<S> resultPatches, IPatchCollection.Immutable<S> globalPatches) {
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             logger.debug("{} releasing.", this);
-            logger.trace("Patches: {}.", patches);
+            logger.trace("Patches: result: {}; global: {}.", resultPatches, globalPatches);
             assertPreviousResultProvided();
 
             // TODO When a unit has active subunits, the matching differ cannot be used, because these units may add/remove edges.
@@ -582,7 +589,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
             // @formatter:off
             final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
-                new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), patches.allPatches()) :
+                new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), resultPatches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
                         previousResult.scopes(), new DifferDataOps()), differOps());
             // @formatter:on
@@ -596,9 +603,9 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             // @formatter:off
             final Patcher<S, L, D> patcher = new Patcher.Builder<S, L, D>()
                 .patchSources(localPatches)
-                .patchEdgeTargets(patches)
+                .patchEdgeTargets(resultPatches)
                 .patchDatumSources(localPatches)
-                .patchDatums(patches, context::substituteScopes)
+                .patchDatums(resultPatches, context::substituteScopes)
                 .build();
 
             final IScopeGraph.Immutable<S, L, D> patchedLocalScopeGraph = patcher.<Boolean>apply(
@@ -647,12 +654,13 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 self.complete(future, previousResult.analysis().getExternalRepresentation(d), null);
             }));
 
-            recordedQueries
-                    .addAll(previousResult.queries().stream().map(q -> q.patch(patches)).collect(Collectors.toSet()));
+            final IPatchCollection.Immutable<S> allPatches = resultPatches.putAll(globalPatches);
+            recordedQueries.addAll(
+                    previousResult.queries().stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet()));
             stateTransitionTrace = TransitionTrace.RELEASED;
 
             // Cancel all futures waiting for activation
-            self.complete(confirmationResult, Optional.of(patches), null);
+            self.complete(confirmationResult, Optional.of(resultPatches), null);
             self.complete(whenActive, null, Release.instance);
             self.complete(whenContextActivated, Unit.unit, null);
             state = UnitState.RELEASED;
@@ -723,7 +731,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
-            doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches));
+            doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());
         } else if(state.active() && inLocalPhase()) {
             doCapture();
             self.complete(whenContextActivated, Unit.unit, null);
@@ -815,15 +823,12 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                     logger.trace("{} rec external confirm: {}.", this, v);
                     granted(confirm, owner);
                     resume();
-                    if(ex != null && ex == Release.instance) {
+                    if(ex == Release.instance) {
                         logger.debug("{} got release, confirming.", this);
                         result.complete(ConfirmResult.confirm());
                     } else if(ex != null) {
                         result.completeExceptionally(ex);
                     } else {
-                        // @formatter:off
-                        v.visit(() -> {}, externalMatches::putAll);
-                        // @formatter:on
                         logger.trace("confirm: {}.", v);
                         result.complete(v);
                     }
@@ -851,8 +856,21 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         }
 
         @Override public IFuture<Optional<S>> match(S scope) {
-            // FIXME Do we require a token here?
-            return getOwner(scope).thenCompose(owner -> self.async(owner)._match(scope));
+            return getOwner(scope).thenCompose(owner -> {
+                final ICompletableFuture<Optional<S>> result = new CompletableFuture<>();
+
+                final DifferState<S, L, D> differState = DifferState.ofMatch(self, scope, result);
+                waitFor(differState, owner);
+
+                final IFuture<Optional<S>> future = self.async(owner)._match(scope);
+                future.whenComplete(result::complete);
+
+                result.whenComplete((__, ex) -> {
+                    granted(differState, owner);
+                });
+
+                return result;
+            });
         }
 
     }

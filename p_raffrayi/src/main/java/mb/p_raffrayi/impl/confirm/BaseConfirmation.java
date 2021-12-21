@@ -48,23 +48,24 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
             if(ex != null) {
                 result.completeExceptionally(ex);
             }
-            r.visit(() -> result.complete(r), patches -> {
-                if(query.includePatches()) {
-                    Futures.<S, IPatchCollection.Immutable<S>>reduce(patches, query.datumScopes(), (acc, scope) -> {
-                        return context.match(scope).thenApply(newScopeOpt -> {
-                            final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
-                                    "Cannot have a missing datum scope match when all edge are confirmed."));
-                            return acc.put(newScope, scope);
-                        });
-                    }).whenComplete((accPatches, ex2) -> {
-                        if(ex2 != null) {
-                            result.completeExceptionally(ex2);
-                        }
-                        result.complete(ConfirmResult.confirm(accPatches));
+            r.visit(() -> result.complete(r), (resultPatches, globalPatches) -> {
+                Futures.<S, IPatchCollection.Immutable<S>>reduce(PatchCollection.Immutable.of(), query.datumScopes(), (acc, scope) -> {
+                    return context.match(scope).thenApply(newScopeOpt -> {
+                        final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
+                                "Cannot have a missing datum scope match when all edge are confirmed."));
+                        return acc.put(newScope, scope);
                     });
-                } else {
-                    result.complete(ConfirmResult.confirm());
-                }
+                }).whenComplete((datumPatches, ex2) -> {
+                    if(ex2 != null) {
+                        result.completeExceptionally(ex2);
+                    }
+                    if(query.includePatches()) {
+                        result.complete(ConfirmResult.confirm(resultPatches.putAll(datumPatches), globalPatches));
+                    } else {
+                        result.complete(ConfirmResult.confirm(resultPatches, globalPatches.putAll(datumPatches)));
+                    }
+
+                });
             });
         });
 
@@ -148,11 +149,11 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 .confirm(patchSets.stream().reduce(PatchCollection.Immutable.of(), IPatchCollection.Immutable::putAll));
     }
 
-    private SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> toSC(ConfirmResult<S> intermediate) {
-        return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), SC::of);
+    private SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>> toSC(ConfirmResult<S> intermediate) {
+        return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), (resP, globP) -> SC.of(Tuple2.of(resP, globP)));
     }
 
-    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+    protected IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>
             toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
     }
