@@ -41,6 +41,18 @@ public abstract class ConfirmResult<S> {
             onDeny.apply();
         }
 
+        @Override public int hashCode() {
+            return 42;
+        }
+
+        @Override public boolean equals(Object obj) {
+            return obj == this;
+        }
+
+        @Override public String toString() {
+            return "Deny{}";
+        }
+
     }
 
     private static class Confirm<S> extends ConfirmResult<S> {
@@ -58,5 +70,29 @@ public abstract class ConfirmResult<S> {
         @Override public void visit(Action0 onDeny, Action1<IPatchCollection.Immutable<S>> onConfirm) {
             onConfirm.apply(patches);
         }
+
+        @Override public int hashCode() {
+            return 17 + 31 * patches.hashCode();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override public boolean equals(Object obj) {
+            if(obj == this) {
+                return true;
+            }
+            if(obj == null) {
+                return false;
+            }
+            if(!obj.getClass().equals(this.getClass())) {
+                return false;
+            }
+
+            return ((Confirm<S>) obj).patches.equals(patches);
+        }
+
+        @Override public String toString() {
+            return "Confirm{" + patches + "}";
+        }
+
     }
 }

@@ -3,6 +3,7 @@ package mb.scopegraph.patching;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import org.metaborg.util.RefBool;
 import org.metaborg.util.log.ILogger;
@@ -18,8 +19,35 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     private static final ILogger logger = LoggerUtils.logger(PatchCollection.class);
 
+    private int hashCode = -1; // lazily computed.
+
     @Override public java.util.Set<Entry<S, S>> allPatches() {
         return Sets.union(patches().entrySet(), new IdentityMappingEntrySet<>(identityPatches()));
+    }
+
+    @SuppressWarnings("unchecked") @Override public boolean equals(Object obj) {
+        if(obj == this) {
+            return true;
+        }
+        if(obj == null) {
+            return false;
+        }
+        if(!obj.getClass().equals(this.getClass())) {
+            return false;
+        }
+
+        final PatchCollection<S> other = (PatchCollection<S>) obj;
+
+        return Objects.equals(identityPatches(), other.identityPatches()) && Objects.equals(patches(), other.patches());
+    }
+
+    @Override public int hashCode() {
+        if(hashCode == -1) {
+            hashCode = 11;
+            hashCode += 31 * identityPatches().hashCode();
+            hashCode += 37 * patches().hashCode();
+        }
+        return hashCode;
     }
 
     @Override public String toString() {
@@ -286,7 +314,8 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
             return putAll(patches.entrySet());
         }
 
-        @Override public boolean putAll(Collection<? extends Entry<S, S>> patches) throws InvalidPatchCompositionException {
+        @Override public boolean putAll(Collection<? extends Entry<S, S>> patches)
+                throws InvalidPatchCompositionException {
             boolean changed = false;
             for(Entry<S, S> entry : patches) {
                 changed |= put(entry.getKey(), entry.getValue());
