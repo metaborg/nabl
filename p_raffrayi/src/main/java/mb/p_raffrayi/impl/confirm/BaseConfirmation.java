@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -42,9 +41,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     private final SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> ACC_NO_PATCHES =
             SC.of(PatchCollection.Immutable.of());
 
-    public abstract IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query);
-
-    protected IFuture<ConfirmResult<S>> confirmSingle(IRecordedQuery<S, L, D> query) {
+    @Override public IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
         CompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
         confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
@@ -52,18 +49,22 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 result.completeExceptionally(ex);
             }
             r.visit(() -> result.complete(r), patches -> {
-                Futures.<S, IPatchCollection.Immutable<S>>reduce(patches, query.datumScopes(), (acc, scope) -> {
-                    return context.match(scope).thenApply(newScopeOpt -> {
-                        final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
-                                "Cannot have a missing datum scope match when all edge are confirmed."));
-                        return acc.put(newScope, scope);
+                if(query.includePatches()) {
+                    Futures.<S, IPatchCollection.Immutable<S>>reduce(patches, query.datumScopes(), (acc, scope) -> {
+                        return context.match(scope).thenApply(newScopeOpt -> {
+                            final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
+                                    "Cannot have a missing datum scope match when all edge are confirmed."));
+                            return acc.put(newScope, scope);
+                        });
+                    }).whenComplete((accPatches, ex2) -> {
+                        if(ex2 != null) {
+                            result.completeExceptionally(ex2);
+                        }
+                        result.complete(ConfirmResult.confirm(accPatches));
                     });
-                }).whenComplete((accPatches, ex2) -> {
-                    if(ex2 != null) {
-                        result.completeExceptionally(ex2);
-                    }
-                    result.complete(ConfirmResult.confirm(accPatches));
-                });
+                } else {
+                    result.complete(ConfirmResult.confirm());
+                }
             });
         });
 

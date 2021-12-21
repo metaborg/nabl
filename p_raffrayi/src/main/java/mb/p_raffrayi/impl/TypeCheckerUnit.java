@@ -43,10 +43,10 @@ import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.confirm.ConfirmResult;
-import mb.p_raffrayi.impl.confirm.EagerConfirmation;
 import mb.p_raffrayi.impl.confirm.IConfirmation;
 import mb.p_raffrayi.impl.confirm.IConfirmationContext;
 import mb.p_raffrayi.impl.confirm.IConfirmationFactory;
+import mb.p_raffrayi.impl.confirm.OptimisticConfirmation;
 import mb.p_raffrayi.impl.diff.AddingDiffer;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferDataOps;
@@ -125,7 +125,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         this.changed = inputChanged;
         this.previousResult = previousResult;
         this.state = UnitState.INIT_UNIT;
-        this.confirmation = EagerConfirmation.factory();
+        this.confirmation = OptimisticConfirmation.factory();
     }
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, R, T>> self,

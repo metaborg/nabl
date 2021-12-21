@@ -15,7 +15,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 
-public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
+public class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(OptimisticConfirmation.class);
 
@@ -45,6 +45,10 @@ public abstract class OptimisticConfirmation<S, L, D> extends BaseConfirmation<S
         // TODO: use path prefix to prevent false positives on cyclic edges
         return context.queryPrevious(new ScopePath<>(removedEdge.target()), removedEdge.labelWf(), dataWf,
                 LabelOrder.none(), DataLeq.none()).thenApply(env -> env.isEmpty() ? accept() : deny());
+    }
+
+    public static <S, L, D> IConfirmationFactory<S, L, D> factory() {
+        return OptimisticConfirmation::new;
     }
 
 }
