@@ -863,6 +863,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
                 result.whenComplete((__, ex) -> {
                     granted(differState, owner);
+                    resume();
                 });
 
                 return result;
