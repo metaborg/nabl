@@ -45,7 +45,6 @@ import mb.p_raffrayi.actors.impl.IActorScheduler;
 import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
 import mb.scopegraph.oopsla20.diff.BiMap;
-import mb.scopegraph.patching.IPatchCollection;
 
 public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
 
@@ -335,7 +334,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         return CompletableFuture.completedFuture(StateSummary.restart(process, dependentSet()));
     }
 
-    @Override public void _release(IPatchCollection.Immutable<S> patches) {
+    @Override public void _release() {
         // Since we always force a restart, this method should never be called.
         logger.error("Trying to release broker.");
         throw new IllegalStateException("Cannot release broker.");

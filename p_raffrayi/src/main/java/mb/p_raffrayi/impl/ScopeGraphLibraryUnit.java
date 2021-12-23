@@ -33,7 +33,6 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
-import mb.scopegraph.patching.IPatchCollection;
 
 class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
 
@@ -186,7 +185,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet()));
     }
 
-    @Override public void _release(IPatchCollection.Immutable<S> patches) {
+    @Override public void _release() {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 

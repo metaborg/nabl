@@ -288,14 +288,10 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
         if(state.equals(UnitState.RELEASED)
                 || (state == UnitState.DONE && stateTransitionTrace == TransitionTrace.RELEASED)) {
-            return CompletableFuture.completedFuture(
-                    StateSummary.released(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
+            return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
         }
 
-        // When these patches are used, *all* involved units re-use their old scope graph.
-        // Hence only patching the root scopes is sufficient.
-        return CompletableFuture.completedFuture(
-                StateSummary.release(process, dependentSet(), PatchCollection.Immutable.of(matchedBySharing)));
+        return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet()));
     }
 
     @Override public void _restart() {
@@ -305,8 +301,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         }
     }
 
-    @Override public void _release(IPatchCollection.Immutable<S> patches) {
-        doRelease(patches.putAll(this.resultPatches), PatchCollection.Immutable.<S>of().putAll(globalPatches));
+    @Override public void _release() {
+        doRelease(PatchCollection.Immutable.<S>of().putAll(this.resultPatches), PatchCollection.Immutable.<S>of().putAll(globalPatches));
     }
 
     ///////////////////////////////////////////////////////////////////////////

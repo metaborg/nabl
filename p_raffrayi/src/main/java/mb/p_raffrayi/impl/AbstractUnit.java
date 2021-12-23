@@ -88,7 +88,6 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
-import mb.scopegraph.patching.IPatchCollection;
 
 public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
@@ -1083,8 +1082,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         });
     }
 
-    private static final boolean RESTART_INCOMING = true;
-
     private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes,
             Collection<StateSummary<S, L, D>> states) {
         logger.debug("Received patches: {}.", states);
@@ -1094,13 +1091,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             return;
         }
         final Map<Boolean, java.util.Set<StateSummary<S, L, D>>> units =
-                states.stream().collect(Collectors.partitioningBy(this::isRestarted, Collectors.toSet()));
+                states.stream().collect(Collectors.partitioningBy(this::isActive, Collectors.toSet()));
         if(units.get(true).isEmpty()) {
             // No restarted units in cluster, release all involved units.
-            final IPatchCollection.Immutable<S> ptcs =
-                    states.stream().map(this::patches).reduce(IPatchCollection.Immutable::putAll).get();
-            logger.debug("Releasing all involved units: {}.", ptcs);
-            nodes.forEach(node -> node.from(self, context)._release(ptcs));
+            logger.debug("Releasing all involved units.");
+            nodes.forEach(node -> node.from(self, context)._release());
         } else {
             // @formatter:off
             final java.util.Set<StateSummary<S, L, D>> activeProcesses = units.get(true).stream()
@@ -1110,10 +1105,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                     .collect(Collectors.partitioningBy(node -> shouldRestart(node, activeProcesses),
                             Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
             if(restarts.get(true).isEmpty()) {
-                logger.error("Active units have no {} dependencies elegible for restart.",
-                        RESTART_INCOMING ? "incoming" : "outgoing");
-                throw new IllegalStateException("Active units have no " + (RESTART_INCOMING ? "incoming" : "outgoing")
-                        + " dependencies elegible for restart.");
+                logger.warn("False deadlock detected. Active units have no incoming dependencies elegible for restart.");
             } else {
                 logger.debug("Restarting {} (conservative).", restarts);
                 restarts.get(true).forEach(node -> node.from(self, context)._restart());
@@ -1123,39 +1115,20 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     private boolean isRestartable(StateSummary<S, L, D> state) {
-        return state.match(() -> false, __ -> true, __ -> false);
+        return state.getState().equals(StateSummary.State.UNKNOWN);
     }
 
-    private boolean isRestarted(StateSummary<S, L, D> state) {
-        return state.match(() -> true, __ -> false, __ -> false);
-    }
-
-    private IPatchCollection.Immutable<S> patches(StateSummary<S, L, D> state) {
-        // @formatter:off
-        return state.match(
-            () -> { throw new IllegalStateException("No patches for restarted state."); },
-            ptcs -> ptcs,
-            ptcs -> ptcs
-        );
-        // @formatter:on
+    private boolean isActive(StateSummary<S, L, D> state) {
+        return state.getState().equals(StateSummary.State.ACTIVE);
     }
 
     private boolean shouldRestart(StateSummary<S, L, D> node, Collection<StateSummary<S, L, D>> activeProcesses) {
-        if(RESTART_INCOMING) {
-            // @formatter:off
-            java.util.Set<IProcess<S, L, D>> activeNodes = activeProcesses.stream()
-                .map(StateSummary::getSelf)
-                .collect(Collectors.toSet());
-            // @formatter:on
-            return node.getDependencies().stream().anyMatch(activeNodes::contains);
-        } else {
-            // @formatter:off
-            return activeProcesses.stream()
-                .map(StateSummary::getDependencies)
-                .flatMap(ImmutableSet::stream)
-                .anyMatch(node.getSelf()::equals);
-            // @formatter:on
-        }
+        // @formatter:off
+        java.util.Set<IProcess<S, L, D>> activeNodes = activeProcesses.stream()
+            .map(StateSummary::getSelf)
+            .collect(Collectors.toSet());
+        // @formatter:on
+        return node.getDependencies().stream().anyMatch(activeNodes::contains);
     }
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {

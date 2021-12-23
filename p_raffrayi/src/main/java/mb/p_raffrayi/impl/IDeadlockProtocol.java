@@ -4,8 +4,6 @@ import java.util.Set;
 
 import org.metaborg.util.future.IFuture;
 
-import mb.scopegraph.patching.IPatchCollection;
-
 public interface IDeadlockProtocol<S, L, D> {
 
     // Deadlock detection
@@ -22,7 +20,7 @@ public interface IDeadlockProtocol<S, L, D> {
 
     // Deadlock resolution
 
-    void _release(IPatchCollection.Immutable<S> patches);
+    void _release();
 
     void _restart();
 

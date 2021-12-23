@@ -20,7 +20,6 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
-import mb.scopegraph.patching.IPatchCollection;
 
 public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
 
@@ -57,7 +56,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S,
         return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 
-    @Override public void _release(IPatchCollection.Immutable<S> patches) {
+    @Override public void _release() {
         // ignore
     }
 
