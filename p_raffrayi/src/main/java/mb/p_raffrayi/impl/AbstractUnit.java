@@ -1296,11 +1296,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     protected boolean isIncrementalEnabled() {
-        return context.settings().incremental();
+        return context.settings().isIncremental();
     }
 
     protected boolean isQueryRecordingEnabled() {
-        return context.settings().incremental();
+        return context.settings().isIncremental();
     }
 
     protected boolean isIncrementalDeadlockEnabled() {

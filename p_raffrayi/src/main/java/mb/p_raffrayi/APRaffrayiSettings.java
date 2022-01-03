@@ -13,7 +13,7 @@ public abstract class APRaffrayiSettings {
 
     @Value.Parameter public abstract boolean confirmation();
 
-    public boolean incremental() {
+    public boolean isIncremental() {
         return incrementalDeadlock() || scopeGraphDiff();
     }
 
@@ -22,7 +22,11 @@ public abstract class APRaffrayiSettings {
     }
 
     public static PRaffrayiSettings concurrentWithRecording() {
-        return PRaffrayiSettings.of(true, false, false, false);
+        return concurrent().withRecording(true);
+    }
+
+    public static PRaffrayiSettings incremental() {
+        return PRaffrayiSettings.of(true, true, true, true);
     }
 
 }

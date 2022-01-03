@@ -4,13 +4,11 @@ public enum SolverMode {
     // @formatter:off
     TRADITIONAL(false, false, false, false),
     CONCURRENT(true, false, false, false),
-    INCREMENTAL_DEADLOCK(true, true, false, false),
-    INCREMENTAL_SCOPEGRAPH_DIFF(true, true, true, false),
-    INCREMENTAL_SIMPLE_CONFIRMATION(true, true, true, true);
+    INCREMENTAL(true, true, true, true);
     // @formatter:on
 
     public static final SolverMode DEFAULT = TRADITIONAL;
-    public static final SolverMode FULL = INCREMENTAL_SIMPLE_CONFIRMATION;
+    public static final SolverMode FULL = INCREMENTAL;
 
     public final boolean concurrent;
     public final boolean deadlock;

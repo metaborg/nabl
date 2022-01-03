@@ -99,7 +99,7 @@ public class STX_solve_multi extends StatixPrimitive {
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
-            if(settings.incremental()) {
+            if(settings.isIncremental()) {
                 logger.info("* Initially changed units : {}",
                         flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
                 logger.info("* Restarted units         : {}",
@@ -225,17 +225,16 @@ public class STX_solve_multi extends StatixPrimitive {
     }
 
     private PRaffrayiSettings solverModeToSettings(SolverMode mode) throws InterpreterException {
-        if(!mode.concurrent) {
-            throw new InterpreterException("Cannot create concurrent settings for solver mode " + mode);
+        switch(mode) {
+            case TRADITIONAL:
+                throw new InterpreterException("Cannot create concurrent settings for TRADITIONAL solver mode.");
+            case CONCURRENT:
+                return PRaffrayiSettings.concurrent();
+            case INCREMENTAL:
+                return PRaffrayiSettings.incremental();
+            default:
+                throw new InterpreterException("Unknown solver mode: " + mode);
         }
-        // @formatter:off
-        return PRaffrayiSettings.builder()
-            .incrementalDeadlock(mode.deadlock)
-            .scopeGraphDiff(mode.sgDiff)
-            .confirmation(mode.confirmation)
-            .recording(true)
-            .build();
-        // @formatter:on
     }
 
 }
