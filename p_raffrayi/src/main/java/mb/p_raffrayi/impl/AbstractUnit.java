@@ -1052,35 +1052,31 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
             final IGraph<IProcess<S, L, D>> invWFG = invWFGBuilder.build();
 
-            final java.util.Set<IProcess<S, L, D>> deadlocked;
-            final Collection<StateSummary<S, L, D>> deadlockedStates;
             if(!DeadlockUtils.connectedToAll(process, invWFG)) {
-                logger.debug("{} not part of wfg SCC, computing SCC.");
-                final Set.Transient<IProcess<S, L, D>> _nodes = CapsuleUtil.transientSet();
-                final Set.Transient<StateSummary<S, L, D>> _states = Set.Transient.of();
-                for(StateSummary<S, L, D> state : states) {
-                    if(state.getSelf() == this.process) {
-                        continue;
-                    }
+                logger.debug("{} not part of wfg SCC, computing knots in graph.");
+                final java.util.Set<java.util.Set<IProcess<S, L, D>>> sccs = DeadlockUtils.sccs(invWFG);
 
-                    if(DeadlockUtils.connectedToAll(state.getSelf(), invWFG)) {
-                        _nodes.__insert(state.getSelf());
-                        _states.__insert(state);
-                    }
-                }
-                if(_nodes.isEmpty()) {
+                if(sccs.isEmpty()) {
                     return;
                 }
-                deadlocked = _nodes.freeze();
-                deadlockedStates = _states.freeze();
+                for(java.util.Set<IProcess<S, L, D>> scc : sccs) {
+                    if(isIncrementalDeadlockEnabled()) {
+                        // @formatter:off
+                        java.util.Set<StateSummary<S, L,D>> subStates = states.stream()
+                                .filter(ss -> scc.contains(ss.getSelf()))
+                                .collect(Collectors.toSet());
+                        // @formatter:on
+                        handleDeadlockIncremental(scc, subStates);
+                    } else {
+                        handleDeadlockRegular(scc);
+                    }
+                }
             } else {
-                deadlocked = nodes;
-                deadlockedStates = states;
-            }
-            if(isIncrementalDeadlockEnabled()) {
-                handleDeadlockIncremental(deadlocked, deadlockedStates);
-            } else {
-                handleDeadlockRegular(deadlocked);
+                if(isIncrementalDeadlockEnabled()) {
+                    handleDeadlockIncremental(nodes, states);
+                } else {
+                    handleDeadlockRegular(nodes);
+                }
             }
         });
     }
@@ -1156,7 +1152,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
      *
      * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
-    private boolean failDelays(java.util.Set<IProcess<S, L, D>> nodes) {
+    private boolean failDelays(Collection<IProcess<S, L, D>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(process(delay.sender))) {
