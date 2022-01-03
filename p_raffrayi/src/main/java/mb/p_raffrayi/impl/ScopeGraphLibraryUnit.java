@@ -163,6 +163,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         waitFor(token, worker);
         return result.whenComplete((r, ex) -> {
             granted(token, worker);
+            resume();
         });
     }
 

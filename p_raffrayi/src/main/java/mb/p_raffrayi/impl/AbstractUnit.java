@@ -780,6 +780,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
+        resume(); // Always needed?
         logger.debug("{} wait for {}/{}", self, process, token);
         waitFors = waitFors.add(token);
         waitForsByProcess = waitForsByProcess.put(process, token);
@@ -790,6 +791,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
+        // resume();
         if(!waitForsByProcess.contains(process, token)) {
             logger.error("{} not waiting for granted {}/{}", self, process, token);
             throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
@@ -1042,6 +1044,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             final GraphBuilder<IProcess<S, L, D>> invWFGBuilder = GraphBuilder.of();
             states.forEach(state -> {
                 final IProcess<S, L, D> self = state.getSelf();
+                invWFGBuilder.addVertex(self);
                 state.getDependencies().forEach(dep -> {
                     invWFGBuilder.addEdge(dep, self);
                 });
@@ -1053,7 +1056,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             final Collection<StateSummary<S, L, D>> deadlockedStates;
             if(!DeadlockUtils.connectedToAll(process, invWFG)) {
                 logger.debug("{} not part of wfg SCC, computing SCC.");
-                final Set.Transient<IProcess<S, L, D>> _nodes = Set.Transient.of();
+                final Set.Transient<IProcess<S, L, D>> _nodes = CapsuleUtil.transientSet();
                 final Set.Transient<StateSummary<S, L, D>> _states = Set.Transient.of();
                 for(StateSummary<S, L, D> state : states) {
                     if(state.getSelf() == this.process) {
