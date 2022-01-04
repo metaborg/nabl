@@ -44,4 +44,12 @@ public interface IStatixProject {
      */
     @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> previousResult();
 
+    /**
+     * @return Total number of units (including groups and subunits) in the project.
+     */
+    default int size(int parallellism) {
+        return 1 + groups().values().stream().mapToInt(IStatixGroup::size).sum() + units().size()
+                + libraries().size() * (parallellism + 1);
+    }
+
 }

@@ -84,11 +84,14 @@ public class STX_solve_multi extends StatixPrimitive {
             final SolverMode solverMode = getSolverMode(terms.get(0));
             final PRaffrayiSettings settings = solverModeToSettings(solverMode);
 
+            int size = project.size(Runtime.getRuntime().availableProcessors());
+            progress.setWorkRemaining(size + 1);
+
             final double t0 = System.currentTimeMillis();
 
             final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> futureResult =
                     Broker.run(project.resource(), settings, new ProjectTypeChecker(project, spec, debug), scopeImpl,
-                            spec.allLabels(), project.changed(), project.previousResult(), cancel);
+                            spec.allLabels(), project.changed(), project.previousResult(), cancel, progress);
 
             final IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result =
                     futureResult.asJavaCompletion().get();
@@ -111,6 +114,7 @@ public class STX_solve_multi extends StatixPrimitive {
             for(Entry<String, ITerm> entry : resultMap.entrySet()) {
                 results.add(B.newTuple(B.newString(entry.getKey()), entry.getValue()));
             }
+            progress.work(1);
         } catch(InterruptedException ie) {
             logger.info("Async solving interrupted");
         } catch(ExecutionException ee) {

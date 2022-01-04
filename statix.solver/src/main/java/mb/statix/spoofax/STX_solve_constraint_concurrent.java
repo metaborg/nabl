@@ -47,7 +47,7 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
                 .rule(Rule.of("resolve", Arrays.asList(P.newWld()), constraint)).build();
         final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> future =
                 Broker.run("", PRaffrayiSettings.of(false, false, false, false),
-                        new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel);
+                        new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel, progress);
         final IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result = future.asJavaCompletion().get();
         if(!result.allFailures().isEmpty() || result.analysis().exception() != null) {
             final SolverResult.Builder resultBuilder =

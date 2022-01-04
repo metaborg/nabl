@@ -23,6 +23,8 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
+import org.metaborg.util.task.IProgress;
+import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableSet;
@@ -60,6 +62,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
+    private final IProgress progress;
 
     private final IActorScheduler scheduler;
     private final ActorSystem system;
@@ -81,7 +84,8 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
 
     private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R, T> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean rootChanged,
-            @Nullable IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, IActorScheduler scheduler) {
+            @Nullable IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, IProgress progress,
+            IActorScheduler scheduler) {
         this.id = id;
         this.settings = settings;
         this.typeChecker = typeChecker;
@@ -103,6 +107,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         this.scopeImpl = scopeImpl;
         this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
         this.cancel = cancel;
+        this.progress = progress;
 
         this.scheduler = scheduler;
         this.system = new ActorSystem(scheduler);
@@ -147,6 +152,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     }
 
     private void finalizeUnit(IActorRef<? extends IUnit<S, L, D, ?, ?>> unit, Throwable ex) {
+        progress.work(1);
         final String event = ex != null ? "failed" : "finished";
         logger.info("Unit {} {} ({} of {} remaining).", event, unit.id(), unfinishedUnits.decrementAndGet(),
                 totalUnits.get());
@@ -375,23 +381,23 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     ///////////////////////////////////////////////////////////////////////////
 
     public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
-            ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel) {
-        return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel,
+            ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, ICancel cancel, IProgress progress) {
+        return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel, progress,
                 Runtime.getRuntime().availableProcessors());
     }
 
     public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel) {
-        return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, IProgress progress) {
+        return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel, progress,
                 Runtime.getRuntime().availableProcessors());
     }
 
     public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, R, T>> run(String id, PRaffrayiSettings settings,
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
-            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism) {
+            IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, IProgress progress, int parallelism) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
-                new WorkStealingScheduler(parallelism)).run();
+                progress, new WorkStealingScheduler(parallelism)).run();
     }
 
     public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, R, T>> debug(String id, PRaffrayiSettings settings,
@@ -413,7 +419,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
             ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean changed,
             IUnitResult<S, L, D, R, T> previousResult, ICancel cancel, int parallelism, double preemptProbability,
             int scheduleDelayBoundMillis) {
-        return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
+        return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel, new NullProgress(),
                 new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis)).run();
     }
 

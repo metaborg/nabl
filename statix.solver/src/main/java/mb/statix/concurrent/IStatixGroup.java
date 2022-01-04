@@ -38,4 +38,11 @@ public interface IStatixGroup {
      */
     Map<String, IStatixUnit> units();
 
+    /**
+     * @return Number of units in this group (including itself).
+     */
+    default int size() {
+        return 1 + groups().values().stream().mapToInt(IStatixGroup::size).sum() + units().size();
+    }
+
 }
