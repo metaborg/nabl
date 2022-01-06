@@ -539,21 +539,29 @@ rules
 
   stx--get-ast-analysis =
     stx--get-ast-resource
-  ; stx--get-resource-analysis
+  ; stx--get-resource-analysis(stx--get-analysis)
 
-  stx--get-resource-analysis =
+  stx--get-ast-result =
+    stx--get-ast-resource
+  ; stx--get-resource-analysis(stx--get-result)
+
+  stx--get-resource-analysis(extract-analysis) =
     get-resource-constraint-analysis
-  ; stx--get-result-analysis
+  ; extract-analysis
 
-  stx--get-project-analyses =
+  stx--get-project-analyses(extract-analysis) =
     get-project-constraint-analyses
-  ; map((id, stx--get-result-analysis))
+  ; map((id, extract-analysis))
 
-  stx--get-result-analysis =
+  stx--get-analysis =
     ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
    <+ ?FileAnalysis(_, _, _, SubAnalysis(_, _, <id>, _, _)) + ?ProjectAnalysis(<id>, _) // cstx
     )
 
+  stx--get-result =
+    ( ?FileAnalysis(_, _, _, SubAnalysis(_, _, _,<id>, _)) +
+      ?ProjectAnalysis(_, <id>)
+    )
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")

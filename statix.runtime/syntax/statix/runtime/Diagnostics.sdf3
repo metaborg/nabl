@@ -1,0 +1,30 @@
+module statix/runtime/Diagnostics
+
+imports
+
+  statix/API
+
+  statix/runtime/ATerm
+  statix/runtime/ScopeGraph
+
+context-free syntax
+
+  Stx-Diagnostics.Diagnostics = <
+    diagnostics report
+      <{Stx-Diagnostics-Section "\n\n"}*>
+  >
+
+  Stx-Diagnostics-Section = <
+    ambiguous edge matches
+      <{Stx-SourceMatchEntry "\n"}*>
+  >
+
+  Stx-SourceMatchEntry = <
+    <Stx-Scope> {
+      <{Stx-EdgeMatchEntry "\n"}*>
+    }
+  >
+
+  Stx-EdgeMatchEntry = <<Stx-Label> : <{Stx-ScopeMatchEntry "\n"}*>>
+
+  Stx-ScopeMatchEntry = <<Stx-Scope><Stx-DataEntry> ~ <Stx-Scope><Stx-DataEntry>>

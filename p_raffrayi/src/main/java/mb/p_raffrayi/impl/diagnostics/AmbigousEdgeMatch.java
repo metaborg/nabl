@@ -3,17 +3,17 @@ package mb.p_raffrayi.impl.diagnostics;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.HashSetMultiTable;
+import org.metaborg.util.collection.MultiTable;
 import org.metaborg.util.functions.Action4;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -33,13 +33,13 @@ public class AmbigousEdgeMatch<S, L, D> {
     }
 
     public Report<S, L, D> analyze() {
-        final Multimap<Edge<S, L, D>, Edge<S, L, D>> ambiguousMatches = HashMultimap.create();
+        final MultiTable<S, L, Match<S, D>> ambiguousMatches = HashSetMultiTable.create();
 
         for(S root : rootScopes) {
             analyzeScope(BiMap.Immutable.of(), root, (src, lbl, tgt1, tgt2) -> {
-                final D d1 = scopeGraph.getData(tgt1).orElse(null);
-                final D d2 = scopeGraph.getData(tgt2).orElse(null);
-                ambiguousMatches.put(new Edge<>(src, lbl, tgt1, d1), new Edge<>(src, lbl, tgt2, d2));
+                final D d1 = scopeGraph.getData(tgt1).filter(d -> !differOps.embed(tgt1).equals(d)).orElse(null);
+                final D d2 = scopeGraph.getData(tgt2).filter(d -> !differOps.embed(tgt2).equals(d)).orElse(null);
+                ambiguousMatches.put(src, lbl, new Match<>(tgt1, d1, tgt2, d2));
             });
         }
 
@@ -60,7 +60,7 @@ public class AmbigousEdgeMatch<S, L, D> {
         }
 
         scopeGraph.getData(scope).ifPresent(d -> {
-            for(S innerScope: differOps.getScopes(d)) {
+            for(S innerScope : differOps.getScopes(d)) {
                 analyzeScope(matches.put(scope, scope), innerScope, onAmbiguousEdge);
             }
         });
@@ -128,91 +128,114 @@ public class AmbigousEdgeMatch<S, L, D> {
         });
     }
 
-    public static class Edge<S, L, D> {
+    public static class Match<S, D> {
 
-        private final S source;
-        private final L label;
-        private final S target;
-        private final @Nullable D targetData;
+        private final S scope1;
+        private final S scope2;
 
-        public Edge(S source, L label, S target, @Nullable D targetData) {
-            this.source = source;
-            this.label = label;
-            this.target = target;
-            this.targetData = targetData;
+        private final @Nullable D datum1;
+        private final @Nullable D datum2;
+
+        public Match(S scope1, D datum1, S scope2, D datum2) {
+            this.scope1 = scope1;
+            this.datum1 = datum1;
+            this.scope2 = scope2;
+            this.datum2 = datum2;
         }
 
-        public S getSource() {
-            return source;
+        public S getScope1() {
+            return scope1;
         }
 
-        public L getLabel() {
-            return label;
+        public S getScope2() {
+            return scope2;
         }
 
-        public S getTarget() {
-            return target;
+        public Optional<D> getDatum1() {
+            return Optional.ofNullable(datum1);
         }
 
-        public D getTargetData() {
-            return targetData;
+        public Optional<D> getDatum2() {
+            return Optional.ofNullable(datum2);
         }
 
         @Override public String toString() {
-            return source + " -" + label + "-> " + target + (targetData != null ? " : " + targetData : "");
+            return scope1 + (datum1 != null ? " : " + datum1 : "") + " ~ " + scope2
+                    + (datum2 != null ? " : " + datum2 : "");
         }
 
         @Override public boolean equals(Object obj) {
-            if(this == obj) {
+            if(obj == this) {
                 return true;
             }
             if(obj == null) {
                 return false;
             }
-            if(obj.getClass() != this.getClass()) {
+            if(!getClass().equals(obj.getClass())) {
                 return false;
             }
-
-            @SuppressWarnings("unchecked") final Edge<S, L, D> other = (Edge<S, L, D>) obj;
-            return Objects.equals(source, other.source) && Objects.equals(label, other.label)
-                    && Objects.equals(target, other.target) && Objects.equals(targetData, other.targetData);
-
+            @SuppressWarnings("unchecked") final Match<S, D> other = (Match<S, D>) obj;
+            return Objects.equals(scope1, other.scope1) && Objects.equals(datum1, other.datum1)
+                    && Objects.equals(scope2, other.scope2) && Objects.equals(datum2, other.datum2);
         }
 
         @Override public int hashCode() {
-            int hash = 7;
-            hash = hash + 11 * source.hashCode();
-            hash = hash + 13 * target.hashCode();
-            hash = hash + 17 * label.hashCode();
-            if(targetData != null) {
-                hash = hash + 19 * targetData.hashCode();
-            }
-            return hash;
+            return Objects.hash(scope1, datum1, scope2, datum2);
         }
 
     }
 
     public static class Report<S, L, D> {
 
-        private final Multimap<Edge<S, L, D>, Edge<S, L, D>> ambiguousMatches;
+        private MultiTable<S, L, Match<S, D>> ambiguousMatches;
 
-        public Report(Multimap<Edge<S, L, D>, Edge<S, L, D>> ambiguousMatches) {
+        public Report(MultiTable<S, L, Match<S, D>> ambiguousMatches) {
             this.ambiguousMatches = ambiguousMatches;
         }
 
-        public Multimap<Edge<S, L, D>, Edge<S, L, D>> getAmbiguousMatches() {
-            return ambiguousMatches;
+        public Set<S> scopes() {
+            return ambiguousMatches.rowKeySet();
+        }
+
+        public Set<L> labels(S scope) {
+            return ambiguousMatches.row(scope).keySet();
+        }
+
+        public Collection<Match<S, D>> matches(S scope, L label) {
+            return ambiguousMatches.get(scope, label);
+        }
+
+        public int size() {
+            return ambiguousMatches.cellSet().size();
+        }
+
+        public boolean isEmpty() {
+            return ambiguousMatches.cellSet().isEmpty();
+        }
+
+        public boolean contains(S source, L label, Match<S, D> match) {
+            return ambiguousMatches.get(source, label).contains(match);
         }
 
         @Override public String toString() {
-            final StringBuilder sb = new StringBuilder("Report{");
-            for(Entry<Edge<S, L, D>, Edge<S, L, D>> entry : ambiguousMatches.entries()) {
+            final StringBuilder sb = new StringBuilder("Report {\n");
+            for(S scope : ambiguousMatches.rowKeySet()) {
                 sb.append("  ");
-                sb.append(entry.getKey());
-                sb.append(" ~ ");
-                sb.append(entry.getValue());
+                sb.append(scope);
+                sb.append(" {\n");
+                for(Map.Entry<L, Collection<Match<S, D>>> entry : ambiguousMatches.row(scope).entrySet()) {
+                    sb.append("    ");
+                    sb.append(entry.getKey());
+                    sb.append(" : \n");
+                    for(Match<S, D> match : entry.getValue()) {
+                        sb.append("    - ");
+                        sb.append(match);
+                        sb.append("\n");
+                    }
+                }
+                sb.append("  }\n");
             }
-            sb.append("}");
+            sb.append("}\n");
             return sb.toString();
         }
 

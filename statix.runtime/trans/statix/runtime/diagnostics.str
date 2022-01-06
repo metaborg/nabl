@@ -1,0 +1,9 @@
+module statix/runtime/diagnostics
+
+imports
+
+  statix/runtime/analysis
+
+rules
+
+  stx--incremental-diagnostics(|a) = prim("STX_incremental_diagnostics", a)

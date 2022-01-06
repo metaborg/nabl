@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.future.IFuture;
 
-import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Edge;
+import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Match;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Report;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -365,25 +365,24 @@ public class AmbigousEdgeMatchTest {
     // Helper assertions
 
     private void assertEmpty(Report<Scope, Label, IDatum> report) {
-        assertTrue("Expected empty report, but got " + report + ".", report.getAmbiguousMatches().isEmpty());
+        assertTrue("Expected empty report, but got " + report + ".", report.isEmpty());
     }
 
     private void assertSize(Report<Scope, Label, IDatum> report, int expectedSize) {
         assertEquals(
-                "Expected report of size " + expectedSize + ", but got " + report.getAmbiguousMatches().size() + ".",
-                expectedSize, report.getAmbiguousMatches().size());
+                "Expected report of size " + expectedSize + ", but got " + report.size() + ".",
+                expectedSize, report.size());
 
     }
 
     private void assertContains(Report<Scope, Label, IDatum> report, Scope src, Label lbl, Scope tgt1,
             @Nullable IDatum d1, Scope tgt2, @Nullable IDatum d2) {
-        final Edge<Scope, Label, IDatum> edge1 = new Edge<>(src, lbl, tgt1, d1);
-        final Edge<Scope, Label, IDatum> edge2 = new Edge<>(src, lbl, tgt2, d2);
+        final Match<Scope, IDatum> match1 = new Match<>(tgt1, d1, tgt2, d2);
+        final Match<Scope, IDatum> match2 = new Match<>(tgt2, d2, tgt1, d1);
 
-        final String msg = "Expected report to contain " + edge1 + " ~ " + edge2 + ", but got " + report + ".";
+        final String msg = "Expected report to contain " + src + " -" + lbl + "-> " + match1 + ", but got " + report + ".";
 
-        assertTrue(msg, report.getAmbiguousMatches().containsEntry(edge1, edge2)
-                || report.getAmbiguousMatches().containsEntry(edge2, edge1));
+        assertTrue(msg, report.contains(src, lbl, match1) || report.contains(src, lbl, match2));
     }
 
     // Scope graph parameter implementations.
