@@ -107,7 +107,7 @@ rules // scope graph
    * Get the target scopes that are reachable from the input scope via `lbl`-edges.
    *
    * Example: When the specification contains a `s1 -L-> s2` constraint,
-   * then `<stx-get-scopegraph-data(|a, "statics/base!L")> s1` will return `[s2]`.
+   * then `<stx-get-scopegraph-edges(|a, "statics/base!L")> s1` will return `[s2]`.
    *
    * Please note that a fully qualified name for the label must be provided.
    *
