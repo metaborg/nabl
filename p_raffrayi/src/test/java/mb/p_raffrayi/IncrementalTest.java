@@ -724,10 +724,10 @@ public class IncrementalTest extends PRaffrayiTestBase {
     }
 
     @Test(timeout = 10000) public void testRecord_SharedScopeQuery() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>>> future =
-                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>() {
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
+                this.run(".", new ITypeChecker<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>() {
                     @Override public IFuture<Result<Integer, Unit>> run(
-                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>> unit,
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unit,
                             List<Scope> rootScopes) {
                         return unit.runIncremental(restarted -> {
                             final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
@@ -738,9 +738,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
                             return future;
                         });
                     }
+
+                    @Override public EmptyI snapshot() {
+                        return EmptyI.of();
+                    }
                 }, Arrays.asList());
 
-        IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>> result =
+        IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());

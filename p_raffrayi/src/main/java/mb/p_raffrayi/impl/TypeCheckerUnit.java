@@ -252,6 +252,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             if(ex != null && ex != Release.instance) {
                 result.completeExceptionally(ex);
             } else {
+                // TODO: Can we immediately confirm on `Release.instance` exception?
                 confirmation.getConfirmation(new ConfirmationContext(sender))
                         .confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
             }
@@ -658,7 +659,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             self.complete(confirmationResult, Optional.of(resultPatches), null);
             // Cancel all futures waiting for activation
             self.complete(whenActive, null, Release.instance);
-            self.complete(whenContextActivated, Unit.unit, null); // TODO: needed? Or only when restarting?
             state = UnitState.RELEASED;
 
             resume();
@@ -731,7 +731,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());
         } else if(state.active() && inLocalPhase()) {
             doCapture();
-            self.complete(whenContextActivated, Unit.unit, null);
             resume();
         } else {
             super.handleDeadlock(nodes);
@@ -881,48 +880,46 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     private void doCapture() {
-        final T snapshot;
-        if((snapshot = typeChecker.snapshot()) != null) {
-            final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
-            final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
-            builder.scopes(scopes);
-            builder.scopeGraph(localScopeGraph.get());
-            localScopeGraph.set(ScopeGraph.Immutable.of());
+        final T snapshot = typeChecker.snapshot();
+        final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
+        final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
+        builder.scopes(scopes);
+        builder.scopeGraph(localScopeGraph.get());
+        localScopeGraph.set(ScopeGraph.Immutable.of());
 
-            final Set.Transient<EdgeOrData<L>> _edgeLabels = CapsuleUtil.transientSet(EdgeOrData.data());
-            this.edgeLabels.forEach(lbl -> _edgeLabels.__insert(EdgeOrData.edge(lbl)));
-            final Set.Immutable<EdgeOrData<L>> edgeLabels = _edgeLabels.freeze();
+        final Set.Transient<EdgeOrData<L>> _edgeLabels = CapsuleUtil.transientSet(EdgeOrData.data());
+        this.edgeLabels.forEach(lbl -> _edgeLabels.__insert(EdgeOrData.edge(lbl)));
+        final Set.Immutable<EdgeOrData<L>> edgeLabels = _edgeLabels.freeze();
 
-            for(S scope : scopes) {
-                final int initCount = countWaitingFor(InitScope.of(self, scope), self);
-                for(int i = 0; i < initCount; i++) {
-                    builder.addUnInitializedScopes(scope);
-                }
-
-                final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
-                for(int i = 0; i < closeCount; i++) {
-                    builder.addOpenScopes(scope);
-                }
-
-                for(EdgeOrData<L> label : edgeLabels) {
-                    final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
-                    for(int i = 0; i < closeLabelCount; i++) {
-                        builder.putOpenEdges(scope, label);
-                    }
-                }
+        for(S scope : scopes) {
+            final int initCount = countWaitingFor(InitScope.of(self, scope), self);
+            for(int i = 0; i < initCount; i++) {
+                builder.addUnInitializedScopes(scope);
             }
 
-            final MultiSet.Transient<String> counters = MultiSet.Transient.of();
-            counters.addAll(this.scopeNameCounters);
-            builder.scopeNameCounters(counters.freeze());
+            final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
+            for(int i = 0; i < closeCount; i++) {
+                builder.addOpenScopes(scope);
+            }
 
-            final Set.Transient<String> stableIdentities = CapsuleUtil.transientSet();
-            stableIdentities.__insertAll(usedStableScopes);
-            builder.usedStableScopes(stableIdentities.freeze());
-
-            builder.typeCheckerState(snapshot);
-            localCapture(builder.build());
+            for(EdgeOrData<L> label : edgeLabels) {
+                final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
+                for(int i = 0; i < closeLabelCount; i++) {
+                    builder.putOpenEdges(scope, label);
+                }
+            }
         }
+
+        final MultiSet.Transient<String> counters = MultiSet.Transient.of();
+        counters.addAll(this.scopeNameCounters);
+        builder.scopeNameCounters(counters.freeze());
+
+        final Set.Transient<String> stableIdentities = CapsuleUtil.transientSet();
+        stableIdentities.__insertAll(usedStableScopes);
+        builder.usedStableScopes(stableIdentities.freeze());
+
+        builder.typeCheckerState(snapshot);
+        localCapture(builder.build());
     }
 
     private void doRestore(StateCapture<S, L, D, T> snapshot) {

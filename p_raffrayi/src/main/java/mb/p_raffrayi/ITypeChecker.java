@@ -2,8 +2,6 @@ package mb.p_raffrayi;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
@@ -23,8 +21,8 @@ public interface ITypeChecker<S, L, D, R extends IResult<S, L, D>, T extends ITy
         return datum;
     }
 
-    default @Nullable T snapshot() {
-        return null;
+    default T snapshot() {
+        throw new UnsupportedOperationException("This type-checker cannot be used in incremental mode.");
     }
 
 }

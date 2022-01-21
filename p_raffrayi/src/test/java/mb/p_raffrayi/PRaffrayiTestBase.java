@@ -27,9 +27,9 @@ public abstract class PRaffrayiTestBase {
 
     private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, true, true);
 
-    protected <L, R extends IResult<Scope, L, IDatum> & ITypeCheckerState<Scope, L, IDatum>>
-            IFuture<IUnitResult<Scope, L, IDatum, TypeCheckerResult<Scope, L, IDatum, R, R>>>
-            run(String id, ITypeChecker<Scope, L, IDatum, R, R> typeChecker, Iterable<L> edgeLabels) {
+    protected <L, R extends IResult<Scope, L, IDatum>, T extends ITypeCheckerState<Scope, L, IDatum>>
+            IFuture<IUnitResult<Scope, L, IDatum, TypeCheckerResult<Scope, L, IDatum, R, T>>>
+            run(String id, ITypeChecker<Scope, L, IDatum, R, T> typeChecker, Iterable<L> edgeLabels) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, new NullCancel(), 0.3, 50);
     }
 
