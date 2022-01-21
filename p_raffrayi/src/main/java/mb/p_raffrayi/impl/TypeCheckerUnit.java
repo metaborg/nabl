@@ -307,8 +307,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         assertIncrementalEnabled();
         if(doRestart()) {
             stateTransitionTrace = TransitionTrace.RESTARTED;
-        } else {
-            resume();
         }
     }
 

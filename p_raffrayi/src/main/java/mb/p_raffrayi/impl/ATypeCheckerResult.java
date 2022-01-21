@@ -1,5 +1,7 @@
 package mb.p_raffrayi.impl;
 
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -14,16 +16,16 @@ public abstract class ATypeCheckerResult<S, L, D, A extends IResult<S, L, D>, T 
     /**
      * @return Analysis result.
      */
-    @Value.Parameter public abstract A analysis();
+    @Value.Parameter @Nullable public abstract A analysis();
 
     /**
      * @return Capture of context-independent state.
      */
-    @Value.Parameter public abstract StateCapture<S, L, D, T> localState();
+    @Value.Parameter @Nullable public abstract StateCapture<S, L, D, T> localState();
 
     /**
      * @return Local scope graph created by this type-checker.
      */
-    @Value.Parameter public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
+    @Value.Parameter @Nullable public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
 
 }

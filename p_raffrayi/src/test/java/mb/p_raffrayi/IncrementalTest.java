@@ -23,9 +23,11 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -191,7 +193,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .result(TypeCheckerResult.of(
                 Result.of(Unit.unit),
                 StateCapture.<Scope, Integer, IDatum, EmptyI>builder()
-                    .scopes(CapsuleUtil.immutableSet(d))
+                    .scopes(CapsuleUtil.toSet(root, d))
                     .scopeGraph(subLocalSG)
                     .scopeNameCounters(MultiSet.Immutable.of("d"))
                     .usedStableScopes(CapsuleUtil.immutableSet())
@@ -219,7 +221,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
-        assertTrue(result.failures().isEmpty());
+        assertEquals(Arrays.asList(), result.allFailures());
 
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
@@ -239,7 +241,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
-                unitTCResult(root).withScopeGraph(sg))
+                unitTCResult(ImmutableMultiset.of(), root).withScopeGraph(sg))
             .addScopes(d)
             .scopeGraph(sg)
             .addQueries(recordedQuery(root, env).build())
@@ -780,7 +782,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
     @Test(timeout = 10000) public void testReleasedUnit_ContainsRootScopes()
             throws InterruptedException, ExecutionException {
-        final Scope root = new Scope("/.", 123);
+        final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d = new Scope("/./sub", 1);
 
@@ -818,6 +820,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         final IUnitResult<Scope, Integer, IDatum, ?> subResult = result.subUnitResults().get("sub");
+
+        assertTrue(result.allFailures().isEmpty());
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, subResult.stateTransitionTrace());
@@ -915,7 +919,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub", 1);
-        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
@@ -1002,7 +1007,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d1 = new Scope("/./sub", 1);
         final IDatum datum = new IDatum() {};
         final IRecordedQuery<Scope, Integer, IDatum> query = recordedQuery(root).build();
-        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
@@ -1052,7 +1058,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final List<Scope> parentTargets = Lists.newArrayList(result.result().scopeGraph().getEdges(newRoot, lbl));
         assertEquals(0, parentTargets.size());
 
-        final List<Scope> childTargets = Lists.newArrayList(subResult.result().localState().scopeGraph().getEdges(newRoot, lbl));
+        final List<Scope> childTargets =
+                Lists.newArrayList(subResult.result().localState().scopeGraph().getEdges(newRoot, lbl));
         assertEquals(Arrays.asList(tgt), childTargets);
 
         assertEquals(datum, subResult.result().localState().scopeGraph().getData(tgt).get());
@@ -1171,7 +1178,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub2", 1);
-        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Result = subResult("/./sub1", root)
@@ -1239,7 +1247,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub2/sub", 1);
-        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Result = subResult("/./sub1", root)
@@ -1409,12 +1418,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unit,
                 List<Scope> rootScopes) {
             final Scope s1 = rootScopes.get(0);
-            unit.initScope(s1, Arrays.asList(lbl), false);
             return unit.runIncremental(restarted -> {
-                final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
-                unit.setDatum(d, d);
-                unit.addEdge(s1, lbl, d);
-                unit.closeEdge(s1, lbl);
+                if(!restarted.isPresent()) {
+                    unit.initScope(s1, Arrays.asList(lbl), false);
+                    final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                    unit.setDatum(d, d);
+                    unit.addEdge(s1, lbl, d);
+                    unit.closeEdge(s1, lbl);
+                }
 
                 return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.any())
                         .thenApply(__ -> Unit.unit).thenApply(Result::of);
@@ -1550,7 +1561,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 .id("/.")
                 .addScopes(roots)
                 .scopeGraph(ScopeGraph.Immutable.of())
-                .result(unitTCResult(roots));
+                .result(unitTCResult(ImmutableMultiset.of(), roots));
         // @formatter:on
     }
 
@@ -1606,12 +1617,22 @@ public class IncrementalTest extends PRaffrayiTestBase {
     }
 
     public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unitTCResult(
-            Multimap<Scope, EdgeOrData<Integer>> openEdges, Scope... scopes) {
+            Multimap<Scope, EdgeOrData<Integer>> openEdges, Multiset<Scope> uninitializedScopes, Scope... scopes) {
         return TypeCheckerResult.of(Result.of(Unit.unit),
-                StateCapture.of(CapsuleUtil.toSet(scopes), ScopeGraph.Immutable.of(), HashMultiset.create(),
-                        HashMultiset.create(), openEdges, MultiSet.Immutable.of(),
-                        CapsuleUtil.immutableSet(), EmptyI.of()),
+                StateCapture.of(CapsuleUtil.toSet(scopes), ScopeGraph.Immutable.of(), uninitializedScopes,
+                        HashMultiset.create(), openEdges, MultiSet.Immutable.of(), CapsuleUtil.immutableSet(),
+                        EmptyI.of()),
                 ScopeGraph.Immutable.of());
+    }
+
+    public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>
+            unitTCResult(Multimap<Scope, EdgeOrData<Integer>> openEdges, Scope... scopes) {
+        return unitTCResult(openEdges, HashMultiset.create(Arrays.asList(scopes)), scopes);
+    }
+
+    public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>
+            unitTCResult(Multiset<Scope> uninitializedScopes, Scope... scopes) {
+        return unitTCResult(ImmutableMultimap.of(), uninitializedScopes, scopes);
     }
 
     public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unitTCResult(Scope... scopes) {
