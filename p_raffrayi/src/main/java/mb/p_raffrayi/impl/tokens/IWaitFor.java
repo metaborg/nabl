@@ -37,8 +37,6 @@ public interface IWaitFor<S, L, D> {
 
         void on(EnvDifferState<S, L, D> envDifferState);
 
-        void on(Activate<S, L, D> activate);
-
         void on(UnitAdd<S, L, D> unitAdd);
 
     }
@@ -49,7 +47,7 @@ public interface IWaitFor<S, L, D> {
             Action1<Match<S, L, D>> onMatch, Action1<TypeCheckerResult<S, L, D>> onResult,
             Action1<TypeCheckerState<S, L, D>> onTypeCheckerState, Action1<DifferResult<S, L, D>> onDifferResult,
             Action1<DifferState<S, L, D>> onDifferState, Action1<EnvDifferState<S, L, D>> onEnvDifferState,
-            Action1<Activate<S, L, D>> onActivate, Action1<UnitAdd<S, L, D>> onUnitAdd) {
+            Action1<UnitAdd<S, L, D>> onUnitAdd) {
         return new Cases<S, L, D>() {
 
             @Override public void on(InitScope<S, L, D> initScope) {
@@ -98,10 +96,6 @@ public interface IWaitFor<S, L, D> {
 
             @Override public void on(EnvDifferState<S, L, D> envDifferState) {
                 onEnvDifferState.apply(envDifferState);
-            }
-
-            @Override public void on(Activate<S, L, D> activate) {
-                onActivate.apply(activate);
             }
 
             @Override public void on(UnitAdd<S, L, D> unitAdd) {

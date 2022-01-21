@@ -63,7 +63,6 @@ import mb.p_raffrayi.impl.envdiff.IEnvDiff;
 import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.envdiff.IEnvDifferContext;
 import mb.p_raffrayi.impl.envdiff.IndexedEnvDiffer;
-import mb.p_raffrayi.impl.tokens.Activate;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Confirm;
@@ -234,15 +233,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             // Completed synchronously
             whenActive.complete(Unit.unit);
             confirmationResult.complete(Optional.of(PatchCollection.Immutable.of()));
-        }
-
-        if(!whenActive.isDone()) {
-            final Activate<S, L, D> activate = Activate.of(self, whenActive);
-            waitFor(activate, self);
-            whenActive.whenComplete((u, ex) -> {
-                granted(activate, self);
-                resume();
-            });
         }
 
         return doFinish(result);
@@ -651,7 +641,6 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                     differResult -> {},
                     differState -> {},
                     envDifferState -> {},
-                    activate -> {},
                     unitAdd -> {}
                 ));
                 // @formatter:on
@@ -736,7 +725,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     }
 
     @Override protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
-        if(nodes.size() == 1 && isWaitingFor(Activate.of(self, whenActive))) {
+        if(nodes.size() == 1 && !whenActive.isDone()) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
             doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());

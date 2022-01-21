@@ -17,7 +17,6 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.IResult;
 
 public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
 

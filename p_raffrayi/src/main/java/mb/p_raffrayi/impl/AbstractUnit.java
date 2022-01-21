@@ -1167,7 +1167,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             deadlocked.__insert(envDifferState.future());
                         } */
                     },
-                    activate -> {},
                     unitAdd -> {}
                 ));
                 // @formatter:on
@@ -1256,10 +1255,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 envDifferState -> {
                     logger.error("Unexpected remaining environment differ state.");
                     self.complete(envDifferState.future(), null, new DeadlockException("Type checker deadlocked."));
-                },
-                activate -> {
-                    logger.error("Unit neither activated nor released.");
-                    self.complete(activate.future(), null, new DeadlockException("Type checker deadlocked."));
                 },
                 unitAdd -> {
                     logger.error("Requested Unit {} was never added.", unitAdd.unitId());
