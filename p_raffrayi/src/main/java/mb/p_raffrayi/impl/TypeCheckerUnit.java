@@ -987,10 +987,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 .map(EdgeOrData::edge)
                 .collect(Collectors.toCollection(HashSet::new));
             // @formatter:on
-            if(ownedScope) {
-                // Only initialize local scopes. Shared scopes should be initialized by the type-checker.
-                doInitShare(self, currentScope, edges, snapshot.openScopes().contains(previousScope));
-            }
+            doInitShare(self, currentScope, edges, false);
             for(L label : edgeLabels) {
                 for(S target : snapshot.scopeGraph().getEdges(previousScope, label)) {
                     if(!ownedScope) {
