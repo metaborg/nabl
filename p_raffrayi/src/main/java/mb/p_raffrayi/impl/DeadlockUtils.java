@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
@@ -28,6 +29,18 @@ public class DeadlockUtils {
      */
     public static <V> boolean connectedToAll(V vertex, IGraph<V> graph) {
         return reachableVertices(vertex, graph).size() == graph.vertices().size();
+    }
+
+    /**
+     * Checks whether any node in {@code graph} can reach {@code vertex}.
+     *
+     * @param <V> The type of the vertices.
+     * @param vertex The vertex that is to be reachable.
+     * @param graph The graph in which to check connectivity.
+     * @return {@code true} if all nodes in {@code graph} can {@code vertex}, {@code false} otherwise.
+     */
+    public static <V> boolean allConnectedTo(V vertex, IGraph<V> graph) {
+        return reachableVertices(vertex, graph.invert()).size() == graph.vertices().size();
     }
 
     /**
@@ -106,6 +119,8 @@ public class DeadlockUtils {
         Collection<V> vertices();
 
         Collection<V> targets(V vertex);
+
+        IGraph<V> invert();
     }
 
     private static class Graph<V> implements IGraph<V> {
@@ -125,6 +140,26 @@ public class DeadlockUtils {
 
         @Override public Collection<V> targets(V vertex) {
             return edges.get(vertex);
+        }
+
+        @Override public IGraph<V> invert() {
+            final GraphBuilder<V> builder = GraphBuilder.of();
+            vertices.forEach(builder::addVertex);
+            for(Map.Entry<V, V> edge : edges.entries()) {
+                builder.addEdge(edge.getValue(), edge.getKey());
+            }
+            return builder.build();
+        }
+
+        @Override public String toString() {
+            final StringBuilder sb = new StringBuilder("Graph{");
+            for(V vertex : vertices) {
+                sb.append("  ").append(vertex).append(":\n");
+                for(V tgt: edges.get(vertex)) {
+                    sb.append("    ").append(tgt).append("\n");
+                }
+            }
+            return sb.append("}").toString();
         }
 
     }

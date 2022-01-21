@@ -34,16 +34,16 @@ import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
+class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryUnit.class);
 
     private IScopeGraphLibrary<S, L, D> library;
 
-    private final List<IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>>> workers;
+    private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
-    ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> self,
-            @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
+    ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
+            @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library) {
         super(self, parent, context, edgeLabels);
 
@@ -68,7 +68,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
@@ -77,7 +77,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
                     Collections.emptyList());
         }
         startWorkers();
-        return doFinish(CompletableFuture.completedFuture(IResult.Empty.of()));
+        return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
     private void buildScopeGraph(List<S> rootScopes) {
@@ -116,7 +116,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
 
     private void startWorkers() {
         for(int i = 0; i < context.parallelism(); i++) {
-            final Tuple2<IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>>, IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>>> worker =
+            final Tuple2<IActorRef<? extends IUnit<S, L, D, Unit>>, IFuture<IUnitResult<S, L, D, Unit>>> worker =
                     doAddSubUnit("worker-" + i, (subself, subcontext) -> {
                         return new ScopeGraphLibraryWorker<>(subself, self, subcontext, edgeLabels, scopes,
                                 scopeGraph.get());
@@ -150,11 +150,11 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin,
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
             ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
             DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
-        final IActorRef<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> worker =
+        final IActorRef<? extends IUnit<S, L, D, Unit>> worker =
                 workers.get(stats.incomingQueries % workers.size());
 
         final IFuture<IQueryAnswer<S, L, D>> result =
@@ -183,7 +183,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty
     }
 
     @Override public IFuture<StateSummary<S, L, D>> _state() {
-        return CompletableFuture.completedFuture(StateSummary.release(process, dependentSet()));
+        return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 
     @Override public void _release() {

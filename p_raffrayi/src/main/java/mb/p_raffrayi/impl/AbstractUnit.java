@@ -42,7 +42,6 @@ import com.google.common.collect.Streams;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
 import mb.p_raffrayi.IRecordedQuery;
-import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -89,15 +88,14 @@ import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
-        implements IUnit<S, L, D, R, T>, IActorMonitor, Host<IProcess<S, L, D>> {
+public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
 
     private static final ILogger logger = LoggerUtils.logger(IUnit.class);
 
-    protected final TypeTag<IUnit<S, L, D, ?, ?>> TYPE = TypeTag.of(IUnit.class);
+    protected final TypeTag<IUnit<S, L, D, ?>> TYPE = TypeTag.of(IUnit.class);
 
-    protected final IActor<? extends IUnit<S, L, D, R, T>> self;
-    protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent;
+    protected final IActor<? extends IUnit<S, L, D, R>> self;
+    protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent;
     protected final IUnitContext<S, L, D> context;
 
     protected final ChandyMisraHaas<IProcess<S, L, D>> cmh;
@@ -107,8 +105,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     private volatile boolean innerResult;
     private final Ref<R> analysis;
     protected final List<Throwable> failures;
-    private final Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults;
-    private final ICompletableFuture<IUnitResult<S, L, D, R, T>> unitResult;
+    private final Map<String, IUnitResult<S, L, D, ?>> subUnitResults;
+    private final ICompletableFuture<IUnitResult<S, L, D, R>> unitResult;
 
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
@@ -126,13 +124,12 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     protected Set.Transient<String> usedStableScopes;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
-    private final Ref<StateCapture<S, L, D, T>> localCapture = new Ref<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
     protected final Stats stats;
 
-    public AbstractUnit(IActor<? extends IUnit<S, L, D, R, T>> self,
-            @Nullable IActorRef<? extends IUnit<S, L, D, ?, ?>> parent, IUnitContext<S, L, D> context,
+    public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
+            @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             Iterable<L> edgeLabels) {
         this.self = self;
         this.parent = parent;
@@ -194,7 +191,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin,
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
             ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
             DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
@@ -225,7 +222,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    protected final IFuture<IUnitResult<S, L, D, R, T>> doFinish(IFuture<R> result) {
+    protected final IFuture<IUnitResult<S, L, D, R>> doFinish(IFuture<R> result) {
         final ICompletableFuture<R> internalResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
         waitFor(token, self);
@@ -294,20 +291,18 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
-    protected <Q extends IResult<S, L, D>, U>
-            Tuple2<IActorRef<? extends IUnit<S, L, D, Q, U>>, IFuture<IUnitResult<S, L, D, Q, U>>>
-            doAddSubUnit(String id,
-                    Function2<IActor<IUnit<S, L, D, Q, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q, U>> unitProvider,
-                    List<S> rootScopes, boolean ignoreResult) {
+    protected <U> Tuple2<IActorRef<? extends IUnit<S, L, D, U>>, IFuture<IUnitResult<S, L, D, U>>> doAddSubUnit(
+            String id, Function2<IActor<IUnit<S, L, D, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, U>> unitProvider,
+            List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
 
-        final Tuple2<IFuture<IUnitResult<S, L, D, Q, U>>, IActorRef<? extends IUnit<S, L, D, Q, U>>> result_subunit =
+        final Tuple2<IFuture<IUnitResult<S, L, D, U>>, IActorRef<? extends IUnit<S, L, D, U>>> result_subunit =
                 context.add(id, unitProvider, rootScopes);
-        final IActorRef<? extends IUnit<S, L, D, Q, U>> subunit = result_subunit._2();
+        final IActorRef<? extends IUnit<S, L, D, U>> subunit = result_subunit._2();
 
-        final ICompletableFuture<IUnitResult<S, L, D, Q, U>> internalResult = new CompletableFuture<>();
+        final ICompletableFuture<IUnitResult<S, L, D, U>> internalResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
         waitFor(token, subunit);
         result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
@@ -316,7 +311,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             doAddShare(subunit, rootScope);
         }
 
-        final IFuture<IUnitResult<S, L, D, Q, U>> ret = internalResult.whenComplete((r, ex) -> {
+        final IFuture<IUnitResult<S, L, D, U>> ret = internalResult.whenComplete((r, ex) -> {
             logger.debug("{} subunit {} finished", this, subunit);
             granted(token, subunit);
             resume();
@@ -372,7 +367,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
-        final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender = self.sender(TYPE);
+        final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
         if(isDifferEnabled()) {
             return whenDifferActivated.thenCompose(__ -> {
                 final ICompletableFuture<Optional<S>> future = new CompletableFuture<>();
@@ -394,13 +389,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     // Implementations -- independent of message handling context
     ///////////////////////////////////////////////////////////////////////////
 
-    protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
+    protected final void doAddLocalShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         waitFor(InitScope.of(self, scope), sender);
     }
 
-    protected final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
+    protected final void doAddShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         doAddLocalShare(sender, scope);
 
         if(!isOwner(scope)) {
@@ -408,7 +403,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope,
+    protected final void doInitShare(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope,
             Iterable<EdgeOrData<L>> edges, boolean sharing) {
         assertOwnOrSharedScope(scope);
 
@@ -439,7 +434,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         doCloseLabel(self, scope, edge);
     }
 
-    protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope) {
+    protected final void doCloseScope(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
@@ -454,7 +449,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender, S scope, EdgeOrData<L> edge) {
+    protected final void doCloseLabel(IActorRef<? extends IUnit<S, L, D, ?>> sender, S scope, EdgeOrData<L> edge) {
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
@@ -469,8 +464,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
-            S source, L label, S target) {
+    protected final void doAddEdge(@SuppressWarnings("unused") IActorRef<? extends IUnit<S, L, D, ?>> sender, S source,
+            L label, S target) {
         assertOwnOrSharedScope(source);
         assertLabelOpen(source, EdgeOrData.edge(label));
 
@@ -481,8 +476,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         }
     }
 
-    protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
-            IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, boolean record, ScopePath<S, L> path, LabelWf<L> labelWF,
+    protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+            IActorRef<? extends IUnit<S, L, D, ?>> origin, boolean record, ScopePath<S, L> path, LabelWf<L> labelWF,
             LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
             DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
         final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
@@ -530,7 +525,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                                     predicateQueries.addAll(ans.predicateQueries());
                                 } else if(record) {
                                     // For local query, record it as such.
-                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF, ans.env(), false));
+                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF,
+                                            ans.env(), false));
                                     recordedQueries.addAll(ans.transitiveQueries());
                                     recordedQueries.addAll(ans.predicateQueries());
                                 }
@@ -647,7 +643,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries,
-            IActorRef<? extends IUnit<S, L, D, ?, ?>> origin) {
+            IActorRef<? extends IUnit<S, L, D, ?>> origin) {
         return new AbstractQueryTypeCheckerContext<S, L, D, R>() {
 
             @Override public String id() {
@@ -673,7 +669,8 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
                         // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
                         // Hence, we just ignore it.
                         if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                            queries.add(ARecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env(), true));
+                            queries.add(
+                                    ARecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env(), true));
                         }
                         ans.transitiveQueries().forEach(q -> queries.add(q.withIncludePatches(false)));
                         queries.addAll(ans.predicateQueries());
@@ -687,7 +684,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         };
     }
 
-    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
+    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?>> sender,
             IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
         logger.debug("rec pquery from {}", sender);
@@ -703,12 +700,12 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         return context.scopeId(scope).equals(self.id());
     }
 
-    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> getOwner(S scope) {
-        final IFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> future = context.owner(scope);
+    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
+        final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = context.owner(scope);
         if(future.isDone()) {
             return future;
         }
-        final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?, ?>>> result = new CompletableFuture<>();
+        final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> result = new CompletableFuture<>();
         final UnitAdd<S, L, D> unitAdd = UnitAdd.of(self, context.scopeId(scope), result);
         waitFor(unitAdd, broker);
         // Due to the synchronous nature of the Broker, this future may be completed by
@@ -736,14 +733,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     // Scopegraph Capture
     ///////////////////////////////////////////////////////////////////////////
 
-    protected void localCapture(StateCapture<S, L, D, T> capture) {
-        if(localCapture.get() != null) {
-            logger.error("Cannot create multiple local captures.");
-            throw new IllegalStateException("Cannot create multiple local captures.");
-        }
-        localCapture.set(capture);
-    }
-
     ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
@@ -759,11 +748,11 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         return waitFors.contains(token);
     }
 
-    protected boolean isWaitingFor(IWaitFor<S, L, D> token, IActor<? extends IUnit<S, L, D, R, T>> from) {
+    protected boolean isWaitingFor(IWaitFor<S, L, D> token, IActor<? extends IUnit<S, L, D, ?>> from) {
         return waitForsByProcess.get(new UnitProcess<>(from)).contains(token);
     }
 
-    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> from) {
+    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> from) {
         return waitForsByProcess.get(new UnitProcess<>(from)).count(token);
     }
 
@@ -775,7 +764,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         return getTokens(process);
     }
 
-    protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
+    protected void waitFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
         waitFor(token, process(actor));
     }
 
@@ -786,7 +775,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         waitForsByProcess = waitForsByProcess.put(process, token);
     }
 
-    protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
+    protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
         granted(token, process(actor));
     }
 
@@ -801,7 +790,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         waitForsByProcess = waitForsByProcess.remove(process, token);
     }
 
-    private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?, ?>> actor) {
+    private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
         return actor == self ? process : new UnitProcess<>(actor);
     }
 
@@ -815,15 +804,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
             // @formatter:off
-            unitResult.complete(UnitResult.<S, L, D, R, T>builder()
+            unitResult.complete(UnitResult.<S, L, D, R>builder()
                 .id(self.id())
                 .scopeGraph(scopeGraph.get())
-                .localScopeGraph(localScopeGraph())
                 .queries(recordedQueries)
                 .rootScopes(rootScopes)
                 .scopes(scopes.freeze())
-                .analysis(analysis.get())
-                .localState(localCapture.get())
+                .result(analysis.get())
                 .failures(failures)
                 .subUnitResults(subUnitResults)
                 .stats(stats)
@@ -835,10 +822,6 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
         } else {
             logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByProcess);
         }
-    }
-
-    protected IScopeGraph.Immutable<S, L, D> localScopeGraph() {
-        return scopeGraph.get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -874,7 +857,7 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     }
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
-            IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
+            IActorRef<? extends IUnit<S, L, D, ?>> sender) {
         assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
@@ -888,10 +871,9 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
     private class Delay {
 
         public final ICompletableFuture<org.metaborg.util.unit.Unit> future;
-        public final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
+        public final IActorRef<? extends IUnit<S, L, D, ?>> sender;
 
-        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future,
-                IActorRef<? extends IUnit<S, L, D, ?, ?>> sender) {
+        Delay(ICompletableFuture<org.metaborg.util.unit.Unit> future, IActorRef<? extends IUnit<S, L, D, ?>> sender) {
             this.future = future;
             this.sender = sender;
         }
@@ -904,13 +886,13 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
 
-        private final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final DataLeq<S, L, D> dataLeq;
         private final ITypeCheckerContext<S, L, D> queryContext;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
         private final DataWf<S, L, D> dataWf;
 
-        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
+        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
                 IScopeGraph.Immutable<S, L, D> scopeGraph, ITypeCheckerContext<S, L, D> queryContext,
                 DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
             this.sender = sender;
@@ -967,10 +949,10 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
 
-        private final IActorRef<? extends IUnit<S, L, D, ?, ?>> sender;
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
 
-        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?, ?>> sender,
+        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
                 IScopeGraph.Immutable<S, L, D> scopeGraph) {
             this.sender = sender;
             this.scopeGraph = scopeGraph;
@@ -1035,47 +1017,46 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
 
+        if(nodes.size() == 1) {
+            if(!failDelays(nodes)) {
+                failAll();
+            } else {
+                resume();
+            }
+            return;
+        }
+
         AggregateFuture.forAll(nodes, node -> node.from(self, context)._state()).whenComplete((states, ex) -> {
             if(ex != null) {
                 failures.add(ex);
                 return;
             }
 
-            final GraphBuilder<IProcess<S, L, D>> invWFGBuilder = GraphBuilder.of();
+            final GraphBuilder<IProcess<S, L, D>> wfgBuilder = GraphBuilder.of();
             states.forEach(state -> {
                 final IProcess<S, L, D> self = state.getSelf();
-                invWFGBuilder.addVertex(self);
+                wfgBuilder.addVertex(self);
                 state.getDependencies().forEach(dep -> {
-                    invWFGBuilder.addEdge(dep, self);
+                    wfgBuilder.addEdge(self, dep);
                 });
             });
 
-            final IGraph<IProcess<S, L, D>> invWFG = invWFGBuilder.build();
+            final IGraph<IProcess<S, L, D>> wfg = wfgBuilder.build();
 
-            if(!DeadlockUtils.connectedToAll(process, invWFG)) {
-                logger.debug("{} not part of wfg SCC, computing knots in graph.");
-                final java.util.Set<java.util.Set<IProcess<S, L, D>>> sccs = DeadlockUtils.sccs(invWFG);
+            logger.debug("{} computing SCCs in graph.");
 
-                if(sccs.isEmpty()) {
-                    return;
-                }
-                for(java.util.Set<IProcess<S, L, D>> scc : sccs) {
-                    if(isIncrementalDeadlockEnabled()) {
-                        // @formatter:off
-                        java.util.Set<StateSummary<S, L,D>> subStates = states.stream()
-                                .filter(ss -> scc.contains(ss.getSelf()))
-                                .collect(Collectors.toSet());
-                        // @formatter:on
-                        handleDeadlockIncremental(scc, subStates);
-                    } else {
-                        handleDeadlockRegular(scc);
-                    }
-                }
-            } else {
+            final java.util.Set<java.util.Set<IProcess<S, L, D>>> sccs = DeadlockUtils.sccs(wfg);
+
+            for(java.util.Set<IProcess<S, L, D>> scc : sccs) {
                 if(isIncrementalDeadlockEnabled()) {
-                    handleDeadlockIncremental(nodes, states);
+                    // @formatter:off
+                    java.util.Set<StateSummary<S, L,D>> subStates = states.stream()
+                            .filter(ss -> scc.contains(ss.getSelf()))
+                            .collect(Collectors.toSet());
+                    // @formatter:on
+                    handleDeadlockIncremental(scc, subStates);
                 } else {
-                    handleDeadlockRegular(nodes);
+                    handleDeadlockRegular(scc);
                 }
             }
         });
@@ -1083,42 +1064,36 @@ public abstract class AbstractUnit<S, L, D, R extends IResult<S, L, D>, T>
 
     private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes,
             Collection<StateSummary<S, L, D>> states) {
-        logger.debug("Received patches: {}.", states);
-        if(states.stream().noneMatch(this::isRestartable)) {
+        logger.debug("Handling incremental deadlock: {}.", states);
+        final Map<StateSummary.State, java.util.Set<StateSummary<S, L, D>>> groupedStates =
+                states.stream().collect(Collectors.groupingBy(StateSummary::getState, Collectors.toSet()));
+
+        if(!groupedStates.containsKey(StateSummary.State.UNKNOWN)) {
             logger.debug("No restartable units, doing regular deadlock handling.");
             handleDeadlockRegular(nodes);
-            return;
-        }
-        final Map<Boolean, java.util.Set<StateSummary<S, L, D>>> units =
-                states.stream().collect(Collectors.partitioningBy(this::isActive, Collectors.toSet()));
-        if(units.get(true).isEmpty()) {
-            // No restarted units in cluster, release all involved units.
+        } else if(!groupedStates.containsKey(StateSummary.State.ACTIVE)) {
+            // No active units in cluster, release all involved units.
             logger.debug("Releasing all involved units.");
-            nodes.forEach(node -> node.from(self, context)._release());
+            groupedStates.get(StateSummary.State.UNKNOWN)
+                    .forEach(node -> node.getSelf().from(self, context)._release());
         } else {
+            final java.util.Set<StateSummary<S, L, D>> activeProcesses = groupedStates.get(StateSummary.State.ACTIVE);
             // @formatter:off
-            final java.util.Set<StateSummary<S, L, D>> activeProcesses = units.get(true).stream()
-                .collect(Collectors.toSet());
+            final java.util.Set<IProcess<S, L, D>> restarts = groupedStates.get(StateSummary.State.UNKNOWN).stream()
+                    .filter(node -> shouldRestart(node, activeProcesses))
+                    .map(StateSummary::getSelf)
+                    .collect(Collectors.toSet());
             // @formatter:on
-            final Map<Boolean, java.util.Set<IProcess<S, L, D>>> restarts = units.get(false).stream()
-                    .collect(Collectors.partitioningBy(node -> shouldRestart(node, activeProcesses),
-                            Collectors.mapping(StateSummary::getSelf, Collectors.toSet())));
-            if(restarts.get(true).isEmpty()) {
-                logger.warn("False deadlock detected. Active units have no incoming dependencies elegible for restart.");
+            if(restarts.isEmpty()) {
+                logger.warn(
+                        "Conservative deadlock detection failed: Active units have no incoming dependencies elegible for restart. Restarting all unknown units");
+                groupedStates.get(StateSummary.State.UNKNOWN).forEach(node -> node.getSelf().from(self, context)._restart());
             } else {
-                logger.debug("Restarting {} (conservative).", restarts);
-                restarts.get(true).forEach(node -> node.from(self, context)._restart());
-                logger.debug("Restarted {} (conservative).", restarts);
+                logger.debug("Restarting {}.", restarts);
+                restarts.forEach(node -> node.from(self, context)._restart());
+                logger.debug("Restarted {}.", restarts);
             }
         }
-    }
-
-    private boolean isRestartable(StateSummary<S, L, D> state) {
-        return state.getState().equals(StateSummary.State.UNKNOWN);
-    }
-
-    private boolean isActive(StateSummary<S, L, D> state) {
-        return state.getState().equals(StateSummary.State.ACTIVE);
     }
 
     private boolean shouldRestart(StateSummary<S, L, D> node, Collection<StateSummary<S, L, D>> activeProcesses) {

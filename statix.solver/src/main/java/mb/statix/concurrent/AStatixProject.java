@@ -11,6 +11,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 
 @Value.Immutable
 public abstract class AStatixProject implements IStatixProject {
@@ -27,7 +28,7 @@ public abstract class AStatixProject implements IStatixProject {
 
     @Value.Parameter @Override public abstract boolean changed();
 
-    @Value.Parameter @Override public abstract @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> previousResult();
+    @Value.Parameter @Override public abstract @Nullable IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> previousResult();
 
     @Override public String toString() {
         return "StatixProject@" + System.identityHashCode(this);

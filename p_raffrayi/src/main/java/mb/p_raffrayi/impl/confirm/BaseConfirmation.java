@@ -47,6 +47,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
             if(ex != null) {
                 result.completeExceptionally(ex);
+                return;
             }
             r.visit(() -> result.complete(r), (resultPatches, globalPatches) -> {
                 Futures.<S, IPatchCollection.Immutable<S>>reduce(PatchCollection.Immutable.of(), query.datumScopes(), (acc, scope) -> {
@@ -58,13 +59,11 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
                 }).whenComplete((datumPatches, ex2) -> {
                     if(ex2 != null) {
                         result.completeExceptionally(ex2);
-                    }
-                    if(query.includePatches()) {
+                    } else if(query.includePatches()) {
                         result.complete(ConfirmResult.confirm(resultPatches.putAll(datumPatches), globalPatches));
                     } else {
                         result.complete(ConfirmResult.confirm(resultPatches, globalPatches.putAll(datumPatches)));
                     }
-
                 });
             });
         });

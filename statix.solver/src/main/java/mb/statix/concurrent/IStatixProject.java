@@ -9,6 +9,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 
 public interface IStatixProject {
 
@@ -42,7 +43,7 @@ public interface IStatixProject {
     /**
      * Result from previous type-checker run.
      */
-    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> previousResult();
+    @Nullable IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> previousResult();
 
     /**
      * @return Total number of units (including groups and subunits) in the project.

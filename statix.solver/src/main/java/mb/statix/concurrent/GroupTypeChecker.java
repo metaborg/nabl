@@ -14,6 +14,7 @@ import com.google.common.collect.Iterables;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
@@ -34,9 +35,9 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
             List<Scope> rootScopes) {
 
         final List<Scope> thisGroupScopes = group.scopeNames().stream().map(name -> makeSharedScope(context, name)).collect(Collectors.toList());
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults =
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
             runGroups(context, group.groups(), thisGroupScopes);
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults =
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =
             runUnits(context, group.units(), thisGroupScopes);
         thisGroupScopes.forEach(context::closeScope);
 

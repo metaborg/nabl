@@ -12,7 +12,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import mb.p_raffrayi.IRecordedQuery;
-import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitStats;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -20,13 +19,11 @@ import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class AUnitResult<S, L, D, R extends IResult<S, L, D>, T> implements IUnitResult<S, L, D, R, T> {
+public abstract class AUnitResult<S, L, D, R> implements IUnitResult<S, L, D, R> {
 
     @Value.Parameter @Override public abstract String id();
 
     @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
-
-    @Value.Parameter @Override public abstract IScopeGraph.Immutable<S, L, D> localScopeGraph();
 
     @Value.Parameter @Override public abstract Set<IRecordedQuery<S, L, D>> queries();
 
@@ -34,15 +31,13 @@ public abstract class AUnitResult<S, L, D, R extends IResult<S, L, D>, T> implem
 
     @Value.Parameter @Override public abstract Set<S> scopes();
 
-    @Value.Parameter @Override public abstract @Nullable R analysis();
-
-    @Value.Parameter @Override public abstract @Nullable StateCapture<S, L, D, T> localState();
+    @Value.Parameter @Override public abstract @Nullable R result();
 
     @Value.Auxiliary @Override public abstract @Nullable ScopeGraphDiff<S, L, D> diff();
 
     @Value.Parameter @Override public abstract List<Throwable> failures();
 
-    @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults();
+    @Value.Parameter @Override public abstract Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
 
     @Value.Parameter @Override public abstract @Nullable IUnitStats stats();
 

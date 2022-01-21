@@ -9,7 +9,7 @@ import mb.p_raffrayi.impl.IUnit;
 @Value.Immutable
 public abstract class AActivate<S, L, D> implements IWaitFor<S, L, D> {
 
-    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?, ?>> origin();
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     @Value.Parameter public abstract ICompletableFuture<?> future();
 

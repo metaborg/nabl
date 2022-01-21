@@ -14,13 +14,12 @@ import mb.p_raffrayi.IUnitResult;
 
 public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
-    @SuppressWarnings("unused") @Override public <Q extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, Q, T>>
+    @SuppressWarnings("unused") @Override public <Q extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, Q, T>>>
             add(String id, ITypeChecker<S, L, D, Q, T> unitChecker, List<S> rootScopes, boolean changed) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
-    @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>>
+    @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>>
             add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }

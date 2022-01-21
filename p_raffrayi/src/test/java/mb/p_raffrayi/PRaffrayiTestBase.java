@@ -18,6 +18,7 @@ import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.Broker;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class PRaffrayiTestBase {
@@ -26,28 +27,33 @@ public abstract class PRaffrayiTestBase {
 
     private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, true, true);
 
-    protected <L, R extends IResult<Scope, L, IDatum> & ITypeCheckerState<Scope, L, IDatum>> IFuture<IUnitResult<Scope, L, IDatum, R, R>> run(String id,
-            ITypeChecker<Scope, L, IDatum, R, R> typeChecker, Iterable<L> edgeLabels) {
-        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels,
-                new NullCancel(), 0.3, 50);
+    protected <L, R extends IResult<Scope, L, IDatum> & ITypeCheckerState<Scope, L, IDatum>>
+            IFuture<IUnitResult<Scope, L, IDatum, TypeCheckerResult<Scope, L, IDatum, R, R>>>
+            run(String id, ITypeChecker<Scope, L, IDatum, R, R> typeChecker, Iterable<L> edgeLabels) {
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, new NullCancel(), 0.3, 50);
     }
 
-    protected <R extends IResult<Scope, Integer, IDatum>> IFuture<IUnitResult<Scope, Integer, IDatum, R, EmptyI>> run(String id,
-            ITypeChecker<Scope, Integer, IDatum, R, EmptyI> typeChecker, Iterable<Integer> edgeLabels, boolean changed,
-            IUnitResult<Scope, Integer, IDatum, R, EmptyI> previousResult) {
-        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed,
-                previousResult, new NullCancel(), 0.3, 50);
+    protected <R extends IResult<Scope, Integer, IDatum>>
+            IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, R, EmptyI>>>
+            run(String id, ITypeChecker<Scope, Integer, IDatum, R, EmptyI> typeChecker, Iterable<Integer> edgeLabels,
+                    boolean changed,
+                    IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, R, EmptyI>> previousResult) {
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, new NullCancel(),
+                0.3, 50);
     }
 
-    protected <R> IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>> run(TestTypeChecker<R> typeChecker,
-            Iterable<Integer> edgeLabels, IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI> previousResult) {
+    protected <R>
+            IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>>>
+            run(TestTypeChecker<R> typeChecker, Iterable<Integer> edgeLabels,
+                    IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>> previousResult) {
         return Broker.debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
                 previousResult, new NullCancel(), 0.3, 50);
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected abstract class TestTypeChecker<R> implements ITypeChecker<Scope, Integer, IDatum, Result<Integer, R>, EmptyI> {
+    protected abstract class TestTypeChecker<R>
+            implements ITypeChecker<Scope, Integer, IDatum, Result<Integer, R>, EmptyI> {
 
         private final String id;
         private final boolean changed;
@@ -55,6 +61,10 @@ public abstract class PRaffrayiTestBase {
         protected TestTypeChecker(String id, boolean changed) {
             this.id = id;
             this.changed = changed;
+        }
+
+        @Override public EmptyI snapshot() {
+            return EmptyI.of();
         }
 
         public String getId() {
@@ -205,7 +215,8 @@ public abstract class PRaffrayiTestBase {
 
     }
 
-    protected static class EmptyI implements IResult<Scope, Integer, IDatum>, ITypeCheckerState<Scope, Integer, IDatum> {
+    protected static class EmptyI
+            implements IResult<Scope, Integer, IDatum>, ITypeCheckerState<Scope, Integer, IDatum> {
 
         private static final PRaffrayiTestBase.EmptyI instance = new PRaffrayiTestBase.EmptyI();
 
@@ -219,6 +230,20 @@ public abstract class PRaffrayiTestBase {
 
         @Override public Optional<IDatum> tryGetExternalDatum(IDatum datum) {
             return Optional.of(datum);
+        }
+
+    }
+
+    protected static class EmptyResult implements IResult<Scope, Integer, IDatum> {
+
+        private static final EmptyResult EMPTY = new EmptyResult();
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+        public static EmptyResult of() {
+            return EMPTY;
         }
 
     }

@@ -9,14 +9,14 @@ import com.google.common.collect.Streams;
 
 public class PRaffrayiUtil {
 
-    public static <S, L, D> void writeStatsCsvFromResult(IUnitResult<S, L, D, ?, ?> unitResult, PrintStream out) {
+    public static <S, L, D> void writeStatsCsvFromResult(IUnitResult<S, L, D, ?> unitResult, PrintStream out) {
         out.println(formatLine("unit", unitResult.stats().csvHeaders()));
         writeStatsCsvDataFromResult(unitResult, out);
     }
 
-    private static <S, L, D> void writeStatsCsvDataFromResult(IUnitResult<S, L, D, ?, ?> unitResult, PrintStream out) {
+    private static <S, L, D> void writeStatsCsvDataFromResult(IUnitResult<S, L, D, ?> unitResult, PrintStream out) {
         out.println(formatLine(unitResult.id(), unitResult.stats().csvRow()));
-        for(IUnitResult<S, L, D, ?, ?> subUnitResult : unitResult.subUnitResults().values()) {
+        for(IUnitResult<S, L, D, ?> subUnitResult : unitResult.subUnitResults().values()) {
             writeStatsCsvDataFromResult(subUnitResult, out);
         }
     }

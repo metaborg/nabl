@@ -13,7 +13,7 @@ import mb.p_raffrayi.impl.IUnit;
 @Value.Immutable
 public abstract class ADifferState<S, L, D> implements IWaitFor<S, L, D> {
 
-    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?, ?>> origin();
+    @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
     @Value.Parameter public abstract Set<S> matches();
 
@@ -34,12 +34,12 @@ public abstract class ADifferState<S, L, D> implements IWaitFor<S, L, D> {
     }
 
 
-    public static <S, L, D> DifferState<S, L, D> ofMatch(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, S scope,
+    public static <S, L, D> DifferState<S, L, D> ofMatch(IActorRef<? extends IUnit<S, L, D, ?>> origin, S scope,
             ICompletableFuture<?> future) {
         return DifferState.of(origin, Collections.singleton(scope), Collections.emptySet(), future);
     }
 
-    public static <S, L, D> DifferState<S, L, D> ofDiff(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, S scope,
+    public static <S, L, D> DifferState<S, L, D> ofDiff(IActorRef<? extends IUnit<S, L, D, ?>> origin, S scope,
             L label, ICompletableFuture<?> future) {
         return DifferState.of(origin, Collections.emptySet(), Collections.singleton(Tuple2.of(scope, label)), future);
     }

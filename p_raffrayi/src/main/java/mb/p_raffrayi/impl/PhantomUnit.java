@@ -21,29 +21,31 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S, L, D>, Unit> {
+public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
-    private final IUnitResult<S, L, D, ?, ?> previousResult;
+    private final IUnitResult<S, L, D, ? extends IResult<S, L, D>> previousResult;
 
-    public PhantomUnit(IActor<? extends IUnit<S, L, D, IResult.Empty<S, L, D>, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?, ?>> parent,
-            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ?, ?> previousResult) {
+    public PhantomUnit(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
+            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ? extends IResult<S, L, D>> previousResult) {
         super(self, parent, context, edgeLabels);
         this.previousResult = previousResult;
     }
 
-    @Override public IFuture<IUnitResult<S, L, D, IResult.Empty<S, L, D>, Unit>> _start(List<S> rootScopes) {
+    @SuppressWarnings("unchecked")
+    @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
         initDiffer(new RemovingDiffer<>(previousResult.scopeGraph(), differOps()), rootScopes,
                 previousResult.rootScopes());
 
         // Add Phantom unit for all previous subunits.
-        for(Map.Entry<String, IUnitResult<S, L, D, ?, ?>> entry : previousResult.subUnitResults().entrySet()) {
-            this.<IResult.Empty<S, L, D>, Unit>doAddSubUnit(entry.getKey(),
-                    (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, entry.getValue()),
+        for(Map.Entry<String, IUnitResult<S, L, D, ? >> entry : previousResult.subUnitResults().entrySet()) {
+            this.<Unit>doAddSubUnit(entry.getKey(),
+                    (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels,
+                            (IUnitResult<S, L, D, ? extends IResult<S, L, D>>) entry.getValue()),
                     new ArrayList<>(), true);
         }
 
-        return doFinish(CompletableFuture.completedFuture(IResult.Empty.of()));
+        return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
     @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
@@ -78,7 +80,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, IResult.Empty<S,
     }
 
     @Override protected D getPreviousDatum(D datum) {
-        return previousResult.analysis().getExternalRepresentation(datum);
+        return previousResult.result().getExternalRepresentation(datum);
     }
 
 }

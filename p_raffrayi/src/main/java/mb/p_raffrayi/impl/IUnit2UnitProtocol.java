@@ -29,7 +29,7 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?, ?>> origin, ScopePath<S, L> path,
+    IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin, ScopePath<S, L> path,
             LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
     IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,

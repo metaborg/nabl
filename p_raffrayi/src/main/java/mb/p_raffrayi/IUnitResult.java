@@ -6,19 +6,16 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import mb.p_raffrayi.impl.StateCapture;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 
-public interface IUnitResult<S, L, D, R extends IResult<S, L, D>, T> {
+public interface IUnitResult<S, L, D, R> {
 
     String id();
 
     IScopeGraph.Immutable<S, L, D> scopeGraph();
 
-    // Contains edges/data created by unit type checker only (i.e. not sub-unit edges/data)
-    // TODO solve data duplication
-    IScopeGraph.Immutable<S, L, D> localScopeGraph();
+    @Nullable R result();
 
     Set<IRecordedQuery<S, L, D>> queries();
 
@@ -26,15 +23,11 @@ public interface IUnitResult<S, L, D, R extends IResult<S, L, D>, T> {
 
     Set<S> scopes();
 
-    @Nullable R analysis();
-
     @Nullable ScopeGraphDiff<S, L, D> diff();
-
-    @Nullable StateCapture<S, L, D, T> localState();
 
     List<Throwable> failures();
 
-    Map<String, IUnitResult<S, L, D, ?, ?>> subUnitResults();
+    Map<String, IUnitResult<S, L, D, ?>> subUnitResults();
 
     IUnitStats stats();
 

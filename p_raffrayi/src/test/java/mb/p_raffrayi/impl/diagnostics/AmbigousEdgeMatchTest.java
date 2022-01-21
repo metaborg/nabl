@@ -92,7 +92,7 @@ public class AmbigousEdgeMatchTest {
                 new AmbigousEdgeMatch<>(sg, Arrays.asList(root), new TestDifferOps(0)).analyze();
 
         assertSize(report, 1);
-        assertContains(report, root, L1, tgt1, tgt1, tgt2, tgt2);
+        assertContains(report, root, L1, tgt1, null, tgt2, null);
     }
 
     @Test public void testDifferentLabel() {

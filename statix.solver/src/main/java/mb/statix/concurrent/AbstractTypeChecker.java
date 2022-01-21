@@ -34,6 +34,7 @@ import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
@@ -66,6 +67,8 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     private IFuture<SolverResult> solveResult;
     private final Multimap<ITerm, ICompletableFuture<ITerm>> pendingData = ArrayListMultimap.create();
 
+    private boolean snapshotTaken = false;
+
     protected Scope makeSharedScope(ITypeCheckerContext<Scope, ITerm, ITerm> context, String name) {
         final Scope s = context.stableFreshScope(name, Collections.emptyList(), true);
         context.setDatum(s, s);
@@ -73,18 +76,18 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         return s;
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> runGroups(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> runGroups(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups,
             List<Scope> parentScopes) {
         if(groups.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>> result = context.add(key,
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> result = context.add(key,
                     new GroupTypeChecker(entry.getValue(), spec, debug), parentScopes, entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
@@ -97,18 +100,18 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> runUnits(
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> runUnits(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units,
             List<Scope> parentScopes) {
         if(units.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState>> result = context.add(key,
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> result = context.add(key,
                     new UnitTypeChecker(entry.getValue(), spec, debug), parentScopes, entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
@@ -121,19 +124,19 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>>>
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>
             runLibraries(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
                     Scope parentScope) {
         if(libraries.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
             IStatixLibrary library = entry.getValue();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit>> result =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result =
                     context.add(key, library, Arrays.asList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: library {} returned.", context.id(), key);
@@ -198,7 +201,9 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     private IFuture<SolverResult> finish(IFuture<SolverResult> future, String id) {
         return future.thenApply(r -> {
             logger.debug("checker {}: solver returned.", id);
-            solver = null; // gc solver
+            if(snapshotTaken) {
+                solver = null; // gc solver
+            }
             return r; // FIXME minimize result to what is externally visible
                       //       note that this can make debugging harder, so perhaps optional?
         });
@@ -279,10 +284,13 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
     }
 
     @Override public SolverState snapshot() {
-        if(solver == null) {
-            return null;
+        final SolverState snapshot = solver.snapshot();
+        snapshotTaken = true;
+        if(solveResult.isDone()) {
+            solver = null;
         }
-        return solver.snapshot();
+
+        return snapshot;
     }
 
 }

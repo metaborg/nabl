@@ -11,6 +11,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spoofax.StatixTerms;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 
 public class InputMatchers {
 
@@ -56,11 +57,11 @@ public class InputMatchers {
     }
 
     @SuppressWarnings("unchecked")
-    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>> previousResult() {
+    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>> previousResult() {
         // @formatter:off
-        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>cases(
+        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>>cases(
             M.appl0("Added", appl -> Optional.empty()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>of(result))
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>of(result))
         ));
         // formatter:on
     }

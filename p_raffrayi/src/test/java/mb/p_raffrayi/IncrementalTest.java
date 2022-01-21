@@ -5,8 +5,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.metaborg.util.collection.CapsuleUtil;
@@ -17,19 +20,25 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.impl.RecordedQuery;
 import mb.p_raffrayi.impl.StateCapture;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
@@ -44,12 +53,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
     private static final Result<Integer, Unit> UNIT_RESULT = Result.of(Unit.unit);
 
     @Test(timeout = 10000) public void testSimpleRelease() throws InterruptedException, ExecutionException {
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> previousResult = rootResult().build();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> previousResult =
+                rootResult().build();
 
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
                 this.run(new NoopTypeChecker(".", false), Set.Immutable.<Integer>of(), previousResult);
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
@@ -60,25 +70,25 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root)
             .addQueries(recordedQuery(root).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub", false)
             ), Set.Immutable.of(), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -91,25 +101,25 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root)
             .addQueries(recordedQuery(root).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(true,
                 new SingleQueryTypeChecker("sub", false)
             ), Set.Immutable.of(), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -126,17 +136,20 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
         final Env<Scope, Integer, IDatum> env = Env.of(path);
 
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d);
+
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(openEdges(root, sg), root).withScopeGraph(sg))
             .addScopes(d)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+            .scopeGraph(sg)
             .addQueries(recordedQuery(root, env).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
             .addQueries(recordedQuery(root, env).build())
             .putSubUnitResults("sub", childResult)
@@ -144,13 +157,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -172,23 +185,25 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IScopeGraph.Immutable<Scope, Integer, IDatum> subLocalSG = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
                 .addEdge(root, lbl, d)
                 .setDatum(d, d);
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root)
             .addScopes(d)
             .scopeGraph(subLocalSG)
-            .localScopeGraph(subLocalSG)
-            .localState(StateCapture.<Scope, Integer, IDatum, EmptyI>builder()
-                .scopes(CapsuleUtil.immutableSet(d))
-                .scopeGraph(subLocalSG)
-                .scopeNameCounters(MultiSet.Immutable.of("d"))
-                .usedStableScopes(CapsuleUtil.immutableSet())
-                .typeCheckerState(EmptyI.of())
-                .build())
+            .result(TypeCheckerResult.of(
+                Result.of(Unit.unit),
+                StateCapture.<Scope, Integer, IDatum, EmptyI>builder()
+                    .scopes(CapsuleUtil.immutableSet(d))
+                    .scopeGraph(subLocalSG)
+                    .scopeNameCounters(MultiSet.Immutable.of("d"))
+                    .usedStableScopes(CapsuleUtil.immutableSet())
+                    .typeCheckerState(EmptyI.of())
+                    .build(),
+                ScopeGraph.Immutable.of()))
             .addQueries(recordedQuery(root, env).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
             .addQueries(recordedQuery(root, env).build())
             .putSubUnitResults("sub", childResult)
@@ -196,13 +211,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(true,
                 new DeclQueryTypeChecker("sub", false, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -219,18 +234,20 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path =
                 new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
         final Env<Scope, Integer, IDatum> env = Env.of(path);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(root).withScopeGraph(sg))
             .addScopes(d)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+            .scopeGraph(sg)
             .addQueries(recordedQuery(root, env).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
             .addQueries(recordedQuery(root, env).build())
             .putSubUnitResults("sub", childResult)
@@ -238,13 +255,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new DeclQueryTypeChecker("sub", true, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -265,26 +282,26 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root)
             .addQueries(rq)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .putSubUnitResults("sub1", child1Result)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -302,6 +319,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         final ScopePath<Scope, Integer> scopePath = new ScopePath<Scope, Integer>(root).step(lbl, si).get();
         final ResolutionPath<Scope, Integer, IDatum> path = scopePath.step(lbl, d1).get().resolve(d1);
+        // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+                .addEdge(root, lbl, si)
+                .addEdge(si, lbl, d1)
+                .setDatum(d1, d1);
+        // @formatter:on
 
         // @formatter:off
         final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(scopePath, Env.of(path))
@@ -313,27 +336,21 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root)
             .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child2Result = subResult("/./sub2", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child2Result = subResult("/./sub2", root,
+                unitTCResult(root).withScopeGraph(sg))
             .addScopes(si, d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, si)
-                .addEdge(si, lbl, d1)
-                .setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, si)
-                .addEdge(si, lbl, d1)
-                .setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
                 .addEdge(root, lbl, si)
                 .addEdge(si, lbl, d1))
@@ -343,14 +360,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new NestedDeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -373,6 +390,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path = path2.resolve(datum);
 
         // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg1 = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(root, lbl, s1)
+            .addEdge(s1, lbl, s2);
+        // @formatter:on
+
+        // @formatter:off
         final RecordedQuery<Scope, Integer, IDatum> q1 = recordedQuery(path1, Env.of(path))
             .labelWf(NoAcceptLabelWf.instance)
             .build();
@@ -385,34 +408,29 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final Multimap<Scope, EdgeOrData<Integer>> openEdges = ImmutableMultimap.of(root, EdgeOrData.edge(1));
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root,
+            unitTCResult(openEdges, root).withScopeGraph(sg1))
             .addScopes(s1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, s1)
-                .addEdge(s1, lbl, s2))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, s1)
-                .addEdge(s1, lbl, s2))
+            .scopeGraph(sg1)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child2Result = subResult("/./sub2", root)
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg2 = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(s2, lbl, root)
+            .addEdge(s2, lbl, d1)
+            .setDatum(d1, datum);
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child2Result = subResult("/./sub2", root,
+                unitTCResult(root).withScopeGraph(sg2))
             .addScopes(d1, s2)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(s2, lbl, root)
-                .addEdge(s2, lbl, d1)
-                .setDatum(d1, datum))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(s2, lbl, root)
-                .addEdge(s2, lbl, d1)
-                .setDatum(d1, datum))
+            .scopeGraph(sg2)
             .addQueries(q1, q2, q3)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
                 .addEdge(root, lbl, s1))
             .putSubUnitResults("sub1", child1Result)
@@ -421,14 +439,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new NoopTypeChecker("sub1", false),
                 new NoopTypeChecker("sub2", false)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -442,12 +460,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
     ///////////////////////////////////////////////////////////////////////////
 
     @Test(timeout = 10000) public void testSimpleRestart() throws InterruptedException, ExecutionException {
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> previousResult = rootResult().build();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> previousResult =
+                rootResult().build();
 
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
                 this.run(new NoopTypeChecker(".", true), Set.Immutable.of(), previousResult);
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertTrue(result.failures().isEmpty());
@@ -463,26 +482,26 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root)
             .addScopes(d)
             .addQueries(recordedQuery(root, Env.of(path)).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<>(true, lbl,
                 new SingleQueryTypeChecker("sub", false)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -500,23 +519,25 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path = scopePath.resolve(d1);
         final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(scopePath, Env.of(path)).build();
         final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(scopePath, Env.of(path)).build();
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root)
             .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child2Result = subResult("/./sub2", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child2Result = subResult("/./sub2", root,
+            unitTCResult(root).withScopeGraph(sg))
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
             .putSubUnitResults("sub1", child1Result)
             .putSubUnitResults("sub2", child2Result)
@@ -524,16 +545,16 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
-        assertTrue(result.failures().isEmpty());
+        assertTrue(result.allFailures().isEmpty());
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
         assertEquals(TransitionTrace.RESTARTED, result.subUnitResults().get("sub1").stateTransitionTrace());
@@ -543,15 +564,15 @@ public class IncrementalTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testRestart_FailureInInitialState()
             throws InterruptedException, ExecutionException {
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> previousResult = rootResult()
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> previousResult = rootResult()
             .addFailures(new Exception())
             .build();
         // @formatter:on
 
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
                 this.run(new NoopTypeChecker(".", false), Set.Immutable.of(), previousResult);
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertTrue(result.failures().isEmpty());
@@ -567,26 +588,26 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final RecordedQuery<Scope, Integer, IDatum> rq = recordedQuery(root).build();
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root)
             .addQueries(rq)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .putSubUnitResults("sub1", child1Result)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -609,27 +630,28 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(scopePath, Env.of(path)).build();
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child1Result = subResult("/./sub1", root)
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(root, lbl, si)
+            .addEdge(si, lbl, d1)
+            .setDatum(d1, d1);
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root)
             .addQueries(rq1, rq2)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> child2Result = subResult("/./sub2", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> child2Result = subResult("/./sub2", root,
+            unitTCResult(root).withScopeGraph(sg))
             .addScopes(si, d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, si)
-                .addEdge(si, lbl, d1)
-                .setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
-                .addEdge(root, lbl, si)
-                .addEdge(si, lbl, d1)
-                .setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
                 .addEdge(root, lbl, si)
                 .addEdge(si, lbl, d1))
@@ -639,14 +661,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new NestedDeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -663,13 +685,14 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Integer lbl = 1;
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<>(true, lbl,
                 new SingleQueryTypeChecker("sub", true)
             ), Set.Immutable.of(lbl), null);
         // @formatter:on
 
-        IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result = future.asJavaCompletion().get();
+        IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
+                future.asJavaCompletion().get();
 
         assertTrue(result.failures().isEmpty());
         assertEquals(1, result.subUnitResults().get("sub").queries().size());
@@ -680,17 +703,18 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IDatum datum = new IDatum() {};
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Integer>(true,
                 new EnvSizeTypeChecker("sub1", true),
                 new DeclTypeChecker("sub2", true, lbl, datum)
             ), Set.Immutable.of(lbl), null);
         // @formatter:on
 
-        IUnitResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI> result = future.asJavaCompletion().get();
+        IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>> result =
+                future.asJavaCompletion().get();
 
         assertTrue(result.failures().isEmpty());
-        assertEquals(1, (int) result.analysis().value());
+        assertEquals(1, (int) result.result().analysis().value());
 
         assertEquals(2, result.subUnitResults().get("sub1").queries().size());
         assertEquals(0, result.queries().size());
@@ -698,7 +722,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     }
 
     @Test(timeout = 10000) public void testRecord_SharedScopeQuery() throws InterruptedException, ExecutionException {
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>>> future =
                 this.run(".", new ITypeChecker<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>() {
                     @Override public IFuture<Result<Integer, Unit>> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>> unit,
@@ -714,7 +738,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                     }
                 }, Arrays.asList());
 
-        IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>> result =
+        IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, Result<Integer, Unit>>> result =
                 future.asJavaCompletion().get();
 
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
@@ -732,21 +756,21 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d = new Scope("/.", 1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root,
+            ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .addScopes(d)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", true, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
 
@@ -764,19 +788,20 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path = new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
         final Env<Scope, Integer, IDatum> env = Env.of(path);
         final IRecordedQuery<Scope, Integer, IDatum> query = recordedQuery(root, env).build();
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d);
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(openEdges(root, sg), root).withScopeGraph(sg))
             .addScopes(d)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+            .scopeGraph(sg)
             .addQueries(query)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
             .addQueries(query)
             .putSubUnitResults("sub", childResult)
@@ -784,15 +809,15 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
-        final IUnitResult<Scope, Integer, IDatum, ?, ?> subResult = result.subUnitResults().get("sub");
+        final IUnitResult<Scope, Integer, IDatum, ?> subResult = result.subUnitResults().get("sub");
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
         assertEquals(TransitionTrace.RELEASED, subResult.stateTransitionTrace());
@@ -811,19 +836,20 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final ResolutionPath<Scope, Integer, IDatum> path = new ScopePath<Scope, Integer>(root).step(lbl, d).get().resolve(d);
         final Env<Scope, Integer, IDatum> env = Env.of(path);
         final IRecordedQuery<Scope, Integer, IDatum> query = recordedQuery(root, env).build();
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d);
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(openEdges(root, sg), root).withScopeGraph(sg))
             .addScopes(d)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d).setDatum(d, d))
+            .scopeGraph(sg)
             .addQueries(query)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d))
             .putSubUnitResults("sub", childResult)
             .addQueries(query)
@@ -831,13 +857,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
@@ -860,17 +886,16 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> previousResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> previousResult = rootResult(root, sg)
             .addScopes(d)
             .scopeGraph(sg)
-            .localScopeGraph(sg)
             .build();
         // @formatter:on
 
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
                 this.run(new NoopTypeChecker(".", false), Set.Immutable.of(), previousResult);
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertTrue(result.failures().isEmpty());
@@ -880,9 +905,9 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.scopeGraph().getEdges(root, lbl)));
         assertEquals(sg.getData(), result.scopeGraph().getData());
 
-        assertEquals(1, result.localScopeGraph().getEdges().size());
-        assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.localScopeGraph().getEdges(root, lbl)));
-        assertEquals(sg.getData(), result.localScopeGraph().getData());
+        assertEquals(1, result.result().scopeGraph().getEdges().size());
+        assertTrue(Iterables.elementsEqual(Arrays.asList(d), result.result().scopeGraph().getEdges(root, lbl)));
+        assertEquals(sg.getData(), result.result().scopeGraph().getData());
     }
 
     @Test(timeout = 10000) public void testReleaseChild_ParentUpdateSG()
@@ -890,32 +915,33 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub", 1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(openEdges(root, sg), root).withScopeGraph(sg))
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new SelfDeclTypeChecker("sub", false, lbl)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
-        final IUnitResult<Scope, Integer, IDatum, ?, ?> subResult = result.subUnitResults().get("sub");
+        final IUnitResult<Scope, Integer, IDatum, ?> subResult = result.subUnitResults().get("sub");
 
         assertTrue(result.failures().isEmpty());
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
@@ -941,27 +967,32 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Integer lbl = 1;
         final Scope d1 = new Scope("/.", 1);
 
+        final ScopeGraph.Immutable<Scope, Integer, IDatum> sg =
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
+
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI> parentResult = UnitResult.<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>builder()
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>> parentResult = UnitResult.<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>>builder()
             .id("/.")
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .analysis(Result.of(-1))
+            .scopeGraph(sg)
+            .result(TypeCheckerResult.<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>of(
+                Result.<Integer, Integer>of(-1),
+                StateCapture.<Scope, Integer, IDatum, EmptyI>of(CapsuleUtil.immutableSet(root, d1), sg, HashMultiset.create(), HashMultiset.create(), HashMultimap.create(), MultiSet.Immutable.of(), CapsuleUtil.immutableSet(), EmptyI.of()),
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1)))
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<Integer>(true, lbl,
                 new EnvSizeTypeChecker("sub", true)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Integer>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.failures().isEmpty());
-        assertEquals(1, (int) result.analysis().value());
+        assertEquals(1, (int) result.result().analysis().value());
     }
 
     @Test(timeout = 10000) public void testRestartChild_ParentUpdateSG()
@@ -971,18 +1002,19 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope d1 = new Scope("/./sub", 1);
         final IDatum datum = new IDatum() {};
         final IRecordedQuery<Scope, Integer, IDatum> query = recordedQuery(root).build();
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> childResult = subResult("/./sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
+                unitTCResult(root).withScopeGraph(sg))
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .scopeGraph(sg)
             .addQueries(query)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
             .addQueries(query)
             .putSubUnitResults("sub", childResult)
@@ -990,15 +1022,17 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclTypeChecker("sub", true, lbl, datum)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
-        final IUnitResult<Scope, Integer, IDatum, ?, ?> subResult = result.subUnitResults().get("sub");
+        @SuppressWarnings("unchecked") final IUnitResult<Scope, Integer, IDatum, ? extends TypeCheckerResult<Scope, Integer, IDatum, ?, ?>> subResult =
+                (IUnitResult<Scope, Integer, IDatum, ? extends TypeCheckerResult<Scope, Integer, IDatum, ?, ?>>) result
+                        .subUnitResults().get("sub");
 
         assertTrue(result.failures().isEmpty());
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
@@ -1015,13 +1049,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(datum, subResult.scopeGraph().getData(tgt).get());
 
         // Verify local part of scope graph is correct
-        final List<Scope> parentTargets = Lists.newArrayList(result.localScopeGraph().getEdges(newRoot, lbl));
+        final List<Scope> parentTargets = Lists.newArrayList(result.result().scopeGraph().getEdges(newRoot, lbl));
         assertEquals(0, parentTargets.size());
 
-        final List<Scope> childTargets = Lists.newArrayList(subResult.localScopeGraph().getEdges(newRoot, lbl));
+        final List<Scope> childTargets = Lists.newArrayList(subResult.result().localState().scopeGraph().getEdges(newRoot, lbl));
         assertEquals(Arrays.asList(tgt), childTargets);
 
-        assertEquals(datum, subResult.localScopeGraph().getData(tgt).get());
+        assertEquals(datum, subResult.result().localState().scopeGraph().getData(tgt).get());
     }
 
     @Test(timeout = 10000) public void testRestartCluster() throws InterruptedException, ExecutionException {
@@ -1062,8 +1096,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub1Result = subResult("/./sub1", root)
-            .localScopeGraph(sg1)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Result = subResult("/./sub1", root,
+                unitTCResult(root).withScopeGraph(sg1))
             .scopeGraph(sg1)
             .addScopes(root, s1)
             .addQueries(q2, q3)
@@ -1071,8 +1105,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub2Result = subResult("/./sub2", root)
-            .localScopeGraph(sg2)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub2Result = subResult("/./sub2", root,
+                unitTCResult(openEdges(root, sg2), root).withScopeGraph(sg2))
             .scopeGraph(sg2)
             .addScopes(root, s2)
             .addQueries(q1, q3)
@@ -1080,8 +1114,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub3Result = subResult("/./sub3", root)
-            .localScopeGraph(sg3)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub3Result = subResult("/./sub3", root,
+                unitTCResult(openEdges(root, sg3), root).withScopeGraph(sg3))
             .scopeGraph(sg3)
             .addScopes(root, s3)
             .addQueries(q1, q2)
@@ -1089,8 +1123,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> rootResult = rootResult(root)
-            .localScopeGraph(ScopeGraph.Immutable.of())
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> rootResult = rootResult(root)
             .scopeGraph(sgRoot)
             .addScopes(root)
             .putSubUnitResults("sub1", sub1Result)
@@ -1100,7 +1133,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new TestTypeChecker<Unit>("sub1", true) {
 
@@ -1118,7 +1151,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             Arrays.asList(lbl), rootResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertTrue(result.allFailures().isEmpty());
@@ -1138,38 +1171,39 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub2", 1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Result = subResult("/./sub1", root)
             .addQueries(recordedQuery(d1).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub2Result = subResult("/./sub2", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub2Result = subResult("/./sub2", root,
+                unitTCResult(ImmutableMultimap.of(root, EdgeOrData.edge(1)), root).withScopeGraph(sg))
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
             .putSubUnitResults("sub1", sub1Result)
             .putSubUnitResults("sub2", sub2Result)
-            .analysis(UNIT_RESULT)
+            .result(unitTCResult(root))
             .build();
         // @formatter:on
 
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future =
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future =
                 this.run(".", new ITypeChecker<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>() {
 
                     @Override public IFuture<Result<Integer, Unit>> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unit,
                             List<Scope> roots) {
                         final Scope s = unit.stableFreshScope("s", Arrays.asList(lbl), false);
-                        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Future =
+                        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> sub1Future =
                                 unit.add("sub1", new NoopTypeChecker("sub1", false), Arrays.asList(s), false);
 
                         // Do some 'heavy work', ensure request for unit 2 ref from unit 1 is executed by now.
@@ -1179,19 +1213,19 @@ public class IncrementalTest extends PRaffrayiTestBase {
                             throw new RuntimeException(e);
                         }
 
-                        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub2Future =
+                        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> sub2Future =
                                 unit.add("sub2", new NoopTypeChecker("sub2", false), Arrays.asList(s), false);
 
                         unit.closeScope(s);
 
                         return unit.runIncremental(restarted -> CompletableFuture.completedFuture(UNIT_RESULT))
                                 .thenCompose(res -> sub2Future.thenCompose(s2res -> sub1Future))
-                                .thenApply(IUnitResult::analysis);
+                                .thenApply(IUnitResult::result).thenApply(TypeCheckerResult::analysis);
                     }
 
                 }, Set.Immutable.of(lbl), false, parentResult);
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
 
         assertEquals(TransitionTrace.RELEASED, result.stateTransitionTrace());
@@ -1205,30 +1239,31 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
         final Scope d1 = new Scope("/./sub2/sub", 1);
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1);
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub1Result = subResult("/./sub1", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub1Result = subResult("/./sub1", root)
             .addQueries(recordedQuery(d1).build())
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub2subResult = subResult("/./sub2/sub", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub2subResult = subResult("/./sub2/sub", root,
+                unitTCResult(root).withScopeGraph(sg))
             .addScopes(d1)
-            .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
-            .localScopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
+            .scopeGraph(sg)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> sub2Result = subResult("/./sub2", root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> sub2Result = subResult("/./sub2", root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1))
             .putSubUnitResults("sub", sub2subResult)
             .build();
         // @formatter:on
 
         // @formatter:off
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> parentResult = rootResult(root)
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
             .scopeGraph(ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1))
             .putSubUnitResults("sub1", sub1Result)
             .putSubUnitResults("sub2", sub2Result)
@@ -1236,13 +1271,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         // @formatter:off
-        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> future = this.run(
+        final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new NoopTypeChecker("sub1", false)
             ), Set.Immutable.of(lbl), parentResult);
         // @formatter:on
 
-        final IUnitResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result =
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.allFailures().isEmpty());
     }
@@ -1424,7 +1459,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             final Scope root = unit.stableFreshScope("s", rootLabels(), false);
 
             // Start subunits
-            final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>> result =
+            final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, R>, EmptyI>>> result =
                     unit.add(typeChecker.getId(), typeChecker, Arrays.asList(root), typeChecker.isChanged());
             final IFuture<?> otherResults = AggregateFuture.forAll(typeCheckers,
                     tc -> unit.add(tc.getId(), tc, Arrays.asList(root), tc.isChanged()));
@@ -1443,7 +1478,13 @@ public class IncrementalTest extends PRaffrayiTestBase {
                     if(ex != null) {
                         return CompletableFuture.completedExceptionally(ex);
                     }
-                    return AggregateFuture.apply(result, otherResults).thenApply(Tuple2::_1).thenApply(IUnitResult::analysis);
+                    return AggregateFuture.apply(result, otherResults).thenApply(Tuple2::_1).thenApply(IUnitResult::result)
+                            .thenApply(res -> {
+                                if(res != null) {
+                                    return res.analysis();
+                                }
+                                return null;
+                            });
                 }
             );
             // @formatter:on
@@ -1488,29 +1529,58 @@ public class IncrementalTest extends PRaffrayiTestBase {
     // Initial state builder utils
     ///////////////////////////////////////////////////////////////////////////
 
-    private UnitResult.Builder<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> rootResult() {
+    private UnitResult.Builder<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>
+            rootResult(IScopeGraph.Immutable<Scope, Integer, IDatum> localScopeGraph) {
         // @formatter:off
-        return UnitResult.<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>builder()
+        final List<Scope> scopes = Stream.concat(
+            localScopeGraph.getEdges().keySet().stream().<Scope>map(Map.Entry::getKey),
+            localScopeGraph.getData().keySet().stream()
+        ).collect(Collectors.toList());
+        return UnitResult.<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>builder()
                 .id("/.")
                 .scopeGraph(ScopeGraph.Immutable.of())
-                .localScopeGraph(ScopeGraph.Immutable.of())
-                .analysis(UNIT_RESULT);
+                .result(unitTCResult(scopes.toArray(new Scope[scopes.size()])).withScopeGraph(localScopeGraph));
         // @formatter:on
     }
 
-    private UnitResult.Builder<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> rootResult(Scope root) {
-        return rootResult().addScopes(root);
+    private UnitResult.Builder<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>
+            rootResult(Scope... roots) {
+        // @formatter:off
+        return UnitResult.<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>builder()
+                .id("/.")
+                .addScopes(roots)
+                .scopeGraph(ScopeGraph.Immutable.of())
+                .result(unitTCResult(roots));
+        // @formatter:on
     }
 
-    private UnitResult.Builder<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> subResult(String id, Scope root) {
+    private UnitResult.Builder<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>
+            rootResult(Scope root, IScopeGraph.Immutable<Scope, Integer, IDatum> localScopeGraph) {
+        return rootResult(localScopeGraph).addScopes(root);
+    }
+
+    private UnitResult.Builder<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>
+            subResult(String id, Scope root) {
         // @formatter:off
-        return UnitResult.<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>builder()
+        return UnitResult.<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>builder()
                 .id(id)
                 .addRootScopes(root)
                 .addScopes(root)
                 .scopeGraph(ScopeGraph.Immutable.of())
-                .localScopeGraph(ScopeGraph.Immutable.of())
-                .analysis(UNIT_RESULT);
+                .result(unitTCResult(root));
+        // @formatter:on
+    }
+
+    private UnitResult.Builder<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>
+            subResult(String id, Scope root,
+                    TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> result) {
+        // @formatter:off
+        return UnitResult.<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>>builder()
+                .id(id)
+                .addRootScopes(root)
+                .addScopes(root)
+                .scopeGraph(ScopeGraph.Immutable.of())
+                .result(result);
         // @formatter:on
     }
 
@@ -1522,6 +1592,30 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .empty(true)
             .includePatches(true);
         // @formatter:on
+    }
+
+    public Multimap<Scope, EdgeOrData<Integer>> openEdges(Scope root, IScopeGraph<Scope, Integer, IDatum> sg) {
+        final ImmutableMultimap.Builder<Scope, EdgeOrData<Integer>> builder = ImmutableMultimap.builder();
+        sg.getEdges().forEach((edge, tgts) -> {
+            if(edge.getKey().equals(root)) {
+                builder.put(root, EdgeOrData.edge(edge.getValue()));
+            }
+        });
+        sg.getData(root).ifPresent(__ -> builder.put(root, EdgeOrData.data()));
+        return builder.build();
+    }
+
+    public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unitTCResult(
+            Multimap<Scope, EdgeOrData<Integer>> openEdges, Scope... scopes) {
+        return TypeCheckerResult.of(Result.of(Unit.unit),
+                StateCapture.of(CapsuleUtil.toSet(scopes), ScopeGraph.Immutable.of(), HashMultiset.create(),
+                        HashMultiset.create(), openEdges, MultiSet.Immutable.of(),
+                        CapsuleUtil.immutableSet(), EmptyI.of()),
+                ScopeGraph.Immutable.of());
+    }
+
+    public TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI> unitTCResult(Scope... scopes) {
+        return unitTCResult(ImmutableMultimap.of(), scopes);
     }
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path) {

@@ -12,8 +12,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -29,12 +27,12 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.IResult;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.statix.concurrent.GroupResult;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.IStatixResult;
@@ -89,15 +87,16 @@ public class STX_solve_multi extends StatixPrimitive {
 
             final double t0 = System.currentTimeMillis();
 
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> futureResult =
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>> futureResult =
                     Broker.run(project.resource(), settings, new ProjectTypeChecker(project, spec, debug), scopeImpl,
                             spec.allLabels(), project.changed(), project.previousResult(), cancel, progress);
 
-            final IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result =
+            final IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> result =
                     futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
 
-            final List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults = new ArrayList<>();
+            final List<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>> unitResults =
+                    new ArrayList<>();
             final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
@@ -132,78 +131,86 @@ public class STX_solve_multi extends StatixPrimitive {
         return Optional.of(B.newList(results));
     }
 
-    private Map<String, ITerm> flattenResult(Spec spec,
-            IUnitResult<Scope, ITerm, ITerm, ProjectResult, SolverState> result,
-            List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
-        unitResults.add(result);
-        final Map<String, ITerm> resourceResults = new HashMap<>();
-        final @Nullable ProjectResult projectResult = result.analysis();
-        if(projectResult != null) {
-            final String resource = projectResult.resource();
-            final List<SolverResult> groupResults = new ArrayList<>();
-            projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
-            projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, resource + "/" + k, gr,
-                    groupResults, resourceResults, unitResults));
-            projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
-
-            SolverResult solveResult = flatSolverResult(spec, result);
-            for(SolverResult groupResult : groupResults) {
-                solveResult = solveResult.combine(groupResult);
-            }
-            resourceResults.put(resource, B.newAppl("ProjectResult", B.newBlob(solveResult), B.newBlob(result)));
-        } else {
+    @SuppressWarnings("unchecked") private Map<String, ITerm> flattenResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> result,
+            List<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        if(result.result() == null) {
             logger.error("Missing result for project {}", result.id());
+            return new HashMap<>();
         }
+
+        final Map<String, ITerm> resourceResults = new HashMap<>();
+        final ProjectResult projectResult = result.result().analysis();
+        final String resource = projectResult.resource();
+        final List<SolverResult> groupResults = new ArrayList<>();
+        projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
+        projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, resource + "/" + k, gr,
+                groupResults, resourceResults, unitResults));
+        projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
+
+        SolverResult solveResult = flatSolverResult(spec, result);
+        for(SolverResult groupResult : groupResults) {
+            solveResult = solveResult.combine(groupResult);
+        }
+        resourceResults.put(resource, B.newAppl("ProjectResult", B.newBlob(solveResult), B.newBlob(result)));
+
         return resourceResults;
     }
 
-    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, IResult.Empty<Scope, ITerm, ITerm>, Unit> result) {
+    private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit> result) {
     }
 
-    private void flattenGroupResult(Spec spec, String groupId,
-            IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState> result, List<SolverResult> groupResults,
-            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
-        unitResults.add(result);
-        final GroupResult groupResult = result.analysis();
-        if(groupResult != null) {
-            groupResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(),
-                            (IUnitResult<Scope, ITerm, ITerm, GroupResult, SolverState>) gr, groupResults,
-                            resourceResults, unitResults));
-            groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
-            final SolverResult solveResult = flatSolverResult(spec, result);
-            groupResults.add(solveResult);
-            resourceResults.put(groupId, B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
-        } else {
+    @SuppressWarnings("unchecked") private void flattenGroupResult(Spec spec, String groupId,
+            IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>> result,
+            List<SolverResult> groupResults, Map<String, ITerm> resourceResults,
+            List<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        if(result.result() == null) {
             logger.error("Missing result for group {}", result.id());
+            return;
         }
+
+        final GroupResult groupResult = result.result().analysis();
+        groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(),
+                (IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>) gr,
+                groupResults, resourceResults, unitResults));
+        groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
+        final SolverResult solveResult = flatSolverResult(spec, result);
+        groupResults.add(solveResult);
+        resourceResults.put(groupId, B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
     }
 
-    private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult, SolverState> result,
-            Map<String, ITerm> resourceResults, List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults) {
-        unitResults.add(result);
-        final UnitResult unitResult = result.analysis();
+    @SuppressWarnings("unchecked") private void flattenUnitResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>> result,
+            Map<String, ITerm> resourceResults,
+            List<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        final TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState> unitResult = result.result();
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
-            resourceResults.put(unitResult.resource(),
+            resourceResults.put(unitResult.analysis().resource(),
                     B.newAppl("UnitResult", B.newBlob(solveResult), B.newBlob(result)));
         } else {
             logger.error("Missing result for unit {}", result.id());
         }
     }
 
-    private SolverResult flatSolverResult(Spec spec,
-            IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult, SolverState> result) {
-        final IStatixResult unitResult = result.analysis();
+    private <T extends IStatixResult> SolverResult flatSolverResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, T, SolverState>> result) {
+        final IStatixResult unitResult = result.result().analysis();
         SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
 
         solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages =
                 ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());
-        if(result.analysis().exception() != null) {
+        if(result.result().analysis().exception() != null) {
             final Message message = new Message(MessageKind.ERROR,
-                    ImmutableList.of(new TextPart("Exception: " + result.analysis().exception().getMessage())),
+                    ImmutableList.of(new TextPart("Exception: " + result.result().analysis().exception().getMessage())),
                     B.newTuple());
             messages.put(new CFalse(message), message);
         }
@@ -217,7 +224,8 @@ public class STX_solve_multi extends StatixPrimitive {
         return solveResult;
     }
 
-    private String flattenTransitions(List<IUnitResult<Scope, ITerm, ITerm, ?, SolverState>> unitResults,
+    private String flattenTransitions(
+            List<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ?, SolverState>>> unitResults,
             TransitionTrace flow) {
         return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id)
                 .collect(Collectors.joining(", "));

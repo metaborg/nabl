@@ -21,6 +21,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Match;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Report;
@@ -42,13 +43,13 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
 
         // Diagnostic one: possibility for inaccurate edge matches.
 
-        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, IStatixResult, ?> analysis =
+        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, IStatixResult, ?>> analysis =
                 M.blobValue(IUnitResult.class).match(terms.get(0))
                         .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final AnalyticsDifferOps differOps = new AnalyticsDifferOps(analysis.scopes());
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph =
-                new ExplicatedScopeGraph(analysis.scopeGraph(), analysis.analysis().solveResult().state().unifier());
+                new ExplicatedScopeGraph(analysis.scopeGraph(), analysis.result().analysis().solveResult().state().unifier());
         final AmbigousEdgeMatch<Scope, ITerm, ITerm> aemDiagnostics =
                 new AmbigousEdgeMatch<>(scopeGraph, analysis.rootScopes(), differOps);
 

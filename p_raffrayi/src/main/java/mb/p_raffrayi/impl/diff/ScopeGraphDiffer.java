@@ -485,8 +485,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                                         currentEdge.target, previousEdge.target);
                                 logger.debug("* Error.", ex);
                                 result.complete(Tuple2.of(previousEdge, Optional.empty()));
+                            } else {
+                                result.complete(Tuple2.of(previousEdge, matchedScopes));
                             }
-                            result.complete(Tuple2.of(previousEdge, matchedScopes));
                         });
                         return result;
                     });
