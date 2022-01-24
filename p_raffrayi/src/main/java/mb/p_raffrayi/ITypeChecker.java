@@ -10,7 +10,6 @@ import org.metaborg.util.future.IFuture;
  */
 public interface ITypeChecker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> {
 
-    // FIXME: include local snapshot T in future result instead of AbstractUnit?
     IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R, T> unit, List<S> rootScopes);
 
     default IFuture<D> getExternalDatum(D datum) {

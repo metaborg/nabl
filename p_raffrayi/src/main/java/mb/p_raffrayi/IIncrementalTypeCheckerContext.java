@@ -30,10 +30,9 @@ public interface IIncrementalTypeCheckerContext<S, L, D, R, T> extends ITypeChec
      *            The type of the local type-checker result
      *
      * @param runLocalTypeChecker
-     *            The callback that should start the type checker. The boolean argument indicates whether the type
-     *            checker was restarted (true) or started because there was no earlier result (false). If the result
-     *            could be reused, the callback is not invoked at all. Instead, the {@code patch} callback will be
-     *            invoked to update it.
+     *            The callback that should start the type checker. If present, the argument provides the local snapshot
+     *            of the state taken in a previous incremental run. If the result could be reused, the callback is not
+     *            invoked at all. Instead, the {@code patch} callback will be invoked to update it.
      *
      * @param extractLocal
      *            Callback that should extract the local type-checker result {@link Q} from an aggregated result
