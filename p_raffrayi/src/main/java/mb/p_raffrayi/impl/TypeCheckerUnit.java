@@ -468,7 +468,15 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             });
         }
         stats.localQueries += 1;
-        return ifActive(whenContextActive(ret)).thenApply(ans -> {
+        return ifActive(ret.thenCompose(ans -> {
+            final IFuture<IQueryAnswer<S, L, D>> res = CompletableFuture.completedFuture(ans);
+            // TODO: Does the relation q.transitiveQueries().isEmpty() <=> q non-local always hold?
+            if(ans.transitiveQueries().isEmpty() && ans.predicateQueries().isEmpty()) {
+                return res;
+            } else {
+                return whenContextActive(res);
+            }
+        })).thenApply(ans -> {
             return CapsuleUtil.toSet(ans.env());
         });
     }
