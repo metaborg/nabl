@@ -1,10 +1,12 @@
 package mb.statix.solver.persistent;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.functions.Function2;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -71,7 +73,9 @@ public abstract class ASolverResult {
         final SolverResult.Builder combined = SolverResult.builder().from(this);
         combined.state(state().add(other.state()));
         combined.messages(merge(messages(), other.messages()));
-        combined.putAllDelays(other.delays());
+        combined.delays(merge(delays(), other.delays(), (d1, d2) -> {
+            return Delay.of(Arrays.asList(d1, d2));
+        }));
         combined.putAllExistentials(other.existentials());
         combined.addAllUpdatedVars(other.updatedVars());
         combined.addAllRemovedEdges(other.removedEdges());
@@ -84,7 +88,28 @@ public abstract class ASolverResult {
     private static <K, V> Map<K, V> merge(Map<K, V> map1, Map<K, V> map2) {
         final ImmutableMap.Builder<K, V> builder = ImmutableMap.<K, V>builder();
         builder.putAll(map1);
-        map2.forEach((k, v) -> { if (!map1.containsKey(k)) builder.put(k, v); });
+        map2.forEach((k, v) -> {
+            if(!map1.containsKey(k)) {
+                builder.put(k, v);
+            }
+        });
+        return builder.build();
+    }
+
+    private static <K, V> Map<K, V> merge(Map<K, V> map1, Map<K, V> map2, Function2<V, V, V> resolveConflict) {
+        final ImmutableMap.Builder<K, V> builder = ImmutableMap.<K, V>builder();
+        map1.forEach((k, v) -> {
+            if(map2.containsKey(k)) {
+                builder.put(k, resolveConflict.apply(v, map2.get(k)));
+            } else {
+                builder.put(k, v);
+            }
+        });
+        map2.forEach((k, v) -> {
+            if(!map1.containsKey(k)) {
+                builder.put(k, v);
+            }
+        });
         return builder.build();
     }
 

@@ -24,15 +24,17 @@ public class UnitTypeChecker extends AbstractTypeChecker<UnitResult> {
         this.unit = unit;
     }
 
-    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult> context, List<Scope> rootScopes) {
+    @Override public IFuture<UnitResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, UnitResult, SolverState> context, List<Scope> rootScopes) {
         // @formatter:off
         return context.runIncremental(
-            restarted -> {
-                return runSolver(context, unit.rule(), rootScopes);
+            initialState -> {
+                logger.debug("unit {}: running. restarted: {}.", context.id(), initialState.isPresent());
+                return runSolver(context, unit.rule(), initialState, rootScopes);
             },
             UnitResult::solveResult,
             this::patch,
             (result, ex) -> {
+                logger.debug("unit {}: building final result.", context.id());
                 return CompletableFuture.completedFuture(UnitResult.of(unit.resource(), result, ex));
             })
             .whenComplete((r, ex) -> {

@@ -34,8 +34,8 @@ public interface IScopeGraphDiffer<S, L, D> {
     IFuture<Optional<S>> match(S previousScope);
 
     /**
-     * Returns the diff for a particular scope. It may either indicate that a scope is removed, or which edges are
+     * Returns the diff for a particular edge. It may either indicate that a scope is removed, or which edges are
      * added/removed from it.
      */
-    IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope);
+    IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label);
 }

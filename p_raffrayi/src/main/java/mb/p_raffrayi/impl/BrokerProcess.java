@@ -12,7 +12,7 @@ class BrokerProcess<S, L, D> implements IProcess<S, L, D> {
         return context.deadlock();
     }
 
-    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?> origin) {
+    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?, ?> origin) {
         return origin;
     }
 

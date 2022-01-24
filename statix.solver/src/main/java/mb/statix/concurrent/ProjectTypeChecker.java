@@ -12,6 +12,7 @@ import org.metaborg.util.unit.Unit;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.spec.Spec;
@@ -28,25 +29,25 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
         this.project = project;
     }
 
-    @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult> context,
+    @Override public IFuture<ProjectResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, ProjectResult, SolverState> context,
             @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
             runLibraries(context, project.libraries(), projectScope);
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, GroupResult>>> groupResults =
-            runGroups(context, project.groups(), projectScope);
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
+            runGroups(context, project.groups(), Arrays.asList(projectScope));
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, UnitResult>>> unitResults =
-            runUnits(context, project.units(), projectScope);
+        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =
+            runUnits(context, project.units(), Arrays.asList(projectScope));
 
         context.closeScope(projectScope);
 
         // @formatter:off
         return context.runIncremental(
-            restarted -> {
-                return runSolver(context, project.rule(), Arrays.asList(projectScope));
+            initialState -> {
+                return runSolver(context, project.rule(), initialState, Arrays.asList(projectScope));
             },
             ProjectResult::solveResult,
             this::patch,

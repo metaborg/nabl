@@ -5,3 +5,4 @@ imports
   statix/API
   statix/runtime/ATerm
   statix/runtime/ScopeGraph
+  statix/runtime/Diagnostics

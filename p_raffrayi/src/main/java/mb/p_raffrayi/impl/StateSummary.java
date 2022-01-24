@@ -1,140 +1,85 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Set;
+
 import org.metaborg.util.functions.Action0;
-import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
-import org.metaborg.util.functions.Function1;
-import org.metaborg.util.unit.Unit;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import com.google.common.collect.ImmutableSet;
 
-public abstract class StateSummary<S> {
+public class StateSummary<S, L, D> {
 
-    @SuppressWarnings("rawtypes") private static StateSummary RESTART = new Restart<>();
-    @SuppressWarnings("rawtypes") private static StateSummary EMPTY_RELEASE = new Release<>(BiMap.Immutable.of());
-    @SuppressWarnings("rawtypes") private static StateSummary EMPTY_RELEASED = new Released<>(BiMap.Immutable.of());
-
-    private StateSummary() {
+    public enum State {
+        ACTIVE,
+        UNKNOWN,
+        RELEASED
     }
 
-    public abstract <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-            Function1<BiMap.Immutable<S>, T> onReleased);
+    private final State state;
+    private final IProcess<S, L, D> self;
+    private final ImmutableSet<IProcess<S, L, D>> dependencies;
 
-    public void accept(Action0 onRestart, Action1<BiMap.Immutable<S>> onRelease,
-            Action1<BiMap.Immutable<S>> onReleased) {
-        this.match(() -> {
-            onRestart.apply();
-            return Unit.unit;
-        }, ptcs -> {
-            onRelease.apply(ptcs);
-            return Unit.unit;
-        }, ptcs -> {
-            onReleased.apply(ptcs);
-            return Unit.unit;
-        });
+    private StateSummary(State state, IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
+        this.state = state;
+        this.self = self;
+        this.dependencies = ImmutableSet.copyOf(dependencies);
     }
 
-    public abstract StateSummary<S> combine(StateSummary<S> other);
-
-    @SuppressWarnings("unchecked") public static <S> StateSummary<S> restart() {
-        return RESTART;
+    public State getState() {
+        return state;
     }
 
-    @SuppressWarnings("unchecked") public static <S> StateSummary<S> release(BiMap.Immutable<S> patches) {
-        if(patches.isEmpty()) {
-            return EMPTY_RELEASE;
-        }
-        return new Release<>(patches);
+    public IProcess<S, L, D> getSelf() {
+        return self;
     }
 
-    @SuppressWarnings("unchecked") public static <S> StateSummary<S> released(BiMap.Immutable<S> patches) {
-        if(patches.isEmpty()) {
-            return EMPTY_RELEASED;
-        }
-        return new Released<>(patches);
+    public ImmutableSet<IProcess<S, L, D>> getDependencies() {
+        return dependencies;
     }
 
-    @SuppressWarnings("unchecked") public static <S> StateSummary<S> release() {
-        return EMPTY_RELEASE;
+    public <T> T match(Function0<T> onRestart, Function0<T> onRelease, Function0<T> onReleased) {
+        switch(state) {
+            case ACTIVE:
+                return onRestart.apply();
+            case UNKNOWN:
+                return onRelease.apply();
+            case RELEASED:
+                return onReleased.apply();
+            default:
+                throw new IllegalStateException("Unknown state" + state + ".");
+        }
     }
 
-    @SuppressWarnings("unchecked") public static <S> StateSummary<S> released() {
-        return EMPTY_RELEASED;
+    public void accept(Action0 onRestart, Action0 onRelease, Action0 onReleased) {
+        switch(state) {
+            case ACTIVE:
+                onRestart.apply();
+                break;
+            case UNKNOWN:
+                onRelease.apply();
+                break;
+            case RELEASED:
+                onReleased.apply();
+                break;
+            default:
+                throw new IllegalStateException("Unknown state" + state + ".");
+        }
     }
 
-    private static class Restart<S> extends StateSummary<S> {
-
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
-            return onRestart.apply();
-        }
-
-        @Override public StateSummary<S> combine(StateSummary<S> other) {
-            return this;
-        }
-
-        @Override public String toString() {
-            return "Restart{}";
-        }
-
+    @Override public String toString() {
+        return "StateSummary{state=" + state + ", self=" + self + ", dependencies=" + dependencies + "}";
     }
 
-    private static class Release<S> extends StateSummary<S> {
-
-        private BiMap.Immutable<S> patches;
-
-        Release(BiMap.Immutable<S> patches) {
-            this.patches = patches;
-        }
-
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
-            return onRelease.apply(patches);
-        }
-
-        @Override public StateSummary<S> combine(StateSummary<S> other) {
-            // @formatter:off
-            return other.match(
-                () -> restart(),
-                ptcs -> release(patches.putAll(ptcs)),
-                ptcs -> release(patches.putAll(ptcs))
-            );
-            // @formatter:on
-        }
-
-        @Override public String toString() {
-            return "Release{" + patches + "}";
-        }
-
+    public static <S, L, D> StateSummary<S, L, D> restart(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
+        return new StateSummary<>(State.ACTIVE, self, dependencies);
     }
 
-    private static class Released<S> extends StateSummary<S> {
+    public static <S, L, D> StateSummary<S, L, D> release(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
+        return new StateSummary<>(State.UNKNOWN, self, dependencies);
+    }
 
-        private BiMap.Immutable<S> patches;
-
-        Released(BiMap.Immutable<S> patches) {
-            this.patches = patches;
-        }
-
-        @Override public <T> T match(Function0<T> onRestart, Function1<BiMap.Immutable<S>, T> onRelease,
-                Function1<BiMap.Immutable<S>, T> onReleased) {
-            return onReleased.apply(patches);
-        }
-
-        @Override public StateSummary<S> combine(StateSummary<S> other) {
-            // @formatter:off
-            return other.match(
-                () -> restart(),
-                ptcs -> release(patches.putAll(ptcs)),
-                ptcs -> released(patches.putAll(ptcs))
-            );
-            // @formatter:on
-        }
-
-        @Override public String toString() {
-            return "Released{" + patches + "}";
-        }
-
+    public static <S, L, D> StateSummary<S, L, D> released(IProcess<S, L, D> self, Set<IProcess<S, L, D>> dependencies) {
+        return new StateSummary<>(State.RELEASED, self, dependencies);
     }
 
 }

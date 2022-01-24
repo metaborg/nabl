@@ -7,13 +7,20 @@ import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.ScopeGraphUtil;
 
 public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
 
     private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+    private final java.util.Set<S> scopes;
 
-    public StaticDifferContext(IScopeGraph.Immutable<S, L, D> scopeGraph) {
+    private final IDifferDataOps<D> dataOps;
+
+    public StaticDifferContext(IScopeGraph.Immutable<S, L, D> scopeGraph, java.util.Set<S> scopes,
+            IDifferDataOps<D> dataOps) {
         this.scopeGraph = scopeGraph;
+        this.scopes = scopes;
+        this.dataOps = dataOps;
     }
 
     @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
@@ -25,7 +32,19 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     }
 
     @Override public IFuture<Optional<D>> datum(S scope) {
-        return CompletableFuture.completedFuture(scopeGraph.getData(scope));
+        return CompletableFuture.completedFuture(rawDatum(scope));
+    }
+
+    @Override public Optional<D> rawDatum(S scope) {
+        return scopeGraph.getData(scope).map(dataOps::getExternalRepresentation);
+    }
+
+    @Override public boolean available(S scope) {
+        return scopes.contains(scope);
+    }
+
+    @Override public String toString() {
+        return "StaticDifferContext:\n" + ScopeGraphUtil.toString(scopeGraph, dataOps::getExternalRepresentation);
     }
 
 }

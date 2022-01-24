@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -27,21 +28,22 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub unit with the given type-checker, root scopes and changed marker.
      */
-    <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-            List<S> rootScopes, boolean changed);
+    <R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>>
+            add(String id, ITypeChecker<S, L, D, R, T> unitChecker, List<S> rootScopes, boolean changed);
 
     /**
      * Start sub unit with the given type-checker, root scopes, marked as changed.
      */
-    default <R> IFuture<IUnitResult<S, L, D, R>> add(String id, ITypeChecker<S, L, D, R> unitChecker,
-            List<S> rootScopes) {
+    default <R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>>
+            add(String id, ITypeChecker<S, L, D, R, T> unitChecker, List<S> rootScopes) {
         return add(id, unitChecker, rootScopes, true);
     }
 
     /**
      * Start sub unit with the given static scope graph and root scopes.
      */
-    IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes);
+    IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
+            List<S> rootScopes);
 
     /**
      * Initialize root scope.
@@ -52,6 +54,14 @@ public interface ITypeCheckerContext<S, L, D> {
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
      */
     S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared);
+
+    /**
+     * Create fresh scope with stable identity, declaring open edges and data, and sharing with sub type checkers.
+     * Will automatically be markes as shared.
+     *
+     * Will throw when identity is already used previously.
+     */
+    S stableFreshScope(String name, Iterable<L> labels, boolean data);
 
     /**
      * Set datum of a scope. Scope must be open for data at given access level. Datum is automatically closed by setting
@@ -113,13 +123,14 @@ public interface ITypeCheckerContext<S, L, D> {
                 return id;
             }
 
-            @SuppressWarnings("unused") @Override public <R> IFuture<IUnitResult<S, L, D, R>> add(String id,
-                    ITypeChecker<S, L, D, R> unitChecker, List<S> rootScopes, boolean changed) {
+            @SuppressWarnings("unused") @Override public <R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+                    IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>>
+                    add(String id, ITypeChecker<S, L, D, R, T> unitChecker, List<S> rootScopes, boolean changed) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
+            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>>
+                    add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
@@ -129,6 +140,11 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> labels, boolean data,
                     boolean shared) {
+                throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @SuppressWarnings("unused") @Override public S stableFreshScope(String name, Iterable<L> labels,
+                    boolean data) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

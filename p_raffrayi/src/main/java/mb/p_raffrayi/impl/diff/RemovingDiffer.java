@@ -71,8 +71,8 @@ public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return CompletableFuture.completedFuture(Optional.empty());
     }
 
-    @Override public IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope) {
-        return CompletableFuture.completedFuture(Removed.of());
+    @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
+        return CompletableFuture.completedFuture(ScopeDiff.<S, L, D>builder().build());
     }
 
 }

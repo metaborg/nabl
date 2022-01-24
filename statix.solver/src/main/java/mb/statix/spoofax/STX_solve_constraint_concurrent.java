@@ -15,9 +15,11 @@ import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.ProjectResult;
 import mb.statix.concurrent.ProjectTypeChecker;
+import mb.statix.concurrent.SolverState;
 import mb.statix.concurrent.StatixProject;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.constraints.messages.IMessage;
@@ -44,16 +46,16 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
             ICancel cancel) throws InterruptedException, ExecutionException {
         final IStatixProject project = StatixProject.builder().resource("").changed(true)
                 .rule(Rule.of("resolve", Arrays.asList(P.newWld()), constraint)).build();
-        final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> future =
-                Broker.run("", PRaffrayiSettings.of(true, true), new ProjectTypeChecker(project, spec, debug),
-                        new ScopeImpl(), spec.allLabels(), cancel);
-        final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = future.asJavaCompletion().get();
-        if(!result.allFailures().isEmpty() || result.analysis().exception() != null) {
+        final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>> future =
+                Broker.run("", PRaffrayiSettings.of(false, false, false, false),
+                        new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel, progress);
+        final IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> result = future.asJavaCompletion().get();
+        if(!result.allFailures().isEmpty() || result.result().analysis().exception() != null) {
             final SolverResult.Builder resultBuilder =
                     SolverResult.builder().spec(spec).state(State.of()).completeness(Completeness.Immutable.of());
-            if(result.analysis().exception() != null) {
-                logger.error("Failure solving constraint.", result.analysis().exception());
-                resultBuilder.putMessages(constraint, toMessage(result.analysis().exception()));
+            if(result.result().analysis().exception() != null) {
+                logger.error("Failure solving constraint.", result.result().analysis().exception());
+                resultBuilder.putMessages(constraint, toMessage(result.result().analysis().exception()));
             }
             for(Throwable ex : result.allFailures()) {
                 logger.error("Failure solving constraint.", ex);
@@ -61,7 +63,7 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
 
             return resultBuilder.build();
         } else {
-            final SolverResult resultConfig = result.analysis().solveResult();
+            final SolverResult resultConfig = result.result().analysis().solveResult();
             final IState.Immutable state = resultConfig.state().withScopeGraph(result.scopeGraph());
             return resultConfig.withState(state);
         }

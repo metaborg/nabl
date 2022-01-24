@@ -4,7 +4,9 @@ menus
 
   menu: "Statix" (meta)
 
-  action: "Show scope graph"          = stx--show-scopegraph (openeditor)
-  //action: "Show scope graph (DOT)"    = stx--show-scopegraph-dot (openeditor)
+  action: "Show scope graph"             = stx--show-scopegraph (openeditor)
+  //action: "Show scope graph (DOT)"       = stx--show-scopegraph-dot (openeditor)
 
-  action: "Make project library"      = stx--make-project-library
+  action: "Make project library"         = stx--make-project-library
+
+  action: "Show Incremental Diagnostics" = stx--diagnostics (openeditor)

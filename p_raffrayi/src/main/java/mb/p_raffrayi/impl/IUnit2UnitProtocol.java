@@ -3,8 +3,9 @@ package mb.p_raffrayi.impl;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
-import org.metaborg.util.unit.Unit;
 
+import mb.p_raffrayi.actors.IActorRef;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -28,17 +29,14 @@ public interface IUnit2UnitProtocol<S, L, D> {
 
     void _closeEdge(S scope, EdgeOrData<L> edge);
 
-    IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin, ScopePath<S, L> path,
+            LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
+
+    IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
-    default IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        return _query(path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
-    }
-
-    IFuture<Unit> _isComplete(S scope, EdgeOrData<L> label);
-
-    IFuture<Optional<D>> _datum(S scope);
+    IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty);
 
     IFuture<Optional<S>> _match(S previousScope);
 

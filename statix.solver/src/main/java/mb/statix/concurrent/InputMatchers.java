@@ -11,6 +11,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spoofax.StatixTerms;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.TypeCheckerResult;
 
 public class InputMatchers {
 
@@ -18,17 +19,18 @@ public class InputMatchers {
         return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.previousResult(),
                 M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()),
                 M.map(M.stringValue(), M.req(library())), (t, id, rule, result, groups, units, libs) -> {
-                    return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(), result.orElse(null));
+                    return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(),
+                            result.orElse(null));
                 });
     }
 
     public static IMatcher<IStatixGroup> group() {
         return M.req("Expected Group",
-                M.casesFix(m -> Iterables2.singleton(
-                        M.appl4("Group", M.stringValue(), StatixTerms.hoconstraint(), M.map(M.stringValue(), m),
-                                M.map(M.stringValue(), unit()), (t, resource, rule, groups, units) -> {
-                                    return StatixGroup.of(resource, Optional.of(rule), groups, units);
-                                }))));
+                M.casesFix(m -> Iterables2.singleton(M.appl6("Group", M.stringValue(), M.listElems(M.stringValue()),
+                        StatixTerms.hoconstraint(), changed(), M.map(M.stringValue(), m),
+                        M.map(M.stringValue(), unit()), (t, resource, scopeNames, rule, changed, groups, units) -> {
+                            return StatixGroup.of(resource, scopeNames, Optional.of(rule), changed, groups, units);
+                        }))));
     }
 
     public static IMatcher<IStatixUnit> unit() {
@@ -55,11 +57,11 @@ public class InputMatchers {
     }
 
     @SuppressWarnings("unchecked")
-    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>> previousResult() {
+    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>> previousResult() {
         // @formatter:off
-        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>>cases(
+        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>>cases(
             M.appl0("Added", appl -> Optional.empty()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, ProjectResult>>of(result))
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>>of(result))
         ));
         // formatter:on
     }

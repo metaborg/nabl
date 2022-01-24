@@ -109,6 +109,8 @@ public interface IScopeGraph<S, L, D> {
      */
     interface Transient<S, L, D> extends IScopeGraph<S, L, D> {
 
+        @Override Set.Transient<L> getLabels();
+
         /**
          * Adds an edge to the scope graph.
          *

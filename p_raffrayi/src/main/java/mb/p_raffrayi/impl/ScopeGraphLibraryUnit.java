@@ -21,7 +21,7 @@ import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.impl.diff.MatchingDiffer;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
@@ -29,7 +29,6 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -57,6 +56,10 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @SuppressWarnings("unused") @Override protected IFuture<D> getExternalDatum(D datum) {
+        return CompletableFuture.completedFuture(datum);
+    }
+
+    @Override protected D getPreviousDatum(D datum) {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
@@ -65,9 +68,13 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
-        doStart(rootScopes, Collections.emptyList());
+        doStart(rootScopes);
         buildScopeGraph(rootScopes);
         clearLibrary();
+        if(isDifferEnabled()) {
+            initDiffer(new MatchingDiffer<>(differOps(), differContext(d -> d)), Collections.emptyList(),
+                    Collections.emptyList());
+        }
         startWorkers();
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
@@ -142,25 +149,31 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
+            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
+            DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
-        final IActorRef<? extends IUnit<S, L, D, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
+        final IActorRef<? extends IUnit<S, L, D, Unit>> worker =
+                workers.get(stats.incomingQueries % workers.size());
 
-        final IFuture<IQueryAnswer<S, L, D>> result = self.async(worker)._query(path, labelWF, dataWF, labelOrder, dataEquiv);
+        final IFuture<IQueryAnswer<S, L, D>> result =
+                self.async(worker)._query(origin, path, labelWF, dataWF, labelOrder, dataEquiv);
         final Query<S, L, D> token = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
         waitFor(token, worker);
         return result.whenComplete((r, ex) -> {
             granted(token, worker);
+            resume();
         });
     }
 
-    @Override public IFuture<Env<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
-        // TODO: Correct confirmation
-        // This implementation is currently sound, because queries to libraries should not be forwarded to the project.
-        // When that holds, an empty result will stay an empty result. All other results will incorrectly be invalidated.
-        return CompletableFuture.completedFuture(Env.empty());
+    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        return _query(self.sender(TYPE), path, labelWF, dataWF, labelOrder, dataEquiv).thenApply(IQueryAnswer::env);
+    }
+
+    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
@@ -168,21 +181,17 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return CompletableFuture.completedFuture(Optional.of(previousScope));
     }
 
-    @Override public IFuture<StateSummary<S>> _requireRestart() {
-        return CompletableFuture.completedFuture(StateSummary.release());
+    @Override public IFuture<StateSummary<S, L, D>> _state() {
+        return CompletableFuture.completedFuture(StateSummary.released(process, dependentSet()));
     }
 
-    @Override public void _release(BiMap.Immutable<S> patches) {
+    @Override public void _release() {
         throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
     @Override public void _restart() {
         // As part of the DataWf and DataLeq params of incoming queries, library the workers of a library unit
         // can have outgoing queries. When these cause a deadlock, workers can receive a restart.
-    }
-
-    @Override protected IScopeGraphDiffer<S, L, D> initDiffer() {
-        return new MatchingDiffer<>(differOps());
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -154,7 +154,7 @@ public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
 
         return termMatch(lefts.get(0), rights.get(0)).flatMap(headMatch -> {
             final List<ITerm> leftsSub = lefts.subList(1, lefts.size());
-            final List<ITerm> rightsSub = lefts.subList(1, lefts.size());
+            final List<ITerm> rightsSub = rights.subList(1, rights.size());
             return termsMatch(leftsSub, rightsSub).flatMap(tailMatch -> {
                 return BiMaps.safeMerge(headMatch, tailMatch);
             });

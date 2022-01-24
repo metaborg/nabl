@@ -2,14 +2,15 @@ package mb.p_raffrayi.impl;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -19,6 +20,7 @@ import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -32,14 +34,14 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
 import mb.p_raffrayi.IRecordedQuery;
-import mb.p_raffrayi.IScopeGraphLibrary;
-import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
@@ -52,33 +54,38 @@ import mb.p_raffrayi.actors.IActorStats;
 import mb.p_raffrayi.actors.TypeTag;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas;
 import mb.p_raffrayi.actors.deadlock.ChandyMisraHaas.Host;
-import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
+import mb.p_raffrayi.impl.DeadlockUtils.GraphBuilder;
+import mb.p_raffrayi.impl.DeadlockUtils.IGraph;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.IDifferOps;
+import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
-import mb.p_raffrayi.impl.tokens.Complete;
-import mb.p_raffrayi.impl.tokens.Datum;
 import mb.p_raffrayi.impl.tokens.DifferResult;
+import mb.p_raffrayi.impl.tokens.DifferState;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Match;
+import mb.p_raffrayi.impl.tokens.PQuery;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.impl.tokens.TypeCheckerResult;
 import mb.p_raffrayi.impl.tokens.TypeCheckerState;
 import mb.p_raffrayi.impl.tokens.UnitAdd;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.scopegraph.ecoop21.INameResolutionContext;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.ScopeGraphUtil;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
+import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
@@ -91,8 +98,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent;
     protected final IUnitContext<S, L, D> context;
 
-    private final ChandyMisraHaas<IProcess<S, L, D>> cmh;
-    private final UnitProcess<S, L, D> process;
+    protected final ChandyMisraHaas<IProcess<S, L, D>> cmh;
+    protected final UnitProcess<S, L, D> process;
     private final BrokerProcess<S, L, D> broker = BrokerProcess.of();
 
     private volatile boolean innerResult;
@@ -104,19 +111,21 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final Ref<IScopeGraph.Immutable<S, L, D>> scopeGraph;
     protected final Set.Immutable<L> edgeLabels;
     protected final Set.Transient<S> scopes;
-    private final List<S> rootScopes = new ArrayList<>();
+    protected final Set.Transient<S> sharedScopes;
+    protected final List<S> rootScopes = new ArrayList<>();
 
     private final IRelation3.Transient<S, EdgeOrData<L>, Delay> delays;
 
     protected @Nullable IScopeGraphDiffer<S, L, D> differ;
     private final Ref<ScopeGraphDiff<S, L, D>> diffResult = new Ref<>();
+    protected final ICompletableFuture<Unit> whenDifferActivated = new CompletableFuture<>();
 
-    private final MultiSet.Transient<String> scopeNameCounters;
+    protected MultiSet.Transient<String> scopeNameCounters;
+    protected Set.Transient<String> usedStableScopes;
 
     protected final java.util.Set<IRecordedQuery<S, L, D>> recordedQueries = new HashSet<>();
 
     protected TransitionTrace stateTransitionTrace = TransitionTrace.OTHER;
-    private final ICompletableFuture<Unit> whenStarted = new CompletableFuture<>();
     protected final Stats stats;
 
     public AbstractUnit(IActor<? extends IUnit<S, L, D, R>> self,
@@ -138,9 +147,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         this.scopeGraph = new Ref<>(ScopeGraph.Immutable.of());
         this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
         this.scopes = CapsuleUtil.transientSet();
+        this.sharedScopes = CapsuleUtil.transientSet();
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
+        this.usedStableScopes = Set.Transient.of();
 
         this.stats = new Stats(self.stats());
     }
@@ -150,6 +161,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     ///////////////////////////////////////////////////////////////////////////
 
     protected abstract IFuture<D> getExternalDatum(D datum);
+
+    protected abstract D getPreviousDatum(D datum);
 
     ///////////////////////////////////////////////////////////////////////////
     // IUnit2UnitProtocol interface, called by IUnit implementations
@@ -178,11 +191,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         doCloseLabel(self.sender(TYPE), scope, edge);
     }
 
-    @Override public IFuture<IQueryAnswer<S, L, D>> _query(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
+            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
+            DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), origin, false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -196,17 +210,16 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return scope;
     }
 
-    protected final void doStart(List<S> currentRootScopes, @Nullable List<S> previousRootScopes) {
+    protected final S makeStableScope(String name) {
+        return context.makeScope(name + "!");
+    }
+
+    protected final void doStart(List<S> currentRootScopes) {
         this.rootScopes.addAll(currentRootScopes);
         for(S rootScope : CapsuleUtil.toSet(currentRootScopes)) {
             scopes.__insert(rootScope);
             doAddLocalShare(self, rootScope);
         }
-        if(isDifferEnabled()) {
-            this.differ = context.settings().scopeGraphDiff() ? initDiffer() : null;
-            startDiffer(currentRootScopes, previousRootScopes != null ? previousRootScopes : Collections.emptyList());
-        }
-        self.complete(whenStarted, Unit.unit, null);
     }
 
     protected final IFuture<IUnitResult<S, L, D, R>> doFinish(IFuture<R> result) {
@@ -215,10 +228,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         waitFor(token, self);
         result.whenComplete(internalResult::complete); // FIXME self.schedule(result)?
         internalResult.whenComplete((r, ex) -> {
-            logger.debug("{} type checker finished", this);
+            final String id = self.id();
+            logger.debug("{} type checker finished", id);
             resume(); // FIXME necessary?
             if(isDifferEnabled()) {
-                differ.typeCheckerFinished();
+                whenDifferActivated.thenAccept(__ -> differ.typeCheckerFinished());
             }
             if(ex != null) {
                 logger.error("type checker errored: {}", ex);
@@ -240,10 +254,16 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return context.settings().scopeGraphDiff();
     }
 
-    protected abstract IScopeGraphDiffer<S, L, D> initDiffer();
+    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, List<S> currentRootScopes,
+            List<S> previousRootScopes) {
+        assertDifferEnabled();
+        logger.debug("Initializing differ: {} with scopes: {} ~ {}.", differ, currentRootScopes, previousRootScopes);
+        this.differ = differ;
+        startDiffer(currentRootScopes, previousRootScopes);
+        self.complete(whenDifferActivated, Unit.unit, null);
+    }
 
     private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
-        assertDifferEnabled();
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
         // Handle diff output
@@ -259,6 +279,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 diffResult.set(r);
             }
             granted(result, self);
+            resume();
             tryFinish();
         });
     }
@@ -270,18 +291,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // NB. Invoke methods via `local` so that we have the same scheduling & ordering
     // guarantees as for remote calls.
 
-    protected <Q> Tuple2<IActorRef<? extends IUnit<S, L, D, Q>>, IFuture<IUnitResult<S, L, D, Q>>> doAddSubUnit(
-            String id, Function2<IActor<IUnit<S, L, D, Q>>, IUnitContext<S, L, D>, IUnit<S, L, D, Q>> unitProvider,
+    protected <U> Tuple2<IActorRef<? extends IUnit<S, L, D, U>>, IFuture<IUnitResult<S, L, D, U>>> doAddSubUnit(
+            String id, Function2<IActor<IUnit<S, L, D, U>>, IUnitContext<S, L, D>, IUnit<S, L, D, U>> unitProvider,
             List<S> rootScopes, boolean ignoreResult) {
         for(S rootScope : rootScopes) {
             assertOwnOrSharedScope(rootScope);
         }
 
-        final Tuple2<IFuture<IUnitResult<S, L, D, Q>>, IActorRef<? extends IUnit<S, L, D, Q>>> result_subunit =
+        final Tuple2<IFuture<IUnitResult<S, L, D, U>>, IActorRef<? extends IUnit<S, L, D, U>>> result_subunit =
                 context.add(id, unitProvider, rootScopes);
-        final IActorRef<? extends IUnit<S, L, D, Q>> subunit = result_subunit._2();
+        final IActorRef<? extends IUnit<S, L, D, U>> subunit = result_subunit._2();
 
-        final ICompletableFuture<IUnitResult<S, L, D, Q>> internalResult = new CompletableFuture<>();
+        final ICompletableFuture<IUnitResult<S, L, D, U>> internalResult = new CompletableFuture<>();
         final TypeCheckerResult<S, L, D> token = TypeCheckerResult.of(self, internalResult);
         waitFor(token, subunit);
         result_subunit._1().whenComplete(internalResult::complete); // must come after waitFor
@@ -290,10 +311,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             doAddShare(subunit, rootScope);
         }
 
-        final IFuture<IUnitResult<S, L, D, Q>> ret = internalResult.whenComplete((r, ex) -> {
+        final IFuture<IUnitResult<S, L, D, U>> ret = internalResult.whenComplete((r, ex) -> {
             logger.debug("{} subunit {} finished", this, subunit);
-            resume();
             granted(token, subunit);
+            resume();
             if(ex != null) {
                 failures.add(new Exception("No result for sub unit " + id));
             } else if(!ignoreResult) {
@@ -307,6 +328,19 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected final S doFreshScope(String baseName, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final S scope = makeScope(baseName);
 
+        return doPrepareScope(scope, edgeLabels, data, sharing);
+    }
+
+    protected final S doStableFreshScope(String name, Iterable<L> edgeLabels, boolean data) {
+        if(!usedStableScopes.__insert(name)) {
+            throw new IllegalStateException("Stable scope identity " + name + " already used.");
+        }
+        final S scope = makeStableScope(name);
+
+        return doPrepareScope(scope, edgeLabels, data, true);
+    }
+
+    private S doPrepareScope(final S scope, Iterable<L> edgeLabels, boolean data, boolean sharing) {
         final List<EdgeOrData<L>> labels = Lists.newArrayList();
         for(L l : edgeLabels) {
             labels.add(EdgeOrData.edge(l));
@@ -321,26 +355,31 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         scopes.__insert(scope);
+        if(sharing) {
+            sharedScopes.__insert(scope);
+        }
+
         doAddLocalShare(self, scope);
         doInitShare(self, scope, labels, sharing);
 
         return scope;
     }
 
-    @Override public IFuture<org.metaborg.util.unit.Unit> _isComplete(S scope, EdgeOrData<L> label) {
-        assertOwnScope(scope);
-        return isComplete(scope, label, self.sender(TYPE));
-    }
-
-    @Override public IFuture<Optional<D>> _datum(S scope) {
-        assertOwnScope(scope);
-        return isComplete(scope, EdgeOrData.data(), self.sender(TYPE)).thenApply(__ -> scopeGraph.get().getData(scope));
-    }
-
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
+        final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
         if(isDifferEnabled()) {
-            return whenStarted.thenCompose(__ -> differ.match(previousScope));
+            return whenDifferActivated.thenCompose(__ -> {
+                final ICompletableFuture<Optional<S>> future = new CompletableFuture<>();
+                final DifferState<S, L, D> state = DifferState.ofMatch(sender, previousScope, future);
+                waitFor(state, self);
+                differ.match(previousScope).whenComplete(future::complete);
+                future.whenComplete((r, ex) -> {
+                    granted(state, self);
+                    resume(); // FIXME needed?
+                });
+                return future;
+            });
         } else {
             return CompletableFuture.completedFuture(Optional.empty());
         }
@@ -369,6 +408,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(InitScope.of(self, scope), sender);
+        resume(); // FIXME necessary?
+
         for(EdgeOrData<L> edge : edges) {
             waitFor(CloseLabel.of(self, scope, edge), sender);
         }
@@ -376,11 +417,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             waitFor(CloseScope.of(self, scope), sender);
         }
 
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
+        if(isScopeInitialized(scope)) {
+            releaseDelays(scope);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._initShare(scope, edges, sharing);
         }
     }
@@ -397,12 +438,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
+        resume(); // FIXME necessary?
 
-        if(isOwner(scope)) {
-            if(isScopeInitialized(scope)) {
-                releaseDelays(scope);
-            }
-        } else {
+        if(isScopeInitialized(scope)) {
+            releaseDelays(scope);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._doneSharing(scope);
         }
     }
@@ -411,12 +453,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
+        resume(); // FIXME necessary?
 
-        if(isOwner(scope)) {
-            if(isEdgeClosed(scope, edge)) {
-                releaseDelays(scope, edge);
-            }
-        } else {
+        if(isEdgeClosed(scope, edge)) {
+            releaseDelays(scope, edge);
+        }
+
+        if(!isOwner(scope)) {
             self.async(parent)._closeEdge(scope, edge);
         }
     }
@@ -434,27 +477,37 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender,
-            ScopePath<S, L> path, LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF,
-            DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            IActorRef<? extends IUnit<S, L, D, ?>> origin, boolean record, ScopePath<S, L> path, LabelWf<L> labelWF,
+            LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+        final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
         logger.debug("got _query from {}", sender);
+
         final boolean external = !sender.equals(self);
-        final Set.Transient<IRecordedQuery<S, L, D>> recordedQueries = CapsuleUtil.transientSet();
-        ITypeCheckerContext<S, L, D> queryContext = queryContext(recordedQueries);
+        final ImmutableSet.Builder<IRecordedQuery<S, L, D>> transitiveQueries = ImmutableSet.builder();
+        final ImmutableSet.Builder<IRecordedQuery<S, L, D>> predicateQueries = ImmutableSet.builder();
+        final ITypeCheckerContext<S, L, D> queryContext = queryContext(predicateQueries, origin);
 
-        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder) {
+        final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
 
-            @Override public Optional<IFuture<Env<S, L, D>>> externalEnv(ScopePath<S, L> path, LabelWf<L> re,
-                    LabelOrder<L> labelOrder) {
+            @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
+                    LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    return Optional.empty();
+                    return context.localEnv(path, re, cancel).thenApply(ans -> {
+                        if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
+                            recordedQueries.add(RecordedQuery.of(path, datumScopes(ans), re, dataWF, ans));
+                        }
+
+                        return ans;
+                    });
                 } else {
-                    return Optional.of(getOwner(scope).thenCompose(owner -> {
+                    return getOwner(scope).thenCompose(owner -> {
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
                         final IFuture<IQueryAnswer<S, L, D>> result =
-                                self.async(owner)._query(path, re, dataWF, labelOrder, dataEquiv);
+                                self.async(owner)._query(origin, path, re, dataWF, labelOrder, dataEquiv);
                         final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
                         waitFor(wf, owner);
                         if(external) {
@@ -462,24 +515,33 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         } else {
                             stats.outgoingQueries += 1;
                         }
-                        return result.whenComplete((ans, ex) -> {
-                            logger.debug("got answer from {}", sender);
-                            if(ex == null) {
-                                // TODO: incorporate query validation in separate confirmation algorithm, and record only local queries.
-                                recordedQueries.__insert(
-                                        RecordedQuery.of(scope, labelWF, dataWF, labelOrder, dataEquiv, ans.env()));
+                        return result.thenApply(ans -> {
+                            if(isQueryRecordingEnabled()) {
+                                if(external) {
+                                    // For external queries, track this query as transitive.
+                                    transitiveQueries
+                                            .add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF, ans.env()));
+                                    transitiveQueries.addAll(ans.transitiveQueries());
+                                    predicateQueries.addAll(ans.predicateQueries());
+                                } else if(record) {
+                                    // For local query, record it as such.
+                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF,
+                                            ans.env(), false));
+                                    recordedQueries.addAll(ans.transitiveQueries());
+                                    recordedQueries.addAll(ans.predicateQueries());
+                                }
                             }
-                            resume();
-                            granted(wf, owner);
-                        }).thenApply(ans -> {
-                            recordedQueries.__insertAll(ans.innerQueries());
                             return ans.env();
+                        }).whenComplete((env, ex) -> {
+                            logger.debug("got answer from {}", sender);
+                            granted(wf, owner);
+                            resume();
                         });
-                    }));
+                    });
                 }
             }
 
-            @Override protected IFuture<Optional<D>> getDatum(S scope) {
+            @Override public IFuture<Optional<D>> getDatum(S scope) {
                 return isComplete(scope, EdgeOrData.data(), sender).thenCompose(__ -> {
                     final Optional<D> datum;
                     if(!(datum = scopeGraph.get().getData(scope)).isPresent()) {
@@ -500,7 +562,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             ret = internalResult.whenComplete((rep, ex) -> {
                                 self.assertOnActorThread();
                                 granted(token, self);
+                                resume();
                             });
+                            resume();
                         }
                         return ret.thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());
@@ -512,13 +576,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
 
-            @Override protected IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
                 return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, label);
                 });
             }
 
-            @Override protected IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
                 stats.dataWfChecks += 1;
                 final IFuture<Boolean> result;
                 if(external || dataWfInternal == null) {
@@ -541,7 +605,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
             }
 
-            @Override protected IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
                 stats.dataLeqChecks += 1;
                 final IFuture<Boolean> result;
                 if(external || dataEquivInternal == null) {
@@ -569,86 +633,74 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             }
 
         };
+        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder, nrc);
 
         final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
-        return result.<IQueryAnswer<S, L, D>>thenApply(env -> QueryAnswer.of(env, recordedQueries.freeze()));
+        return result.thenApply(env -> QueryAnswer.of(env, transitiveQueries.build(), predicateQueries.build()));
     }
 
-    private final ITypeCheckerContext<S, L, D> queryContext(Set.Transient<IRecordedQuery<S, L, D>> queries) {
-        return new ITypeCheckerContext<S, L, D>() {
+    private final ITypeCheckerContext<S, L, D> queryContext(ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries,
+            IActorRef<? extends IUnit<S, L, D, ?>> origin) {
+        return new AbstractQueryTypeCheckerContext<S, L, D, R>() {
 
             @Override public String id() {
                 return self.id() + "#query";
             }
 
-            @SuppressWarnings("unused") @Override public <Q> IFuture<IUnitResult<S, L, D, Q>> add(String id,
-                    ITypeChecker<S, L, D, Q> unitChecker, List<S> rootScopes, boolean changed) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
-                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public S freshScope(String baseName, Iterable<L> edgeLabels,
-                    boolean data, boolean sharing) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void shareLocal(S scope) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void setDatum(S scope, D datum) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void addEdge(S source, L label, S target) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void closeEdge(S source, L label) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @SuppressWarnings("unused") @Override public void closeScope(S scope) {
-                throw new UnsupportedOperationException("Unsupported in query context.");
-            }
-
-            @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+            @Override public IFuture<Set.Immutable<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                     LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                     @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
                 // does not require the Unit to be ACTIVE
 
                 final ScopePath<S, L> path = new ScopePath<>(scope);
-                final IFuture<IQueryAnswer<S, L, D>> result =
-                        doQuery(self, path, labelWF, labelOrder, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                // If record is true, a potentially hidden scope from the predicate may leak to the recordedQueries of the receiver.
+                final IFuture<IQueryAnswer<S, L, D>> result = doQuery(self, origin, false, path, labelWF, labelOrder,
+                        dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
                 final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
                 waitFor(wf, self);
                 stats.localQueries += 1;
-                return self.schedule(result).whenComplete((ans, ex) -> {
+                return self.schedule(result).thenApply(ans -> {
+                    if(isQueryRecordingEnabled()) {
+                        // Type-checkers can embed scopes in their predicates that are not accessible from the outside.
+                        // If such a query is confirmed, the scope graph differ will never produce a scope diff for it,
+                        // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
+                        // Hence, we just ignore it.
+                        if(!context.scopeId(path.getTarget()).equals(origin.id())) {
+                            queries.add(
+                                    ARecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env(), true));
+                        }
+                        ans.transitiveQueries().forEach(q -> queries.add(q.withIncludePatches(false)));
+                        queries.addAll(ans.predicateQueries());
+                    }
+                    return CapsuleUtil.<IResolutionPath<S, L, D>>toSet(ans.env());
+                }).whenComplete((ans, ex) -> {
                     granted(wf, self);
-                }).thenApply(ans -> {
-                    queries.__insertAll(ans.innerQueries());
-                    return CapsuleUtil.toSet(ans.env());
+                    resume(); // FIXME needed?
                 });
             }
         };
+    }
+
+    protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+            IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+        logger.debug("rec pquery from {}", sender);
+        // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
+        final INameResolutionContext<S, L, D> nrc = new StaticNameResolutionContext(sender, scopeGraph,
+                new StaticQueryContext(sender, scopeGraph), dataWF, dataEquiv);
+        final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
+
+        return nr.env(path, labelWF, context.cancel());
     }
 
     protected final boolean isOwner(S scope) {
         return context.scopeId(scope).equals(self.id());
     }
 
-    protected IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
+    protected final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> getOwner(S scope) {
         final IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = context.owner(scope);
         if(future.isDone()) {
             return future;
@@ -672,13 +724,21 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return isOwner(scope);
     }
 
+    private Set<S> datumScopes(Env<S, L, D> env) {
+        return Streams.stream(env).map(ResolutionPath::getDatum).map(context::getScopes)
+                .reduce(CapsuleUtil.immutableSet(), Set.Immutable::__insertAll);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Scopegraph Capture
+    ///////////////////////////////////////////////////////////////////////////
+
     ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
     private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess =
-            MultiSetMap.Immutable.of();
+    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess = MultiSetMap.Immutable.of();
 
     protected boolean isWaiting() {
         return !waitFors.isEmpty();
@@ -686,6 +746,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected boolean isWaitingFor(IWaitFor<S, L, D> token) {
         return waitFors.contains(token);
+    }
+
+    protected boolean isWaitingFor(IWaitFor<S, L, D> token, IActor<? extends IUnit<S, L, D, ?>> from) {
+        return waitForsByProcess.get(new UnitProcess<>(from)).contains(token);
+    }
+
+    protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> from) {
+        return waitForsByProcess.get(new UnitProcess<>(from)).count(token);
     }
 
     private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
@@ -701,6 +769,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
+        resume(); // Always needed?
         logger.debug("{} wait for {}/{}", self, process, token);
         waitFors = waitFors.add(token);
         waitForsByProcess = waitForsByProcess.put(process, token);
@@ -711,6 +780,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
+        // resume();
         if(!waitForsByProcess.contains(process, token)) {
             logger.error("{} not waiting for granted {}/{}", self, process, token);
             throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
@@ -737,10 +807,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             unitResult.complete(UnitResult.<S, L, D, R>builder()
                 .id(self.id())
                 .scopeGraph(scopeGraph.get())
-                .localScopeGraph(localScopeGraph())
                 .queries(recordedQueries)
                 .rootScopes(rootScopes)
-                .analysis(analysis.get())
+                .scopes(scopes.freeze())
+                .result(analysis.get())
                 .failures(failures)
                 .subUnitResults(subUnitResults)
                 .stats(stats)
@@ -752,10 +822,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         } else {
             logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByProcess);
         }
-    }
-
-    protected IScopeGraph.Immutable<S, L, D> localScopeGraph() {
-        return scopeGraph.get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -792,7 +858,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private IFuture<org.metaborg.util.unit.Unit> isComplete(S scope, EdgeOrData<L> edge,
             IActorRef<? extends IUnit<S, L, D, ?>> sender) {
-        assertOwnScope(scope);
+        assertOwnOrSharedScope(scope);
         if(isEdgeClosed(scope, edge)) {
             return CompletableFuture.completedFuture(org.metaborg.util.unit.Unit.unit);
         } else {
@@ -818,6 +884,97 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     }
 
+    protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
+
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        private final DataLeq<S, L, D> dataLeq;
+        private final ITypeCheckerContext<S, L, D> queryContext;
+        private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+        private final DataWf<S, L, D> dataWf;
+
+        protected StaticNameResolutionContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                IScopeGraph.Immutable<S, L, D> scopeGraph, ITypeCheckerContext<S, L, D> queryContext,
+                DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataLeq) {
+            this.sender = sender;
+            this.queryContext = queryContext;
+            this.scopeGraph = scopeGraph;
+            this.dataWf = dataWf;
+            this.dataLeq = dataLeq;
+        }
+
+        @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
+                LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
+            final S scope = path.getTarget();
+            if(canAnswer(scope)) {
+                logger.debug("local p_env {}", scope);
+                return context.localEnv(path, re, cancel);
+            }
+            return getOwner(scope).thenCompose(owner -> {
+                logger.debug("remote p_env from {}", owner);
+                final ICompletableFuture<Env<S, L, D>> future = new CompletableFuture<>();
+                final PQuery<S, L, D> query = PQuery.of(sender, path, dataWf, future);
+                waitFor(query, owner);
+                self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq).whenComplete((env, ex) -> {
+                    logger.debug("got p_env from {}", sender);
+                    granted(query, owner);
+                    future.complete(env, ex);
+                    resume();
+                });
+
+                return future;
+            });
+        }
+
+        @Override public IFuture<Optional<D>> getDatum(S scope) {
+            return CompletableFuture
+                    .completedFuture(scopeGraph.getData(scope).map(AbstractUnit.this::getPreviousDatum));
+        }
+
+        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            return CompletableFuture.completedFuture(scopeGraph.getEdges(scope, label));
+        }
+
+        @Override public IFuture<Boolean> dataWf(D datum, ICancel cancel) throws InterruptedException {
+            return dataWf.wf(datum, queryContext, cancel);
+        }
+
+        @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            return dataLeq.leq(d1, d2, queryContext, cancel);
+        }
+
+        @Override public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+            return dataLeq.alwaysTrue(queryContext, cancel);
+        }
+    }
+
+    protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
+
+        private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
+        private final IScopeGraph.Immutable<S, L, D> scopeGraph;
+
+        public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
+                IScopeGraph.Immutable<S, L, D> scopeGraph) {
+            this.sender = sender;
+            this.scopeGraph = scopeGraph;
+        }
+
+        @Override public String id() {
+            return self.id() + "#prev-query";
+        }
+
+        @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+                LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            final INameResolutionContext<S, L, D> pContext =
+                    new StaticNameResolutionContext(sender, scopeGraph, this, dataWF, dataEquiv);
+            // @formatter:off
+            return new NameResolution<>(edgeLabels, labelOrder, pContext)
+                .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
+                .thenApply(CapsuleUtil::toSet);
+            // @formatter:on
+        }
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Deadlock handling
     ///////////////////////////////////////////////////////////////////////////
@@ -841,59 +998,116 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     @Override public void _deadlocked(java.util.Set<IProcess<S, L, D>> nodes) {
-        if(!failDelays(nodes)) {
-            logger.debug("No delays to fail. Still waiting for {}.", waitForsByProcess);
+        self.assertOnActorThread();
+        if(!nodes.contains(process)) {
+            throw new IllegalStateException("Deadlock unrelated to this unit.");
+        }
+
+        if(nodes.size() == 1) {
+            handleDeadlock(nodes);
+        } else if(failDelays(nodes)) {
             resume();
         }
     }
 
     protected void handleDeadlock(java.util.Set<IProcess<S, L, D>> nodes) {
         logger.debug("{} deadlocked with {}", this, nodes);
+
         if(!nodes.contains(process)) {
             throw new IllegalStateException("Deadlock unrelated to this unit.");
         }
-        if(isIncrementalDeadlockEnabled()) {
-            handleDeadlockIncremental(nodes);
-        } else {
-            handleDeadlockRegular(nodes);
-        }
-    }
 
-    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes) {
-        AggregateFuture.forAll(nodes, node -> node.from(self, context)._requireRestart()).whenComplete((rors, ex) -> {
-            logger.info("Received patches: {}.", rors);
-            if(rors.stream().noneMatch(this::canProgress)) {
-                handleDeadlockRegular(nodes);
+        if(nodes.size() == 1) {
+            if(!failDelays(nodes)) {
+                failAll();
             } else {
-                // @formatter:off
-                rors.stream().reduce(StateSummary::combine).get().accept(
-                    () -> {
-                        logger.info("Restarting all involved units: {}.", nodes);
-                        if(ex != null) {
-                            failures.add(ex);
-                        }
-                        nodes.forEach(node -> node.from(self, context)._restart());
-                    },
-                    ptcs -> {
-                        logger.info("Releasing all involved units: {}.", ptcs);
-                        nodes.forEach(node -> node.from(self, context)._release(ptcs));
-                    },
-                    ptcs -> {
-                        logger.error("Cannot make progress when all units are already released.");
-                        throw new IllegalStateException("Cannot make progress when all units are already released.");
-                    });
-                // @formatter:on
+                resume();
+            }
+            return;
+        }
+
+        AggregateFuture.forAll(nodes, node -> node.from(self, context)._state()).whenComplete((states, ex) -> {
+            if(ex != null) {
+                failures.add(ex);
+                return;
+            }
+
+            final GraphBuilder<IProcess<S, L, D>> wfgBuilder = GraphBuilder.of();
+            states.forEach(state -> {
+                final IProcess<S, L, D> self = state.getSelf();
+                wfgBuilder.addVertex(self);
+                state.getDependencies().forEach(dep -> {
+                    wfgBuilder.addEdge(self, dep);
+                });
+            });
+
+            final IGraph<IProcess<S, L, D>> wfg = wfgBuilder.build();
+
+            logger.debug("{} computing SCCs in graph.");
+
+            final java.util.Set<java.util.Set<IProcess<S, L, D>>> sccs = DeadlockUtils.sccs(wfg);
+
+            for(java.util.Set<IProcess<S, L, D>> scc : sccs) {
+                if(isIncrementalDeadlockEnabled()) {
+                    // @formatter:off
+                    java.util.Set<StateSummary<S, L,D>> subStates = states.stream()
+                            .filter(ss -> scc.contains(ss.getSelf()))
+                            .collect(Collectors.toSet());
+                    // @formatter:on
+                    handleDeadlockIncremental(scc, subStates);
+                } else {
+                    handleDeadlockRegular(scc);
+                }
             }
         });
     }
 
-    private boolean canProgress(StateSummary<S> state) {
-        return state.match(() -> false, __ -> true, __ -> false);
+    private void handleDeadlockIncremental(java.util.Set<IProcess<S, L, D>> nodes,
+            Collection<StateSummary<S, L, D>> states) {
+        logger.debug("Handling incremental deadlock: {}.", states);
+        final Map<StateSummary.State, java.util.Set<StateSummary<S, L, D>>> groupedStates =
+                states.stream().collect(Collectors.groupingBy(StateSummary::getState, Collectors.toSet()));
+
+        if(!groupedStates.containsKey(StateSummary.State.UNKNOWN)) {
+            logger.debug("No restartable units, doing regular deadlock handling.");
+            handleDeadlockRegular(nodes);
+        } else if(!groupedStates.containsKey(StateSummary.State.ACTIVE)) {
+            // No active units in cluster, release all involved units.
+            logger.debug("Releasing all involved units.");
+            groupedStates.get(StateSummary.State.UNKNOWN)
+                    .forEach(node -> node.getSelf().from(self, context)._release());
+        } else {
+            final java.util.Set<StateSummary<S, L, D>> activeProcesses = groupedStates.get(StateSummary.State.ACTIVE);
+            // @formatter:off
+            final java.util.Set<IProcess<S, L, D>> restarts = groupedStates.get(StateSummary.State.UNKNOWN).stream()
+                    .filter(node -> shouldRestart(node, activeProcesses))
+                    .map(StateSummary::getSelf)
+                    .collect(Collectors.toSet());
+            // @formatter:on
+            if(restarts.isEmpty()) {
+                logger.warn(
+                        "Conservative deadlock detection failed: Active units have no incoming dependencies elegible for restart. Restarting all unknown units");
+                groupedStates.get(StateSummary.State.UNKNOWN).forEach(node -> node.getSelf().from(self, context)._restart());
+            } else {
+                logger.debug("Restarting {}.", restarts);
+                restarts.forEach(node -> node.from(self, context)._restart());
+                logger.debug("Restarted {}.", restarts);
+            }
+        }
+    }
+
+    private boolean shouldRestart(StateSummary<S, L, D> node, Collection<StateSummary<S, L, D>> activeProcesses) {
+        // @formatter:off
+        java.util.Set<IProcess<S, L, D>> activeNodes = activeProcesses.stream()
+            .map(StateSummary::getSelf)
+            .collect(Collectors.toSet());
+        // @formatter:on
+        return node.getDependencies().stream().anyMatch(activeNodes::contains);
     }
 
     private void handleDeadlockRegular(java.util.Set<IProcess<S, L, D>> nodes) {
         // All units are already active, proceed with regular deadlock handling
-        if(nodes.size() == 1) {
+        if(nodes.size() == 1 && nodes.contains(process)) {
             logger.debug("{} self-deadlocked with {}", this, getTokens(process));
             if(failDelays(nodes)) {
                 resume(); // resume to ensure further deadlock detection after these are handled
@@ -901,7 +1115,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 failAll();
             }
         } else {
-            // nodes will include self
             for(IProcess<S, L, D> node : nodes) {
                 node.from(self, context)._deadlocked(nodes);
             }
@@ -914,7 +1127,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
      *
      * The set of open scopes and labels is unchanged, and it is safe for the type checker to continue.
      */
-    private boolean failDelays(java.util.Set<IProcess<S, L, D>> nodes) {
+    private boolean failDelays(Collection<IProcess<S, L, D>> nodes) {
         final Set.Transient<ICompletable<?>> deadlocked = CapsuleUtil.transientSet();
         for(Delay delay : delays.inverse().keySet()) {
             if(nodes.contains(process(delay.sender))) {
@@ -931,9 +1144,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     closeScope -> {},
                     closeLabel -> {},
                     query -> {},
+                    pQuery -> {},
                     confirm -> {},
-                    complete -> {},
-                    datum -> {},
                     match -> {},
                     result  -> {},
                     typeCheckerState -> {
@@ -943,7 +1155,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         }
                     },
                     differResult -> {},
-                    activate -> {},
+                    differState -> {
+                        /* if(nodes.contains(process(differState.origin()))) {
+                            logger.debug("{} fail {}", self, differState);
+                            deadlocked.__insert(differState.future());
+                        } */
+                    },
+                    envDifferState -> {
+                        /* if(nodes.contains(process(envDifferState.origin()))) {
+                            logger.debug("{} fail {}", self, envDifferState);
+                            deadlocked.__insert(envDifferState.future());
+                        } */
+                    },
                     unitAdd -> {}
                 ));
                 // @formatter:on
@@ -999,17 +1222,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     logger.error("Unexpected remaining query: " + query);
                     throw new IllegalStateException("Unexpected remaining query: " + query);
                 },
+                pQuery -> {
+                    logger.error("Unexpected remaining query: " + pQuery);
+                    throw new IllegalStateException("Unexpected remaining query: " + pQuery);
+                },
                 confirm -> {
                     logger.error("Unexpected remaining confirmation request: " + confirm);
                     throw new IllegalStateException("Unexpected remaining confirmation request: " + confirm);
-                },
-                complete -> {
-                    logger.error("Unexpected remaining completeness query: " + complete);
-                    self.complete(complete.future(), null, new DeadlockException("Unexpected remaining completeness query: " + complete));
-                },
-                datum -> {
-                    logger.error("Unexpected remaining datum query: " + datum);
-                    throw new IllegalStateException("Unexpected remaining datum query: " + datum);
                 },
                 match -> {
                     logger.error("Unexpected remaining match query: " + match);
@@ -1029,9 +1248,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     logger.error("Differ could not complete.");
                     self.complete(differResult.future(), null, new DeadlockException("Type checker deadlocked."));
                 },
-                activate -> {
-                    logger.error("Unit neither activated nor released.");
-                    self.complete(activate.future(), null, new DeadlockException("Type checker deadlocked."));
+                differState -> {
+                    logger.error("Unexpected remaining differ state.");
+                    self.complete(differState.future(), null, new DeadlockException("Type checker deadlocked."));
+                },
+                envDifferState -> {
+                    logger.error("Unexpected remaining environment differ state.");
+                    self.complete(envDifferState.future(), null, new DeadlockException("Type checker deadlocked."));
                 },
                 unitAdd -> {
                     logger.error("Requested Unit {} was never added.", unitAdd.unitId());
@@ -1040,6 +1263,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             ));
             // @formatter:on
         }
+    }
+
+    protected boolean isIncrementalEnabled() {
+        return context.settings().isIncremental();
+    }
+
+    protected boolean isQueryRecordingEnabled() {
+        return context.settings().isIncremental();
     }
 
     protected boolean isIncrementalDeadlockEnabled() {
@@ -1070,98 +1301,93 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Scope graph diffing
     ///////////////////////////////////////////////////////////////////////////
 
-    private class DifferContext implements IDifferContext<S, L, D> {
+    protected IDifferContext<S, L, D> differContext(Function1<D, D> instantiateData) {
+        return new IDifferContext<S, L, D>() {
 
-        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
-            // Most be done via owner, because delays on a shared, non-owned scope are not activated
-            // and not desired to be activated, because not any operation on them can proceed
-            return getOwner(scope).thenCompose(owner -> {
-                final ICompletableFuture<Iterable<S>> future = new CompletableFuture<>();
-                final Complete<S, L, D> complete = Complete.of(self, scope, EdgeOrData.edge(label), future);
-
-                waitFor(complete, owner);
-                self.async(owner)._isComplete(scope, EdgeOrData.edge(label)).thenApply(__ -> {
+            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+                return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, label);
-                }).whenComplete((r, ex) -> {
-                    granted(complete, owner);
-                    resume();
-                    future.complete(r, ex);
                 });
-                return future;
-            });
-        }
+            }
 
-        @Override public IFuture<Set.Immutable<L>> labels(S scope) {
-            assertOwnOrSharedScope(scope);
-            // TODO make more precise with labels for which scope was initialized.
-            return CompletableFuture.completedFuture(edgeLabels);
-        }
+            @Override public IFuture<Set.Immutable<L>> labels(S scope) {
+                assertOwnOrSharedScope(scope);
+                // TODO make more precise with labels for which scope was initialized.
+                return CompletableFuture.completedFuture(edgeLabels);
+            }
 
-        @Override public IFuture<Optional<D>> datum(S scope) {
-            // TODO is it needed to fetch data from remote scope????
-            return getOwner(scope).thenCompose(owner -> {
-                final Datum<S, L, D> datum = Datum.of(self, scope);
-                waitFor(datum, owner);
-                return self.async(owner)._datum(scope).whenComplete((__, ___) -> {
-                    granted(datum, owner);
-                    resume();
+            @Override public IFuture<Optional<D>> datum(S scope) {
+                assertOwnScope(scope);
+                return isComplete(scope, EdgeOrData.data(), self).thenCompose(__ -> {
+                    final Optional<D> datum = scopeGraph.get().getData(scope);
+                    if(!datum.isPresent()) {
+                        return CompletableFuture.completedFuture(datum);
+                    }
+
+                    final ICompletableFuture<D> future = new CompletableFuture<>();
+                    final TypeCheckerState<S, L, D> state =
+                            TypeCheckerState.of(self, Arrays.asList(datum.get()), future);
+                    waitFor(state, self);
+                    getExternalDatum(datum.get()).whenComplete(future::complete);
+                    return future.whenComplete((r, ex) -> {
+                        granted(state, self);
+                        resume(); // FIXME necessary?
+                    }).thenApply(Optional::of);
                 });
-            });
-        }
+            }
+
+            @Override public Optional<D> rawDatum(S scope) {
+                return scopeGraph.get().getData(scope).map(instantiateData::apply);
+            }
+
+            @Override public boolean available(S scope) {
+                return scopes.contains(scope);
+            }
+
+            @Override public String toString() {
+                return "DifferContext(" + self.id() + "):\n"
+                        + ScopeGraphUtil.toString(scopeGraph.get(), instantiateData);
+            }
+        };
     }
-
-    private class DifferOps implements IDifferOps<S, L, D> {
-
-        private DifferOps() {
-        }
-
-        @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
-            return context.scopeId(previousScope).equals(context.scopeId(currentScope));
-        }
-
-        @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
-            return context.matchDatums(currentDatum, previousDatum);
-        }
-
-        @Override public Collection<S> getScopes(D d) {
-            return context.getScopes(d);
-        }
-
-        @Override public D embed(S scope) {
-            return context.embed(scope);
-        }
-
-        @Override public boolean ownScope(S scope) {
-            return context.scopeId(scope).equals(self.id());
-        }
-
-        @Override public boolean ownOrSharedScope(S currentScope) {
-            return scopes.contains(currentScope);
-        }
-
-        @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
-            return getOwner(previousScope).thenCompose(owner -> {
-                final Match<S, L, D> match = Match.of(self, previousScope);
-                waitFor(match, owner);
-                return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
-                    granted(match, owner);
-                    resume();
-                });
-            });
-        }
-    }
-
-
-    private IDifferContext<S, L, D> differContext = new DifferContext();
-
-    protected IDifferContext<S, L, D> differContext() {
-        return differContext;
-    }
-
-    private IDifferOps<S, L, D> differOps = new DifferOps();
 
     protected IDifferOps<S, L, D> differOps() {
-        return differOps;
+        return new IDifferOps<S, L, D>() {
+            @Override public boolean isMatchAllowed(S currentScope, S previousScope) {
+                return context.scopeId(previousScope).equals(context.scopeId(currentScope));
+            }
+
+            @Override public Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum) {
+                return context.matchDatums(currentDatum, previousDatum);
+            }
+
+            @Override public Collection<S> getScopes(D d) {
+                return context.getScopes(d);
+            }
+
+            @Override public D embed(S scope) {
+                return context.embed(scope);
+            }
+
+            @Override public boolean ownScope(S scope) {
+                return context.scopeId(scope).equals(self.id());
+            }
+
+            @Override public boolean ownOrSharedScope(S currentScope) {
+                return scopes.contains(currentScope);
+            }
+
+            @Override public IFuture<Optional<S>> externalMatch(S previousScope) {
+                return getOwner(previousScope).thenCompose(owner -> {
+                    final Match<S, L, D> match = Match.of(self, previousScope);
+                    waitFor(match, owner);
+                    return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
+                        granted(match, owner);
+                        resume();
+                    });
+                });
+            }
+        };
     }
 
     ///////////////////////////////////////////////////////////////////////////
