@@ -980,7 +980,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 .collect(Collectors.toCollection(HashSet::new));
             // @formatter:on
             doInitShare(self, currentScope, edges, false);
-            for(L label : edgeLabels) {
+            for(L label : edgeLabels) { // iterate over all labels, so that also labels for which no edge exist are properly closed.
                 for(S target : snapshot.scopeGraph().getEdges(previousScope, label)) {
                     if(!ownedScope) {
                         final S newTarget = matchedBySharing.getValueOrDefault(target, target);

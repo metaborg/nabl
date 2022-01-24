@@ -1,6 +1,7 @@
 package mb.p_raffrayi;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -1293,6 +1294,9 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertTrue(result.allFailures().isEmpty());
+
+        assertTrue(result.subUnitResults().containsKey("sub1"));
+        assertFalse(result.subUnitResults().containsKey("sub2"));
     }
 
     ///////////////////////////////////////////////////////////////////////////
