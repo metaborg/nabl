@@ -12,7 +12,6 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set;
-import mb.p_raffrayi.impl.StateCapture;
 import mb.p_raffrayi.impl.TypeCheckerResult;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -50,6 +49,10 @@ public class DifferTests extends PRaffrayiTestBase {
                             return CompletableFuture.completedFuture(Result.of(root));
                         });
                     }
+
+                    @Override public EmptyI snapshot() {
+                        return EmptyI.of();
+                    }
                 }, root, ScopeGraph.Immutable.of());
 
         IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, Scope>, EmptyI>> result = future.asJavaCompletion().get();
@@ -83,6 +86,11 @@ public class DifferTests extends PRaffrayiTestBase {
                             return CompletableFuture.completedFuture(Result.of(Arrays.asList(root, d)));
                         });
                     }
+
+                    @Override public EmptyI snapshot() {
+                        return EmptyI.of();
+                    }
+
                 }, root, ScopeGraph.Immutable.of());
 
         IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, Result<Integer, List<Scope>>, EmptyI>> result = future.asJavaCompletion().get();
@@ -139,6 +147,11 @@ public class DifferTests extends PRaffrayiTestBase {
                     return subResult.thenApply(__ -> EmptyResult.of());
                 });
             }
+
+            @Override public EmptyI snapshot() {
+                return EmptyI.of();
+            }
+
         }, labels, true, parentResult).thenApply(result -> {
             return (IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, R, EmptyI>>) result.subUnitResults().get("sub");
         });

@@ -40,7 +40,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     @Test(timeout = 10000) public void testSingleNoop() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                this.run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                this.run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -50,13 +50,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testSingleOneScope() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -69,13 +70,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of(1));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000000) public void testSingleOneScope_NoClose() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -87,7 +89,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of(1));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
         assertNotNull(result.result());
         assertFalse(result.failures().isEmpty());
     }
@@ -95,7 +98,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     @Test(timeout = 10000) public void testSingleParentChild() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -103,7 +106,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                                unit.add("sub", new BaseTypeCheckerI() {
 
                                     @Override public IFuture<EmptyI> run(
                                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -122,14 +125,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testSingleParentChild_ParentNoClose()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -137,7 +141,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> subFuture =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                                unit.add("sub", new BaseTypeCheckerI() {
 
                                     @Override public IFuture<EmptyI> run(
                                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -154,7 +158,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
 
         //        assertEquals(2, result.unitResults().size());
         //
@@ -169,23 +174,22 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testSingleParentChild_ChildNoInitRoot()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
-                        final IFuture<?> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                        final IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerI() {
 
-                                    @Override public IFuture<EmptyI> run(
-                                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
-                                            List<Scope> roots) {
-                                        return CompletableFuture.completedFuture(EmptyI.of());
-                                    }
+                            @Override public IFuture<EmptyI> run(
+                                    IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
+                                    List<Scope> roots) {
+                                return CompletableFuture.completedFuture(EmptyI.of());
+                            }
 
-                                }, Arrays.asList(s));
+                        }, Arrays.asList(s));
 
                         unit.closeScope(s);
 
@@ -194,7 +198,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
 
         //        assertEquals(2, result.unitResults().size());
         //
@@ -209,25 +214,24 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testSingleParentChild_ChildNoCloseEdge()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
                         Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
 
-                        final IFuture<?> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                        final IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerI() {
 
-                                    @Override public IFuture<EmptyI> run(
-                                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
-                                            List<Scope> roots) {
-                                        Scope root = roots.get(0);
-                                        unit.initScope(root, Set.Immutable.of(1), false);
-                                        return CompletableFuture.completedFuture(EmptyI.of());
-                                    }
+                            @Override public IFuture<EmptyI> run(
+                                    IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
+                                    List<Scope> roots) {
+                                Scope root = roots.get(0);
+                                unit.initScope(root, Set.Immutable.of(1), false);
+                                return CompletableFuture.completedFuture(EmptyI.of());
+                            }
 
-                                }, Arrays.asList(s));
+                        }, Arrays.asList(s));
 
                         unit.closeScope(s);
 
@@ -236,7 +240,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
 
         //        assertEquals(2, result.unitResults().size());
     }
@@ -245,7 +250,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
     @Test(timeout = 10000) public void testTwoDatumsCloseEdgeDeadlockCycle()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -263,14 +268,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testThreeDatumsCloseEdgeDeadlockCycle()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -289,13 +295,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2, 3));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testTwoDatumsCloseEdgeCycle() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -313,13 +320,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testThreeDatumsCloseEdgeCycle() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -338,14 +346,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2, 3));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testDatumCloseEdgeAndResolve_TargetStuckOnExternalRepresentation()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -363,13 +372,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testDatumCloseEdgeAndResolve_TargetStuckOnFailingExternalRepresentation()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -388,13 +398,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testDatumCloseEdgeAndResolve_TargetStuckOnExceptionalExternalRepresentation()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -413,14 +424,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testDatumResolveAndCloseEdge_TargetStuckOnExternalRepresentation()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -438,14 +450,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testTwoDatumsSetDatumDeadlockCycle()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -463,14 +476,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testThreeDatumsSetDatumDeadlockCycle()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -489,13 +503,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2, 3));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testTwoDatumsSetDatumCycle() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -513,13 +528,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testThreeDatumsSetDatumCycle() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -538,13 +554,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2, 3));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testDatumSetDatumAndResolve_TargetStuckOnDatum()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -562,14 +579,15 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
     @Test(timeout = 10000) public void testDatumResolveAndSetDatum_TargetStuckOnDatum()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
@@ -587,12 +605,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Arrays.asList(1, 2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -602,12 +621,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailureInIncrementalRun() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -619,12 +639,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailureInExtractLocal() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -638,12 +659,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailureInCombine() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -658,12 +680,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailurePatch() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -678,12 +701,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testNoRunResult() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -693,12 +717,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testExceptionalRunResult() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -708,17 +733,18 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testExceptionalChildRunResult() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                             List<Scope> roots) {
-                        return unit.add("sub", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                        return unit.add("sub", new BaseTypeCheckerO() {
 
                             @Override public IFuture<EmptyO> run(
                                     IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -730,13 +756,14 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testExceptionalRunResult_NoClose()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
@@ -747,37 +774,37 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testFailureInQueryPredicate() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        final IFuture<?> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                        final IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerO() {
 
-                                    @Override public IFuture<EmptyO> run(
-                                            IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
-                                            List<Scope> rootScopes) {
-                                        final Scope s = rootScopes.get(0);
+                            @Override public IFuture<EmptyO> run(
+                                    IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
 
-                                        return unit.query(s, LabelWf.any(), LabelOrder.none(),
-                                                new DataWf<Scope, Object, IDatum>() {
-                                                    @Override public IFuture<Boolean> wf(IDatum d,
-                                                            ITypeCheckerContext<Scope, Object, IDatum> context,
-                                                            ICancel cancel) throws InterruptedException {
-                                                        throw new ExpectedFailure();
-                                                    }
-                                                }, DataLeq.none()).thenApply(r -> null);
-                                    }
+                                return unit.query(s, LabelWf.any(), LabelOrder.none(),
+                                        new DataWf<Scope, Object, IDatum>() {
+                                            @Override public IFuture<Boolean> wf(IDatum d,
+                                                    ITypeCheckerContext<Scope, Object, IDatum> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                throw new ExpectedFailure();
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
 
-                                }, Collections.singletonList(s));
+                        }, Collections.singletonList(s));
 
                         unit.closeScope(s);
 
@@ -786,39 +813,38 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testExceptionalQueryPredicateResult()
             throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        IFuture<?> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                        IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerO() {
 
-                                    @Override public IFuture<EmptyO> run(
-                                            IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
-                                            List<Scope> rootScopes) {
-                                        final Scope s = rootScopes.get(0);
+                            @Override public IFuture<EmptyO> run(
+                                    IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
 
-                                        return unit.query(s, LabelWf.any(), LabelOrder.none(),
-                                                new DataWf<Scope, Object, IDatum>() {
-                                                    @Override public IFuture<Boolean> wf(IDatum d,
-                                                            ITypeCheckerContext<Scope, Object, IDatum> context,
-                                                            ICancel cancel) throws InterruptedException {
-                                                        return CompletableFuture
-                                                                .completedExceptionally(new ExpectedFailure());
-                                                    }
-                                                }, DataLeq.none()).thenApply(r -> null);
-                                    }
+                                return unit.query(s, LabelWf.any(), LabelOrder.none(),
+                                        new DataWf<Scope, Object, IDatum>() {
+                                            @Override public IFuture<Boolean> wf(IDatum d,
+                                                    ITypeCheckerContext<Scope, Object, IDatum> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                return CompletableFuture.completedExceptionally(new ExpectedFailure());
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
 
-                                }, Collections.singletonList(s));
+                        }, Collections.singletonList(s));
 
                         unit.closeScope(s);
 
@@ -827,37 +853,37 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testNoQueryPredicateResult() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                run(".", new BaseTypeCheckerO() {
 
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
 
-                        IFuture<?> subResult =
-                                unit.add("sub", new ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO>() {
+                        IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerO() {
 
-                                    @Override public IFuture<EmptyO> run(
-                                            IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
-                                            List<Scope> rootScopes) {
-                                        final Scope s = rootScopes.get(0);
+                            @Override public IFuture<EmptyO> run(
+                                    IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
 
-                                        return unit.query(s, LabelWf.any(), LabelOrder.none(),
-                                                new DataWf<Scope, Object, IDatum>() {
-                                                    @Override public IFuture<Boolean> wf(IDatum d,
-                                                            ITypeCheckerContext<Scope, Object, IDatum> context,
-                                                            ICancel cancel) throws InterruptedException {
-                                                        return new CompletableFuture<>();
-                                                    }
-                                                }, DataLeq.none()).thenApply(r -> null);
-                                    }
+                                return unit.query(s, LabelWf.any(), LabelOrder.none(),
+                                        new DataWf<Scope, Object, IDatum>() {
+                                            @Override public IFuture<Boolean> wf(IDatum d,
+                                                    ITypeCheckerContext<Scope, Object, IDatum> context, ICancel cancel)
+                                                    throws InterruptedException {
+                                                return new CompletableFuture<>();
+                                            }
+                                        }, DataLeq.none()).thenApply(r -> null);
+                            }
 
-                                }, Collections.singletonList(s));
+                        }, Collections.singletonList(s));
 
                         unit.closeScope(s);
 
@@ -866,7 +892,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, Set.Immutable.of());
 
-        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Object, IDatum, TypeCheckerResult<Scope, Object, IDatum, EmptyO, EmptyO>> result =
+                future.asJavaCompletion().get();
     }
 
     @Test(timeout = 10000) public void testExceptionalCompletionInDWF()
@@ -875,32 +902,31 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final Integer lbl2 = 2;
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
 
-                        final IFuture<?> subUnitResult =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                        final IFuture<?> subUnitResult = unit.add("sub", new BaseTypeCheckerI() {
 
-                                    @Override public IFuture<EmptyI> run(
-                                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
-                                            List<Scope> rootScopes) {
-                                        final Scope s1 = rootScopes.get(0);
-                                        unit.initScope(s1, Arrays.asList(lbl1, lbl2), false);
+                            @Override public IFuture<EmptyI> run(
+                                    IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s1 = rootScopes.get(0);
+                                unit.initScope(s1, Arrays.asList(lbl1, lbl2), false);
 
-                                        final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
-                                        unit.setDatum(d, d);
+                                final Scope d = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d, d);
 
-                                        unit.addEdge(s, lbl1, d);
-                                        unit.closeEdge(s, lbl1);
+                                unit.addEdge(s, lbl1, d);
+                                unit.closeEdge(s, lbl1);
 
-                                        return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(),
-                                                DataLeq.none()).thenApply(env -> EmptyI.of());
-                                    }
-                                }, Arrays.asList(s));
+                                return unit.query(s1, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.none())
+                                        .thenApply(env -> EmptyI.of());
+                            }
+                        }, Arrays.asList(s));
 
                         unit.closeScope(s);
                         return unit.query(s, new SingleStepLabelWf(lbl1), LabelOrder.none(), new QueryDataWf(s, lbl2),
@@ -910,7 +936,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, CapsuleUtil.toSet(lbl1, lbl2));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
 
@@ -921,38 +948,37 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final Integer lbl3 = 3;
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
-                run(".", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                run(".", new BaseTypeCheckerI() {
 
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
                         final Scope s = unit.freshScope("s", Arrays.asList(), false, true);
 
-                        final IFuture<?> subUnitResult =
-                                unit.add("sub", new ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI>() {
+                        final IFuture<?> subUnitResult = unit.add("sub", new BaseTypeCheckerI() {
 
-                                    @Override public IFuture<EmptyI> run(
-                                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
-                                            List<Scope> rootScopes) {
-                                        final Scope s = rootScopes.get(0);
-                                        unit.initScope(s, Arrays.asList(lbl1, lbl2, lbl3), false);
+                            @Override public IFuture<EmptyI> run(
+                                    IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
+                                    List<Scope> rootScopes) {
+                                final Scope s = rootScopes.get(0);
+                                unit.initScope(s, Arrays.asList(lbl1, lbl2, lbl3), false);
 
-                                        final Scope d1 = unit.freshScope("d", Arrays.asList(), true, false);
-                                        unit.setDatum(d1, d1);
+                                final Scope d1 = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d1, d1);
 
-                                        final Scope d2 = unit.freshScope("d", Arrays.asList(), true, false);
-                                        unit.setDatum(d2, d2);
+                                final Scope d2 = unit.freshScope("d", Arrays.asList(), true, false);
+                                unit.setDatum(d2, d2);
 
-                                        unit.addEdge(s, lbl1, d1);
-                                        unit.addEdge(s, lbl2, d2);
+                                unit.addEdge(s, lbl1, d1);
+                                unit.addEdge(s, lbl2, d2);
 
-                                        unit.closeEdge(s, lbl1);
-                                        unit.closeEdge(s, lbl2);
+                                unit.closeEdge(s, lbl1);
+                                unit.closeEdge(s, lbl2);
 
-                                        return unit.query(s, LabelWf.any(), LabelOrder.none(), DataWf.any(),
-                                                DataLeq.none()).thenApply(env -> EmptyI.of());
-                                    }
-                                }, Arrays.asList(s));
+                                return unit.query(s, LabelWf.any(), LabelOrder.none(), DataWf.any(), DataLeq.none())
+                                        .thenApply(env -> EmptyI.of());
+                            }
+                        }, Arrays.asList(s));
 
                         unit.closeScope(s);
                         return unit
@@ -964,12 +990,29 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
                 }, CapsuleUtil.toSet(lbl1, lbl2, lbl3));
 
-        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, Integer, IDatum, TypeCheckerResult<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
+                future.asJavaCompletion().get();
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
-    private final class ResolveBeforeCloseEdgeDatum implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private abstract class BaseTypeCheckerI implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+
+        @Override public EmptyI snapshot() {
+            return EmptyI.of();
+        }
+
+    }
+
+    private abstract class BaseTypeCheckerO implements ITypeChecker<Scope, Object, IDatum, EmptyO, EmptyO> {
+
+        @Override public EmptyO snapshot() {
+            return EmptyO.of();
+        }
+
+    }
+
+    private final class ResolveBeforeCloseEdgeDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1005,7 +1048,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class CloseEdgeBeforeResolveDatum implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class CloseEdgeBeforeResolveDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1041,7 +1084,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class ResolveBeforeSetDatumDatum implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class ResolveBeforeSetDatumDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1077,7 +1120,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class SetDatumBeforeResolveDatum implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class SetDatumBeforeResolveDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1113,8 +1156,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class CloseBeforeResolveNoExternalRepDatum
-            implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class CloseBeforeResolveNoExternalRepDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1154,8 +1196,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class CloseBeforeResolveFailingExternalRepDatum
-            implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class CloseBeforeResolveFailingExternalRepDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1195,8 +1236,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class CloseBeforeResolveExceptionalExternalRepDatum
-            implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class CloseBeforeResolveExceptionalExternalRepDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
@@ -1236,7 +1276,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
     }
 
-    private final class CloseBeforeResolveNoDatumDatum implements ITypeChecker<Scope, Integer, IDatum, EmptyI, EmptyI> {
+    private final class CloseBeforeResolveNoDatumDatum extends BaseTypeCheckerI {
 
         private final Integer ownLabel;
         private final List<Integer> queryLabels;
