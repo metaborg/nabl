@@ -36,7 +36,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerState;
@@ -86,8 +86,8 @@ import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 import mb.scopegraph.patching.Patcher;
 
-class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-        extends AbstractUnit<S, L, D, TypeCheckerResult<S, L, D, R, T>>
+class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+        extends AbstractUnit<S, L, D, Result<S, L, D, R, T>>
         implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
@@ -95,7 +95,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
 
     private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean changed;
-    private final @Nullable IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult;
+    private final @Nullable IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult;
 
     private volatile UnitState state;
 
@@ -120,10 +120,10 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     private final IPatchCollection.Transient<S> resultPatches = PatchCollection.Transient.of();
     private final IPatchCollection.Transient<S> globalPatches = PatchCollection.Transient.of();
 
-    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, TypeCheckerResult<S, L, D, R, T>>> self,
+    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, Result<S, L, D, R, T>>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels, boolean inputChanged,
-            IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult) {
+            IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult) {
         super(self, parent, context, edgeLabels);
         this.typeChecker = unitChecker;
         this.changed = inputChanged;
@@ -132,7 +132,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         this.confirmation = OptimisticConfirmation.factory();
     }
 
-    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, TypeCheckerResult<S, L, D, R, T>>> self,
+    TypeCheckerUnit(IActor<? extends IUnit<S, L, D, Result<S, L, D, R, T>>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
             ITypeChecker<S, L, D, R, T> unitChecker, Iterable<L> edgeLabels) {
         this(self, parent, context, unitChecker, edgeLabels, true, null);
@@ -178,7 +178,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
     // IBroker2UnitProtocol interface, called by IBroker implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> _start(List<S> rootScopes) {
+    @Override public IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> _start(List<S> rootScopes) {
         assertInState(UnitState.INIT_UNIT);
         resume();
 
@@ -193,7 +193,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             });
         }
 
-        final IFuture<TypeCheckerResult<S, L, D, R, T>> result;
+        final IFuture<Result<S, L, D, R, T>> result;
         try {
             state = UnitState.INIT_TC;
             result = this.typeChecker.run(this, rootScopes).whenComplete((r, ex) -> {
@@ -207,7 +207,7 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
                 resume();
                 tryFinish();
             }).thenApply(r -> {
-                return TypeCheckerResult.<S, L, D, R, T>of(r, localCapture.get(), localScopeGraph.get());
+                return Result.<S, L, D, R, T>of(r, localCapture.get(), localScopeGraph.get());
             });
         } catch(Exception e) {
             logger.error("Exception starting type-checker {}.", e);
@@ -217,8 +217,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         // Start phantom units for all units that have not yet been restarted
         if(previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
-                @SuppressWarnings("unchecked") final IUnitResult<S, L, D, ? extends IResult<S, L, D>> subResult =
-                        (IUnitResult<S, L, D, ? extends IResult<S, L, D>>) previousResult.subUnitResults()
+                @SuppressWarnings("unchecked") final IUnitResult<S, L, D, ? extends IOutput<S, L, D>> subResult =
+                        (IUnitResult<S, L, D, ? extends IOutput<S, L, D>>) previousResult.subUnitResults()
                                 .get(removedId);
                 this.<Unit>doAddSubUnit(removedId,
                         (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels, subResult),
@@ -317,8 +317,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         return self.id();
     }
 
-    @Override public <Q extends IResult<S, L, D>, U extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, Q, U>>>
+    @Override public <Q extends IOutput<S, L, D>, U extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, U>>>
             add(String id, ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();
 
@@ -327,13 +327,13 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
             this.addedUnitIds.__insert(id);
 
             return ifActive(
-                    whenContextActive(this.<TypeCheckerResult<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
+                    whenContextActive(this.<Result<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
                         return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
                     }, rootScopes, false)._2()));
         }
 
-        @SuppressWarnings("unchecked") final IUnitResult<S, L, D, TypeCheckerResult<S, L, D, Q, U>> subUnitPreviousResult =
-                (IUnitResult<S, L, D, TypeCheckerResult<S, L, D, Q, U>>) this.previousResult.subUnitResults().get(id);
+        @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Result<S, L, D, Q, U>> subUnitPreviousResult =
+                (IUnitResult<S, L, D, Result<S, L, D, Q, U>>) this.previousResult.subUnitResults().get(id);
 
 
         // When a scope is shared, the shares must be consistent.
@@ -369,8 +369,8 @@ class TypeCheckerUnit<S, L, D, R extends IResult<S, L, D>, T extends ITypeChecke
         }
 
         this.addedUnitIds.__insert(id);
-        final IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, Q, U>>> result =
-                this.<TypeCheckerResult<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
+        final IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, U>>> result =
+                this.<Result<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
                     return new TypeCheckerUnit<S, L, D, Q, U>(subself, self, subcontext, unitChecker, edgeLabels,
                             changed, subUnitPreviousResult);
                 }, rootScopes, false)._2();

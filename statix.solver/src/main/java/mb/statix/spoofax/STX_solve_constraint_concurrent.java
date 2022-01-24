@@ -15,7 +15,7 @@ import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
-import mb.p_raffrayi.impl.TypeCheckerResult;
+import mb.p_raffrayi.impl.Result;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.ProjectResult;
 import mb.statix.concurrent.ProjectTypeChecker;
@@ -46,10 +46,10 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
             ICancel cancel) throws InterruptedException, ExecutionException {
         final IStatixProject project = StatixProject.builder().resource("").changed(true)
                 .rule(Rule.of("resolve", Arrays.asList(P.newWld()), constraint)).build();
-        final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>>> future =
+        final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>> future =
                 Broker.run("", PRaffrayiSettings.of(false, false, false, false),
                         new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel, progress);
-        final IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, ProjectResult, SolverState>> result = future.asJavaCompletion().get();
+        final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>> result = future.asJavaCompletion().get();
         if(!result.allFailures().isEmpty() || result.result().analysis().exception() != null) {
             final SolverResult.Builder resultBuilder =
                     SolverResult.builder().spec(spec).state(State.of()).completeness(Completeness.Immutable.of());

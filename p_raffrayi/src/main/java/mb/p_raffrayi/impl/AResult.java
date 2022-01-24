@@ -5,13 +5,16 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.ITypeCheckerState;
 import mb.scopegraph.oopsla20.IScopeGraph;
 
+/**
+ * Result emitted by a {@link TypeCheckerUnit}.
+ */
 @Value.Immutable
 @Serial.Version(42)
-public abstract class ATypeCheckerResult<S, L, D, A extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> {
+public abstract class AResult<S, L, D, A extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>> {
 
     /**
      * @return Analysis result.

@@ -12,7 +12,7 @@ import com.google.common.base.MoreObjects;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.impl.TypeCheckerResult;
+import mb.p_raffrayi.impl.Result;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
@@ -24,9 +24,9 @@ public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults();
+    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults();
 
     @Override @Value.Parameter public abstract @Nullable SolverResult solveResult();
 

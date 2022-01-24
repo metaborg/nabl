@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.DeadlockException;
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerState;
@@ -48,7 +48,7 @@ import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
-public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
         implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(Broker.class);
@@ -59,7 +59,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     private final PRaffrayiSettings settings;
     private final ITypeChecker<S, L, D, R, T> typeChecker;
     private final boolean rootChanged;
-    private final @Nullable IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult;
+    private final @Nullable IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult;
     private final IScopeImpl<S, D> scopeImpl;
     private final Set<L> edgeLabels;
     private final ICancel cancel;
@@ -85,7 +85,7 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
 
     private Broker(String id, PRaffrayiSettings settings, ITypeChecker<S, L, D, R, T> typeChecker,
             IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels, boolean rootChanged,
-            @Nullable IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult, ICancel cancel,
+            @Nullable IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult, ICancel cancel,
             IProgress progress, IActorScheduler scheduler) {
         this.id = id;
         this.settings = settings;
@@ -122,16 +122,16 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
         this.cmh = new ChandyMisraHaas<>(this, this::_deadlocked);
     }
 
-    private IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> run() {
-        final IActor<IUnit<S, L, D, TypeCheckerResult<S, L, D, R, T>>> unit = system.add(id, TypeTag.of(IUnit.class),
+    private IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> run() {
+        final IActor<IUnit<S, L, D, Result<S, L, D, R, T>>> unit = system.add(id, TypeTag.of(IUnit.class),
                 self -> new TypeCheckerUnit<S, L, D, R, T>(self, null, new UnitContext(self), typeChecker, edgeLabels,
                         previousResult == null || rootChanged, previousResult));
         addUnit(unit);
 
-        final IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> unitResult =
+        final IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> unitResult =
                 system.async(unit)._start(Collections.emptyList());
 
-        final IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> runResult =
+        final IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> runResult =
                 unitResult.compose((r, ex) -> {
                     finalizeUnit(unit, ex);
                     return system.stop().compose((r2, ex2) -> CompletableFuture.completed(r, ex));
@@ -383,53 +383,53 @@ public class Broker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerS
     // Utilities
     ///////////////////////////////////////////////////////////////////////////
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
                     ICancel cancel, IProgress progress) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, true, null, cancel, progress,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> unitChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-                    boolean changed, IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult,
+                    boolean changed, IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult,
                     ICancel cancel, IProgress progress) {
         return run(id, settings, unitChecker, scopeImpl, edgeLabels, changed, previousResult, cancel, progress,
                 Runtime.getRuntime().availableProcessors());
     }
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> run(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-                    boolean changed, IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult,
+                    boolean changed, IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult,
                     ICancel cancel, IProgress progress, int parallelism) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel, progress,
                 new WorkStealingScheduler(parallelism)).run();
     }
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
                     ICancel cancel, double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, true, null, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-                    boolean changed, IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult, ICancel cancel,
+                    boolean changed, IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult, ICancel cancel,
                     double preemptProbability, int scheduleDelayBoundMillis) {
         return debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 Runtime.getRuntime().availableProcessors(), preemptProbability, scheduleDelayBoundMillis);
     }
 
-    public static <S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>>
-            IFuture<IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
+    public static <S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+            IFuture<IUnitResult<S, L, D, Result<S, L, D, R, T>>> debug(String id, PRaffrayiSettings settings,
                     ITypeChecker<S, L, D, R, T> typeChecker, IScopeImpl<S, D> scopeImpl, Iterable<L> edgeLabels,
-                    boolean changed, IUnitResult<S, L, D, TypeCheckerResult<S, L, D, R, T>> previousResult, ICancel cancel, int parallelism,
+                    boolean changed, IUnitResult<S, L, D, Result<S, L, D, R, T>> previousResult, ICancel cancel, int parallelism,
                     double preemptProbability, int scheduleDelayBoundMillis) {
         return new Broker<>(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, cancel,
                 new NullProgress(), new WonkyScheduler(parallelism, preemptProbability, scheduleDelayBoundMillis))

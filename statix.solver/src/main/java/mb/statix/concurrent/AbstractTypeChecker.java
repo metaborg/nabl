@@ -30,11 +30,11 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.Replacement;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
-import mb.p_raffrayi.impl.TypeCheckerResult;
+import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
@@ -50,7 +50,7 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
-public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>>
+public abstract class AbstractTypeChecker<R extends IOutput<Scope, ITerm, ITerm>>
         implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
@@ -76,19 +76,21 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
         return s;
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>> runGroups(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups,
-            List<Scope> parentScopes) {
+    protected
+            IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
+            runGroups(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups,
+                    List<Scope> parentScopes) {
         if(groups.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, GroupResult, SolverState>>> result = context.add(key,
-                    new GroupTypeChecker(entry.getValue(), spec, debug), parentScopes, entry.getValue().changed());
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>> result =
+                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), parentScopes,
+                            entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
             }));
@@ -100,19 +102,21 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>> runUnits(
-            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units,
-            List<Scope> parentScopes) {
+    protected
+            IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
+            runUnits(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units,
+                    List<Scope> parentScopes) {
         if(units.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, TypeCheckerResult<Scope, ITerm, ITerm, UnitResult, SolverState>>> result = context.add(key,
-                    new UnitTypeChecker(entry.getValue(), spec, debug), parentScopes, entry.getValue().changed());
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>> result =
+                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), parentScopes,
+                            entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
             }));
@@ -124,15 +128,14 @@ public abstract class AbstractTypeChecker<R extends IResult<Scope, ITerm, ITerm>
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>
-            runLibraries(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
-                    Scope parentScope) {
+    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
+            ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
+            Scope parentScope) {
         if(libraries.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results =
-                new ArrayList<>();
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
         for(Map.Entry<String, IStatixLibrary> entry : libraries.entrySet()) {
             final String key = entry.getKey();
             IStatixLibrary library = entry.getValue();

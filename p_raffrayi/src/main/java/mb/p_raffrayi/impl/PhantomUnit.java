@@ -8,7 +8,7 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -23,10 +23,10 @@ import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
-    private final IUnitResult<S, L, D, ? extends IResult<S, L, D>> previousResult;
+    private final IUnitResult<S, L, D, ? extends IOutput<S, L, D>> previousResult;
 
     public PhantomUnit(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
-            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ? extends IResult<S, L, D>> previousResult) {
+            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, IUnitResult<S, L, D, ? extends IOutput<S, L, D>> previousResult) {
         super(self, parent, context, edgeLabels);
         this.previousResult = previousResult;
     }
@@ -41,7 +41,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         for(Map.Entry<String, IUnitResult<S, L, D, ? >> entry : previousResult.subUnitResults().entrySet()) {
             this.<Unit>doAddSubUnit(entry.getKey(),
                     (subself, subcontext) -> new PhantomUnit<>(subself, self, subcontext, edgeLabels,
-                            (IUnitResult<S, L, D, ? extends IResult<S, L, D>>) entry.getValue()),
+                            (IUnitResult<S, L, D, ? extends IOutput<S, L, D>>) entry.getValue()),
                     new ArrayList<>(), true);
         }
 

@@ -3,12 +3,12 @@ package mb.statix.concurrent;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.IResult;
+import mb.p_raffrayi.IOutput;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
 
-public interface IStatixResult extends IResult<Scope, ITerm, ITerm> {
+public interface IStatixResult extends IOutput<Scope, ITerm, ITerm> {
 
     @Nullable SolverResult solveResult();
 

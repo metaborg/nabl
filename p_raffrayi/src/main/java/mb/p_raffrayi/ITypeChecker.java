@@ -8,7 +8,7 @@ import org.metaborg.util.future.IFuture;
 /**
  * Represents the user-implemented type checker for a specific unit.
  */
-public interface ITypeChecker<S, L, D, R extends IResult<S, L, D>, T extends ITypeCheckerState<S, L, D>> {
+public interface ITypeChecker<S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>> {
 
     IFuture<R> run(IIncrementalTypeCheckerContext<S, L, D, R, T> unit, List<S> rootScopes);
 
