@@ -12,6 +12,7 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
 import io.usethesource.capsule.Set;
+import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.impl.Result;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.scopegraph.oopsla20.IScopeGraph;

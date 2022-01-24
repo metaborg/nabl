@@ -5,16 +5,16 @@ import java.util.List;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
+import mb.p_raffrayi.ITypeChecker.IOutput;
+import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.ITypeCheckerContext;
-import mb.p_raffrayi.ITypeCheckerState;
 import mb.p_raffrayi.IUnitResult;
 
 public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITypeCheckerContext<S, L, D> {
 
-    @SuppressWarnings("unused") @Override public <Q extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>> IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, T>>>
+    @SuppressWarnings("unused") @Override public <Q extends IOutput<S, L, D>, T extends IState<S, L, D>> IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, T>>>
             add(String id, ITypeChecker<S, L, D, Q, T> unitChecker, List<S> rootScopes, boolean changed) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }

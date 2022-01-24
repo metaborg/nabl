@@ -36,10 +36,10 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
-import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
-import mb.p_raffrayi.ITypeCheckerState;
+import mb.p_raffrayi.ITypeChecker.IOutput;
+import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.IUnitResult.TransitionTrace;
 import mb.p_raffrayi.actors.IActor;
@@ -86,7 +86,7 @@ import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 import mb.scopegraph.patching.Patcher;
 
-class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends ITypeCheckerState<S, L, D>>
+class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, D>>
         extends AbstractUnit<S, L, D, Result<S, L, D, R, T>>
         implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
@@ -317,7 +317,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends ITypeChecke
         return self.id();
     }
 
-    @Override public <Q extends IOutput<S, L, D>, U extends ITypeCheckerState<S, L, D>>
+    @Override public <Q extends IOutput<S, L, D>, U extends IState<S, L, D>>
             IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, U>>>
             add(String id, ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();

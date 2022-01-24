@@ -32,7 +32,6 @@ import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.Replacement;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
-import mb.p_raffrayi.IOutput;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
@@ -40,7 +39,7 @@ import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
-import mb.statix.solver.IState;
+import mb.statix.solver.IState.Immutable;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.log.IDebugContext;
@@ -53,7 +52,7 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
-public abstract class AbstractTypeChecker<R extends IOutput<Scope, ITerm, ITerm>>
+public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, ITerm, ITerm>>
         implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
@@ -172,7 +171,7 @@ public abstract class AbstractTypeChecker<R extends IOutput<Scope, ITerm, ITerm>
             }
             return CompletableFuture.completedFuture(SolverResult.of(spec));
         }
-        final IState.Immutable unitState = State.of().withResource(context.id());
+        final /*IState.*/Immutable unitState = State.of().withResource(context.id());
         final ApplyResult applyResult;
         try {
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
@@ -229,7 +228,7 @@ public abstract class AbstractTypeChecker<R extends IOutput<Scope, ITerm, ITerm>
         final IReplacement repl = builder.build();
 
         // Patch unifier
-        final IState.Immutable oldState = previousResult.state();
+        final /*IState.*/Immutable oldState = previousResult.state();
         final IUniDisunifier.Immutable unifier = oldState.unifier().replace(repl);
 
         // Patch properties
@@ -252,7 +251,7 @@ public abstract class AbstractTypeChecker<R extends IOutput<Scope, ITerm, ITerm>
         // TODO: patch removed edges? messages? delays? completeness?
 
         // @formatter:off
-        final IState.Immutable newState = State.builder().from(oldState)
+        final /*IState.*/Immutable newState = State.builder().from(oldState)
             .__scopes(scopes.freeze())
             .unifier(unifier)
             .termProperties(props.freeze())

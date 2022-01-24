@@ -17,6 +17,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
+import mb.p_raffrayi.ITypeChecker.IOutput;
+import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.oopsla20.diff.BiMap;
@@ -27,7 +29,7 @@ public abstract class PRaffrayiTestBase {
 
     private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, true, true);
 
-    protected <L, R extends IOutput<Scope, L, IDatum>, T extends ITypeCheckerState<Scope, L, IDatum>>
+    protected <L, R extends IOutput<Scope, L, IDatum>, T extends IState<Scope, L, IDatum>>
             IFuture<IUnitResult<Scope, L, IDatum, Result<Scope, L, IDatum, R, T>>>
             run(String id, ITypeChecker<Scope, L, IDatum, R, T> typeChecker, Iterable<L> edgeLabels) {
         return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, new NullCancel(), 0.3, 50);
@@ -171,7 +173,7 @@ public abstract class PRaffrayiTestBase {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    protected static class Output<L, T> implements IOutput<Scope, L, IDatum>, ITypeCheckerState<Scope, L, IDatum> {
+    protected static class Output<L, T> implements IOutput<Scope, L, IDatum>, IState<Scope, L, IDatum> {
 
         private final T value;
 
@@ -197,7 +199,7 @@ public abstract class PRaffrayiTestBase {
 
     }
 
-    protected static class EmptyO implements IOutput<Scope, Object, IDatum>, ITypeCheckerState<Scope, Object, IDatum> {
+    protected static class EmptyO implements IOutput<Scope, Object, IDatum>, IState<Scope, Object, IDatum> {
 
         private static final PRaffrayiTestBase.EmptyO instance = new PRaffrayiTestBase.EmptyO();
 
@@ -216,7 +218,7 @@ public abstract class PRaffrayiTestBase {
     }
 
     protected static class EmptyI
-            implements IOutput<Scope, Integer, IDatum>, ITypeCheckerState<Scope, Integer, IDatum> {
+            implements IOutput<Scope, Integer, IDatum>, IState<Scope, Integer, IDatum> {
 
         private static final PRaffrayiTestBase.EmptyI instance = new PRaffrayiTestBase.EmptyI();
 

@@ -10,9 +10,10 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
 import io.usethesource.capsule.Set;
+
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.p_raffrayi.ITypeCheckerState;
+import mb.p_raffrayi.ITypeChecker;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
@@ -22,7 +23,7 @@ import mb.statix.solver.completeness.ICompleteness;
 
 @Value.Immutable
 @Serial.Version(42)
-public abstract class ASolverState implements ITypeCheckerState<Scope, ITerm, ITerm> {
+public abstract class ASolverState implements ITypeChecker.IState<Scope, ITerm, ITerm> {
 
     @Value.Parameter public abstract IState.Immutable state();
 

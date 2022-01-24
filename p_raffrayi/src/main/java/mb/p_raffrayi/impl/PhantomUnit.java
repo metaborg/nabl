@@ -8,7 +8,7 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.IOutput;
+import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;

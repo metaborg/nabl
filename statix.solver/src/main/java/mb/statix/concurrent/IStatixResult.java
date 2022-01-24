@@ -3,7 +3,7 @@ package mb.statix.concurrent;
 import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.IOutput;
+import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
 
