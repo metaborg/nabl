@@ -1,7 +1,9 @@
 package mb.p_raffrayi;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +13,9 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
@@ -34,7 +39,17 @@ import mb.scopegraph.regexp.IRegExpMatcher;
 import mb.scopegraph.regexp.RegExpMatcher;
 import mb.scopegraph.regexp.impl.RegExpBuilder;
 
+@RunWith(Parameterized.class)
 public class PRaffrayiTest extends PRaffrayiTestBase {
+
+    @Parameters
+    public static Object[] solverModes() {
+        return new Object[] { PRaffrayiSettings.concurrent(), PRaffrayiSettings.incremental() };
+    }
+
+    public PRaffrayiTest(PRaffrayiSettings settings) {
+        super(settings);
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +67,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -72,10 +89,12 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
-    @Test(timeout = 10000000) public void testSingleOneScope_NoClose() throws ExecutionException, InterruptedException {
+    @Test(timeout = 10000) public void testSingleOneScope_NoClose() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>>> future =
                 run(".", new BaseTypeCheckerI() {
 
@@ -127,6 +146,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -161,13 +182,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
 
-        //        assertEquals(2, result.unitResults().size());
-        //
-        //        assertNotNull(result.unitResults().get(".").analysis());
-        //        assertFalse(result.unitResults().get(".").failures().isEmpty());
-        //
-        //        assertNotNull(result.unitResults().get("sub").analysis());
-        //        assertTrue(result.unitResults().get("sub").failures().isEmpty());
+        assertEquals(1, result.subUnitResults().size());
+
+        assertNotNull(result.result().analysis());
+        assertFalse(result.failures().isEmpty());
+
+        assertNotNull(((Result<? ,?, ?, ?, ?>) result.subUnitResults().get("sub").result()).analysis());
+        assertTrue(result.subUnitResults().get("sub").failures().isEmpty());
     }
 
 
@@ -201,13 +222,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
 
-        //        assertEquals(2, result.unitResults().size());
-        //
-        //        assertNotNull(result.unitResults().get(".").analysis());
-        //        assertTrue(result.unitResults().get(".").failures().isEmpty());
-        //
-        //        assertNotNull(result.unitResults().get("sub").analysis());
-        //        assertFalse(result.unitResults().get("sub").failures().isEmpty());
+        assertEquals(1, result.subUnitResults().size());
+
+        assertNotNull(result.result().analysis());
+        assertTrue(result.failures().isEmpty());
+
+        assertNotNull(((Result<?, ?, ?, ?, ?>) result.subUnitResults().get("sub").result()).analysis());
+        assertFalse(result.subUnitResults().get("sub").failures().isEmpty());
     }
 
 
@@ -243,7 +264,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
 
-        //        assertEquals(2, result.unitResults().size());
+        assertEquals(1, result.subUnitResults().size());
+
+        assertNotNull(result.result().analysis());
+        assertTrue(result.failures().isEmpty());
+
+        assertNotNull(((Result<?, ?, ?, ?, ?>) result.subUnitResults().get("sub").result()).analysis());
+        assertFalse(result.subUnitResults().get("sub").failures().isEmpty());
     }
 
 
@@ -270,6 +297,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -297,6 +327,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(3, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -322,6 +355,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -348,6 +384,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(3, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -374,6 +413,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testDatumCloseEdgeAndResolve_TargetStuckOnFailingExternalRepresentation()
@@ -400,6 +442,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testDatumCloseEdgeAndResolve_TargetStuckOnExceptionalExternalRepresentation()
@@ -426,6 +471,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -452,6 +500,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -478,6 +529,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -505,6 +559,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(3, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -530,6 +587,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
 
@@ -556,6 +616,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(3, result.subUnitResults().size());
+        assertTrue(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testDatumSetDatumAndResolve_TargetStuckOnDatum()
@@ -581,6 +644,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertFalse(result.allFailures().isEmpty());
     }
 
 
@@ -607,6 +673,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(2, result.subUnitResults().size());
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testFailureInRun() throws ExecutionException, InterruptedException {
@@ -623,6 +692,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testFailureInIncrementalRun() throws ExecutionException, InterruptedException {
@@ -641,27 +712,10 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
-    @Test(timeout = 10000) public void testFailureInExtractLocal() throws ExecutionException, InterruptedException {
-        final IFuture<IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new BaseTypeCheckerO() {
-
-                    @Override public IFuture<EmptyO> run(
-                            IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
-                            List<Scope> roots) {
-                        // formatter:off
-                        return unit.<EmptyO>runIncremental(__ -> CompletableFuture.completedFuture(EmptyO.of()), x -> {
-                            throw new ExpectedFailure();
-                        }, CompletableFuture::completed);
-                        // formatter:on
-                    }
-
-                }, Set.Immutable.of());
-
-        final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
-                future.asJavaCompletion().get();
-    }
 
     @Test(timeout = 10000) public void testFailureInCombine() throws ExecutionException, InterruptedException {
         final IFuture<IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
@@ -682,27 +736,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
-    }
 
-    @Test(timeout = 10000) public void testFailurePatch() throws ExecutionException, InterruptedException {
-        final IFuture<IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>>> future =
-                run(".", new BaseTypeCheckerO() {
-
-                    @Override public IFuture<EmptyO> run(
-                            IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
-                            List<Scope> roots) {
-                        // formatter:off
-                        return unit.<EmptyO>runIncremental(__ -> CompletableFuture.completedFuture(EmptyO.of()), x -> x,
-                                (r, ptcs) -> {
-                                    throw new ExpectedFailure();
-                                }, CompletableFuture::completed);
-                        // formatter:on
-                    }
-
-                }, Set.Immutable.of());
-
-        final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
-                future.asJavaCompletion().get();
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testNoRunResult() throws ExecutionException, InterruptedException {
@@ -719,6 +754,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testExceptionalRunResult() throws ExecutionException, InterruptedException {
@@ -735,6 +772,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testExceptionalChildRunResult() throws ExecutionException, InterruptedException {
@@ -758,6 +797,9 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertEquals(1, result.subUnitResults().size());
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testExceptionalRunResult_NoClose()
@@ -776,6 +818,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testFailureInQueryPredicate() throws ExecutionException, InterruptedException {
@@ -815,6 +859,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testExceptionalQueryPredicateResult()
@@ -855,6 +901,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testNoQueryPredicateResult() throws ExecutionException, InterruptedException {
@@ -864,7 +912,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyO> run(
                             IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                             List<Scope> roots) {
-                        final Scope s = unit.freshScope("s", Collections.emptyList(), true, true);
+                        final Scope s = unit.freshScope("s", Collections.emptyList(), false, true);
 
                         IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerO() {
 
@@ -872,6 +920,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                                     IIncrementalTypeCheckerContext<Scope, Object, IDatum, EmptyO, EmptyO> unit,
                                     List<Scope> rootScopes) {
                                 final Scope s = rootScopes.get(0);
+                                unit.initScope(s, Arrays.asList(), false);
 
                                 return unit.query(s, LabelWf.any(), LabelOrder.none(),
                                         new DataWf<Scope, Object, IDatum>() {
@@ -894,6 +943,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
+
+        assertTrue(result.allFailures().isEmpty());
     }
 
     @Test(timeout = 10000) public void testExceptionalCompletionInDWF()
@@ -938,6 +989,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
 
@@ -992,6 +1045,8 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
+
+        assertFalse(result.allFailures().isEmpty());
     }
 
     ///////////////////////////////////////////////////////////////////////////

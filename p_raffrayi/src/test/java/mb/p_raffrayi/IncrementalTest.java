@@ -49,6 +49,10 @@ import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 public class IncrementalTest extends PRaffrayiTestBase {
 
+    public IncrementalTest() {
+        super(PRaffrayiSettings.incremental());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Release conditions
     ///////////////////////////////////////////////////////////////////////////

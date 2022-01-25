@@ -1004,7 +1004,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             throw new IllegalStateException("Cannot create multiple local captures.");
         }
         localCapture.set(capture);
-        self.complete(whenContextActivated, Unit.unit, null);
+        whenContextActivated.complete(Unit.unit); // Synchronously, to ensure `inLocalPhase` works properly.
     }
 
     ///////////////////////////////////////////////////////////////////////////

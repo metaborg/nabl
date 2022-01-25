@@ -27,7 +27,11 @@ public abstract class PRaffrayiTestBase {
 
     private final ScopeImpl scopeImpl = new ScopeImpl();
 
-    private final PRaffrayiSettings settings = PRaffrayiSettings.of(true, true, true, true);
+    private final PRaffrayiSettings settings;
+
+    public PRaffrayiTestBase(PRaffrayiSettings settings) {
+        this.settings = settings;
+    }
 
     protected <L, R extends IOutput<Scope, L, IDatum>, T extends IState<Scope, L, IDatum>>
             IFuture<IUnitResult<Scope, L, IDatum, Result<Scope, L, IDatum, R, T>>>

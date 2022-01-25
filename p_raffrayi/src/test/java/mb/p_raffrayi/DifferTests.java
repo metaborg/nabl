@@ -33,6 +33,10 @@ public class DifferTests extends PRaffrayiTestBase {
 
     private static final BiMap.Immutable<?> EMPTY_BIMAP = BiMap.Immutable.of();
 
+    public DifferTests() {
+        super(PRaffrayiSettings.incremental());
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Local Differ tests
     ///////////////////////////////////////////////////////////////////////////
