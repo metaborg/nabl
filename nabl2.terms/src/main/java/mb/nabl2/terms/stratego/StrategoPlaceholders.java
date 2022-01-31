@@ -244,6 +244,33 @@ public final class StrategoPlaceholders {
         ));
     }
 
+    /**
+     * Replaces term variables in list positions by empty lists.
+     *
+     * This is because they are not supported in Stratego, and no conversion is possible.
+     *
+     * @param term the term in which to replace the term variables
+     * @return the term with its term variables replaced
+     */
+    public static ITerm replaceListVariablesByEmptyList(ITerm term) {
+        return term.match(Terms.cases(
+            appl -> TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream().map(StrategoPlaceholders::replaceListVariablesByEmptyList).collect(Collectors.toList()), appl.getAttachments()),
+            list -> replaceListVariablesByEmptyListInList(list),
+            string -> string,
+            integer -> integer,
+            blob -> blob,
+            var -> var
+        ));
+    }
+
+    public static IListTerm replaceListVariablesByEmptyListInList(IListTerm term) {
+        return term.match(ListTerms.cases(
+            cons -> TermBuild.B.newCons(replaceListVariablesByEmptyList(cons.getHead()), replaceListVariablesByEmptyListInList(cons.getTail()), cons.getAttachments()),
+            nil -> nil,
+            var -> TermBuild.B.newNil()
+        ));
+    }
+
     public static boolean isInjectionConstructor(ITerm term) {
         return term instanceof IApplTerm && isInjectionConstructor((IApplTerm)term);
     }
