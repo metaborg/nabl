@@ -61,6 +61,10 @@ public class CFalse implements IConstraint, Serializable {
         return cases.caseFalse(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.of();
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

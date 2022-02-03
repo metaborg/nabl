@@ -89,6 +89,14 @@ public class CUser implements IConstraint, Serializable {
         return cases.caseUser(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        for(ITerm a : args) {
+            vars.__insertAll(a.getVars());
+        }
+        return vars.freeze();
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

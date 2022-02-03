@@ -83,6 +83,13 @@ public class CArith implements IConstraint, Serializable {
         return cases.caseArith(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            expr1.getVars(),
+            expr2.getVars()
+        );
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

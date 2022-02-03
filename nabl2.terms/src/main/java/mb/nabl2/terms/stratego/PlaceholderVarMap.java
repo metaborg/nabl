@@ -1,12 +1,15 @@
 package mb.nabl2.terms.stratego;
 
-import java.util.HashMap;
-
-import javax.annotation.Nullable;
-
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermBuild;
+
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A mapping between placeholders and term variables.
@@ -14,8 +17,8 @@ import mb.nabl2.terms.build.TermBuild;
 public final class PlaceholderVarMap {
 
     private final String resourceName;
-    private final HashMap<TermVarWrapper, IApplTerm> varToPlhdr = new HashMap<>();
-    private final HashMap<IApplTerm, TermVarWrapper> plhdrToVar = new HashMap<>();
+    private final HashMap<TermVarWrapper, Placeholder> varToPlhdr = new HashMap<>();
+    private final HashMap<Placeholder, TermVarWrapper> plhdrToVar = new HashMap<>();
 
     /**
      * Initializes a new instance of the {@link PlaceholderVarMap} class.
@@ -37,15 +40,16 @@ public final class PlaceholderVarMap {
      * otherwise, {@code false}
      */
     public boolean add(ITermVar termVar, IApplTerm placeholderTerm) {
-        @Nullable IApplTerm oldPlaceholderTerm = this.varToPlhdr.put(new TermVarWrapper(termVar), placeholderTerm);
-        @Nullable TermVarWrapper oldTermVar = this.plhdrToVar.put(placeholderTerm, new TermVarWrapper(termVar));
+        Placeholder placeholder = toPlaceholder(placeholderTerm);
+        @Nullable Placeholder oldPlaceholder = this.varToPlhdr.put(new TermVarWrapper(termVar), placeholder);
+        @Nullable TermVarWrapper oldTermVar = this.plhdrToVar.put(placeholder, new TermVarWrapper(termVar));
         boolean replacedAnything = false;
-        if (oldPlaceholderTerm != null && oldPlaceholderTerm != placeholderTerm) {
+        if (oldPlaceholder != null && !oldPlaceholder.equals(placeholder)) {
             this.varToPlhdr.remove(oldTermVar);
             replacedAnything = true;
         }
-        if (oldTermVar != null && oldTermVar.termVar != termVar) {
-            this.plhdrToVar.remove(oldPlaceholderTerm);
+        if (oldTermVar != null && oldTermVar.termVar.equals(termVar)) {
+            this.plhdrToVar.remove(oldPlaceholder);
             replacedAnything = true;
         }
         assert this.plhdrToVar.size() == this.varToPlhdr.size();
@@ -59,8 +63,18 @@ public final class PlaceholderVarMap {
      * @return the associated term var; or {@code null} when none is associated
      */
     public @Nullable ITermVar getVar(IApplTerm placeholderTerm) {
-        TermVarWrapper termVarWrapper = plhdrToVar.get(placeholderTerm);
+        Placeholder placeholder = toPlaceholder(placeholderTerm);
+        TermVarWrapper termVarWrapper = plhdrToVar.get(placeholder);
         return termVarWrapper != null ? termVarWrapper.termVar : null;
+    }
+
+    /**
+     * Gets the variables in the placeholder map.
+     *
+     * @return the variables
+     */
+    public Set<ITermVar> getVars() {
+        return varToPlhdr.keySet().stream().map(w -> w.termVar).collect(Collectors.toSet());
     }
 
     /**
@@ -69,7 +83,7 @@ public final class PlaceholderVarMap {
      * @param varTerm the term variable
      * @return the associated placeholder term; or {@code null} when none is associated
      */
-    public @Nullable IApplTerm getPlaceholder(ITermVar varTerm) {
+    public @Nullable Placeholder getPlaceholder(ITermVar varTerm) {
         return varToPlhdr.get(new TermVarWrapper(varTerm));
     }
 
@@ -95,10 +109,22 @@ public final class PlaceholderVarMap {
         if (termVar == null) {
             String newVarName = generateName(placeholderTerm);
             termVar = TermBuild.B.newVar(this.resourceName, newVarName);
+            termVar = TermOrigin.copy(placeholderTerm, termVar);
+            termVar = TermPlaceholder.of(placeholderTerm.getOp()).put(termVar);
             boolean unique = add(termVar, placeholderTerm);
             assert unique : "Apparently the added term variable and/or placeholder was not unique.";
         }
         return termVar;
+    }
+
+    /**
+     * Gets the placeholder for the specified term.
+     *
+     * @param term the placeholder term
+     * @return the placeholder
+     */
+    private Placeholder toPlaceholder(IApplTerm term) {
+        return new Placeholder(term, TermIndex.get(term).orElse(null));
     }
 
     /**
@@ -141,6 +167,65 @@ public final class PlaceholderVarMap {
         @Override
         public String toString() {
             return this.termVar.toString();
+        }
+    }
+
+    /**
+     * An occurrence of a placeholder term.
+     */
+    public static class Placeholder {
+
+        private final ITerm term;
+        @Nullable private final ITermIndex termIndex;
+
+        /**
+         * Initializes a new instance of the {@link Placeholder} class.
+         *
+         * @param term the placeholder term
+         * @param termIndex the placeholder's term index
+         */
+        public Placeholder(ITerm term, @Nullable ITermIndex termIndex) {
+            this.term = term;
+            this.termIndex = termIndex;
+        }
+
+        /**
+         * Gets the placeholder term.
+         *
+         * @return the placeholder term
+         */
+        public ITerm getTerm() {
+            return term;
+        }
+
+        /**
+         * Gets the placeholder term index.
+         *
+         * @return the placeholder term index
+         */
+        public ITermIndex getTermIndex() {
+            return termIndex;
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Override
+        public boolean equals(Object o) {
+            if(this == o) return true;
+            if(o == null || getClass() != o.getClass()) return false;
+            Placeholder that = (Placeholder)o;
+            // @formatter:off
+            return this.term.equals(that.term)
+                && Objects.equals(this.termIndex, that.termIndex);
+            // @formatter:on
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(term, termIndex);
+        }
+
+        @Override public String toString() {
+            return term + (termIndex != null ? "@" + termIndex : "");
         }
     }
 
