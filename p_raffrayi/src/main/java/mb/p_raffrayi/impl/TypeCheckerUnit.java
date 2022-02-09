@@ -99,7 +99,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
     private volatile UnitState state;
 
-    private final BiMap.Transient<S> matchedBySharing = BiMap.Transient.of();
+    private final IPatchCollection.Transient<S> matchedBySharing = PatchCollection.Transient.of();
 
     private final Ref<IScopeGraph.Immutable<S, L, D>> localScopeGraph = new Ref<>(ScopeGraph.Immutable.of());
 
@@ -269,8 +269,11 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
-        if(matchedBySharing.containsValue(previousScope)) {
-            return CompletableFuture.completedFuture(Optional.of(matchedBySharing.getValue(previousScope)));
+        if(matchedBySharing.isIdentity(previousScope)) {
+            return CompletableFuture.completedFuture(Optional.of(previousScope));
+        }
+        if(matchedBySharing.patchDomain().contains(previousScope)) {
+            return CompletableFuture.completedFuture(Optional.of(matchedBySharing.patch(previousScope)));
         }
         if(!changed && previousResult.result().localState() != null
                 && previousResult.result().localState().scopes().contains(previousScope)) {
@@ -594,7 +597,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             // - Somehow inform differ of local edges and subunit edges, and perform diff based on those.
 
             // @formatter:off
-            final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isEmpty() ?
+            final IScopeGraphDiffer<S, L, D> differ = matchedBySharing.isIdentity() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), resultPatches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
                         previousResult.scopes(), new DifferDataOps()), differOps());
@@ -605,7 +608,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             }
 
             logger.debug("Rebuilding scope graph.");
-            final PatchCollection.Immutable<S> localPatches = PatchCollection.Immutable.of(matchedBySharing);
+            final IPatchCollection.Immutable<S> localPatches = matchedBySharing.freeze();
             // @formatter:off
             final Patcher<S, L, D> patcher = new Patcher.Builder<S, L, D>()
                 .patchSources(localPatches)
@@ -983,7 +986,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             for(L label : edgeLabels) { // iterate over all labels, so that also labels for which no edge exist are properly closed.
                 for(S target : snapshot.scopeGraph().getEdges(previousScope, label)) {
                     if(!ownedScope) {
-                        final S newTarget = matchedBySharing.getValueOrDefault(target, target);
+                        final S newTarget = matchedBySharing.patch(target);
                         self.async(parent)._addEdge(currentScope, label, newTarget);
                     }
                 }
