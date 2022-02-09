@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,9 +10,14 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import com.google.common.collect.Multimap;
+
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
 
 public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
@@ -25,13 +31,15 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         this(differOps, context, BiMap.Immutable.of());
     }
 
-    public MatchingDiffer(IDifferOps<S, L, D> differOps, IDifferContext<S, L, D> context, BiMap.Immutable<S> scopeMatches) {
+    public MatchingDiffer(IDifferOps<S, L, D> differOps, IDifferContext<S, L, D> context,
+            BiMap.Immutable<S> scopeMatches) {
         this.differOps = differOps;
         this.context = context;
         this.scopeMatches = scopeMatches;
     }
 
-    public MatchingDiffer(IDifferOps<S, L, D> differOps, IDifferContext<S, L, D> context, Iterable<Map.Entry<S, S>> scopeMatches) {
+    public MatchingDiffer(IDifferOps<S, L, D> differOps, IDifferContext<S, L, D> context,
+            Iterable<Map.Entry<S, S>> scopeMatches) {
         this.differOps = differOps;
         this.context = context;
 
@@ -43,6 +51,16 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes) {
+        // TODO: construct proper diff
+        return CompletableFuture.completedFuture(ScopeGraphDiff.empty());
+    }
+
+    @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
+            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges) {
+        if(!openScopes.isEmpty() || !openEdges.isEmpty() || !patches.isIdentity()) {
+            throw new IllegalStateException("Cannot create matching differ with open scopes/edges.");
+        }
         return CompletableFuture.completedFuture(ScopeGraphDiff.empty());
     }
 

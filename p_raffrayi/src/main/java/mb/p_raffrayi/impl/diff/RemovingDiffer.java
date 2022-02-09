@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -9,12 +10,17 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
+import com.google.common.collect.Multimap;
+
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
 
 public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
@@ -38,7 +44,7 @@ public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             removedScopes.__put(scope, datum);
 
             for(L label : previousGraph.getLabels()) {
-                for(S tgt: previousGraph.getEdges(scope, label)) {
+                for(S tgt : previousGraph.getEdges(scope, label)) {
                     removedEdges.__insert(new Edge<>(scope, label, tgt));
                     if(!removedScopes.containsKey(tgt)) {
                         queue.add(tgt);
@@ -57,6 +63,12 @@ public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             removedEdges.freeze()
         ));
         // @formatter:on
+    }
+
+    @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
+            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges) {
+        throw new IllegalStateException("Removing differ cannot be used with initial scopegraph.");
     }
 
     @Override public boolean matchScopes(BiMap.Immutable<S> scopes) {

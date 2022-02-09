@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
@@ -14,12 +15,16 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
 
 public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
@@ -52,6 +57,12 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         tryFinalize();
 
         return diffResult;
+    }
+
+    @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
+            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges) {
+        throw new IllegalStateException("Adding differ cannot be used with initial scopegraph.");
     }
 
     private void fixedpoint() {
@@ -127,7 +138,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private void tryFinalize() {
         logger.trace("Try finalize differ. Pending: {}, nesting: {}, TC finished: {}", pendingResults.get(),
-            nesting.get(), typeCheckerFinished.get());
+                nesting.get(), typeCheckerFinished.get());
         if(pendingResults.get() == 0 && nesting.get() == 0 && typeCheckerFinished.get()) {
             logger.debug("Finalizing differ.");
             // @formatter:off

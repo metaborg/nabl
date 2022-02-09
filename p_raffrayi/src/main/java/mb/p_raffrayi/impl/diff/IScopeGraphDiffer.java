@@ -11,6 +11,8 @@ import com.google.common.collect.Multimap;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
 
 public interface IScopeGraphDiffer<S, L, D> {
 
@@ -20,10 +22,12 @@ public interface IScopeGraphDiffer<S, L, D> {
     IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes);
 
     /**
-     * Entry point. Returns a future that is completed when there are no scopes/edges to match anymore.
+     * Entry point. Accepts a context-free scope graph, and returns a future that is completed when there are no
+     * scopes/edges to match anymore.
      */
-    IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph, Collection<S> openScopes,
-            Multimap<S, L> openEdges);
+    IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph,
+            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges);
 
     /**
      * Provides external matches to the differ. This method is used to ensure that shared scopes remain consistent in

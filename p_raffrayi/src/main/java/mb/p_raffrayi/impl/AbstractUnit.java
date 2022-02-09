@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -87,6 +88,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
 
 public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
 
@@ -259,17 +261,26 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertDifferEnabled();
         logger.debug("Initializing differ: {} with scopes: {} ~ {}.", differ, currentRootScopes, previousRootScopes);
         this.differ = differ;
-        startDiffer(currentRootScopes, previousRootScopes);
+        doFinishDiffer(differ.diff(currentRootScopes, previousRootScopes));
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 
-    private void startDiffer(List<S> currentRootScopes, List<S> previousRootScopes) {
+    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph, List<S> rootScopes,
+            IPatchCollection.Immutable<S> patches, Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
+        assertDifferEnabled();
+        logger.debug("Initializing differ: {} with initial scope graph: {}.", differ, scopeGraph);
+        this.differ = differ;
+        doFinishDiffer(differ.diff(scopeGraph, rootScopes, patches, openScopes, openEdges));
+        self.complete(whenDifferActivated, Unit.unit, null);
+    }
+
+    private void doFinishDiffer(IFuture<ScopeGraphDiff<S, L, D>> future) {
         final ICompletableFuture<ScopeGraphDiff<S, L, D>> differResult = new CompletableFuture<>();
 
         // Handle diff output
         final DifferResult<S, L, D> result = DifferResult.of(self, differResult);
         waitFor(result, self);
-        self.schedule(differ.diff(currentRootScopes, previousRootScopes)).whenComplete(differResult::complete);
+        self.schedule(future).whenComplete(differResult::complete);
         differResult.whenComplete((r, ex) -> {
             logger.debug("{} scope graph differ finished", this);
             if(ex != null) {
