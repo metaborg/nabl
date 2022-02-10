@@ -1,0 +1,81 @@
+module statix/lang/PreCompiled // TODO: Do we intend this for parsing?
+
+imports
+
+  statix/lang/Common
+  statix/lang/Core
+
+context-free sorts
+
+  PreCompiledQuery
+  Params
+
+  States
+  State
+  StateId
+  StateRef
+
+  RStep
+  RExp
+  RVar
+  RCond
+
+context-free syntax
+
+  Constraint.CPreCompiledQuery = <
+    query
+      <ResolveQuery>
+    compiled to
+      <PreCompiledQuery>
+  >
+
+  PreCompiledQuery.PreCompiledQuery = <
+    compiled query
+      <Params>
+
+      <States>
+  >
+
+  Params.Params = <
+    filter: <Rule>
+    min: <Rule>
+    result: <Term>
+  >
+
+
+context-free syntax // States
+
+  States.States = <
+    states
+      <{State "\n\n"}*>
+  >
+
+
+  State.State = <
+    <StateId>
+      <{RStep "\n"}+>
+  >
+
+  StateId  = LCID
+  StateRef = LCID
+
+context-free syntax // Resolution steps
+
+  RStep.Step     = <<RVar> := <RExp>>
+
+  RStep.Return   = <return <RVar><RCond>>
+
+  RCond.NoCond   =
+  RCond.NonEmpty = < if not empty>
+
+context-free syntax // Resolution expressions
+
+  RExp.Resolve   = <resolve>
+
+  RExp.SubEnv    = <subenv <Label> <StateRef>>
+
+  RExp.Merge     = <merge(<{RVar ","}+>)>
+
+  RExp.Shadow    = <shadow(<RVar>, <RVar>)>
+
+  RVar           = LCID

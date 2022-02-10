@@ -249,7 +249,9 @@ lexical syntax
 
 context-free syntax
 
-  Constraint.CResolveQuery = [
+  Constraint = ResolveQuery
+
+  ResolveQuery.CResolveQuery = [
     query [QueryTarget]
      [QueryFilter]
      [QueryMin]
