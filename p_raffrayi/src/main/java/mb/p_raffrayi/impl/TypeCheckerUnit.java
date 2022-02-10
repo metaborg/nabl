@@ -230,7 +230,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
         if(state == UnitState.INIT_TC) {
             // runIncremental not called, so start eagerly
-            doRestart();
+            doRestart(false);
         } else if(state == UnitState.DONE) {
             // Completed synchronously
             whenActive.complete(Unit.unit);
@@ -301,7 +301,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
     @Override public void _restart() {
         assertIncrementalEnabled();
-        if(doRestart()) {
+        if(doRestart(true)) {
             stateTransitionTrace = TransitionTrace.RESTARTED;
         }
     }
@@ -494,7 +494,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         if(!isIncrementalEnabled() || changed) {
             logger.debug("Unit changed or no previous result was available.");
             stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
-            doRestart();
+            doRestart(false);
             return runLocalTypeChecker.apply(Optional.empty()).compose(combine::apply);
         }
 
@@ -573,7 +573,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     r.visit(() -> {
                         // No confirmation, hence restart
                         logger.debug("Query confirmation denied - restarting.");
-                        if(doRestart()) {
+                        if(doRestart(true)) {
                             stateTransitionTrace = TransitionTrace.RESTARTED;
                         }
                     }, (resultPatches, globalPatches) -> {
@@ -598,8 +598,12 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             //   - Con: very similar to epsilon edges, which degraded performance a lot, and complicated shadowing
             // - Somehow inform differ of local edges and subunit edges, and perform diff based on those.
 
-            // @formatter:off
+            // Copy scopes
+            // No need to patch, because they can only be local, and local state is reused.
+            this.scopes.__insertAll(previousResult.scopes());
+
             final IPatchCollection.Immutable<S> localPatches = matchedBySharing.freeze();
+            // @formatter:off
             final IScopeGraphDiffer<S, L, D> differ = localPatches.isIdentity() && this.addedUnitIds.isEmpty() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), resultPatches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
@@ -632,10 +636,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 },
                 Patcher.DataPatchCallback.noop()
             );
-
-            // Copy scopes
-            // No need to patch, because they can only be local, and local state is reused.
-            this.scopes.__insertAll(previousResult.scopes());
 
             scopeGraph.set(scopeGraph.get().addAll(patchedLocalScopeGraph));
             localScopeGraph.set(localScopeGraph.get().addAll(patchedLocalScopeGraph));
@@ -683,7 +683,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         }
     }
 
-    private boolean doRestart() {
+    private boolean doRestart(boolean external) {
         if(state == UnitState.INIT_TC || state == UnitState.UNKNOWN) {
             logger.debug("{} restarting.", this);
             state = UnitState.ACTIVE;
@@ -697,12 +697,17 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
                             previousResult.scopes(), new DifferDataOps());
 
-                    final StateCapture<S, L, D, T> capture = previousResult.result().localState();
-                    final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
-                            capture.unInitializedScopes().elementSet());
+                    if(external) {
+                        final StateCapture<S, L, D, T> capture = previousResult.result().localState();
+                        final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
+                                capture.unInitializedScopes().elementSet());
 
-                    initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), capture.scopeGraph(),
-                            rootScopes, matchedBySharing.freeze(), openScopes, capture.openEdges());
+                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), capture.scopeGraph(),
+                                rootScopes, matchedBySharing.freeze(), openScopes, capture.openEdges());
+                    } else {
+                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), this.rootScopes,
+                                previousResult.rootScopes());
+                    }
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
                             Collections.emptyList());
@@ -728,7 +733,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     private void doImplicitActivate() {
         // If invoked synchronously, do a implicit transition to ACTIVE
         // runIncremental may not be used anymore!
-        if(state == UnitState.INIT_TC && doRestart()) {
+        if(state == UnitState.INIT_TC && doRestart(false)) {
             logger.debug("{} implicitly activated.");
             this.stateTransitionTrace = TransitionTrace.INITIALLY_STARTED;
         }

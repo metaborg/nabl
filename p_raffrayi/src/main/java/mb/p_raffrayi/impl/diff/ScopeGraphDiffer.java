@@ -753,8 +753,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             return;
         }
 
-        if(!seenPreviousScopes.contains(previousScope)) {
-            throw new IllegalStateException("Closing unobserved scope: " + previousScope);
+        if(!seenPreviousScopes.contains(previousScope)) {            
+            new IllegalStateException("Closing unobserved scope: " + previousScope);
         }
 
         if(!matchedScopes.containsValue(previousScope) && !removedScopes.contains(previousScope)) {
