@@ -433,7 +433,7 @@ lexical syntax
 
   MessageChars = MessageChar+
   MessageChar  = ~[\[\]\\\t\r\n]
-  MessageChar  = "\\[" | "\\]" | "\\\\"
+  MessageChar  = "\\[" | "\\]" | "\\n" | "\\r" | "\\t" | "\\\\"
 
 lexical restrictions
 
