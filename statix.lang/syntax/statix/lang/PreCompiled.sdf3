@@ -5,12 +5,13 @@ imports
   statix/lang/Common
   statix/lang/Core
 
+lexical sorts
+  ENVID
+
 context-free sorts
 
   PreCompiledQuery
-  Params
 
-  States
   State
   StateId
   StateRef
@@ -20,40 +21,35 @@ context-free sorts
   RVar
   RCond
 
+lexical syntax
+
+  ENVID = [a-z] [a-zA-Z0-9\$\_]*
+
+lexical restrictions
+
+  ENVID -/- [a-zA-Z0-9\$\_]
+
 context-free syntax
 
-  Constraint.CPreCompiledQuery = <
-    query
-      <ResolveQuery>
-    compiled to
-      <PreCompiledQuery>
-  >
-
-  PreCompiledQuery.PreCompiledQuery = <
-    compiled query
-      <Params>
-
-      <States>
-  >
-
-  Params.Params = <
-    filter: <Rule>
-    min: <Rule>
-    result: <Term>
-  >
+  Constraint.CPreCompiledQuery = [
+    compiled query [QueryTarget]
+      [QueryFilter]
+      [QueryMin]
+       in [Term] |-> [Term]
+    to
+      states
+        [{State "\n\n"}*]
+      initial [StateRef]
+    [Message]
+  ]
 
 
 context-free syntax // States
 
-  States.States = <
-    states
-      <{State "\n\n"}*>
-  >
-
-
   State.State = <
-    <StateId>
+    <StateId>:
       <{RStep "\n"}+>
+      return <RVar>
   >
 
   StateId  = LCID
@@ -63,10 +59,7 @@ context-free syntax // Resolution steps
 
   RStep.Step     = <<RVar> := <RExp>>
 
-  RStep.Return   = <return <RVar><RCond>>
-
-  RCond.NoCond   =
-  RCond.NonEmpty = < if not empty>
+  RStep.CStep    = <<RVar> := if not empty <RVar> else <RExp>>
 
 context-free syntax // Resolution expressions
 
@@ -74,8 +67,8 @@ context-free syntax // Resolution expressions
 
   RExp.SubEnv    = <subenv <Label> <StateRef>>
 
-  RExp.Merge     = <merge(<{RVar ","}+>)>
+  RExp.Merge     = <merge(<{RVar ", "}*>)>
 
   RExp.Shadow    = <shadow(<RVar>, <RVar>)>
 
-  RVar           = LCID
+  RVar.RVar      = ENVID

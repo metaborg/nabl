@@ -1,0 +1,151 @@
+module statix/lang/precompile/queries
+
+imports
+
+  libstratego-aterm
+
+  signatures/statix/lang/Core-sig
+  signatures/statix/lang/Sugar-sig
+  signatures/statix/lang/PreCompiled-sig
+
+  pp/statix/lang/Core-pp
+
+signature
+
+  sorts
+    StateMachine
+    State
+    Accepting
+
+  constructors
+
+    StateMachine : /* states */List(State) * /* initial */ String -> StateMachine
+    State        : /* id */String * /* accepts*/ Accepting * /* transitions (lbl -> state) */List(Label, String) -> State
+
+    Accept : Accepting
+    Reject : Accepting
+
+rules
+
+  precompile-queries(|a) = bottomup(try(precompile-query(|a)))
+
+  precompile-query(|a):
+    CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(rel, filter, min, s, pst, cstate*, initial, msg)
+    with
+      Filter(lbl-re, _) := filter
+    ; Min(ord*, deq)    := min
+
+    // Strip annotations from all labels
+    ; rel'  := <strip-annos> rel
+    ; re'   := <strip-annos> lbl-re
+
+    // Label order to relation
+    ; lbl-ord := <strip-annos; ords-to-relation(|rel')> ord*
+
+    // Create state machine for RE
+    // FIXME: invalid on negatives. Collect all labels from analysis instead.
+    ; alphabet* := <collect-all(?Label(_))> re'
+    ; alphabet' := <normalize-alphabet> (rel', alphabet*)
+    ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
+
+    // Compile states
+    ; cstate* := <map(compile-state(|lbl-ord))> state*
+
+  normalize-alphabet: (EOP(), alphabet*) -> alphabet*
+  normalize-alphabet: (rel, alphabet*) -> alphabet'*
+    with alphabet'* := [rel, alphabet*]
+
+rules // state compilation
+
+  compile-state(|lbl-ord): State(state-id, acc, trans*) -> c-state
+    with
+      scope-local-new(
+        head-set := <head-set> (acc, trans*)
+      ; (body, v-final) := <compile-L(|trans*, lbl-ord)> head-set
+      ; c-state := State(state-id, body, v-final)
+      )
+
+  compile-L(|trans*, lbl-ord): L -> (body, var)
+    with
+      L'   := <max-L(|lbl-ord)> L
+    ; E_v* := <map({l, S, E: \l -> E
+       with S := <smaller(|lbl-ord, l)> L
+          ; E := <compile-lL(|trans*, lbl-ord)> (l, S)
+      \})> L'
+    ; if [_] := E_v* then
+        [(body, var)] := E_v*
+      else
+        var  := <newvar-L> L
+      ; E*   := <map(Fst); concat> E_v*
+      ; v*   := <map(Snd)> E_v*
+      ; body := [E*, Step(var, Merge(v*))]
+      end
+
+  compile-lL(|trans*, lbl-ord): (l, []) -> (body, env-l)
+    with
+      exp-l := <compile-l(|trans*)> l
+    ; env-l := <newvar-l> l
+    ; body  := [Step(env-l, exp-l)]
+
+  compile-lL(|trans*, lbl-ord): (l, L) -> (body, var)
+    with
+      (body-L*, env-L) := <compile-L(|trans*, lbl-ord)> L
+    ; var   := <newvar-lL> (l, L)
+    ; exp-l := <compile-l(|trans*)> l
+    ; if id /* FIXME: check shadow always */ then
+        body := [body-L*, CStep(var, env-L, exp-l)]
+      else
+        env-l := <newvar-l> l
+      ; body := [
+          body-L*,
+          Step(env-l, exp-l),
+          Step(var, Shadow(env-L, env-l))
+        ]
+      end
+
+  compile-l(|trans*): EOP() -> Resolve()
+
+  compile-l(|trans*): l -> SubEnv(l, st)
+    with st := <lookup> (l, trans*)
+
+rules // name generation
+
+  newvar-L: L -> RVar(<local-newname> $[env__[L']])
+    with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
+
+  newvar-lL: (l, L) -> RVar(<local-newname> $[env_[l']_[L']])
+    with l' := <lbl-name> l
+    with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
+
+  newvar-l: l -> RVar(<local-newname> $[env_[l']])
+    with l' := <lbl-name> l
+
+  lbl-name: EOP() -> "$"
+  lbl-name: Decl() -> "decl"
+  lbl-name: Label(name) -> name'
+    with name' := <try(string-tokenize(|["!"]); last)> name
+
+rules // re & label order
+
+  head-set: (Accept(), trans*) -> head-set
+    with lbl* := <map(Fst)> trans*
+       ; head-set := <insert> (0, EOP(), lbl*)
+  head-set: (Reject(), trans*) -> <map(Fst)> trans*
+
+  max-L(|lbl-ord): L -> max-L
+    with max-L := <filter({l: \l -> l
+      // forall l' in L. l', not l < l'
+      where(<map({l': \ l' -> <not(labelord-lt(|lbl-ord))> (l, l') \})> L)
+    \})> L
+
+  smaller(|lbl-ord, l): L -> S
+    // forall l' in L. l' < l
+    with S := <filter(where(!(<id>, l); labelord-lt(|lbl-ord)))> L
+
+rules // external handling of regular expressions and relations
+
+  external labelre-to-states(|rel, alphabet) /* : LabelRE -> StateMachine */
+
+  external ords-to-relation(|rel) /* : List(LabelOrd) -> LabelOrder */
+
+  external labelord-lt(|lbl-ord) /* : (Label * Label) -> _ */

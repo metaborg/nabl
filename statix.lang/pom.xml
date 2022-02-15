@@ -14,7 +14,15 @@
     <version>2.6.0-SNAPSHOT</version>
     <relativePath>../../releng/parent/language</relativePath>
   </parent>
-  
+
+  <dependencies>
+    <dependency>
+      <groupId>org.metaborg</groupId>
+      <artifactId>scopegraph</artifactId>
+      <version>${metaborg-version}</version>
+    </dependency>
+  </dependencies>
+
   <repositories>
     <repository>
       <id>metaborg-release-repo</id>
@@ -37,7 +45,7 @@
       </snapshots>
     </repository>
   </repositories>
-  
+
   <pluginRepositories>
     <pluginRepository>
       <id>metaborg-release-repo</id>

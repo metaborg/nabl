@@ -6,6 +6,7 @@ imports
   statix/lang/Common
   statix/lang/Core
   statix/lang/Sugar
+  statix/lang/PreCompiled
   statix/lang/Deprecated
 
   statix/test/Test

@@ -8,6 +8,7 @@ imports
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/precompile
 
   statix/runtime/-
 
@@ -52,7 +53,7 @@ rules
   build-evaluation-pair: ast@Test(_, _) -> (body', spec')
     with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         ast'   := <normalize(|a)> ast;
+         ast'   := <normalize(|a); precompile(|a)> ast;
          Test(body, _) := ast';
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
          spec'  := <stx--local-spec-from-spec> spec;
@@ -86,7 +87,7 @@ rules
   evaluate(concurrent): ast@Test(_, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         ast'   := <normalize(|a)> ast;
+         ast'   := <normalize(|a); precompile(|a)> ast;
          Test(body, _) := ast';
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
          spec'  := <stx--local-spec-from-spec> spec;
@@ -107,7 +108,7 @@ rules
     with
       a                   := <nabl2-get-ast-analysis> ast;
       CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-      ast'                := <normalize(|a)> ast;
+      ast'                := <normalize(|a); precompile(|a)> ast;
       Test(body, _)       := ast';
       constraintTerm      := <qualify-names(|a);eliminate-all;stx--index-ast(|"")> body;
       spec                := <core-ast-to-spec-aterm(|a)> (ast', ext);

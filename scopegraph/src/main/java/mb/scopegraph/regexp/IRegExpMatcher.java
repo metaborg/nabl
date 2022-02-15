@@ -9,6 +9,8 @@ public interface IRegExpMatcher<S> {
 
     IRegExp<S> regexp();
 
+    IState<S> state();
+
     /**
      * Matches on the specified symbol.
      *

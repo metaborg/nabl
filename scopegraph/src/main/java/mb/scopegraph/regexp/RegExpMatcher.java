@@ -31,8 +31,12 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return state.regexp;
     }
 
+    @Override public IState<S> state() {
+        return state;
+    }
+
     @Override public RegExpMatcher<S> match(S symbol) {
-        return new RegExpMatcher<>(state.symbolTransitions.getOrDefault(symbol, state.defaultTransition));
+        return new RegExpMatcher<>(state.transition(symbol));
     }
 
     @Override public IRegExpMatcher<S> match(Iterable<S> symbols) {
@@ -44,7 +48,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
     }
 
     @Override public boolean isAccepting() {
-        return state.isNullable;
+        return state.isAccepting();
     }
 
     @Override public boolean isFinal() {
@@ -141,7 +145,7 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         return new RegExpMatcher<>(states.get(initial));
     }
 
-    private static class State<S> implements Serializable {
+    private static class State<S> implements Serializable, IState<S> {
 
         private static final long serialVersionUID = 1L;
 
@@ -154,6 +158,22 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
 
         private State(IRegExp<S> regexp) {
             this.regexp = regexp;
+        }
+
+        @Override public boolean isFinal() {
+            return !nonFinal;
+        }
+
+        @Override public boolean isAccepting() {
+            return isNullable;
+        }
+
+        @Override public boolean isOblivion() {
+            return RegExps.isOblivion(regexp);
+        }
+
+        @Override public State<S> transition(S symbol) {
+            return symbolTransitions.getOrDefault(symbol, defaultTransition);
         }
 
         @Override public int hashCode() {
