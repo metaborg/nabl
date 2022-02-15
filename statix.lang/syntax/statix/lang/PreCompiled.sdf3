@@ -33,12 +33,13 @@ context-free syntax
 
   Constraint.CPreCompiledQuery = [
     compiled query [QueryTarget]
-      [QueryFilter]
-      [QueryMin]
-       in [Term] |-> [Term]
+     [QueryFilter]
+     [QueryMin]
+      in [Term] |-> [Term]
     to
       states
         [{State "\n\n"}*]
+
       initial [StateRef]
     [Message]
   ]
@@ -65,7 +66,7 @@ context-free syntax // Resolution expressions
 
   RExp.Resolve   = <resolve>
 
-  RExp.SubEnv    = <subenv <Label> <StateRef>>
+  RExp.SubEnv    = <subenv <RelRef> <StateRef>>
 
   RExp.Merge     = <merge(<{RVar ", "}*>)>
 

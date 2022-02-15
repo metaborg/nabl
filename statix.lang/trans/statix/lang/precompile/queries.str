@@ -49,7 +49,10 @@ rules
     ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
 
     // Compile states
-    ; cstate* := <map(compile-state(|lbl-ord))> state*
+    ; {| ShadowUnconditional:
+      <try(shadow-unconditional)> deq;
+      cstate* := <map(compile-state(|lbl-ord))> state*
+    |}
 
   normalize-alphabet: (EOP(), alphabet*) -> alphabet*
   normalize-alphabet: (rel, alphabet*) -> alphabet'*
@@ -92,7 +95,7 @@ rules // state compilation
       (body-L*, env-L) := <compile-L(|trans*, lbl-ord)> L
     ; var   := <newvar-lL> (l, L)
     ; exp-l := <compile-l(|trans*)> l
-    ; if id /* FIXME: check shadow always */ then
+    ; if ShadowUnconditional then
         body := [body-L*, CStep(var, env-L, exp-l)]
       else
         env-l := <newvar-l> l
@@ -107,6 +110,18 @@ rules // state compilation
 
   compile-l(|trans*): l -> SubEnv(l, st)
     with st := <lookup> (l, trans*)
+
+rules
+
+  shadow-unconditional: LLam([v1, v2], CTrue()) -> ()
+    where if <non-overlapping-vars> (v1, v2) then
+      rules(ShadowUnconditional: _ -> ())
+    end
+
+  non-overlapping-vars = ?(Var(x), Var(y)); where(not(<strip-annos; equal(|<strip-annos> x)> y))
+  non-overlapping-vars = ?(Wld(), Var(_))
+  non-overlapping-vars = ?(Var(_), Wld())
+  non-overlapping-vars = ?(Wld(), Wld())
 
 rules // name generation
 
