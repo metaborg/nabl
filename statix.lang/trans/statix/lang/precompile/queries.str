@@ -4,11 +4,15 @@ imports
 
   libstratego-aterm
 
+  nabl2/api
+
   signatures/statix/lang/Core-sig
   signatures/statix/lang/Sugar-sig
   signatures/statix/lang/PreCompiled-sig
 
   pp/statix/lang/Core-pp
+
+  statix/lang/analysis
 
 signature
 
@@ -36,15 +40,15 @@ rules
     ; Min(ord*, deq)    := min
 
     // Strip annotations from all labels
-    ; rel'  := <strip-annos> rel
-    ; re'   := <strip-annos> lbl-re
+    ; rel'  := <qualify-names(|a); strip-annos> rel
+    ; re'   := <qualify-names(|a); strip-annos> lbl-re
 
     // Label order to relation
-    ; lbl-ord := <strip-annos; ords-to-relation(|rel')> ord*
+    ; lbl-ord := <map(qualify-names(|a); strip-annos); ords-to-relation(|rel')> ord*
 
     // Create state machine for RE
     // FIXME: invalid on negatives. Collect all labels from analysis instead.
-    ; alphabet* := <collect-all(?Label(_))> re'
+    ; alphabet* := <nabl2-get-all-decls(|a); filter(is-label); map(normalize-label-decl(|a)); make-set>
     ; alphabet' := <normalize-alphabet> (rel', alphabet*)
     ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
 
@@ -55,9 +59,13 @@ rules
         cstate* := <map(compile-state(compile-shadow-conditional|lbl-ord))> state*
       end
 
+  is-label = where(nabl2-get-occurrence-ns; ?"Edge")
+  normalize-label-decl(|a): lbl -> Label(name)
+    with qname := <nabl2-get-property(|a, "qname")> lbl
+       ; name  := <nabl2-get-occurrence-name; stx--mk-qualified-name(|qname); strip-annos> lbl
+
   normalize-alphabet: (EOP(), alphabet*) -> alphabet*
-  normalize-alphabet: (rel, alphabet*) -> alphabet'*
-    with alphabet'* := [rel, alphabet*]
+  normalize-alphabet: (rel, alphabet*) -> [rel, alphabet*]
 
 rules // state compilation
 
@@ -167,7 +175,7 @@ rules // name generation
   lbl-name: EOP() -> "$"
   lbl-name: Decl() -> "decl"
   lbl-name: Label(name) -> name'
-    with name' := <try(string-tokenize(|["!"]); last)> name
+    with name' := <try(string-tokenize(|['!']); last)> name
 
 rules // re & label order
 
