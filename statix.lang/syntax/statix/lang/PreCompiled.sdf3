@@ -6,6 +6,7 @@ imports
   statix/lang/Core
 
 lexical sorts
+
   ENVID
 
 context-free sorts
@@ -23,7 +24,7 @@ context-free sorts
 
 lexical syntax
 
-  ENVID = [a-z] [a-zA-Z0-9\$\_\-]*
+  ENVID = [a-zA-Z] [a-zA-Z0-9\$\_\-]*
 
 lexical restrictions
 
@@ -71,7 +72,5 @@ context-free syntax // Resolution expressions
   RExp.Shadow    = <shadow(<RVar>, <RVar>)>
 
   RExp.CExp      = <if not empty <RVar> else <RExp>>
-
-  RExp           = RVar // TODO needed? Only used in `CExp`, but can single-label (l) environments ever require recomputation, as in any case, the lL environment will already be available?
 
   RVar.RVar      = ENVID

@@ -49,10 +49,11 @@ rules
     ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
 
     // Compile states
-    ; {| ShadowUnconditional:
-      <try(shadow-unconditional)> deq;
-      cstate* := <map(compile-state(|lbl-ord))> state*
-    |}
+    ; if <shadow-unconditional> deq then
+        cstate* := <map(compile-state(compile-shadow-unconditional|lbl-ord))> state*
+      else
+        cstate* := <map(compile-state(compile-shadow-conditional|lbl-ord))> state*
+      end
 
   normalize-alphabet: (EOP(), alphabet*) -> alphabet*
   normalize-alphabet: (rel, alphabet*) -> alphabet'*
@@ -60,20 +61,20 @@ rules
 
 rules // state compilation
 
-  compile-state(|lbl-ord): State(state-id, acc, trans*) -> c-state
+  compile-state(compile-shadow|lbl-ord): State(state-id, acc, trans*) -> c-state
     with
       scope-local-new({| AvailableExp:
           head-set := <head-set> (acc, trans*)
-        ; (body, v-final) := <compile-L(|trans*, lbl-ord)> head-set
+        ; (body, v-final) := <compile-L(compile-shadow|trans*, lbl-ord)> head-set
         ; c-state := State(state-id, body, v-final)
       |})
 
-  compile-L(|trans*, lbl-ord): L -> (body, var)
+  compile-L(compile-shadow|trans*, lbl-ord): L -> (body, var)
     with
       L'   := <max-L(|lbl-ord)> L
     ; E_v* := <map({l, S, E: \l -> E
        with S := <smaller(|lbl-ord, l)> L
-          ; E := <compile-lL(|trans*, lbl-ord)> (l, S)
+          ; E := <compile-lL(compile-shadow|trans*, lbl-ord)> (l, S)
       \})> L'
     ; if [_] := E_v* then
         [(body, var)] := E_v*
@@ -85,55 +86,53 @@ rules // state compilation
       ; body  := <extend-body> (E*, var, exp-m)
       end
 
-  compile-lL(|trans*, lbl-ord): (l, []) -> (body, env-l)
-    with
-      exp-l := <compile-l(|trans*); resolve-available-exp> l
-    ; if RVar(_) := exp-l then
-        body  := []
-      ; env-l := exp-l
-      else
-        env-l := <newvar-l> l
-      ; body  := <extend-body> ([], env-l, exp-l)
-      end
+  compile-lL(compile-shadow|trans*, lbl-ord): (l, []) -> (body, env-l)
+    with exp           := <compile-l(|trans*)> l
+       ; (body, env-l) := <compile-non-existent(newvar-l(|l))> (exp, [])
 
-  compile-lL(|trans*, lbl-ord): (l, L) -> (body, var)
+  compile-lL(compile-shadow|trans*, lbl-ord): (l, L) -> (body, var)
     with
-      (body-L*, env-L) := <compile-L(|trans*, lbl-ord)> L
+      (body-L*, env-L) := <compile-L(compile-shadow|trans*, lbl-ord)> L
     ; exp-l := <compile-l(|trans*); resolve-available-exp> l
-    ; if ShadowUnconditional then
-        exp-c  := <resolve-available-exp> CExp(env-L, exp-l)
-      ; if RVar(_) := exp-c then
-          var  := exp-c
-        ; body := body-L*
-        else
-          var  := <newvar-lL> (l, L)
-        ; body := <extend-body> (body-L*, var, exp-c)
-        end
-      else
-        if RVar(_) := exp-l then
-          exp-s := <resolve-available-exp> Shadow(env-L, exp-l)
-        ; if RVar(_) := exp-s then
-            var  := exp-s
-          ; body := body-L*
-          else
-            // TODO: is this case needed?
-            // Can an l-environment ever be available, but not its corresponding lL environment?
-            var  := <newvar-lL> (l, L)
-          ; body := <extend-body> (body-L*, var, exp-s)
-          end
-        else
-          env-l := <newvar-l> l
-        ; var   := <newvar-lL> (l, L)
-        ; exp-s := Shadow(env-L, env-l)
-        ; body' := <extend-body> (body-L*, env-l, exp-l)
-        ; body  := <extend-body> (body'  , var,   exp-s)
-        end
-      end
+    ; (body, var) := <compile-shadow> (l, L, body-L*, env-L, exp-l)
+
+  // When env-l is a var, it is computed before. However, its shadowed
+  // environment must then be computed as well, as those are always combined
+  // in the `compile-lL` rules. Hence enforce resolution of this variable.
+  compile-shadow-unconditional: (_, _, body, env-L, env-l@RVar(_)) -> (body, exp-c)
+    with exp-c@RVar(_) := <resolve-available-exp> CExp(env-L, env-l)
+
+  compile-shadow-unconditional: (l, L, body, env-L, exp-l) -> (body', var)
+    with (body', var) := <compile-non-existent(newvar-lL(|l, L))> (CExp(env-L, exp-l), body)
+
+  // Enforce resolution of this variable, similar to the unconditional case.
+  compile-shadow-conditional: (_, _, body, env-L, env-l@RVar(_)) -> (body, exp-c)
+    with exp-c@RVar(_) := <resolve-available-exp> Shadow(env-L, env-l)
+
+  compile-shadow-conditional: (l, L, body, env-L, exp-l) -> (body'', var)
+    // In constrast to the unconditional case, when `exp-l` is not a var
+    // `Shadow(env-L, exp-l)` cannot yet exist, as it requires a variable
+    // as second argument. Therefore, create it here.
+    with env-l  := <newvar-l> l
+       ; var    := <newvar-lL> (l, L)
+       ; body'  := <extend-body> (body , env-l, exp-l)
+       ; body'' := <extend-body> (body', var,   Shadow(env-L, env-l))
 
   compile-l(|trans*): EOP() -> Resolve()
 
   compile-l(|trans*): l -> SubEnv(l, st)
     with st := <lookup> (l, trans*)
+
+rules // compile only if not available
+
+  compile-non-existent(newvar): (exp, body) -> (body', var)
+    with exp' := <resolve-available-exp> exp
+       ; (body', var) := <compile-non-existent'(newvar)> (exp', body)
+
+  compile-non-existent'(newvar): (var@RVar(_), body) -> (body, var)
+  compile-non-existent'(newvar): (exp, body) -> (body', var)
+    with var   := <newvar>
+       ; body' := <extend-body> (body, var, exp)
 
 rules // available expressions
 
@@ -142,12 +141,9 @@ rules // available expressions
   extend-body: (body*, var, exp) -> [body*, Step(var, exp)]
     with rules(AvailableExp: exp -> var)
 
-rules
+rules // unconditional shadow optimization
 
-  shadow-unconditional: LLam([v1, v2], CTrue()) -> ()
-    where if <non-overlapping-vars> (v1, v2) then
-      rules(ShadowUnconditional: _ -> ())
-    end
+  shadow-unconditional = ?LLam([v1, v2], CTrue()); where(<non-overlapping-vars> (v1, v2))
 
   non-overlapping-vars = ?(Var(x), Var(y)); where(not(<strip-annos; equal(|<strip-annos> x)> y))
   non-overlapping-vars = ?(Wld(), Var(_))
@@ -156,15 +152,17 @@ rules
 
 rules // name generation
 
-  newvar-L: L -> RVar(<local-newname> $[L-env__[L']])
+  newvar-L: L -> RVar(<local-newname> $[L__[L']])
     with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
 
-  newvar-lL: (l, L) -> RVar(<local-newname> $[lL-env_[l']_[L']])
+  newvar-lL: (l, L) -> RVar(<local-newname> $[lL_[l']_[L']])
     with l' := <lbl-name> l
     with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
+  newvar-lL(|l, L) = <newvar-lL> (l, L)
 
-  newvar-l: l -> RVar(<local-newname> $[l-env_[l']])
+  newvar-l: l -> RVar(<local-newname> $[l__[l']])
     with l' := <lbl-name> l
+  newvar-l(|l) = <newvar-l> l
 
   lbl-name: EOP() -> "$"
   lbl-name: Decl() -> "decl"
