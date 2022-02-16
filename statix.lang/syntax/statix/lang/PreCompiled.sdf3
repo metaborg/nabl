@@ -1,4 +1,4 @@
-module statix/lang/PreCompiled // TODO: Do we intend this for parsing?
+module statix/lang/PreCompiled
 
 imports
 
@@ -23,11 +23,11 @@ context-free sorts
 
 lexical syntax
 
-  ENVID = [a-z] [a-zA-Z0-9\$\_]*
+  ENVID = [a-z] [a-zA-Z0-9\$\_\-]*
 
 lexical restrictions
 
-  ENVID -/- [a-zA-Z0-9\$\_]
+  ENVID -/- [a-zA-Z0-9\$\_\-]
 
 context-free syntax
 
@@ -60,8 +60,6 @@ context-free syntax // Resolution steps
 
   RStep.Step     = <<RVar> := <RExp>>
 
-  RStep.CStep    = <<RVar> := if not empty <RVar> else <RExp>>
-
 context-free syntax // Resolution expressions
 
   RExp.Resolve   = <resolve>
@@ -71,5 +69,9 @@ context-free syntax // Resolution expressions
   RExp.Merge     = <merge(<{RVar ", "}*>)>
 
   RExp.Shadow    = <shadow(<RVar>, <RVar>)>
+
+  RExp.CExp      = <if not empty <RVar> else <RExp>>
+
+  RExp           = RVar // TODO needed? Only used in `CExp`, but can single-label (l) environments ever require recomputation, as in any case, the lL environment will already be available?
 
   RVar.RVar      = ENVID

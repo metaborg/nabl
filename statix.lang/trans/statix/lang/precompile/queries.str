@@ -62,11 +62,11 @@ rules // state compilation
 
   compile-state(|lbl-ord): State(state-id, acc, trans*) -> c-state
     with
-      scope-local-new(
-        head-set := <head-set> (acc, trans*)
-      ; (body, v-final) := <compile-L(|trans*, lbl-ord)> head-set
-      ; c-state := State(state-id, body, v-final)
-      )
+      scope-local-new({| AvailableExp:
+          head-set := <head-set> (acc, trans*)
+        ; (body, v-final) := <compile-L(|trans*, lbl-ord)> head-set
+        ; c-state := State(state-id, body, v-final)
+      |})
 
   compile-L(|trans*, lbl-ord): L -> (body, var)
     with
@@ -78,38 +78,69 @@ rules // state compilation
     ; if [_] := E_v* then
         [(body, var)] := E_v*
       else
-        var  := <newvar-L> L
-      ; E*   := <map(Fst); concat> E_v*
-      ; v*   := <map(Snd)> E_v*
-      ; body := [E*, Step(var, Merge(v*))]
+        var   := <newvar-L> L
+      ; E*    := <map(Fst); concat> E_v*
+      ; v*    := <map(Snd)> E_v*
+      ; exp-m := Merge(v*)
+      ; body  := <extend-body> (E*, var, exp-m)
       end
 
   compile-lL(|trans*, lbl-ord): (l, []) -> (body, env-l)
     with
-      exp-l := <compile-l(|trans*)> l
-    ; env-l := <newvar-l> l
-    ; body  := [Step(env-l, exp-l)]
+      exp-l := <compile-l(|trans*); resolve-available-exp> l
+    ; if RVar(_) := exp-l then
+        body  := []
+      ; env-l := exp-l
+      else
+        env-l := <newvar-l> l
+      ; body  := <extend-body> ([], env-l, exp-l)
+      end
 
   compile-lL(|trans*, lbl-ord): (l, L) -> (body, var)
     with
       (body-L*, env-L) := <compile-L(|trans*, lbl-ord)> L
-    ; var   := <newvar-lL> (l, L)
-    ; exp-l := <compile-l(|trans*)> l
+    ; exp-l := <compile-l(|trans*); resolve-available-exp> l
     ; if ShadowUnconditional then
-        body := [body-L*, CStep(var, env-L, exp-l)]
+        exp-c  := <resolve-available-exp> CExp(env-L, exp-l)
+      ; if RVar(_) := exp-c then
+          var  := exp-c
+        ; body := body-L*
+        else
+          var  := <newvar-lL> (l, L)
+        ; body := <extend-body> (body-L*, var, exp-c)
+        end
       else
-        env-l := <newvar-l> l
-      ; body := [
-          body-L*,
-          Step(env-l, exp-l),
-          Step(var, Shadow(env-L, env-l))
-        ]
+        if RVar(_) := exp-l then
+          exp-s := <resolve-available-exp> Shadow(env-L, exp-l)
+        ; if RVar(_) := exp-s then
+            var  := exp-s
+          ; body := body-L*
+          else
+            // TODO: is this case needed?
+            // Can an l-environment ever be available, but not its corresponding lL environment?
+            var  := <newvar-lL> (l, L)
+          ; body := <extend-body> (body-L*, var, exp-s)
+          end
+        else
+          env-l := <newvar-l> l
+        ; var   := <newvar-lL> (l, L)
+        ; exp-s := Shadow(env-L, env-l)
+        ; body' := <extend-body> (body-L*, env-l, exp-l)
+        ; body  := <extend-body> (body'  , var,   exp-s)
+        end
       end
 
   compile-l(|trans*): EOP() -> Resolve()
 
   compile-l(|trans*): l -> SubEnv(l, st)
     with st := <lookup> (l, trans*)
+
+rules // available expressions
+
+  resolve-available-exp = try(AvailableExp)
+
+  extend-body: (body*, var, exp) -> [body*, Step(var, exp)]
+    with rules(AvailableExp: exp -> var)
 
 rules
 
@@ -125,14 +156,14 @@ rules
 
 rules // name generation
 
-  newvar-L: L -> RVar(<local-newname> $[env__[L']])
+  newvar-L: L -> RVar(<local-newname> $[L-env__[L']])
     with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
 
-  newvar-lL: (l, L) -> RVar(<local-newname> $[env_[l']_[L']])
+  newvar-lL: (l, L) -> RVar(<local-newname> $[lL-env_[l']_[L']])
     with l' := <lbl-name> l
     with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
 
-  newvar-l: l -> RVar(<local-newname> $[env_[l']])
+  newvar-l: l -> RVar(<local-newname> $[l-env_[l']])
     with l' := <lbl-name> l
 
   lbl-name: EOP() -> "$"
