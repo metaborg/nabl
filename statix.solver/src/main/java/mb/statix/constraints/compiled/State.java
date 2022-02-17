@@ -13,8 +13,8 @@ public class State implements Serializable {
 
     private final RVar resultVar;
 
-    public State(ImmutableList<RStep> resolutionSteps, RVar resultVar) {
-        this.resolutionSteps = resolutionSteps;
+    public State(Iterable<RStep> resolutionSteps, RVar resultVar) {
+        this.resolutionSteps = ImmutableList.copyOf(resolutionSteps);
         this.resultVar = resultVar;
     }
 

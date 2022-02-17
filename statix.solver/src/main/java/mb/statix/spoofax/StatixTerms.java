@@ -4,6 +4,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
+import static mb.statix.constraints.compiled.StateMachineTerms.*;
+
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Iterator;
@@ -63,6 +65,9 @@ import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CAstProperty.Op;
+import mb.statix.constraints.CCompiledQuery;
+import mb.statix.constraints.compiled.State;
+import mb.statix.constraints.compiled.StateMachine;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -176,14 +181,15 @@ public class StatixTerms {
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return Constraints.conjoin(ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
                 }),
-                M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
-                        (c, rel, filterTerm, minTerm, scope, result, msg) -> {
-                    final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
-                    final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
-                    return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
-                        return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
-                    });
-                }).flatMap(o -> o),
+                resolveQuery(),
+                M.appl3("CPreCompiledQuery", resolveQuery(), states(), M.stringValue(), (c, query, states, initial) -> {
+                    final State initialState = states.get(initial);
+                    if(initialState == null) {
+                        throw new IllegalStateException("Invalid initial state: " + initial);
+                    }
+                    final StateMachine stateMachine = new StateMachine(states, initialState);
+                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), stateMachine);
+                }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
@@ -207,6 +213,20 @@ public class StatixTerms {
             )).match(t, u);
             // @formatter:on
         };
+    }
+
+    public static IMatcher<CResolveQuery> resolveQuery() {
+        // @formatter:off
+        return (t, u) -> M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
+            (c, rel, filterTerm, minTerm, scope, result, msg) -> {
+                final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
+                    return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
+                });
+            }).flatMap(o -> o)
+            .match(t, u);
+        // @formatter:on
     }
 
     private static IMatcher<String> constraintName() {

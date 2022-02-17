@@ -12,8 +12,8 @@ public final class RMerge implements RExp, Serializable {
 
     private final ImmutableList<RVar> envs;
 
-    public RMerge(ImmutableList<RVar> envs) {
-        this.envs = envs;
+    public RMerge(Iterable<RVar> envs) {
+        this.envs = ImmutableList.copyOf(envs);
     }
 
     public ImmutableList<RVar> envs() {
