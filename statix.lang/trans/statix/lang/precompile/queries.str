@@ -40,6 +40,16 @@ rules
     ; Filter(lbl-re, _) := filter
     ; Min(ord*, deq)    := min
 
+    // In this code, we treat labels/label annotations as follows:
+    // - Internally, labels are represented by their _declarations_
+    //   Therefore, label refs are resolved for `rel`, `lbl-re` and `ord*`
+    // - When inserted in a `SubEnv/2` term, an original reference is
+    //   substituted back. This ensures creating qualified names during
+    //   core AST generation works properly.
+    // - The built-in `decl` label is treated similar.
+    // - The end-of-path (EOP) label does not have a declaration.
+    //   Therefore it is used _without_ annotations.
+
     // Normalize labels by their declarations, to allow comparison.
     ; rel'  := <resolve-lbl-ref(|a)> rel
     ; re'   := <resolve-lbl-refs(|a)> lbl-re
