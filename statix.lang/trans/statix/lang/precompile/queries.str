@@ -35,20 +35,21 @@ rules
 
   precompile-query(|a):
     CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(rel, filter, min, s, pst, cstate*, initial, msg)
-    with
-      Filter(lbl-re, _) := filter
+    with {| LblRef: with(
+      rules(LblRef: lbl@EOP() -> lbl)
+    ; Filter(lbl-re, _) := filter
     ; Min(ord*, deq)    := min
 
-    // Strip annotations from all labels
-    ; rel'  := <qualify-names(|a); strip-annos> rel
-    ; re'   := <qualify-names(|a); strip-annos> lbl-re
+    // Normalize labels by their declarations, to allow comparison.
+    ; rel'  := <resolve-lbl-ref(|a)> rel
+    ; re'   := <resolve-lbl-refs(|a)> lbl-re
 
     // Label order to relation
-    ; lbl-ord := <map(qualify-names(|a); strip-annos); ords-to-relation(|rel')> ord*
+    ; lbl-ord := <resolve-lbl-refs(|a); ords-to-relation(|rel')> ord*
 
     // Create state machine for RE
     // FIXME: invalid on negatives. Collect all labels from analysis instead.
-    ; alphabet* := <nabl2-get-all-decls(|a); filter(is-label); map(normalize-label-decl(|a)); make-set>
+    ; alphabet* := <nabl2-get-all-decls(|a); filter(is-label); map(nabl2-get-occurrence-name); make-set; map(!Label(<id>))>
     ; alphabet' := <normalize-alphabet> (rel', alphabet*)
     ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
 
@@ -58,14 +59,7 @@ rules
       else
         cstate* := <map(compile-state(compile-shadow-conditional|lbl-ord))> state*
       end
-
-  is-label = where(nabl2-get-occurrence-ns; ?"Edge")
-  normalize-label-decl(|a): lbl -> Label(name)
-    with qname := <nabl2-get-property(|a, "qname")> lbl
-       ; name  := <nabl2-get-occurrence-name; stx--mk-qualified-name(|qname); strip-annos> lbl
-
-  normalize-alphabet: (EOP(), alphabet*) -> alphabet*
-  normalize-alphabet: (rel, alphabet*) -> [rel, alphabet*]
+    )|}
 
 rules // state compilation
 
@@ -128,8 +122,9 @@ rules // state compilation
 
   compile-l(|trans*): EOP() -> Resolve()
 
-  compile-l(|trans*): l -> SubEnv(l, st)
+  compile-l(|trans*): l -> SubEnv(l', st)
     with st := <lookup> (l, trans*)
+       ; l' := <restore-lbl-ref> l
 
 rules // compile only if not available
 
@@ -174,8 +169,7 @@ rules // name generation
 
   lbl-name: EOP() -> "$"
   lbl-name: Decl() -> "decl"
-  lbl-name: Label(name) -> name'
-    with name' := <try(string-tokenize(|['!']); last)> name
+  lbl-name: Label(name) -> name
 
 rules // re & label order
 
@@ -193,6 +187,29 @@ rules // re & label order
   smaller(|lbl-ord, l): L -> S
     // forall l' in L. l' < l
     with S := <filter(where(!(<id>, l); labelord-lt(|lbl-ord)))> L
+
+rules // label reference resolution
+
+  is-label = where(nabl2-get-occurrence-ns; ?"Edge")
+
+  resolve-lbl-refs(|a) = bottomup(try(resolve-lbl-ref(|a)))
+
+  resolve-lbl-ref(|a): lbl@EOP()  -> lbl
+  resolve-lbl-ref(|a): lbl@Decl() -> <resolve-lbl-ref'(|a)> lbl
+  resolve-lbl-ref(|a): Label(lbl) -> Label(<resolve-lbl-ref'(|a)> lbl)
+
+  resolve-lbl-ref'(|a): lbl-ref -> lbl-decl
+    with decl     := <nabl2-get-ast-property(|a, "decl")> lbl-ref
+       ; lbl-decl := <nabl2-get-occurrence-name> decl
+       // Maybe override when label occurs multiple times in re/lbl-ord
+       // Should not matter, as it only serves to restore reference
+       // resolution for name qualification.
+       ; rules(LblRef: lbl-decl -> lbl-ref)
+
+  restore-lbl-ref = bottomup(try(LblRef))
+
+  normalize-alphabet: (EOP(), alphabet*) -> alphabet*
+  normalize-alphabet: (rel, alphabet*) -> [rel, alphabet*]
 
 rules // external handling of regular expressions and relations
 
