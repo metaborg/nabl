@@ -36,7 +36,7 @@ rules
   precompile-query(|a):
     CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(rel, filter, min, s, pst, cstate*, initial, msg)
     with {| LblRef: with(
-      rules(LblRef: lbl@EOP() -> lbl)
+      rules(LblRef: EOP() -> EOP())
     ; Filter(lbl-re, _) := filter
     ; Min(ord*, deq)    := min
 
@@ -194,7 +194,7 @@ rules // label reference resolution
 
   resolve-lbl-refs(|a) = bottomup(try(resolve-lbl-ref(|a)))
 
-  resolve-lbl-ref(|a): lbl@EOP()  -> lbl
+  resolve-lbl-ref(|a): EOP() -> EOP()
   resolve-lbl-ref(|a): lbl@Decl() -> <resolve-lbl-ref'(|a)> lbl
   resolve-lbl-ref(|a): Label(lbl) -> Label(<resolve-lbl-ref'(|a)> lbl)
 
