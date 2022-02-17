@@ -34,7 +34,7 @@ rules
   precompile-queries(|a) = bottomup(try(precompile-query(|a)))
 
   precompile-query(|a):
-    CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(rel, filter, min, s, pst, cstate*, initial, msg)
+    q@CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(q, cstate*, initial)
     with {| LblRef: with(
       rules(LblRef: EOP() -> EOP())
     ; Filter(lbl-re, _) := filter

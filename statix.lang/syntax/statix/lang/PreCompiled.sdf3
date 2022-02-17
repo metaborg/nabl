@@ -33,16 +33,12 @@ lexical restrictions
 context-free syntax
 
   Constraint.CPreCompiledQuery = [
-    compiled query [QueryTarget]
-     [QueryFilter]
-     [QueryMin]
-      in [Term] |-> [Term]
+    compiled [CResolveQuery]
     to
       states
         [{State "\n\n"}*]
 
       initial [StateRef]
-    [Message]
   ]
 
 

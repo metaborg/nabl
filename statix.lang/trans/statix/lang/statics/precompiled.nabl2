@@ -8,5 +8,5 @@ imports
 
 rules
 
-  Constraint [[ CPreCompiledQuery(rel, filter, min, s, pst, states, initial, msg) ^ (_) ]] :=
+  Constraint [[ CPreCompiledQuery(query, states, initial) ^ (_) ]] :=
     true. // No type-checking for generated-only code.
