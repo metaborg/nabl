@@ -22,6 +22,7 @@ import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CCompiledQuery;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -33,6 +34,7 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
@@ -90,7 +92,7 @@ public class Patching {
                 return termScopes(c.datumTerm());
             }
 
-            @Override public Immutable<Scope> caseResolveQuery(CResolveQuery c) {
+            @Override public Immutable<Scope> caseResolveQuery(IResolveQuery c) {
                 final Set.Immutable<Scope> scopeTermScopes = termScopes(c.scopeTerm());
                 final Set.Immutable<Scope> resultTermScopes = termScopes(c.resultTerm());
 
@@ -197,7 +199,7 @@ public class Patching {
                 return new CNew(newScopeTerm, newDatumTerm, c.cause().orElse(null), c.ownCriticalEdges().orElse(null));
             }
 
-            @Override public IConstraint caseResolveQuery(CResolveQuery c) {
+            @Override public IConstraint caseResolveQuery(IResolveQuery c) {
                 final ITerm newScopeTerm = patch(c.scopeTerm(), patches);
                 final ITerm newResultTerm = patch(c.resultTerm(), patches);
 
@@ -210,7 +212,15 @@ public class Patching {
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable IMessage message = c.message().orElse(null);
 
-                return new CResolveQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message);
+                return c.match(new IResolveQuery.Cases<IResolveQuery>() {
+                    @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
+                        return new CResolveQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message);
+                    }
+
+                    @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
+                        return new CCompiledQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message, q.stateMachine());
+                    }
+                });
             }
 
             @Override public IConstraint caseTellEdge(CTellEdge c) {

@@ -30,6 +30,8 @@ import mb.nabl2.terms.unification.u.PersistentUnifier;
 
 public class Diseq implements Serializable {
 
+    private static final long serialVersionUID = 42L;
+
     @SuppressWarnings("unused") private static ILogger logger = LoggerUtils.logger(Diseq.class);
 
     private final Set.Immutable<ITermVar> universals;

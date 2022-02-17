@@ -2,7 +2,6 @@ package mb.statix.spec;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
-import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,8 +15,6 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-import mb.statix.solver.completeness.Completeness;
-import mb.statix.solver.completeness.ICompleteness;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;

@@ -53,11 +53,11 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
@@ -461,7 +461,7 @@ class GreedySolver {
                         NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseResolveQuery(CResolveQuery c) throws InterruptedException {
+            @Override public Boolean caseResolveQuery(IResolveQuery c) throws InterruptedException {
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
