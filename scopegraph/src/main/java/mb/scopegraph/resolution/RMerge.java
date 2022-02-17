@@ -1,4 +1,4 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
-public final class RMerge implements RExp, Serializable {
+public final class RMerge<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -20,11 +20,11 @@ public final class RMerge implements RExp, Serializable {
         return envs;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
+    @Override public <R> R match(Cases<L, R> cases) {
         return cases.caseMerge(envs);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
         return cases.caseMerge(envs);
     }
 
@@ -40,7 +40,7 @@ public final class RMerge implements RExp, Serializable {
             return false;
         }
 
-        final RMerge other = (RMerge) obj;
+        @SuppressWarnings("unchecked") final RMerge<L> other = (RMerge<L>) obj;
         return Objects.equals(envs, other.envs);
     }
 

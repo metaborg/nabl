@@ -1,24 +1,24 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 
-public class State implements Serializable {
+public class State<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableList<RStep> resolutionSteps;
+    private final ImmutableList<RStep<L>> resolutionSteps;
 
     private final RVar resultVar;
 
-    public State(Iterable<RStep> resolutionSteps, RVar resultVar) {
+    public State(Iterable<RStep<L>> resolutionSteps, RVar resultVar) {
         this.resolutionSteps = ImmutableList.copyOf(resolutionSteps);
         this.resultVar = resultVar;
     }
 
-    public ImmutableList<RStep> resolutionSteps() {
+    public ImmutableList<RStep<L>> resolutionSteps() {
         return resolutionSteps;
     }
 
@@ -37,7 +37,7 @@ public class State implements Serializable {
         if(obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        final State other = (State) obj;
+        @SuppressWarnings("unchecked") final State<L> other = (State<L>) obj;
         return Objects.equals(resolutionSteps, other.resolutionSteps) && Objects.equals(resultVar, other.resultVar);
     }
 

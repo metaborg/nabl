@@ -1,16 +1,16 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-public final class RStep implements Serializable {
+public final class RStep<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private final RVar var;
-    private final RExp exp;
+    private final RExp<L> exp;
 
-    public RStep(RVar var, RExp exp) {
+    public RStep(RVar var, RExp<L> exp) {
         this.var = var;
         this.exp = exp;
     }
@@ -19,7 +19,7 @@ public final class RStep implements Serializable {
         return var;
     }
 
-    public RExp getExp() {
+    public RExp<L> getExp() {
         return exp;
     }
 
@@ -34,7 +34,7 @@ public final class RStep implements Serializable {
         if(obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        final RStep other = (RStep) obj;
+        @SuppressWarnings("unchecked") final RStep<L> other = (RStep<L>) obj;
         return Objects.equals(var, other.var) && Objects.equals(exp, other.exp);
     }
 

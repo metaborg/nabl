@@ -9,7 +9,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.TermFormatter;
-import mb.statix.constraints.compiled.StateMachine;
+import mb.scopegraph.resolution.StateMachine;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
@@ -19,25 +19,25 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final StateMachine stateMachine;
+    private final StateMachine<ITerm> stateMachine;
 
     public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
-            StateMachine stateMachine) {
+            StateMachine<ITerm> stateMachine) {
         this(filter, min, scopeTerm, resultTerm, null, null, stateMachine);
     }
 
     public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
-            @Nullable IMessage message, StateMachine stateMachine) {
+            @Nullable IMessage message, StateMachine<ITerm> stateMachine) {
         this(filter, min, scopeTerm, resultTerm, null, message, stateMachine);
     }
 
     public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm, IConstraint cause,
-            IMessage message, StateMachine stateMachine) {
+            IMessage message, StateMachine<ITerm> stateMachine) {
         super(filter, min, scopeTerm, resultTerm, cause, message);
         this.stateMachine = stateMachine;
     }
 
-    public StateMachine stateMachine() {
+    public StateMachine<ITerm> stateMachine() {
         return stateMachine;
     }
 

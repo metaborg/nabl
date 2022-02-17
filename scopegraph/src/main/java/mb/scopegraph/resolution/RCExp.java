@@ -1,17 +1,17 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-public class RCExp implements RExp, Serializable {
+public class RCExp<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private final RVar env;
 
-    private final RExp exp;
+    private final RExp<L> exp;
 
-    public RCExp(RVar env, RExp exp) {
+    public RCExp(RVar env, RExp<L> exp) {
         this.env = env;
         this.exp = exp;
     }
@@ -20,15 +20,15 @@ public class RCExp implements RExp, Serializable {
         return env;
     }
 
-    public RExp exp() {
+    public RExp<L> exp() {
         return exp;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
+    @Override public <R> R match(Cases<L, R> cases) {
         return cases.caseCExp(env, exp);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
         return cases.caseCExp(env, exp);
     }
 
@@ -44,7 +44,7 @@ public class RCExp implements RExp, Serializable {
             return false;
         }
 
-        final RCExp other = (RCExp) obj;
+        @SuppressWarnings("unchecked") final RCExp<L> other = (RCExp<L>) obj;
         return Objects.equals(env, other.env) && Objects.equals(exp, other.exp);
     }
 

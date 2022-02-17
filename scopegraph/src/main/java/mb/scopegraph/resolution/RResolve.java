@@ -1,21 +1,21 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 
-public final class RResolve implements RExp, Serializable {
+public final class RResolve<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final RResolve instance = new RResolve();
+    @SuppressWarnings("rawtypes") private static final RResolve instance = new RResolve();
 
     private RResolve() {
     }
 
-    @Override public <R> R match(Cases<R> cases) {
+    @Override public <R> R match(Cases<L, R> cases) {
         return cases.caseResolve();
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
         return cases.caseResolve();
     }
 
@@ -35,9 +35,8 @@ public final class RResolve implements RExp, Serializable {
         return instance;
     }
 
-    public static final RResolve of() {
+    @SuppressWarnings("unchecked") public static final <L> RResolve<L> of() {
         return instance;
     }
-
 
 }

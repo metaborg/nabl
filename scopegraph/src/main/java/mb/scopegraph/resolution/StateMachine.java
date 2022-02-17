@@ -1,4 +1,4 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -6,25 +6,25 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
 
-public class StateMachine implements Serializable {
+public class StateMachine<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableMap<String, State> states;
+    private final ImmutableMap<String, State<L>> states;
 
-    private final State initial;
+    private final State<L> initial;
 
-    public StateMachine(Map<String, State> states, State initial) {
+    public StateMachine(Map<String, State<L>> states, State<L> initial) {
         this.states = ImmutableMap.copyOf(states);
         this.initial = initial;
     }
 
-    public State initial() {
+    public State<L> initial() {
         return initial;
     }
 
-    public State state(String name) {
-        final State result = states.get(name);
+    public State<L> state(String name) {
+        final State<L> result = states.get(name);
         if(result == null) {
             throw new IllegalStateException("Unknown state '" + name + "'.");
         }
@@ -42,7 +42,7 @@ public class StateMachine implements Serializable {
         if(obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        final StateMachine other = (StateMachine) obj;
+        @SuppressWarnings("unchecked") final StateMachine<L> other = (StateMachine<L>) obj;
         return Objects.equals(states, other.states) && Objects.equals(initial, other.initial);
 
     }

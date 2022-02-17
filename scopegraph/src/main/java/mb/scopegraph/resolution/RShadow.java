@@ -1,9 +1,9 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-public class RShadow implements RExp, Serializable {
+public class RShadow<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -24,11 +24,11 @@ public class RShadow implements RExp, Serializable {
         return right;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
+    @Override public <R> R match(Cases<L, R> cases) {
         return cases.caseShadow(left, right);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
         return cases.caseShadow(left, right);
     }
 
@@ -44,7 +44,7 @@ public class RShadow implements RExp, Serializable {
             return false;
         }
 
-        final RShadow other = (RShadow) obj;
+        @SuppressWarnings("unchecked") final RShadow<L> other = (RShadow<L>) obj;
         return Objects.equals(left, other.left) && Objects.equals(right, other.right);
     }
 

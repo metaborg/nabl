@@ -1,24 +1,22 @@
-package mb.statix.constraints.compiled;
+package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-import mb.nabl2.terms.ITerm;
-
-public final class RSubEnv implements RExp, Serializable {
+public final class RSubEnv<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ITerm label;
+    private final L label;
 
     private final String state; // TODO: can we 'inline' the proper state here?
 
-    public RSubEnv(ITerm label, String state) {
+    public RSubEnv(L label, String state) {
         this.label = label;
         this.state = state;
     }
 
-    public ITerm label() {
+    public L label() {
         return label;
     }
 
@@ -26,11 +24,11 @@ public final class RSubEnv implements RExp, Serializable {
         return state;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
+    @Override public <R> R match(Cases<L, R> cases) {
         return cases.caseSubEnv(label, state);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
         return cases.caseSubEnv(label, state);
     }
 
@@ -46,7 +44,7 @@ public final class RSubEnv implements RExp, Serializable {
             return false;
         }
 
-        final RSubEnv other = (RSubEnv) obj;
+        @SuppressWarnings("unchecked") final RSubEnv<L> other = (RSubEnv<L>) obj;
         return Objects.equals(label, other.label) && Objects.equals(state, other.state);
     }
 
