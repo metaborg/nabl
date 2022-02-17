@@ -1,9 +1,9 @@
 package mb.statix.constraints;
 
-import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.ITerm;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
@@ -20,7 +20,8 @@ public interface IResolveQuery extends IConstraint {
 
     <R> R match(Cases<R> cases);
 
-    <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
+    <R, E extends Throwable> R matchInResolution(ResolutionFunction1<CResolveQuery, R> onResolveQuery,
+            ResolutionFunction1<CCompiledQuery, R> onCompiledQuery) throws ResolutionException, InterruptedException;
 
     @Override default <R> R match(IConstraint.Cases<R> cases) {
         return cases.caseResolveQuery(this);
@@ -42,16 +43,8 @@ public interface IResolveQuery extends IConstraint {
 
     }
 
-    interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IResolveQuery, R, E> {
-
-        R caseResolveQuery(CResolveQuery q) throws E;
-
-        R caseCompiledQuery(CCompiledQuery q) throws E;
-
-        @Override default R apply(IResolveQuery q) throws E {
-            return q.matchOrThrow(this);
-        }
-
+    interface ResolutionFunction1<T, R> {
+        R apply(T t) throws ResolutionException, InterruptedException;
     }
 
 }

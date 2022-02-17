@@ -1,4 +1,4 @@
-package mb.scopegraph.oopsla20.interp;
+package mb.scopegraph.oopsla20.reference;
 
 import java.util.HashMap;
 import java.util.List;
@@ -8,12 +8,6 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.task.ICancel;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.reference.DataLeq;
-import mb.scopegraph.oopsla20.reference.DataWF;
-import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.scopegraph.oopsla20.reference.Env;
-import mb.scopegraph.oopsla20.reference.IncompleteException;
-import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.resolution.RExp;

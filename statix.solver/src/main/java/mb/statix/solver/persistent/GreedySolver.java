@@ -44,6 +44,7 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.IncompleteException;
 import mb.scopegraph.oopsla20.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.ResolutionInterpreter;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -495,15 +496,26 @@ class GreedySolver {
                 try {
                     final ConstraintQueries cq = new ConstraintQueries(spec, state, params::isComplete);
                     // @formatter:off
-                    final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
-                                .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
-                                .withDataWF(cq.getDataWF(dataWfRule))
-                                .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
-                                .withDataEquiv(cq.getDataEquiv(dataLeqRule))
-                                .withIsComplete((s, l) -> params.isComplete(s, l, state))
-                                .build(state.scopeGraph(), spec.allLabels());
+                    final Env<Scope, ITerm, ITerm> paths = c.matchInResolution(
+                        resolveQuery -> {
+                            final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
+                                    .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
+                                    .withDataWF(cq.getDataWF(dataWfRule))
+                                    .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
+                                    .withDataEquiv(cq.getDataEquiv(dataLeqRule))
+                                    .withIsComplete((s, l) -> params.isComplete(s, l, state))
+                                    .build(state.scopeGraph(), spec.allLabels());
+                            return nameResolution.resolve(scope, cancel);
+                        },
+                        compiledQuery -> {
+                            final ResolutionInterpreter<Scope, ITerm, ITerm> interpreter =
+                                new ResolutionInterpreter<>(state.scopeGraph(), cq.getDataWF(dataWfRule),
+                                cq.getDataEquiv(dataLeqRule), compiledQuery.stateMachine(), (s, l) -> params.isComplete(s, l, state));
+                            return interpreter.resolve(scope, cancel);
+                        }
+                    );
                     // @formatter:on
-                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope, cancel);
+
                     final List<ITerm> pathTerms =
                             Streams.stream(paths).map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
                                     .collect(ImmutableList.toImmutableList());

@@ -9,6 +9,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.TermFormatter;
+import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.scopegraph.resolution.StateMachine;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -45,8 +46,9 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
         return cases.caseCompiledQuery(this);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseCompiledQuery(this);
+    @Override public <R, E extends Throwable> R matchInResolution(ResolutionFunction1<CResolveQuery, R> onResolveQuery,
+            ResolutionFunction1<CCompiledQuery, R> onCompiledQuery) throws ResolutionException, InterruptedException {
+        return onCompiledQuery.apply(this);
     }
 
     @Override public CCompiledQuery withCause(IConstraint cause) {
