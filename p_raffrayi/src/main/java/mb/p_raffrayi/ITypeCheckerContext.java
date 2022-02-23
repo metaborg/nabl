@@ -13,9 +13,11 @@ import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Result;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
+import mb.scopegraph.resolution.StateMachine;
 
 /**
  * The interface from the system to the type checkers.
@@ -44,8 +46,7 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Start sub unit with the given static scope graph and root scopes.
      */
-    IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library,
-            List<S> rootScopes);
+    IFuture<IUnitResult<S, L, D, Unit>> add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes);
 
     /**
      * Initialize root scope.
@@ -58,8 +59,8 @@ public interface ITypeCheckerContext<S, L, D> {
     S freshScope(String baseName, Iterable<L> labels, boolean data, boolean shared);
 
     /**
-     * Create fresh scope with stable identity, declaring open edges and data, and sharing with sub type checkers.
-     * Will automatically be markes as shared.
+     * Create fresh scope with stable identity, declaring open edges and data, and sharing with sub type checkers. Will
+     * automatically be marked as shared.
      *
      * Will throw when identity is already used previously.
      */
@@ -111,7 +112,32 @@ public interface ITypeCheckerContext<S, L, D> {
      * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
      * type checker state safely.
      */
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, IQuery<S, L, D> query, DataWf<S, L, D> dataWF,
+            DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal);
+
+    /**
+     * Execute interpreted scope graph query in the given scope.
+     *
+     * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
+     * that do not leak references to the type checker, as this will break the actor abstraction.
+     *
+     * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
+     * type checker state safely.
+     */
     IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
+            DataLeq<S, L, D> dataEquivInternal);
+
+    /**
+     * Execute compiled scope graph query in the given scope.
+     *
+     * It is important that the LabelWF, LabelOrder, DataWF, and DataLeq arguments are self-contained, static values
+     * that do not leak references to the type checker, as this will break the actor abstraction.
+     *
+     * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
+     * type checker state safely.
+     */
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, StateMachine<L> stateMachine, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
             DataLeq<S, L, D> dataEquivInternal);
 
@@ -131,8 +157,8 @@ public interface ITypeCheckerContext<S, L, D> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>>
-                    add(String id, IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
+            @SuppressWarnings("unused") @Override public IFuture<IUnitResult<S, L, D, Unit>> add(String id,
+                    IScopeGraphLibrary<S, L, D> library, List<S> rootScopes) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
@@ -168,6 +194,18 @@ public interface ITypeCheckerContext<S, L, D> {
 
             @SuppressWarnings("unused") @Override public void closeScope(S scope) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
+            }
+
+            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, IQuery<S, L, D> query,
+                    DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
+                    DataLeq<S, L, D> dataEquivInternal) {
+                return outer.query(scope, query, dataWF, dataEquiv, null, null);
+            }
+
+            @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope,
+                    StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+                return outer.query(scope, stateMachine, labelWf, dataWF, dataEquiv, null, null);
             }
 
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,

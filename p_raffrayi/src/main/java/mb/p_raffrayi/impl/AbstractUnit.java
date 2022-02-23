@@ -74,10 +74,12 @@ import mb.p_raffrayi.impl.tokens.TypeCheckerState;
 import mb.p_raffrayi.impl.tokens.UnitAdd;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
-import mb.scopegraph.ecoop21.INameResolutionContext;
+import mb.p_raffrayi.nameresolution.IResolutionContext;
+import mb.p_raffrayi.nameresolution.IQuery;
+import mb.p_raffrayi.nameresolution.NameResolutionQuery;
+import mb.p_raffrayi.nameresolution.StateMachineQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.ecoop21.NameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.ScopeGraphUtil;
 import mb.scopegraph.oopsla20.diff.BiMap;
@@ -89,6 +91,7 @@ import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
+import mb.scopegraph.resolution.StateMachine;
 
 public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IActorMonitor, Host<IProcess<S, L, D>> {
 
@@ -194,11 +197,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
-            ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder,
-            DataLeq<S, L, D> dataEquiv) {
+            ScopePath<S, L> path, IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         // resume(); // FIXME necessary?
         stats.incomingQueries += 1;
-        return doQuery(self.sender(TYPE), origin, false, path, labelWF, labelOrder, dataWF, dataEquiv, null, null);
+        return doQuery(self.sender(TYPE), origin, false, path, query, dataWF, dataEquiv, null, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -265,8 +267,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 
-    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph, List<S> rootScopes,
-            IPatchCollection.Immutable<S> patches, Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
+    protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph,
+            List<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges) {
         assertDifferEnabled();
         logger.debug("Initializing differ: {} with initial scope graph: {}.", differ, scopeGraph);
         this.differ = differ;
@@ -488,27 +491,29 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected final IFuture<IQueryAnswer<S, L, D>> doQuery(IActorRef<? extends IUnit<S, L, D, ?>> sender,
-            IActorRef<? extends IUnit<S, L, D, ?>> origin, boolean record, ScopePath<S, L> path, LabelWf<L> labelWF,
-            LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-        final ILogger logger = LoggerUtils.logger(INameResolutionContext.class);
+            IActorRef<? extends IUnit<S, L, D, ?>> origin, boolean record, ScopePath<S, L> path, IQuery<S, L, D> query,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
+            DataLeq<S, L, D> dataEquivInternal) {
+        final ILogger logger = LoggerUtils.logger(IResolutionContext.class);
         logger.debug("got _query from {}", sender);
+
 
         final boolean external = !sender.equals(self);
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> transitiveQueries = ImmutableSet.builder();
         final ImmutableSet.Builder<IRecordedQuery<S, L, D>> predicateQueries = ImmutableSet.builder();
         final ITypeCheckerContext<S, L, D> queryContext = queryContext(predicateQueries, origin);
 
-        final INameResolutionContext<S, L, D> nrc = new INameResolutionContext<S, L, D>() {
+        final Ref<IResolutionContext<S, L, D>> context = new Ref<>();
+        context.set(new IResolutionContext<S, L, D>() {
 
-            @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
-                    LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
+            @Override public IFuture<Env<S, L, D>> externalEnv(ScopePath<S, L> path, IQuery<S, L, D> query,
+                    ICancel cancel) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
                     logger.debug("local env {}", scope);
-                    return context.localEnv(path, re, cancel).thenApply(ans -> {
+                    return query.resolve(context.get(), path, cancel).thenApply(ans -> {
                         if(isQueryRecordingEnabled() && record && sharedScopes.contains(scope)) {
-                            recordedQueries.add(RecordedQuery.of(path, datumScopes(ans), re, dataWF, ans));
+                            recordedQueries.add(RecordedQuery.of(path, datumScopes(ans), query.labelWf(), dataWF, ans));
                         }
 
                         return ans;
@@ -518,8 +523,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         logger.debug("remote env {} at {}", scope, owner);
                         // this code mirrors query(...)
                         final IFuture<IQueryAnswer<S, L, D>> result =
-                                self.async(owner)._query(origin, path, re, dataWF, labelOrder, dataEquiv);
-                        final Query<S, L, D> wf = Query.of(sender, path, re, dataWF, labelOrder, dataEquiv, result);
+                                self.async(owner)._query(origin, path, query, dataWF, dataEquiv);
+                        final Query<S, L, D> wf = Query.of(sender, path, query, dataWF, dataEquiv, result);
                         waitFor(wf, owner);
                         if(external) {
                             stats.forwardedQueries += 1;
@@ -530,14 +535,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             if(isQueryRecordingEnabled()) {
                                 if(external) {
                                     // For external queries, track this query as transitive.
-                                    transitiveQueries
-                                            .add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF, ans.env()));
+                                    transitiveQueries.add(RecordedQuery.of(path, datumScopes(ans.env()),
+                                            query.labelWf(), dataWF, ans.env()));
                                     transitiveQueries.addAll(ans.transitiveQueries());
                                     predicateQueries.addAll(ans.predicateQueries());
                                 } else if(record) {
                                     // For local query, record it as such.
-                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), re, dataWF,
-                                            ans.env(), false));
+                                    recordedQueries.add(RecordedQuery.of(path, datumScopes(ans.env()), query.labelWf(),
+                                            dataWF, ans.env(), false));
                                     recordedQueries.addAll(ans.transitiveQueries());
                                     recordedQueries.addAll(ans.predicateQueries());
                                 }
@@ -616,7 +621,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
             }
 
-            @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Boolean> dataEquiv(D d1, D d2, ICancel cancel) throws InterruptedException {
                 stats.dataLeqChecks += 1;
                 final IFuture<Boolean> result;
                 if(external || dataEquivInternal == null) {
@@ -639,14 +644,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
             }
 
-            @Override public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+            @Override public IFuture<Boolean> dataEquivAlwaysTrue(ICancel cancel) {
                 return dataEquiv.alwaysTrue(queryContext, cancel);
             }
+        });
 
-        };
-        final NameResolution<S, L, D> nr = new NameResolution<S, L, D>(edgeLabels, labelOrder, nrc);
+        final IFuture<Env<S, L, D>> result = context.get().externalEnv(path, query, this.context.cancel());
 
-        final IFuture<Env<S, L, D>> result = nr.env(path, labelWF, context.cancel());
         result.whenComplete((env, ex) -> {
             logger.debug("have answer for {}", sender);
         });
@@ -661,16 +665,16 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 return self.id() + "#query";
             }
 
-            @Override public IFuture<Set.Immutable<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
-                    LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
-                    @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
+            @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+                    IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
                 // does not require the Unit to be ACTIVE
 
                 final ScopePath<S, L> path = new ScopePath<>(scope);
                 // If record is true, a potentially hidden scope from the predicate may leak to the recordedQueries of the receiver.
-                final IFuture<IQueryAnswer<S, L, D>> result = doQuery(self, origin, false, path, labelWF, labelOrder,
-                        dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
-                final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+                final IFuture<IQueryAnswer<S, L, D>> result =
+                        doQuery(self, origin, false, path, query, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
+                final Query<S, L, D> wf = Query.of(self, path, query, dataWF, dataEquiv, result);
                 waitFor(wf, self);
                 stats.localQueries += 1;
                 return self.schedule(result).thenApply(ans -> {
@@ -680,8 +684,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         // leading to exceptions. However, since the query is local, it is not required to verify it anyway.
                         // Hence, we just ignore it.
                         if(!context.scopeId(path.getTarget()).equals(origin.id())) {
-                            queries.add(
-                                    ARecordedQuery.of(path, datumScopes(ans.env()), labelWF, dataWF, ans.env(), true));
+                            queries.add(ARecordedQuery.of(path, datumScopes(ans.env()), query.labelWf(), dataWF,
+                                    ans.env(), true));
                         }
                         ans.transitiveQueries().forEach(q -> queries.add(q.withIncludePatches(false)));
                         queries.addAll(ans.predicateQueries());
@@ -692,19 +696,32 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     resume(); // FIXME needed?
                 });
             }
+
+            @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+                    LabelWf<L> labelWF, LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
+                return this.query(scope, new NameResolutionQuery<>(labelWF, labelOrder, edgeLabels), dataWF, dataEquiv,
+                        dataWfInternal, dataEquivInternal);
+            }
+
+            @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+                    StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF,
+                    DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+                return this.query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv,
+                        dataWfInternal, dataEquivInternal);
+            }
         };
     }
 
     protected final IFuture<Env<S, L, D>> doQueryPrevious(IActorRef<? extends IUnit<S, L, D, ?>> sender,
-            IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+            IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, IQuery<S, L, D> query,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         logger.debug("rec pquery from {}", sender);
         // TODO: fix entanglement between StaticNameResolutionContext and StaticQueryContext
-        final INameResolutionContext<S, L, D> nrc = new StaticNameResolutionContext(sender, scopeGraph,
+        final IResolutionContext<S, L, D> context = new StaticNameResolutionContext(sender, scopeGraph,
                 new StaticQueryContext(sender, scopeGraph), dataWF, dataEquiv);
-        final NameResolution<S, L, D> nr = new NameResolution<>(edgeLabels, labelOrder, nrc);
 
-        return nr.env(path, labelWF, context.cancel());
+        return query.resolve(context, path, this.context.cancel());
     }
 
     protected final boolean isOwner(S scope) {
@@ -895,7 +912,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     }
 
-    protected final class StaticNameResolutionContext implements INameResolutionContext<S, L, D> {
+    protected final class StaticNameResolutionContext implements IResolutionContext<S, L, D> {
 
         private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final DataLeq<S, L, D> dataLeq;
@@ -913,21 +930,22 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             this.dataLeq = dataLeq;
         }
 
-        @Override public IFuture<Env<S, L, D>> externalEnv(LocalEnv<S, L, D> context, ScopePath<S, L> path,
-                LabelWf<L> re, LabelOrder<L> labelOrder, ICancel cancel) {
+        @Override public IFuture<Env<S, L, D>> externalEnv(ScopePath<S, L> path, IQuery<S, L, D> query,
+                ICancel cancel) {
             final S scope = path.getTarget();
             if(canAnswer(scope)) {
                 logger.debug("local p_env {}", scope);
-                return context.localEnv(path, re, cancel);
+                return query.resolve(this, path, cancel);
             }
+
             return getOwner(scope).thenCompose(owner -> {
                 logger.debug("remote p_env from {}", owner);
                 final ICompletableFuture<Env<S, L, D>> future = new CompletableFuture<>();
-                final PQuery<S, L, D> query = PQuery.of(sender, path, dataWf, future);
-                waitFor(query, owner);
-                self.async(owner)._queryPrevious(path, re, dataWf, labelOrder, dataLeq).whenComplete((env, ex) -> {
+                final PQuery<S, L, D> pQuery = PQuery.of(sender, path, dataWf, future);
+                waitFor(pQuery, owner);
+                self.async(owner)._queryPrevious(path, query, dataWf, dataLeq).whenComplete((env, ex) -> {
                     logger.debug("got p_env from {}", sender);
-                    granted(query, owner);
+                    granted(pQuery, owner);
                     future.complete(env, ex);
                     resume();
                 });
@@ -949,13 +967,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return dataWf.wf(datum, queryContext, cancel);
         }
 
-        @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+        @Override public IFuture<Boolean> dataEquiv(D d1, D d2, ICancel cancel) throws InterruptedException {
             return dataLeq.leq(d1, d2, queryContext, cancel);
         }
 
-        @Override public IFuture<Boolean> dataLeqAlwaysTrue(ICancel cancel) {
+        @Override public IFuture<Boolean> dataEquivAlwaysTrue(ICancel cancel) {
             return dataLeq.alwaysTrue(queryContext, cancel);
         }
+
     }
 
     protected final class StaticQueryContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
@@ -973,17 +992,30 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return self.id() + "#prev-query";
         }
 
+        @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+                IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            final IResolutionContext<S, L, D> pContext =
+                    new StaticNameResolutionContext(sender, scopeGraph, this, dataWF, dataEquiv);
+
+            return query.resolve(pContext, new ScopePath<>(scope), AbstractUnit.this.context.cancel())
+                    .thenApply(CapsuleUtil::toSet);
+        }
+
         @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-            final INameResolutionContext<S, L, D> pContext =
-                    new StaticNameResolutionContext(sender, scopeGraph, this, dataWF, dataEquiv);
-            // @formatter:off
-            return new NameResolution<>(edgeLabels, labelOrder, pContext)
-                .env(new ScopePath<S, L>(scope), labelWF, context.cancel())
-                .thenApply(CapsuleUtil::toSet);
-            // @formatter:on
+            return this.query(scope, new NameResolutionQuery<>(labelWF, labelOrder, edgeLabels), dataWF, dataEquiv,
+                    dataWfInternal, dataEquivInternal);
         }
+
+        @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+                StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+            return this.query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
+                    dataEquivInternal);
+        }
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1098,7 +1130,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             if(restarts.isEmpty()) {
                 logger.warn(
                         "Conservative deadlock detection failed: Active units have no incoming dependencies elegible for restart. Restarting all unknown units");
-                groupedStates.get(StateSummary.State.UNKNOWN).forEach(node -> node.getSelf().from(self, context)._restart());
+                groupedStates.get(StateSummary.State.UNKNOWN)
+                        .forEach(node -> node.getSelf().from(self, context)._restart());
             } else {
                 logger.debug("Restarting {}.", restarts);
                 restarts.forEach(node -> node.from(self, context)._restart());

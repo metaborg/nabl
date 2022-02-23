@@ -21,7 +21,7 @@ import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
-public class NameResolution<S, L, D> implements INameResolutionContext.LocalEnv<S, L, D> {
+public class NameResolution<S, L, D> {
 
     private static final ILogger logger = LoggerUtils.logger(NameResolution.class);
 
@@ -44,11 +44,6 @@ public class NameResolution<S, L, D> implements INameResolutionContext.LocalEnv<
     ///////////////////////////////////////////////////////////////////////////
 
     public IFuture<Env<S, L, D>> env(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
-        logger.trace("env {}", path);
-        return context.externalEnv(this, path, re, labelOrder, cancel);
-    }
-
-    public IFuture<Env<S, L, D>> localEnv(ScopePath<S, L> path, LabelWf<L> re, ICancel cancel) {
         final Set.Transient<EdgeOrData<L>> labels = CapsuleUtil.transientSet();
         if(re.accepting()) {
             labels.__insert(dataLabel);
@@ -173,7 +168,7 @@ public class NameResolution<S, L, D> implements INameResolutionContext.LocalEnv<
             for(S nextScope : ss) {
                 final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
                 if(p.isPresent()) {
-                    envs.add(env(p.get(), newRe, cancel));
+                    envs.add(context.externalEnv(p.get(), newRe, labelOrder, cancel));
                 } else {
                     // cycle
                 }

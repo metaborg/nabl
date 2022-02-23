@@ -75,6 +75,9 @@ import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Query;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
+import mb.p_raffrayi.nameresolution.IQuery;
+import mb.p_raffrayi.nameresolution.NameResolutionQuery;
+import mb.p_raffrayi.nameresolution.StateMachineQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -87,10 +90,10 @@ import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 import mb.scopegraph.patching.Patcher;
+import mb.scopegraph.resolution.StateMachine;
 
 class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, D>>
-        extends AbstractUnit<S, L, D, Result<S, L, D, R, T>>
-        implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
+        extends AbstractUnit<S, L, D, Result<S, L, D, R, T>> implements IIncrementalTypeCheckerContext<S, L, D, R, T> {
 
 
     private static final ILogger logger = LoggerUtils.logger(TypeCheckerUnit.class);
@@ -262,11 +265,10 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         return result;
     }
 
-    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
+    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         assertPreviousResultProvided();
-        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, labelWF, dataWF, labelOrder,
-                dataEquiv);
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, query, dataWF, dataEquiv);
     }
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
@@ -331,10 +333,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         if(this.previousResult == null || !this.previousResult.subUnitResults().containsKey(id)) {
             this.addedUnitIds.__insert(id);
 
-            return ifActive(
-                    whenContextActive(this.<Result<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
-                        return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
-                    }, rootScopes, false)._2()));
+            return ifActive(whenContextActive(this.<Result<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
+                return new TypeCheckerUnit<>(subself, self, subcontext, unitChecker, edgeLabels);
+            }, rootScopes, false)._2()));
         }
 
         @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Result<S, L, D, Q, U>> subUnitPreviousResult =
@@ -452,20 +453,20 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         doCloseScope(self, scope);
     }
 
-    @Override public IFuture<Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF, LabelOrder<L> labelOrder,
-            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, @Nullable DataWf<S, L, D> dataWfInternal,
-            @Nullable DataLeq<S, L, D> dataEquivInternal) {
+    @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, IQuery<S, L, D> query,
+            DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
+            DataLeq<S, L, D> dataEquivInternal) {
         assertActive();
         doImplicitActivate();
 
         final ScopePath<S, L> path = new ScopePath<>(scope);
-        final IFuture<IQueryAnswer<S, L, D>> result = doQuery(self, self, true, path, labelWF, labelOrder, dataWF,
-                dataEquiv, dataWfInternal, dataEquivInternal);
+        final IFuture<IQueryAnswer<S, L, D>> result =
+                doQuery(self, self, true, path, query, dataWF, dataEquiv, dataWfInternal, dataEquivInternal);
         final IFuture<IQueryAnswer<S, L, D>> ret;
         if(result.isDone()) {
             ret = result;
         } else {
-            final Query<S, L, D> wf = Query.of(self, path, labelWF, dataWF, labelOrder, dataEquiv, result);
+            final Query<S, L, D> wf = Query.of(self, path, query, dataWF, dataEquiv, result);
             waitFor(wf, self);
             ret = result.whenComplete((env, ex) -> {
                 granted(wf, self);
@@ -484,6 +485,20 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         })).thenApply(ans -> {
             return CapsuleUtil.toSet(ans.env());
         });
+    }
+
+    @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
+            LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            @Nullable DataWf<S, L, D> dataWfInternal, @Nullable DataLeq<S, L, D> dataEquivInternal) {
+        return query(scope, new NameResolutionQuery<>(labelWF, labelOrder, edgeLabels), dataWF, dataEquiv,
+                dataWfInternal, dataEquivInternal);
+    }
+
+    @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
+            StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
+        return query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
+                dataEquivInternal);
     }
 
     @Override public <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
@@ -610,7 +625,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                         previousResult.scopes(), new DifferDataOps()), differOps());
             // @formatter:on
 
-            final Collection<S> openScopes = this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
+            final Collection<S> openScopes =
+                    this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
             initDiffer(differ, previousResult.scopeGraph(), previousResult.rootScopes(), localPatches, openScopes,
                     ImmutableMultimap.of());
             if(isConfirmationEnabled()) {
@@ -809,15 +825,16 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         @Override public IFuture<IQueryAnswer<S, L, D>> query(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWf, DataLeq<S, L, D> dataEquiv) {
             logger.debug("query from env differ.");
-            return doQuery(sender, sender, false, scopePath, labelWf, labelOrder, dataWf, dataEquiv, null, null);
+            return doQuery(sender, sender, false, scopePath, new NameResolutionQuery<>(labelWf, labelOrder, edgeLabels),
+                    dataWf, dataEquiv, null, null);
         }
 
         @Override public IFuture<Env<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
             assertPreviousResultProvided();
             logger.debug("previous query from env differ.");
-            return doQueryPrevious(sender, previousResult.scopeGraph(), scopePath, labelWf, dataWf, labelOrder,
-                    dataEquiv);
+            return doQueryPrevious(sender, previousResult.scopeGraph(), scopePath,
+                    new NameResolutionQuery<>(labelWf, labelOrder, edgeLabels), dataWf, dataEquiv);
         }
 
         @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,

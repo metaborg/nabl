@@ -8,8 +8,7 @@ import mb.p_raffrayi.impl.IQueryAnswer;
 import mb.p_raffrayi.impl.IUnit;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
-import mb.scopegraph.ecoop21.LabelOrder;
-import mb.scopegraph.ecoop21.LabelWf;
+import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.oopsla20.path.IScopePath;
 
 @Value.Immutable(prehash = false)
@@ -34,8 +33,7 @@ public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
     }
 
     public static <S, L, D> Query<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
-            @SuppressWarnings("unused") LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            @SuppressWarnings("unused") LabelOrder<L> labelOrder,
+            @SuppressWarnings("unused") IQuery<S, L, D> query, DataWf<S, L, D> dataWF,
             @SuppressWarnings("unused") DataLeq<S, L, D> dataEquiv, IFuture<IQueryAnswer<S, L, D>> future) {
         return Query.of(origin, path, dataWF, future);
     }
