@@ -112,7 +112,7 @@ public class ResolutionInterpreter<S, L, D> {
 
                     final IFuture<List<Unit>> future = AggregateFuture.forAll(rightEnv, path -> {
                         return isShadowed(path.getDatum(), leftEnv, cancel).thenApply(equiv -> {
-                            if(equiv) {
+                            if(!equiv) {
                                 envBuilder.add(path);
                             }
                             return Unit.unit;

@@ -44,6 +44,7 @@ import mb.statix.spec.Spec;
 public class Solver {
 
     public static final int RETURN_ON_FIRST_ERROR = 1;
+    public static final int FORCE_INTERP_QUERIES = 2;
 
     public static final int TERM_FORMAT_DEPTH = 4;
 

@@ -71,12 +71,14 @@ import mb.statix.concurrent.util.VarIndexedCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
+import mb.statix.constraints.CCompiledQuery;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
+import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
@@ -635,7 +637,6 @@ public class StatixSolver {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 final LabelWf<ITerm> labelWF = new RegExpLabelWf<>(filter.getLabelWF());
-                final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
                 final DataWf<Scope, ITerm, ITerm> dataWF = new ConstraintDataWF(spec, dataWfRule);
                 final DataLeq<Scope, ITerm, ITerm> dataEquiv = new ConstraintDataEquiv(spec, dataLeqRule);
                 final DataWf<Scope, ITerm, ITerm> dataWFInternal =
@@ -643,8 +644,29 @@ public class StatixSolver {
                 final DataLeq<Scope, ITerm, ITerm> dataEquivInternal =
                         LOCAL_INFERENCE ? new ConstraintDataEquivInternal(dataLeqRule) : null;
 
-                final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future = scopeGraph
-                        .query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
+                final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future;
+                if((flags & Solver.FORCE_INTERP_QUERIES) == 0) {
+                    // @formatter:off
+                    future = c.match(new IResolveQuery.Cases<IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>>>() {
+
+                        @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseResolveQuery(CResolveQuery q) {
+                            final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
+                            return scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv,
+                                    dataWFInternal, dataEquivInternal);
+                        }
+
+                        @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseCompiledQuery(CCompiledQuery q) {
+                            return scopeGraph.query(scope, q.stateMachine(), labelWF, dataWF, dataEquiv,
+                                    dataWFInternal, dataEquivInternal);
+                        }
+
+                    });
+                    // @formatter:on
+                } else {
+                    final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
+                    future = scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal,
+                            dataEquivInternal);
+                }
 
                 final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
                     if(ex != null) {

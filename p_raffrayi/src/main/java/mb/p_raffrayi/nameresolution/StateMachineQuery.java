@@ -22,12 +22,10 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
     private final LabelWf<L> labelWf;
 
     public StateMachineQuery(StateMachine<L> stateMachine, LabelWf<L> labelWf) {
-        this.stateMachine = stateMachine;
-        this.state = stateMachine.initial();
-        this.labelWf = labelWf;
+        this(stateMachine, stateMachine.initial(), labelWf);
     }
 
-    public StateMachineQuery(StateMachine<L> stateMachine, State<L> state, LabelWf<L> labelWf) {
+    private StateMachineQuery(StateMachine<L> stateMachine, State<L> state, LabelWf<L> labelWf) {
         this.stateMachine = stateMachine;
         this.state = state;
         this.labelWf = labelWf;

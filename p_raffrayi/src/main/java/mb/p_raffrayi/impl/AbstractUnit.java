@@ -998,21 +998,20 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             final IResolutionContext<S, L, D> pContext =
                     new StaticNameResolutionContext(sender, scopeGraph, this, dataWF, dataEquiv);
 
-            return query.resolve(pContext, new ScopePath<>(scope), AbstractUnit.this.context.cancel())
-                    .thenApply(CapsuleUtil::toSet);
+            return query.resolve(pContext, new ScopePath<>(scope), context.cancel()).thenApply(CapsuleUtil::toSet);
         }
 
         @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,
                 LabelOrder<L> labelOrder, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-            return this.query(scope, new NameResolutionQuery<>(labelWF, labelOrder, edgeLabels), dataWF, dataEquiv,
+            return query(scope, new NameResolutionQuery<>(labelWF, labelOrder, edgeLabels), dataWF, dataEquiv,
                     dataWfInternal, dataEquivInternal);
         }
 
         @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
                 StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-            return this.query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
+            return query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
                     dataEquivInternal);
         }
 
