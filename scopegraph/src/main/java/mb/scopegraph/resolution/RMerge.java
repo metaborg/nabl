@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.scopegraph.oopsla20.reference.ResolutionException;
+
 public final class RMerge<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -28,7 +30,8 @@ public final class RMerge<L> implements RExp<L>, Serializable {
         return cases.caseMerge(envs);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchInResolution(ResolutionCases<L, R> cases)
+            throws ResolutionException, InterruptedException {
         return cases.caseMerge(envs);
     }
 

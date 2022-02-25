@@ -3,6 +3,8 @@ package mb.scopegraph.resolution;
 import java.io.Serializable;
 import java.util.Objects;
 
+import mb.scopegraph.oopsla20.reference.ResolutionException;
+
 public class RCExp<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -28,7 +30,8 @@ public class RCExp<L> implements RExp<L>, Serializable {
         return cases.caseCExp(env, exp);
     }
 
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<L, R, E> cases) throws E {
+    @Override public <R, E extends Throwable> R matchInResolution(ResolutionCases<L, R> cases)
+            throws ResolutionException, InterruptedException {
         return cases.caseCExp(env, exp);
     }
 
