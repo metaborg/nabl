@@ -27,8 +27,8 @@ public class ResolutionInterpreter<S, L, D> {
 
     private final Predicate2<S, EdgeOrData<L>> isComplete;
 
-    public ResolutionInterpreter(IScopeGraph.Immutable<S, L, D> scopeGraph, DataWF<D> dataWf,
-            DataLeq<D> dataEquiv, StateMachine<L> stateMachine, Predicate2<S, EdgeOrData<L>> isComplete) {
+    public ResolutionInterpreter(IScopeGraph.Immutable<S, L, D> scopeGraph, DataWF<D> dataWf, DataLeq<D> dataEquiv,
+            StateMachine<L> stateMachine, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
         this.dataWf = dataWf;
         this.dataEquiv = dataEquiv;
@@ -40,94 +40,92 @@ public class ResolutionInterpreter<S, L, D> {
         return resolve(new ScopePath<S, L>(scope), stateMachine.initial(), cancel);
     }
 
-    private Env<S, L, D> resolve(ScopePath<S, L> path, State<L> state, ICancel cancel) throws ResolutionException, InterruptedException{
+    private Env<S, L, D> resolve(ScopePath<S, L> path, State<L> state, ICancel cancel)
+            throws ResolutionException, InterruptedException {
         cancel.throwIfCancelled();
 
         final Store<S, L, D> store = new Store<>();
-        for(RStep<L> step: state.resolutionSteps()) {
+        for(RStep<L> step : state.resolutionSteps()) {
             evaluateStep(path, step, store, cancel);
         }
 
         return store.lookup(state.resultVar());
     }
 
-    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D> store, ICancel cancel) throws ResolutionException, InterruptedException {
+    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D> store, ICancel cancel)
+            throws ResolutionException, InterruptedException {
         final Env<S, L, D> env = evaluateExp(path, step.getExp(), store, cancel);
         store.store(step.getVar(), env);
     }
 
-    private Env<S, L, D> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D> store, ICancel cancel) throws ResolutionException, InterruptedException {
+    private Env<S, L, D> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D> store, ICancel cancel)
+            throws ResolutionException, InterruptedException {
         final S scope = path.getTarget();
-        final Env<S, L, D> env;
+        final Env<S, L, D> env = exp.matchInResolution(new RExp.ResolutionCases<L, Env<S, L, D>>() {
 
-        try {
-            env = exp.matchOrThrow(new RExp.CheckedCases<L, Env<S, L, D>, Exception>() {
+            @Override public Env<S, L, D> caseResolve() throws ResolutionException, InterruptedException {
+                checkComplete(scope, EdgeOrData.data());
 
-                @Override public Env<S, L, D> caseResolve() throws Exception {
-                    checkComplete(scope, EdgeOrData.data());
+                Optional<D> datum = scopeGraph.getData(scope);
+                if(datum.isPresent() && dataWf.wf(datum.get())) {
+                    return Env.of(path.resolve(datum.get()));
+                }
+                return Env.empty();
+            }
 
-                    Optional<D> datum = scopeGraph.getData(scope);
-                    if(datum.isPresent() && dataWf.wf(datum.get())) {
-                        return Env.of(path.resolve(datum.get()));
+            @Override public Env<S, L, D> caseSubEnv(L label, String stateRef)
+                    throws ResolutionException, InterruptedException {
+                checkComplete(scope, EdgeOrData.edge(label));
+
+                final State<L> newState = stateMachine.state(stateRef);
+                final Env.Builder<S, L, D> envBuilder = Env.builder();
+
+                for(S target : scopeGraph.getEdges(scope, label)) {
+                    final Optional<ScopePath<S, L>> pathOpt = path.step(label, target);
+                    if(pathOpt.isPresent()) {
+                        envBuilder.addAll(resolve(pathOpt.get(), newState, cancel));
                     }
-                    return Env.empty();
                 }
 
-                @Override public Env<S, L, D> caseSubEnv(L label, String stateRef) throws Exception {
-                    checkComplete(scope, EdgeOrData.edge(label));
+                return envBuilder.build();
+            }
 
-                    final State<L> newState = stateMachine.state(stateRef);
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
+            @Override public Env<S, L, D> caseMerge(List<RVar> envs) {
+                final Env.Builder<S, L, D> envBuilder = Env.builder();
 
-                    for(S target: scopeGraph.getEdges(scope, label)) {
-                        final Optional<ScopePath<S, L>> pathOpt = path.step(label, target);
-                        if(pathOpt.isPresent()) {
-                            envBuilder.addAll(resolve(pathOpt.get(), newState, cancel));
-                        }
-                    }
-
-                    return envBuilder.build();
+                for(RVar var : envs) {
+                    envBuilder.addAll(store.lookup(var));
                 }
 
-                @Override public Env<S, L, D> caseMerge(List<RVar> envs) throws Exception {
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
+                return envBuilder.build();
+            }
 
-                    for(RVar var : envs) {
-                        envBuilder.addAll(store.lookup(var));
+            @Override public Env<S, L, D> caseShadow(RVar left, RVar right)
+                    throws ResolutionException, InterruptedException {
+                final Env<S, L, D> leftEnv = store.lookup(left);
+                final Env<S, L, D> rightEnv = store.lookup(right);
+                final Env.Builder<S, L, D> envBuilder = Env.builder();
+                envBuilder.addAll(leftEnv);
+
+                for(ResolutionPath<S, L, D> path : rightEnv) {
+                    if(!isShadowed(path.getDatum(), leftEnv)) {
+                        envBuilder.add(path);
                     }
-
-                    return envBuilder.build();
                 }
 
-                @Override public Env<S, L, D> caseShadow(RVar left, RVar right) throws Exception {
-                    final Env<S, L, D> leftEnv = store.lookup(left);
-                    final Env<S, L, D> rightEnv = store.lookup(right);
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
-                    envBuilder.addAll(leftEnv);
+                return envBuilder.build();
+            }
 
-                    for(ResolutionPath<S, L, D> path: rightEnv) {
-                        if(!isShadowed(path.getDatum(), leftEnv)) {
-                            envBuilder.add(path);
-                        }
-                    }
-
-                    return envBuilder.build();
+            @Override public Env<S, L, D> caseCExp(RVar envVar, RExp<L> exp)
+                    throws ResolutionException, InterruptedException {
+                final Env<S, L, D> env = store.lookup(envVar);
+                if(!env.isEmpty()) {
+                    return env;
                 }
+                return evaluateExp(path, exp, store, cancel);
+            }
 
-                @Override public Env<S, L, D> caseCExp(RVar envVar, RExp<L> exp) throws Exception {
-                    final Env<S, L, D> env = store.lookup(envVar);
-                    if(!env.isEmpty()) {
-                        return env;
-                    }
-                    return evaluateExp(path, exp, store, cancel);
-                }
-
-            });
-        } catch(ResolutionException | InterruptedException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Unexpected exception during name resolution", e);
-        }
+        });
         return env;
     }
 
