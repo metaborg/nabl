@@ -1,9 +1,11 @@
 package mb.scopegraph.ecoop21;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.Ref;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
@@ -93,8 +95,42 @@ public class ResolutionInterpreter<S, L, D> {
             @Override public IFuture<Env<S, L, D>> caseMerge(List<RVar> vars) {
                 final IFuture<List<Env<S, L, D>>> envsFuture = AggregateFuture.forAll(vars, store::lookup);
                 return envsFuture.thenApply(envs -> {
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
-                    envs.forEach(envBuilder::addAll);
+                    final Iterator<Env<S, L, D>> envIterator = envs.iterator();
+                    Env<S, L, D> firstEnv = null;
+                    while(envIterator.hasNext()) {
+                        final Env<S, L, D> env = envIterator.next();
+                        if(!env.isEmpty()) {
+                            firstEnv = env;
+                            break;
+                        }
+                    }
+
+                    if(firstEnv == null) {
+                        return Env.empty();
+                    }
+
+                    Env.Builder<S, L, D> envBuilder = null;
+                    while(envIterator.hasNext()) {
+                        final Env<S, L, D> env = envIterator.next();
+                        if(!env.isEmpty()) {
+                            envBuilder = Env.builder();
+                            envBuilder.addAll(firstEnv);
+                            envBuilder.addAll(env);
+                            break;
+                        }
+                    }
+
+                    if(envBuilder == null) {
+                        return firstEnv;
+                    }
+
+                    while(envIterator.hasNext()) {
+                        final Env<S, L, D> env = envIterator.next();
+                        if(!env.isEmpty()) {
+                            envBuilder.addAll(env);
+                        }
+                    }
+
                     return envBuilder.build();
                 });
             }
@@ -107,19 +143,37 @@ public class ResolutionInterpreter<S, L, D> {
                     final Env<S, L, D> leftEnv = envs._1();
                     final Env<S, L, D> rightEnv = envs._2();
 
-                    final Env.Builder<S, L, D> envBuilder = Env.builder();
-                    envBuilder.addAll(leftEnv);
+                    if(rightEnv.isEmpty()) {
+                        return CompletableFuture.completedFuture(leftEnv);
+                    }
+                    if(leftEnv.isEmpty()) {
+                        return CompletableFuture.completedFuture(rightEnv);
+                    }
 
+                    final Ref<Env.Builder<S, L, D>> envBuilderRef = new Ref<>();
                     final IFuture<List<Unit>> future = AggregateFuture.forAll(rightEnv, path -> {
                         return isShadowed(path.getDatum(), leftEnv, cancel).thenApply(equiv -> {
                             if(!equiv) {
-                                envBuilder.add(path);
+                                if(envBuilderRef.get() == null) {
+                                    final Env.Builder<S, L, D> envBuilder = Env.builder();
+                                    envBuilder.addAll(leftEnv);
+                                    envBuilder.add(path);
+                                    envBuilderRef.set(envBuilder);
+                                } else {
+                                    envBuilderRef.get().add(path);
+                                }
                             }
                             return Unit.unit;
                         });
                     });
 
-                    return future.thenApply(__ -> envBuilder.build());
+                    return future.thenApply(__ -> {
+                        final Env.Builder<S, L, D> envBuilder = envBuilderRef.get();
+                        if(envBuilder == null) {
+                            return leftEnv;
+                        }
+                        return envBuilder.build();
+                    });
                 });
             }
 

@@ -1,6 +1,7 @@
 package mb.scopegraph.oopsla20.reference;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,12 +79,54 @@ public class ResolutionInterpreter<S, L, D> {
                 checkComplete(scope, EdgeOrData.edge(label));
 
                 final State<L> newState = stateMachine.state(stateRef);
-                final Env.Builder<S, L, D> envBuilder = Env.builder();
+                final Iterator<S> targetIterator = scopeGraph.getEdges(scope, label).iterator();
 
-                for(S target : scopeGraph.getEdges(scope, label)) {
+                Env<S, L, D> firstEnv = null;
+                while(targetIterator.hasNext()) {
+                    final S target = targetIterator.next();
                     final Optional<ScopePath<S, L>> pathOpt = path.step(label, target);
                     if(pathOpt.isPresent()) {
-                        envBuilder.addAll(resolve(pathOpt.get(), newState, cancel));
+                        final Env<S, L, D> targetEnv = resolve(pathOpt.get(), newState, cancel);
+                        if(!targetEnv.isEmpty()) {
+                            firstEnv = targetEnv;
+                            break;
+                        }
+                    }
+                }
+
+                if(firstEnv == null) {
+                    // No non-empty subenvironment found
+                    return Env.empty();
+                }
+
+                Env.Builder<S, L, D> envBuilder = null;
+                while(targetIterator.hasNext()) {
+                    final S target = targetIterator.next();
+                    final Optional<ScopePath<S, L>> pathOpt = path.step(label, target);
+                    if(pathOpt.isPresent()) {
+                        final Env<S, L, D> targetEnv = resolve(pathOpt.get(), newState, cancel);
+                        if(!targetEnv.isEmpty()) {
+                            envBuilder = Env.builder();
+                            envBuilder.addAll(firstEnv);
+                            envBuilder.addAll(targetEnv);
+                            break;
+                        }
+                    }
+                }
+
+                if(envBuilder == null) {
+                    // No second non-empty environment found
+                    return firstEnv;
+                }
+
+                while(targetIterator.hasNext()) {
+                    final S target = targetIterator.next();
+                    final Optional<ScopePath<S, L>> pathOpt = path.step(label, target);
+                    if(pathOpt.isPresent()) {
+                        final Env<S, L, D> targetEnv = resolve(pathOpt.get(), newState, cancel);
+                        if(!targetEnv.isEmpty()) {
+                            envBuilder.addAll(targetEnv);
+                        }
                     }
                 }
 
@@ -91,10 +134,42 @@ public class ResolutionInterpreter<S, L, D> {
             }
 
             @Override public Env<S, L, D> caseMerge(List<RVar> envs) {
-                final Env.Builder<S, L, D> envBuilder = Env.builder();
+                final Iterator<RVar> varIterator = envs.iterator();
+                Env<S, L, D> firstEnv = null;
+                while(varIterator.hasNext()) {
+                    final Env<S, L, D> env = store.lookup(varIterator.next());
+                    if(!env.isEmpty()) {
+                        firstEnv = env;
+                        break;
+                    }
+                }
 
-                for(RVar var : envs) {
-                    envBuilder.addAll(store.lookup(var));
+                if(firstEnv == null) {
+                    // No non-empty environment found
+                    return Env.empty();
+                }
+
+                Env.Builder<S, L, D> envBuilder = null;
+                while(varIterator.hasNext()) {
+                    final Env<S, L, D> env = store.lookup(varIterator.next());
+                    if(!env.isEmpty()) {
+                        envBuilder = Env.builder();
+                        envBuilder.addAll(firstEnv);
+                        envBuilder.addAll(env);
+                        break;
+                    }
+                }
+
+                if(envBuilder == null) {
+                    // No second non-empty environment found
+                    return firstEnv;
+                }
+
+                while(varIterator.hasNext()) {
+                    final Env<S, L, D> env = store.lookup(varIterator.next());
+                    if(!env.isEmpty()) {
+                        envBuilder.addAll(env);
+                    }
                 }
 
                 return envBuilder.build();
@@ -104,6 +179,13 @@ public class ResolutionInterpreter<S, L, D> {
                     throws ResolutionException, InterruptedException {
                 final Env<S, L, D> leftEnv = store.lookup(left);
                 final Env<S, L, D> rightEnv = store.lookup(right);
+                if(leftEnv.isEmpty()) {
+                    return rightEnv;
+                }
+                if(rightEnv.isEmpty()) {
+                    return leftEnv;
+                }
+
                 final Env.Builder<S, L, D> envBuilder = Env.builder();
                 envBuilder.addAll(leftEnv);
 
@@ -122,7 +204,8 @@ public class ResolutionInterpreter<S, L, D> {
                 if(!env.isEmpty()) {
                     return env;
                 }
-                return evaluateExp(path, exp, store, cancel);
+
+                return this.match(exp);
             }
 
         });
