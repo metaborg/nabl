@@ -1,4 +1,4 @@
-package statix.lang.strategies;
+package mb.statix.spoofax;
 
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -7,13 +7,13 @@ import org.spoofax.terms.util.TermUtils;
 import mb.nabl2.terms.stratego.StrategoBlob;
 import mb.scopegraph.oopsla20.reference.LabelOrder;
 
-final class Labels {
+final class LabelUtils {
 
     private static final String EOP_OP = "EOP";
 
     private static final String LABEL_PAIR_OP = "LabelPair";
 
-    private Labels() {
+    private LabelUtils() {
 
     }
 

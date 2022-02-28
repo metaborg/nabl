@@ -223,8 +223,8 @@ rules // label reference resolution
 
 rules // external handling of regular expressions and relations
 
-  external labelre-to-states(|rel, alphabet) /* : LabelRE -> StateMachine */
+  labelre-to-states(|rel, alphabet) = prim("STX_labelre_to_states", rel, alphabet)/* : LabelRE -> StateMachine */
 
-  external ords-to-relation(|rel) /* : List(LabelOrd) -> LabelOrder */
+  ords-to-relation(|rel) = prim("STX_ords_to_relation", rel) /* : List(LabelOrd) -> LabelOrder */
 
-  external labelord-lt(|lbl-ord) /* : (Label * Label) -> _ */
+  labelord-lt(|lbl-ord) = prim("STX_labelord_lt", lbl-ord) /* : (Label * Label) -> _ */

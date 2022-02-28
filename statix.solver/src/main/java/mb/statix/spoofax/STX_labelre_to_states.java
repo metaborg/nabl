@@ -1,4 +1,4 @@
-package statix.lang.strategies;
+package mb.statix.spoofax;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -8,12 +8,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.inject.Inject;
+
+import org.spoofax.interpreter.core.IContext;
+import org.spoofax.interpreter.library.AbstractPrimitive;
+import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.interpreter.terms.TermType;
 import org.spoofax.terms.util.TermUtils;
-import org.strategoxt.lang.Context;
-import org.strategoxt.lang.Strategy;
 
 import mb.scopegraph.regexp.IAlphabet;
 import mb.scopegraph.regexp.IRegExp;
@@ -23,11 +26,12 @@ import mb.scopegraph.regexp.IState;
 import mb.scopegraph.regexp.RegExpMatcher;
 import mb.scopegraph.regexp.impl.FiniteAlphabet;
 import mb.scopegraph.regexp.impl.RegExpNormalizingBuilder;
-import mb.scopegraph.regexp.impl.RegExps;
 
-public class labelre_to_states_0_2 extends Strategy {
+public class STX_labelre_to_states extends AbstractPrimitive {
 
-    public static final Strategy instance = new labelre_to_states_0_2();
+    @Inject public STX_labelre_to_states(String name) {
+        super(STX_labelre_to_states.class.getSimpleName(), 0, 2);
+    }
 
     // State machine constructor names
     private static final String STATEMACHINE_OP = "StateMachine";
@@ -46,8 +50,11 @@ public class labelre_to_states_0_2 extends Strategy {
 
     private static final String EOP_LBL_OP = "EOP";
 
-    @Override public IStrategoTerm invoke(Context context, IStrategoTerm regexpTerm, IStrategoTerm relationTerm,
-            IStrategoTerm alphabetTerm) {
+    @Override public boolean call(IContext context, Strategy[] svars, IStrategoTerm[] tvars) {
+        final IStrategoTerm regexpTerm = context.current();
+        final IStrategoTerm relationTerm = tvars[0];
+        final IStrategoTerm alphabetTerm = tvars[1];
+
         // Prepare state machine
         final IAlphabet<IStrategoTerm> alphabet = parseAlphabet(alphabetTerm);
         final IRegExp<IStrategoTerm> regexp = parseRegexp(regexpTerm, alphabet, relationTerm);
@@ -86,7 +93,9 @@ public class labelre_to_states_0_2 extends Strategy {
             stateList.add(TF.makeAppl(STATE_OP, TF.makeString(name), acceptance, TF.makeList(transitions)));
         }
 
-        return TF.makeAppl(STATEMACHINE_OP, TF.makeList(stateList), TF.makeString(INITIAL_STATE_NAME));
+        IStrategoTerm result = TF.makeAppl(STATEMACHINE_OP, TF.makeList(stateList), TF.makeString(INITIAL_STATE_NAME));
+        context.setCurrent(result);
+        return true;
     }
 
     private static IRegExp<IStrategoTerm> parseRegexp(IStrategoTerm regexpTerm, IAlphabet<IStrategoTerm> alphabet,

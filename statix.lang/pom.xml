@@ -15,14 +15,6 @@
     <relativePath>../../releng/parent/language</relativePath>
   </parent>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.metaborg</groupId>
-      <artifactId>scopegraph</artifactId>
-      <version>${metaborg-version}</version>
-    </dependency>
-  </dependencies>
-
   <repositories>
     <repository>
       <id>metaborg-release-repo</id>
