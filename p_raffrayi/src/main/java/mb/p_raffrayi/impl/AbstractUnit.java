@@ -1464,6 +1464,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
             @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
                 return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
+                    if(scope.toString().contains("d_40") && label.toString().contains("var")) {
+                        logger.debug("Returning susceptible edges.");
+                    }
                     return scopeGraph.get().getEdges(scope, label);
                 });
             }

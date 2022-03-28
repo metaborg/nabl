@@ -23,7 +23,6 @@ import mb.p_raffrayi.nameresolution.IQuery;
 import mb.p_raffrayi.nameresolution.NameResolutionQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.PatchCollection;
 

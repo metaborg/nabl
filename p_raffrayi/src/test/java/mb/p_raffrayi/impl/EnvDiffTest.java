@@ -51,8 +51,8 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
-                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), edgeLabels, TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), edgeLabels, TestDifferDataOps.instance),
                 TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
@@ -86,8 +86,8 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
-                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o, s3o), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), edgeLabels, TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o, s3o), edgeLabels, TestDifferDataOps.instance),
                 TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
@@ -120,8 +120,8 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
-                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), edgeLabels, TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), edgeLabels, TestDifferDataOps.instance),
                 TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 
@@ -155,8 +155,8 @@ public class EnvDiffTest extends BaseDifferTest {
         // @formatter:on
 
         final IScopeGraphDiffer<String, Integer, List<String>> differ = new ScopeGraphDiffer<>(
-                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n, s3n), TestDifferDataOps.instance),
-                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o), TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n, s3n), edgeLabels, TestDifferDataOps.instance),
+                new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o), edgeLabels, TestDifferDataOps.instance),
                 TestDifferOps.instance);
         differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
 

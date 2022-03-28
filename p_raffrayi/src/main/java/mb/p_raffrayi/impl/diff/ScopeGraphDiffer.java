@@ -99,7 +99,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     /**
      * Delays to be fired when the previous scope key is completed (i.e. all outgoing edges are matched or removed).
      */
-    private final MultiSetMap.Transient<S, ICompletable<Unit>> previousScopeCompletedDelays =
+    private final MultiSetMap.Transient<Tuple2<S, L>, ICompletable<Unit>> previousScopeCompletedDelays =
             MultiSetMap.Transient.of();
 
     /**
@@ -249,7 +249,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             IPatchCollection.Immutable<S> patches, Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
         final S newScope = patches.patch(oldScope);
         if(seenCurrentScopes.__insert(newScope)) {
-            seenPreviousScopes.__insert(newScope);
+            seenPreviousScopes.__insert(oldScope);
             matchedScopes.put(newScope, oldScope);
             if(openScopes.contains(oldScope) || openEdges.containsEntry(oldScope, EdgeOrData.data())) {
                 schedulePreviousData(oldScope);
@@ -273,9 +273,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                         seenCurrentEdges.put(newTarget, lbl, newTarget);
                         matchedEdges.put(newEdge, oldEdge);
                         matchedOutgoingEdges.put(Tuple2.of(oldScope, lbl), oldEdge);
-                        completedPreviousEdges.put(oldScope, lbl);
                         addMatchingScope(oldTarget, scopeGraph, patches, openScopes, openEdges);
                     });
+                    completedPreviousEdges.put(oldScope, lbl);
 
                     if(openScopes.contains(oldScope) || openEdges.containsEntry(oldScope, EdgeOrData.edge(lbl))) {
                         IFuture<Iterable<S>> currentResidualTargetsFuture = currentContext.getEdges(newScope, lbl).thenApply(targets -> {
@@ -753,7 +753,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             return;
         }
 
-        if(!seenPreviousScopes.contains(previousScope)) {            
+        if(!seenPreviousScopes.contains(previousScope)) {
             new IllegalStateException("Closing unobserved scope: " + previousScope);
         }
 
@@ -1034,7 +1034,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         final ICompletableFuture<Unit> result = new CompletableFuture<>();
         if(!completeIfFailure(result)) {
             waitFors.__insert(ScopeCompleted.of(previousScope, label));
-            previousScopeCompletedDelays.put(previousScope, result);
+            previousScopeCompletedDelays.put(Tuple2.of(previousScope, label), result);
         }
 
         return result.thenApply(__ -> buildScopeDiff(previousScope, label));
@@ -1067,7 +1067,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         logger.trace("{}: PSC complete.", previousScope);
         completedPreviousEdges.put(previousScope, label);
         waitFors.__remove(ScopeCompleted.of(previousScope, label));
-        previousScopeCompletedDelays.removeKey(previousScope).forEach(c -> c.complete(Unit.unit));
+        previousScopeCompletedDelays.removeKey(Tuple2.of(previousScope, label)).forEach(c -> c.complete(Unit.unit));
         logger.trace("{}: PSC completion finished.", previousScope);
     }
 

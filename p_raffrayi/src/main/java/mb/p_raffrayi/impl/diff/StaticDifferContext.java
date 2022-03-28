@@ -14,12 +14,15 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     private final IScopeGraph.Immutable<S, L, D> scopeGraph;
     private final java.util.Set<S> scopes;
 
+    private final Set.Immutable<L> edgeLabels;
+
     private final IDifferDataOps<D> dataOps;
 
     public StaticDifferContext(IScopeGraph.Immutable<S, L, D> scopeGraph, java.util.Set<S> scopes,
-            IDifferDataOps<D> dataOps) {
+            Set.Immutable<L> edgeLabels, IDifferDataOps<D> dataOps) {
         this.scopeGraph = scopeGraph;
         this.scopes = scopes;
+        this.edgeLabels = edgeLabels;
         this.dataOps = dataOps;
     }
 
@@ -28,7 +31,7 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
     }
 
     @Override public IFuture<Set.Immutable<L>> labels(S scope) {
-        return CompletableFuture.completedFuture(scopeGraph.getLabels());
+        return CompletableFuture.completedFuture(edgeLabels);
     }
 
     @Override public IFuture<Optional<D>> datum(S scope) {

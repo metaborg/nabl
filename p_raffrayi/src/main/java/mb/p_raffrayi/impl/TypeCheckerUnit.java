@@ -625,7 +625,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             final IScopeGraphDiffer<S, L, D> differ = localPatches.isIdentity() && this.addedUnitIds.isEmpty() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), resultPatches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
-                        previousResult.scopes(), new DifferDataOps()), differOps());
+                        previousResult.scopes(), edgeLabels, new DifferDataOps()), differOps());
             // @formatter:on
 
             final Collection<S> openScopes =
@@ -720,7 +720,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
                     final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
-                            previousResult.scopes(), new DifferDataOps());
+                            previousResult.scopes(), edgeLabels, new DifferDataOps());
 
                     if(external) {
                         final StateCapture<S, L, D, T> capture = previousResult.result().localState();
