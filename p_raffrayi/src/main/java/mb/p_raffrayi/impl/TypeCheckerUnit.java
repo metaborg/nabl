@@ -687,8 +687,10 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             }));
 
             final IPatchCollection.Immutable<S> allPatches = resultPatches.putAll(globalPatches);
-            java.util.Set<IRecordedQuery<S, L, D>> newRecordedQueries = previousResult.queries().stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
-            java.util.Set<IRecordedQuery<S, L, D>> patchedRemovedQueries = removedQueries.stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
+            java.util.Set<IRecordedQuery<S, L, D>> newRecordedQueries =
+                    previousResult.queries().stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
+            java.util.Set<IRecordedQuery<S, L, D>> patchedRemovedQueries =
+                    removedQueries.stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
             newRecordedQueries.removeAll(patchedRemovedQueries);
             newRecordedQueries.addAll(addedQueries);
             recordedQueries.addAll(newRecordedQueries);
@@ -777,8 +779,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         if(nodes.size() == 1 && !whenActive.isDone()) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
-            doRelease(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
-                    PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());
+            doRelease(CapsuleUtil.toSet(addedQueries), CapsuleUtil.toSet(removedQueries),
+                    PatchCollection.Immutable.<S>of().putAll(externalMatches),
+                    PatchCollection.Immutable.<S>of().putAll(globalPatches));
         } else if(state.active() && inLocalPhase()) {
             doCapture();
             resume();
