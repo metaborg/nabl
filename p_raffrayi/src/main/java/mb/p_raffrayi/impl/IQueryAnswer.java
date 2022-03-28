@@ -9,6 +9,7 @@ public interface IQueryAnswer<S, L, D> {
 
     Env<S, L, D> env();
 
+    // TODO: replace with ExtQueries.
     Set<IRecordedQuery<S, L, D>> transitiveQueries();
 
     Set<IRecordedQuery<S, L, D>> predicateQueries();

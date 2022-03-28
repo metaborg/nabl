@@ -41,6 +41,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
+import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
@@ -703,6 +704,122 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         assertTrue(result.failures().isEmpty());
         assertEquals(1, result.subUnitResults().get("sub").queries().size());
+    }
+
+    @Test(timeout = 10000) public void testRecord_ConfirmationQuery() throws InterruptedException, ExecutionException {
+        final Integer lbl1 = 1;
+        final Integer lbl2 = 2;
+
+        final Scope root = new Scope("/.", 0);
+        final Scope d1 = new Scope("/./sub1", 123);
+        final Scope s2 = new Scope("/./sub2", 122);
+        final IDatum datum = new IDatum() {};
+
+        // @formatter:off
+        final RecordedQuery<Scope, Integer, IDatum> rq1 = recordedQuery(root).dataWf(DataWf.none()).build();
+        final RecordedQuery<Scope, Integer, IDatum> rq2 = recordedQuery(new ScopePath<Scope, Integer>(root).step(lbl1, s2).get())
+            .dataWf(DataWf.none())
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg1 = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(root, lbl2, d1)
+            .setDatum(d1, datum);
+        // @formatter:on
+
+        // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg2 = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(root, lbl1, s2);
+        // @formatter:on
+
+        // @formatter:off
+        final IScopeGraph.Immutable<Scope, Integer, IDatum> sg = ScopeGraph.Immutable.<Scope, Integer, IDatum>of()
+            .addEdge(root, lbl2, d1)
+            .addEdge(root, lbl1, s2)
+            .setDatum(d1, datum);
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> child1Result = subResult("/./sub1", root,
+            unitTCResult(root).withScopeGraph(sg1))
+            .scopeGraph(sg1)
+            .addScopes(d1)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> child2Result = subResult("/./sub2", root,
+            unitTCResult(root).withScopeGraph(sg1))
+            .scopeGraph(sg2)
+            .addScopes(s2)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> child3Result = subResult("/./sub3", root)
+            .addQueries(rq1, rq2)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> parentResult = rootResult(root)
+            .scopeGraph(sg)
+            .putSubUnitResults("sub1", child1Result)
+            .putSubUnitResults("sub2", child2Result)
+            .putSubUnitResults("sub3", child3Result)
+            .build();
+        // @formatter:on
+
+        // @formatter:off
+        final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
+            new ComposedRootTypeChecker<Unit>(false,
+                // Create `s1 -lbl2-> s' : d1` in sub1
+                new DeclTypeChecker("sub1", false, lbl2, datum),
+                // Create new(!) `s1 -lbl1-> s'` in sub2, where s' is owned by sub1.
+                new TestTypeChecker<Unit>("sub2", true) {
+                    @Override public IFuture<Output<Integer, Unit>> run(
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unit,
+                            List<Scope> rootScopes) {
+                        final Scope s1 = rootScopes.get(0);
+                        unit.initScope(s1, Arrays.asList(lbl1), false);
+                        return unit.runIncremental(__ -> {
+                            final Scope s2 = unit.freshScope("s_int", Arrays.asList(lbl1), false, false);
+                            unit.addEdge(s1, lbl1, s2);
+                            unit.closeEdge(s1, lbl1);
+                            return unit.query(s1, new SingleStepLabelWf(lbl2), LabelOrder.none(), DataWf.any(), DataLeq.any()).thenApply(ans -> {
+                                for(IResolutionPath<Scope, Integer, IDatum> path : ans) {
+                                    unit.addEdge(s2, lbl1, path.getPath().getTarget());
+                                }
+                                unit.closeEdge(s2, lbl1);
+                                return UNIT_RESULT;
+                            });
+                        });
+                    }},
+                // Query for .* without accepting anything.
+                // Should create a new recorded query, due to the new edge in sub2.
+                new TestTypeChecker<Unit>("sub3", false) {
+                    @Override public IFuture<Output<Integer, Unit>> run(
+                            IIncrementalTypeCheckerContext<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unit,
+                            List<Scope> rootScopes) {
+                        final Scope s1 = rootScopes.get(0);
+                        unit.initScope(s1, Arrays.asList(lbl1), false);
+                        return unit.runIncremental(__ -> {
+                            return unit.query(s1, new LabelClosureLabelWf(lbl1), LabelOrder.none(), DataWf.none(), DataLeq.none()).thenApply(ans -> {
+                                return UNIT_RESULT;
+                            });
+                        });
+                    }}
+            ), Set.Immutable.of(lbl1, lbl2), parentResult);
+        // @formatter:on
+
+        IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
+                future.asJavaCompletion().get();
+
+        assertTrue(result.failures().isEmpty());
+        assertEquals(0, result.subUnitResults().get("sub1").queries().size());
+        assertEquals(2, result.subUnitResults().get("sub2").queries().size());
+        assertEquals(3, result.subUnitResults().get("sub3").queries().size());
     }
 
     @Test(timeout = 10000) public void testRecord_SharedDeclQuery() throws InterruptedException, ExecutionException {
@@ -1595,8 +1712,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
     }
 
     private UnitResult.Builder<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>
-            subResult(String id, Scope root,
-                    Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> result) {
+            subResult(String id, Scope root, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> result) {
         // @formatter:off
         return UnitResult.<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>builder()
                 .id(id)

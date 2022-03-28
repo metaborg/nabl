@@ -11,7 +11,6 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 /**
@@ -32,10 +31,10 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin, ScopePath<S, L> path,
             IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv);
 
-    IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query, DataWf<S, L, D> dataWF,
+    IFuture<IQueryAnswer<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query, DataWf<S, L, D> dataWF,
             DataLeq<S, L, D> dataEquiv);
 
-    IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+    IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
             boolean prevEnvEmpty);
 
     IFuture<Optional<S>> _match(S previousScope);

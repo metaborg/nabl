@@ -1,59 +1,86 @@
 package mb.p_raffrayi.impl.confirm;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action0;
-import org.metaborg.util.functions.Action2;
+import org.metaborg.util.functions.Action4;
 import org.metaborg.util.functions.Function0;
-import org.metaborg.util.functions.Function2;
+import org.metaborg.util.functions.Function4;
 
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
+import mb.p_raffrayi.IRecordedQuery;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 
-public abstract class ConfirmResult<S> {
+public abstract class ConfirmResult<S, L, D> {
 
     @SuppressWarnings("rawtypes") private static final ConfirmResult.Deny DENY = new ConfirmResult.Deny<>();
 
     @SuppressWarnings({ "rawtypes" }) private static final ConfirmResult.Confirm EMPTY_CONFIRM =
-            new ConfirmResult.Confirm<>(PatchCollection.Immutable.of(), PatchCollection.Immutable.of());
+            new ConfirmResult.Confirm<>(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
+                    PatchCollection.Immutable.of(), PatchCollection.Immutable.of());
+
+    // Interface
 
     public abstract <T> T match(Function0<T> onDeny,
-            Function2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm);
+            Function4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm);
 
     public abstract void visit(Action0 onDeny,
-            Action2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm);
+            Action4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm);
 
-    @SuppressWarnings("unchecked") public static <S> ConfirmResult<S> deny() {
+    public abstract ConfirmResult<S, L, D> add(ConfirmResult<S, L, D> other);
+
+    abstract ConfirmResult<S, L, D> addToSelf(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
+            Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
+            IPatchCollection.Immutable<S> globalpatches);
+
+    // Constructors
+
+    @SuppressWarnings("unchecked") public static <S, L, D> ConfirmResult<S, L, D> deny() {
         return DENY;
     }
 
-    public static <S> ConfirmResult<S> confirm(IPatchCollection.Immutable<S> patches) {
-        return confirm(patches, true);
+    public static <S, L, D> ConfirmResult<S, L, D> confirm(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
+            Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> patches) {
+        return confirm(addedQueries, removedQueries, PatchCollection.Immutable.of(), patches);
     }
 
-    public static <S> ConfirmResult<S> confirm(IPatchCollection.Immutable<S> patches, boolean include) {
-        return include ? confirm(PatchCollection.Immutable.of(), patches)
-                : confirm(patches, PatchCollection.Immutable.of());
+    public static <S, L, D> ConfirmResult<S, L, D> confirm(IPatchCollection.Immutable<S> patches) {
+        return confirm(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), PatchCollection.Immutable.of(), patches);
     }
 
-    public static <S> ConfirmResult<S> confirm(IPatchCollection.Immutable<S> resultPatches,
+    public static <S, L, D> ConfirmResult<S, L, D> confirm(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
+            Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
             IPatchCollection.Immutable<S> globalPatches) {
-        return new ConfirmResult.Confirm<>(resultPatches, globalPatches);
+        return new ConfirmResult.Confirm<>(addedQueries, removedQueries, resultPatches, globalPatches);
     }
 
-    @SuppressWarnings("unchecked") public static <S> ConfirmResult<S> confirm() {
+    @SuppressWarnings("unchecked") public static <S, L, D> ConfirmResult<S, L, D> confirm() {
         return EMPTY_CONFIRM;
     }
 
-    private static class Deny<S> extends ConfirmResult<S> {
+    private static class Deny<S, L, D> extends ConfirmResult<S, L, D> {
 
         @Override public <T> T match(Function0<T> onDeny,
-                Function2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm) {
+                Function4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm) {
             return onDeny.apply();
         }
 
         @Override public void visit(Action0 onDeny,
-                Action2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm) {
+                Action4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm) {
             onDeny.apply();
         }
+
+        @Override public ConfirmResult<S, L, D> add(ConfirmResult<S, L, D> other) {
+            return this;
+        }
+
+        @Override ConfirmResult<S, L, D> addToSelf(Immutable<IRecordedQuery<S, L, D>> addedQueries,
+                Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
+                IPatchCollection.Immutable<S> globalPatches) {
+            return this;
+        }
+
 
         @Override public int hashCode() {
             return 42;
@@ -69,7 +96,10 @@ public abstract class ConfirmResult<S> {
 
     }
 
-    private static class Confirm<S> extends ConfirmResult<S> {
+    private static class Confirm<S, L, D> extends ConfirmResult<S, L, D> {
+
+        private final Set.Immutable<IRecordedQuery<S, L, D>> addedQueries;
+        private final Set.Immutable<IRecordedQuery<S, L, D>> removedQueries;
 
         // Patches generated by queries executed for predicate evaluation (nested queries)
         // do not need to be applied to the type-checker result, as scopes can never 'leak' from
@@ -81,20 +111,41 @@ public abstract class ConfirmResult<S> {
         private final IPatchCollection.Immutable<S> resultPatches;
         private final IPatchCollection.Immutable<S> globalPatches;
 
-        private Confirm(IPatchCollection.Immutable<S> resultPatches, IPatchCollection.Immutable<S> globalPatches) {
+        private Confirm(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
+                Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
+                IPatchCollection.Immutable<S> globalPatches) {
+            this.addedQueries = addedQueries;
+            this.removedQueries = removedQueries;
             this.resultPatches = resultPatches;
             this.globalPatches = globalPatches;
         }
 
         @Override public <T> T match(Function0<T> onDeny,
-                Function2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm) {
-            return onConfirm.apply(resultPatches, globalPatches);
+                Function4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>, T> onConfirm) {
+            return onConfirm.apply(addedQueries, removedQueries, resultPatches, globalPatches);
         }
 
         @Override public void visit(Action0 onDeny,
-                Action2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm) {
-            onConfirm.apply(resultPatches, globalPatches);
+                Action4<Set.Immutable<IRecordedQuery<S, L, D>>, Set.Immutable<IRecordedQuery<S, L, D>>, IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> onConfirm) {
+            onConfirm.apply(addedQueries, removedQueries, resultPatches, globalPatches);
         }
+
+        @Override public ConfirmResult<S, L, D> add(ConfirmResult<S, L, D> other) {
+            return other.addToSelf(addedQueries, removedQueries, resultPatches, globalPatches);
+        }
+
+        @Override ConfirmResult<S, L, D> addToSelf(Immutable<IRecordedQuery<S, L, D>> addedQueries,
+                Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
+                IPatchCollection.Immutable<S> globalPatches) {
+            if(addedQueries.isEmpty() && removedQueries.isEmpty() && resultPatches.isEmpty()
+                    && globalPatches.isEmpty()) {
+                return this;
+            }
+            return new Confirm<>(this.addedQueries.__insertAll(addedQueries),
+                    this.removedQueries.__insertAll(removedQueries), this.resultPatches.putAll(resultPatches),
+                    this.globalPatches.putAll(globalPatches));
+        }
+
 
         @Override public int hashCode() {
             return 17 + 31 * resultPatches.hashCode() + 37 * globalPatches.hashCode();
@@ -110,7 +161,7 @@ public abstract class ConfirmResult<S> {
             if(!obj.getClass().equals(this.getClass())) {
                 return false;
             }
-            final Confirm<S> other = (Confirm<S>) obj;
+            final Confirm<S, L, D> other = (Confirm<S, L, D>) obj;
             return resultPatches.equals(other.resultPatches) && globalPatches.equals(other.globalPatches);
         }
 

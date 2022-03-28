@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
+import org.metaborg.util.tuple.Tuple2;
 
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.ResolutionInterpreter;
@@ -31,10 +32,10 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
         this.labelWf = labelWf;
     }
 
-    @Override public IFuture<Env<S, L, D>> resolve(IResolutionContext<S, L, D> context, ScopePath<S, L> path, ICancel cancel) {
-        final ResolutionContext<S, L, D> resolutionContext = new ResolutionContext<S, L, D>() {
+    @Override public <M> IFuture<Tuple2<Env<S, L, D>, M>> resolve(IResolutionContext<S, L, D, M> context, ScopePath<S, L> path, ICancel cancel) {
+        final ResolutionContext<S, L, D, M> resolutionContext = new ResolutionContext<S, L, D, M>() {
 
-            @Override public IFuture<Env<S, L, D>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf) {
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf) {
                 return context.externalEnv(path, new StateMachineQuery<>(stateMachine, state, labelWf), cancel);
             }
 
@@ -46,17 +47,26 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
                 return context.getDatum(scope);
             }
 
-            @Override public IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Tuple2<Boolean, M>> dataWf(D d, ICancel cancel) throws InterruptedException {
                 return context.dataWf(d, cancel);
             }
 
-            @Override public IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
+            @Override public IFuture<Tuple2<Boolean, M>> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException {
                 return context.dataEquiv(d1, d2, cancel);
             }
+
+            @Override public M unitMetadata() {
+                return context.unitMetadata();
+            }
+
+            @Override public M compose(M metadata1, M metadata2) {
+                return context.compose(metadata1, metadata2);
+            }
+
         };
 
         try {
-            final ResolutionInterpreter<S, L, D> interp = new ResolutionInterpreter<>(resolutionContext, stateMachine);
+            final ResolutionInterpreter<S, L, D ,M> interp = new ResolutionInterpreter<>(resolutionContext, stateMachine);
             return interp.resolve(path, state, labelWf, cancel);
         } catch(InterruptedException e) {
             return CompletableFuture.completedExceptionally(e);

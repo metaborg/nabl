@@ -21,6 +21,7 @@ import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.Result;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class PRaffrayiTestBase {
@@ -250,6 +251,68 @@ public abstract class PRaffrayiTestBase {
 
         public static EmptyResult of() {
             return EMPTY;
+        }
+
+    }
+
+    // LabelWF implementations
+
+    protected class SingleStepLabelWf implements LabelWf<Integer> {
+
+        private Integer label;
+
+        public SingleStepLabelWf(Integer label) {
+            this.label = label;
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return l.equals(label) ? Optional.of(new EOPLabelWf()) : Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return false;
+        }
+
+        @Override public String toString() {
+            return label.toString();
+        }
+
+    }
+
+    protected class LabelClosureLabelWf implements LabelWf<Integer> {
+
+        private Integer label;
+
+        public LabelClosureLabelWf(Integer label) {
+            this.label = label;
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return l.equals(label) ? Optional.of(this) : Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return true;
+        }
+
+        @Override public String toString() {
+            return label.toString() + "*";
+        }
+
+    }
+
+    protected class EOPLabelWf implements LabelWf<Integer> {
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return true;
+        }
+
+        @Override public String toString() {
+            return "$";
         }
 
     }

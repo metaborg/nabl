@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
@@ -37,51 +38,53 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         this.context = context;
     }
 
-    private final SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> DENY = SC.shortCircuit(ConfirmResult.deny());
-    private final SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> ACC_NO_PATCHES =
-            SC.of(PatchCollection.Immutable.of());
+    private final SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> DENY = SC.shortCircuit(ConfirmResult.deny());
+    private final SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> ACC_NO_PATCHES = SC.of(ConfirmResult.confirm());
 
-    @Override public IFuture<ConfirmResult<S>> confirm(IRecordedQuery<S, L, D> query) {
+    @Override public IFuture<ConfirmResult<S, L, D>> confirm(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
-        CompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
+        CompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
         confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
             if(ex != null) {
                 result.completeExceptionally(ex);
                 return;
             }
-            r.visit(() -> result.complete(r), (resultPatches, globalPatches) -> {
-                Futures.<S, IPatchCollection.Immutable<S>>reduce(PatchCollection.Immutable.of(), query.datumScopes(), (acc, scope) -> {
-                    return context.match(scope).thenApply(newScopeOpt -> {
-                        final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
-                                "Cannot have a missing datum scope match when all edge are confirmed."));
-                        return acc.put(newScope, scope);
-                    });
-                }).whenComplete((datumPatches, ex2) -> {
-                    if(ex2 != null) {
-                        result.completeExceptionally(ex2);
-                    } else if(query.includePatches()) {
-                        result.complete(ConfirmResult.confirm(resultPatches.putAll(datumPatches), globalPatches));
-                    } else {
-                        result.complete(ConfirmResult.confirm(resultPatches, globalPatches.putAll(datumPatches)));
-                    }
-                });
+            r.visit(() -> result.complete(r), (addedQueries, removedQueries, resultPatches, globalPatches) -> {
+                Futures.<S, IPatchCollection.Immutable<S>>reduce(PatchCollection.Immutable.of(), query.datumScopes(),
+                        (acc, scope) -> {
+                            return context.match(scope).thenApply(newScopeOpt -> {
+                                final S newScope = newScopeOpt.orElseThrow(() -> new IllegalStateException(
+                                        "Cannot have a missing datum scope match when all edge are confirmed."));
+                                return acc.put(newScope, scope);
+                            });
+                        }).whenComplete((datumPatches, ex2) -> {
+                            if(ex2 != null) {
+                                result.completeExceptionally(ex2);
+                            } else if(query.includePatches()) {
+                                result.complete(ConfirmResult.confirm(addedQueries, removedQueries,
+                                        resultPatches.putAll(datumPatches), globalPatches));
+                            } else {
+                                result.complete(ConfirmResult.confirm(addedQueries, removedQueries, resultPatches,
+                                        globalPatches.putAll(datumPatches)));
+                            }
+                        });
             });
         });
 
         return result;
     }
 
-    @Override public IFuture<ConfirmResult<S>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         return context.externalConfirm(path, labelWF, dataWF, prevEnvEmpty).thenCompose(conf -> {
             return conf.map(CompletableFuture::completedFuture)
                     .orElseGet(() -> localConfirm(path, labelWF, dataWF, prevEnvEmpty));
         });
     }
 
-    private IFuture<ConfirmResult<S>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
-            boolean prevEnvEmpty) {
-        final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
+    private IFuture<ConfirmResult<S, L, D>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWf,
+            DataWf<S, L, D> dataWf, boolean prevEnvEmpty) {
+        final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
         context.envDiff(path, labelWf).whenComplete((envDiff, ex) -> {
             if(ex != null) {
                 logger.error("Environment diff for {}/{} failed.", path, labelWf, ex);
@@ -89,17 +92,17 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
             } else {
                 logger.debug("Environment diff for {}/{} completed.", path, labelWf, ex);
                 logger.trace("value: {}.", envDiff);
-                final ArrayList<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>> futures =
+                final ArrayList<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>> futures =
                         new ArrayList<>();
 
                 // Include patches of path into patch set
-                futures.add(CompletableFuture.completedFuture(SC.of(PatchCollection.Immutable.of(envDiff.patches()))));
+                futures.add(CompletableFuture.completedFuture(SC.of(ConfirmResult.confirm(PatchCollection.Immutable.of(envDiff.patches())))));
                 final LazyFuture<Optional<DataWf<S, L, D>>> patchedDataWf = new LazyFuture<>(() -> patchDataWf(dataWf));
 
                 // Verify each added/removed edge.
                 envDiff.changes().forEach(diff -> {
                     // @formatter:off
-                    futures.add(diff.<IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>>match(
+                    futures.add(diff.<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>>match(
                         addedEdge -> handleAddedEdge(addedEdge, patchedDataWf),
                         removedEdge -> handleRemovedEdge(removedEdge, dataWf, prevEnvEmpty)
                     ));
@@ -115,45 +118,65 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         });
     }
 
-    protected abstract IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+    protected abstract IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>
             handleAddedEdge(AddedEdge<S, L, D> addedEdge, LazyFuture<Optional<DataWf<S, L, D>>> dataWf);
 
-    protected abstract IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+    protected abstract IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>
             handleRemovedEdge(RemovedEdge<S, L, D> removedEdge, DataWf<S, L, D> dataWf, boolean prevEnvEnpty);
 
-    protected SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> deny() {
+    protected SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> deny() {
         return DENY;
     }
 
-    protected SC<IPatchCollection.Immutable<S>, ConfirmResult<S>> accept() {
-        return ACC_NO_PATCHES;
+    protected SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> acceptAdded(
+            java.util.Set<IRecordedQuery<S, L, D>> transitiveQueries,
+            java.util.Set<IRecordedQuery<S, L, D>> predicateQueries) {
+        if(transitiveQueries.isEmpty() && predicateQueries.isEmpty()) {
+            return ACC_NO_PATCHES;
+        }
+        final Set.Transient<IRecordedQuery<S, L, D>> addedQueries = CapsuleUtil.transientSet();
+        addedQueries.__insertAll(transitiveQueries);
+        addedQueries.__insertAll(predicateQueries);
+        return SC.of(ConfirmResult.confirm(addedQueries.freeze(), CapsuleUtil.immutableSet(), PatchCollection.Immutable.of()));
     }
 
-    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> denyFuture() {
+    protected SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> acceptRemoved(
+            java.util.Set<IRecordedQuery<S, L, D>> transitiveQueries,
+            java.util.Set<IRecordedQuery<S, L, D>> predicateQueries) {
+        if(transitiveQueries.isEmpty() && predicateQueries.isEmpty()) {
+            return ACC_NO_PATCHES;
+        }
+        final Set.Transient<IRecordedQuery<S, L, D>> removedQueries = CapsuleUtil.transientSet();
+        removedQueries.__insertAll(transitiveQueries);
+        removedQueries.__insertAll(predicateQueries);
+        return SC.of(ConfirmResult.confirm(CapsuleUtil.immutableSet(), removedQueries.freeze(), PatchCollection.Immutable.of()));
+    }
+
+    protected IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>> denyFuture() {
         return CompletableFuture.completedFuture(DENY);
     }
 
-    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>> acceptFuture() {
+    protected IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>> acceptFuture() {
         return CompletableFuture.completedFuture(ACC_NO_PATCHES);
     }
 
-    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S>>>
+    protected IFuture<SC<IPatchCollection.Immutable<S>, ConfirmResult<S, L, D>>>
             accept(IPatchCollection.Immutable<S> patches) {
         return CompletableFuture.completedFuture(SC.of(patches));
     }
 
-    protected ConfirmResult<S> merge(List<IPatchCollection.Immutable<S>> patchSets) {
+    protected ConfirmResult<S, L, D> merge(List<ConfirmResult<S, L, D>> confirmResults) {
         // Patch sets should be build from matches by scope differ, so just adding them is safe.
-        return ConfirmResult
-                .confirm(patchSets.stream().reduce(PatchCollection.Immutable.of(), IPatchCollection.Immutable::putAll));
+        return confirmResults.stream().reduce(ConfirmResult.confirm(), ConfirmResult::add);
     }
 
-    private SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>> toSC(ConfirmResult<S> intermediate) {
-        return intermediate.match(() -> SC.shortCircuit(ConfirmResult.deny()), (resP, globP) -> SC.of(Tuple2.of(resP, globP)));
+    private SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> toSC(ConfirmResult<S, L, D> intermediate) {
+        return intermediate.match(() -> SC.shortCircuit(intermediate),
+                (addQ, remQ, resP, globP) -> SC.of(intermediate));
     }
 
-    protected IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>
-            toSCFuture(IFuture<ConfirmResult<S>> intermediateFuture) {
+    protected IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>
+            toSCFuture(IFuture<ConfirmResult<S, L, D>> intermediateFuture) {
         return intermediateFuture.thenApply(this::toSC);
     }
 

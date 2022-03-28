@@ -19,7 +19,6 @@ import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 
 class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
@@ -83,13 +82,13 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return doQuery(self.sender(TYPE), origin, false, path, query, dataWF, dataEquiv, null, null);
     }
 
-    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
+    @Override public IFuture<IQueryAnswer<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         // Library unit will route these to _query.
         throw new UnsupportedOperationException("Library workers cannot receive queries in previous scope graphs.");
     }
 
-    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }

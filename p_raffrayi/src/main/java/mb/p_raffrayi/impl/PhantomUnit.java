@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
+import io.usethesource.capsule.Set;
 import mb.p_raffrayi.ITypeChecker.IOutput;
+import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -22,6 +25,7 @@ import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.PatchCollection;
 
 public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
@@ -50,7 +54,7 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return doFinish(CompletableFuture.completedFuture(Unit.unit));
     }
 
-    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
+    @Override public IFuture<IQueryAnswer<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, query, dataWF, dataEquiv);
     }
@@ -67,14 +71,23 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // ignore
     }
 
-    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         if(prevEnvEmpty) {
             return CompletableFuture.completedFuture(ConfirmResult.confirm());
         }
         return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path,
                 new NameResolutionQuery<>(labelWF, LabelOrder.none(), edgeLabels), dataWF, DataLeq.any())
-                        .thenApply(env -> env.isEmpty() ? ConfirmResult.confirm() : ConfirmResult.deny());
+                        .thenApply(ans -> {
+                            if(!ans.env().isEmpty()) {
+                                return ConfirmResult.deny();
+                            }
+                            final Set.Transient<IRecordedQuery<S, L, D>> queries = CapsuleUtil.transientSet();
+                            queries.__insertAll(ans.transitiveQueries());
+                            queries.__insertAll(ans.predicateQueries());
+                            return ConfirmResult.confirm(CapsuleUtil.immutableSet(), queries.freeze(),
+                                    PatchCollection.Immutable.of());
+                        });
     }
 
     @Override protected IFuture<D> getExternalDatum(D datum) {

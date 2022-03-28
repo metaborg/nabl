@@ -21,7 +21,7 @@ public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
 
     @Value.Parameter public abstract DataWf<S, L, D> dataWF();
 
-    @Value.Parameter public abstract IFuture<ConfirmResult<S>> future();
+    @Value.Parameter public abstract IFuture<ConfirmResult<S, L, D>> future();
 
     @Override public void visit(Cases<S, L, D> cases) {
         cases.on((Confirm<S, L, D>) this);

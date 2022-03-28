@@ -11,7 +11,7 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.Futures;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
-import org.metaborg.util.unit.Unit;
+import org.metaborg.util.tuple.Tuple2;
 
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
@@ -22,23 +22,25 @@ import mb.scopegraph.resolution.RVar;
 import mb.scopegraph.resolution.State;
 import mb.scopegraph.resolution.StateMachine;
 
-public class ResolutionInterpreter<S, L, D> {
+public class ResolutionInterpreter<S, L, D, M> {
 
-    private final IFuture<Env<S, L, D>> EMPTY_ENV = CompletableFuture.completedFuture(Env.empty());
+    private final IFuture<Tuple2<Env<S, L, D>, M>> EMPTY_ENV;
 
-    private final ResolutionContext<S, L, D> context;
+    private final ResolutionContext<S, L, D, M> context;
     private final StateMachine<L> stateMachine;
 
-    public ResolutionInterpreter(ResolutionContext<S, L, D> context, StateMachine<L> stateMachine) {
+    public ResolutionInterpreter(ResolutionContext<S, L, D, M> context, StateMachine<L> stateMachine) {
         this.context = context;
         this.stateMachine = stateMachine;
+        this.EMPTY_ENV = CompletableFuture.completedFuture(Tuple2.of(Env.empty(), context.unitMetadata()));
     }
 
-    public IFuture<Env<S, L, D>> resolve(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: for confirmation. */, ICancel cancel)
+    public IFuture<Tuple2<Env<S, L, D>, M>> resolve(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: for confirmation. */, ICancel cancel)
             throws InterruptedException {
         cancel.throwIfCancelled();
 
-        final Store<S, L, D> store = new Store<>();
+        final Store<S, L, D, M> store = new Store<>();
+
         for(RStep<L> step : state.resolutionSteps()) {
             evaluateStep(path, step, store, labelWf, cancel);
         }
@@ -46,21 +48,21 @@ public class ResolutionInterpreter<S, L, D> {
         return store.lookup(state.resultVar());
     }
 
-    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D> store, LabelWf<L> labelWf, ICancel cancel) {
-        final IFuture<Env<S, L, D>> env = evaluateExp(path, step.getExp(), store, labelWf, cancel);
+    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D, M> store, LabelWf<L> labelWf, ICancel cancel) {
+        final IFuture<Tuple2<Env<S, L, D>, M>> env = evaluateExp(path, step.getExp(), store, labelWf, cancel);
         store.store(step.getVar(), env);
     }
 
-    private IFuture<Env<S, L, D>> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D> store, LabelWf<L> labelWf, ICancel cancel) {
+    private IFuture<Tuple2<Env<S, L, D>, M>> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D, M> store, LabelWf<L> labelWf, ICancel cancel) {
         final S scope = path.getTarget();
-        final IFuture<Env<S, L, D>> env = exp.match(new RExp.Cases<L, IFuture<Env<S, L, D>>>() {
+        final IFuture<Tuple2<Env<S, L, D>, M>> env = exp.match(new RExp.Cases<L, IFuture<Tuple2<Env<S, L, D>, M>>>() {
 
-            @Override public IFuture<Env<S, L, D>> caseResolve() {
-                return context.getDatum(scope).<Env<S, L, D>>thenCompose(d_opt -> {
-                    return d_opt.<IFuture<Env<S, L, D>>>map(d -> {
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseResolve() {
+                return context.getDatum(scope).thenCompose(d_opt -> {
+                    return d_opt.<IFuture<Tuple2<Env<S, L, D>, M>>>map(d -> {
                         try {
-                            return context.dataWf(d, cancel).<Env<S, L, D>>thenApply(wf -> {
-                                return wf ? Env.of(path.resolve(d)) : Env.empty();
+                            return context.dataWf(d, cancel).thenApply(wf -> {
+                                return Tuple2.of(wf._1() ? Env.of(path.resolve(d)) : Env.empty(), wf._2());
                             });
                         } catch(InterruptedException e) {
                             return CompletableFuture.completedExceptionally(e);
@@ -69,91 +71,45 @@ public class ResolutionInterpreter<S, L, D> {
                 });
             }
 
-            @Override public IFuture<Env<S, L, D>> caseSubEnv(L label, String stateRef) {
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseSubEnv(L label, String stateRef) {
                 final State<L> newState = stateMachine.state(stateRef);
 
                 return context.getEdges(scope, label).thenCompose(tgts -> {
-                    final IFuture<List<Env<S, L, D>>> envsFuture = AggregateFuture.forAll(tgts, tgt -> {
+                    return AggregateFuture.forAll(tgts, tgt -> {
                         final Optional<ScopePath<S, L>> newPathOpt = path.step(label, tgt);
                         if(newPathOpt.isPresent()) {
                             return context.externalEnv(newPathOpt.get(), newState, labelWf.step(label).get() /* Safe in valid SM */);
                         } else {
                             return EMPTY_ENV;
                         }
-                    });
-
-                    return envsFuture.thenApply(envs -> {
-                        final Env.Builder<S, L, D> envBuilder = Env.builder();
-                        for(Env<S, L, D> env : envs) {
-                            envBuilder.addAll(env);
-                        }
-                        return envBuilder.build();
-                    });
+                    }).thenApply(ResolutionInterpreter.this::mergeSubEnvironments);
                 });
             }
 
-            @Override public IFuture<Env<S, L, D>> caseMerge(List<RVar> vars) {
-                final IFuture<List<Env<S, L, D>>> envsFuture = AggregateFuture.forAll(vars, store::lookup);
-                return envsFuture.thenApply(envs -> {
-                    final Iterator<Env<S, L, D>> envIterator = envs.iterator();
-                    Env<S, L, D> firstEnv = null;
-                    while(envIterator.hasNext()) {
-                        final Env<S, L, D> env = envIterator.next();
-                        if(!env.isEmpty()) {
-                            firstEnv = env;
-                            break;
-                        }
-                    }
-
-                    if(firstEnv == null) {
-                        return Env.empty();
-                    }
-
-                    Env.Builder<S, L, D> envBuilder = null;
-                    while(envIterator.hasNext()) {
-                        final Env<S, L, D> env = envIterator.next();
-                        if(!env.isEmpty()) {
-                            envBuilder = Env.builder();
-                            envBuilder.addAll(firstEnv);
-                            envBuilder.addAll(env);
-                            break;
-                        }
-                    }
-
-                    if(envBuilder == null) {
-                        return firstEnv;
-                    }
-
-                    while(envIterator.hasNext()) {
-                        final Env<S, L, D> env = envIterator.next();
-                        if(!env.isEmpty()) {
-                            envBuilder.addAll(env);
-                        }
-                    }
-
-                    return envBuilder.build();
-                });
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseMerge(List<RVar> vars) {
+                return AggregateFuture.forAll(vars, store::lookup).thenApply(ResolutionInterpreter.this::mergeSubEnvironments);
             }
 
-            @Override public IFuture<Env<S, L, D>> caseShadow(RVar left, RVar right) {
-                final IFuture<Env<S, L, D>> leftEnvFuture = store.lookup(left);
-                final IFuture<Env<S, L, D>> rightEnvFuture = store.lookup(right);
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseShadow(RVar left, RVar right) {
+                final IFuture<Tuple2<Env<S, L, D>, M>> leftEnvFuture = store.lookup(left);
+                final IFuture<Tuple2<Env<S, L, D>, M>> rightEnvFuture = store.lookup(right);
 
                 return AggregateFuture.apply(leftEnvFuture, rightEnvFuture).thenCompose(envs -> {
-                    final Env<S, L, D> leftEnv = envs._1();
-                    final Env<S, L, D> rightEnv = envs._2();
+                    final Env<S, L, D> leftEnv = envs._1()._1();
+                    final Env<S, L, D> rightEnv = envs._2()._1();
+                    M metadata = context.compose(envs._1()._2(), envs._2()._2());
 
                     if(rightEnv.isEmpty()) {
-                        return CompletableFuture.completedFuture(leftEnv);
+                        return CompletableFuture.completedFuture(Tuple2.of(leftEnv, metadata));
                     }
                     if(leftEnv.isEmpty()) {
-                        return CompletableFuture.completedFuture(rightEnv);
+                        return CompletableFuture.completedFuture(Tuple2.of(rightEnv, metadata));
                     }
 
                     final Ref<Env.Builder<S, L, D>> envBuilderRef = new Ref<>();
-                    final IFuture<List<Unit>> future = AggregateFuture.forAll(rightEnv, path -> {
+                    final IFuture<List<M>> future = AggregateFuture.forAll(rightEnv, path -> {
                         return isShadowed(path.getDatum(), leftEnv, cancel).thenApply(equiv -> {
-                            if(!equiv) {
+                            if(!equiv._1()) {
                                 if(envBuilderRef.get() == null) {
                                     final Env.Builder<S, L, D> envBuilder = Env.builder();
                                     envBuilder.addAll(leftEnv);
@@ -163,24 +119,29 @@ public class ResolutionInterpreter<S, L, D> {
                                     envBuilderRef.get().add(path);
                                 }
                             }
-                            return Unit.unit;
+                            return equiv._2();
                         });
                     });
 
-                    return future.thenApply(__ -> {
+                    return future.thenApply(metadataList -> {
+                        final M m = metadataList.stream().reduce(metadata, context::compose);
                         final Env.Builder<S, L, D> envBuilder = envBuilderRef.get();
                         if(envBuilder == null) {
-                            return leftEnv;
+                            return Tuple2.of(leftEnv, m);
                         }
-                        return envBuilder.build();
+                        return Tuple2.of(envBuilder.build(), m);
                     });
                 });
             }
 
-            @Override public IFuture<Env<S, L, D>> caseCExp(RVar envVar, RExp<L> exp) {
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseCExp(RVar envVar, RExp<L> exp) {
                 return store.lookup(envVar).thenCompose(env -> {
-                    return env.isEmpty() ? evaluateExp(path, exp, store, labelWf, cancel)
-                            : CompletableFuture.completedFuture(env);
+                    if(env._1().isEmpty()) {
+                        return evaluateExp(path, exp, store, labelWf, cancel).thenApply(res -> {
+                            return Tuple2.of(res._1(), context.compose(env._2(), res._2()));
+                        });
+                    }
+                    return CompletableFuture.completedFuture(env);
                 });
             }
 
@@ -188,36 +149,87 @@ public class ResolutionInterpreter<S, L, D> {
         return env;
     }
 
-    private IFuture<Boolean> isShadowed(D datum, Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel) {
-        return Futures.reduce(false, specifics, (acc, path) -> {
-            return acc ? CompletableFuture.completedFuture(true) : context.dataLeq(datum, path.getDatum(), cancel);
+    private IFuture<Tuple2<Boolean, M>> isShadowed(D datum, Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel) {
+        return Futures.reduce(Tuple2.of(false, context.unitMetadata()), specifics, (acc, path) -> {
+            return acc._1() ? CompletableFuture.completedFuture(acc) : context.dataLeq(datum, path.getDatum(), cancel).thenApply(res -> {
+                return Tuple2.of(res._1(), context.compose(acc._2(), res._2()));
+            });
         });
     }
 
-    public interface ResolutionContext<S, L, D> {
+    private Tuple2<Env<S, L, D>, M> mergeSubEnvironments(Iterable<Tuple2<Env<S, L, D>, M>> envs) {
+        M metadata = context.unitMetadata();
+        Env<S, L, D> firstEnv = null;
+        final Iterator<Tuple2<Env<S, L, D>, M>> envIterator = envs.iterator();
 
-        IFuture<Env<S, L, D>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: For confirmation */);
+        while(envIterator.hasNext()) {
+            final Tuple2<Env<S, L, D>, M> env = envIterator.next();
+            metadata = context.compose(metadata, env._2());
+            if(!env._1().isEmpty()) {
+                firstEnv = env._1();
+                break;
+            }
+        }
+
+        if(firstEnv == null) {
+            return Tuple2.of(Env.empty(), metadata);
+        }
+
+        Env.Builder<S, L, D> envBuilder = null;
+        while(envIterator.hasNext()) {
+            final Tuple2<Env<S, L, D>, M> env = envIterator.next();
+            metadata = context.compose(metadata, env._2());
+            if(!env._1().isEmpty()) {
+                envBuilder = Env.builder();
+                envBuilder.addAll(firstEnv);
+                envBuilder.addAll(env._1());
+                break;
+            }
+        }
+
+        if(envBuilder == null) {
+            return Tuple2.of(firstEnv, metadata);
+        }
+
+        while(envIterator.hasNext()) {
+            final Tuple2<Env<S, L, D>, M> env = envIterator.next();
+            metadata = context.compose(metadata, env._2());
+            if(!env._1().isEmpty()) {
+                envBuilder.addAll(env._1());
+            }
+        }
+
+        return Tuple2.of(envBuilder.build(), metadata);
+    }
+
+    public interface ResolutionContext<S, L, D, M> {
+
+        IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: For confirmation */);
 
         IFuture<Iterable<S>> getEdges(S scope, L label);
 
         IFuture<Optional<D>> getDatum(S scope);
 
-        IFuture<Boolean> dataWf(D d, ICancel cancel) throws InterruptedException;
+        IFuture<Tuple2<Boolean, M>> dataWf(D d, ICancel cancel) throws InterruptedException;
 
-        IFuture<Boolean> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException;
+        IFuture<Tuple2<Boolean, M>> dataLeq(D d1, D d2, ICancel cancel) throws InterruptedException;
+
+        M unitMetadata();
+
+        M compose(M metadata1, M metadata2);
 
     }
 
-    private static class Store<S, L, D> {
+    private static class Store<S, L, D, M> {
 
-        private final HashMap<RVar, IFuture<Env<S, L, D>>> store = new HashMap<>();
+        private final HashMap<RVar, IFuture<Tuple2<Env<S, L, D>, M>>> store = new HashMap<>();
 
-        public void store(RVar var, IFuture<Env<S, L, D>> value) {
+        public void store(RVar var, IFuture<Tuple2<Env<S, L, D>, M>> value) {
             store.put(var, value);
         }
 
-        public IFuture<Env<S, L, D>> lookup(RVar var) {
-            final IFuture<Env<S, L, D>> value = store.get(var);
+        public IFuture<Tuple2<Env<S, L, D>, M>> lookup(RVar var) {
+            final IFuture<Tuple2<Env<S, L, D>, M>> value = store.get(var);
             if(value == null) {
                 throw new IllegalStateException("Variable " + var + " does not exist.");
             }

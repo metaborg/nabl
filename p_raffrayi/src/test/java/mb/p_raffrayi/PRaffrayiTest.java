@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Test;
@@ -1376,44 +1375,6 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public boolean lt(EdgeOrData<Integer> lbl1, EdgeOrData<Integer> lbl2) {
             return lbl1.match(() -> lbl2.match(() -> false, __ -> true),
                     l1 -> lbl2.match(() -> false, l2 -> (l1 < l2)));
-        }
-
-    }
-
-    private class SingleStepLabelWf implements LabelWf<Integer> {
-
-        private Integer label;
-
-        public SingleStepLabelWf(Integer label) {
-            this.label = label;
-        }
-
-        @Override public Optional<LabelWf<Integer>> step(Integer l) {
-            return l.equals(label) ? Optional.of(new EOPLabelWf()) : Optional.empty();
-        }
-
-        @Override public boolean accepting() {
-            return false;
-        }
-
-        @Override public String toString() {
-            return label.toString();
-        }
-
-    }
-
-    private class EOPLabelWf implements LabelWf<Integer> {
-
-        @Override public Optional<LabelWf<Integer>> step(Integer l) {
-            return Optional.empty();
-        }
-
-        @Override public boolean accepting() {
-            return true;
-        }
-
-        @Override public String toString() {
-            return "$";
         }
 
     }

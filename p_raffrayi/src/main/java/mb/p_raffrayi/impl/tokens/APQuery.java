@@ -26,7 +26,7 @@ public abstract class APQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     // @Value.Parameter public abstract DataLeq<D> dataEquiv();
 
-    @Value.Parameter public abstract IFuture<Env<S, L, D>> future();
+    @Value.Parameter public abstract IFuture<?> future();
 
     @Override public void visit(Cases<S, L, D> cases) {
         cases.on((PQuery<S, L, D>) this);

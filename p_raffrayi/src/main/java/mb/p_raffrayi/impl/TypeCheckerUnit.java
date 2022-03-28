@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
+import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeChecker.IOutput;
@@ -84,7 +85,6 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
-import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
@@ -111,7 +111,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     private final Set.Transient<String> addedUnitIds = CapsuleUtil.transientSet();
 
     private final Ref<StateCapture<S, L, D, T>> localCapture = new Ref<>();
-    private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>();           // activated when transitioning from unknown to active/released.
+    private final ICompletableFuture<Unit> whenActive = new CompletableFuture<>(); // activated when transitioning from unknown to active/released.
     private final ICompletableFuture<Unit> whenContextActivated = new CompletableFuture<>(); // activated when transitioning from local/unknown to active.
 
     private IEnvDiffer<S, L, D> envDiffer;
@@ -122,8 +122,11 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     private final ICompletableFuture<Optional<IPatchCollection.Immutable<S>>> confirmationResult =
             new CompletableFuture<>();
 
+    // Intermediate confirmation result aggregations
     private final IPatchCollection.Transient<S> resultPatches = PatchCollection.Transient.of();
     private final IPatchCollection.Transient<S> globalPatches = PatchCollection.Transient.of();
+    private final Set.Transient<IRecordedQuery<S, L, D>> addedQueries = CapsuleUtil.transientSet();
+    private final Set.Transient<IRecordedQuery<S, L, D>> removedQueries = CapsuleUtil.transientSet();
 
     TypeCheckerUnit(IActor<? extends IUnit<S, L, D, Result<S, L, D, R, T>>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
@@ -247,12 +250,12 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<ConfirmResult<S>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
             DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
         assertConfirmationEnabled();
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
-        final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
+        final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
         whenActive.whenComplete((__, ex) -> {
             if(ex != null && ex != Release.instance) {
                 result.completeExceptionally(ex);
@@ -265,7 +268,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         return result;
     }
 
-    @Override public IFuture<Env<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
+    @Override public IFuture<IQueryAnswer<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         assertPreviousResultProvided();
         return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path, query, dataWF, dataEquiv);
@@ -309,7 +312,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     }
 
     @Override public void _release() {
-        doRelease(PatchCollection.Immutable.<S>of().putAll(this.resultPatches),
+        doRelease(CapsuleUtil.toSet(this.addedQueries), CapsuleUtil.toSet(this.removedQueries),
+                PatchCollection.Immutable.<S>of().putAll(this.resultPatches),
                 PatchCollection.Immutable.<S>of().putAll(globalPatches));
     }
 
@@ -548,36 +552,33 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
         if(previousResult.queries().isEmpty()) {
             logger.debug("Releasing - no queries in previous result.");
-            doRelease(PatchCollection.Immutable.of(), PatchCollection.Immutable.of());
+            doRelease(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), PatchCollection.Immutable.of(),
+                    PatchCollection.Immutable.of());
             return;
         }
 
         final IConfirmation<S, L, D> confirmaton = confirmation.getConfirmation(new ConfirmationContext(self));
 
         // @formatter:off
-        final List<IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>> futures = previousResult.queries().stream()
+        final List<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>> futures = previousResult.queries().stream()
                 .map(confirmaton::confirm)
-                .<IFuture<SC<Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>>, ConfirmResult<S>>>>map(intermediateFuture -> {
+                .<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>>map(intermediateFuture -> {
                     return intermediateFuture.thenApply(intermediate -> intermediate.match(
-                        () -> SC.shortCircuit(ConfirmResult.deny()),
-                        (resultPatches, globalPatches) -> {
+                        () -> SC.shortCircuit(intermediate),
+                        (addedQueries, removedQueries, resultPatches, globalPatches) -> {
                             // Store intermediate set of patches, to be used on deadlock.
                             this.resultPatches.putAll(resultPatches);
                             this.globalPatches.putAll(globalPatches);
-                            return SC.of(Tuple2.of(resultPatches, globalPatches));
+                            this.addedQueries.__insertAll(addedQueries);
+                            this.removedQueries.__insertAll(removedQueries);
+                            return SC.of(intermediate);
                         }
                     ));
                 }).collect(Collectors.toList());
         // @formatter:on
 
         // @formatter:off
-        AggregateFuture.ofShortCircuitable(patchCollections -> {
-            final Tuple2<IPatchCollection.Immutable<S>, IPatchCollection.Immutable<S>> aggregatedPatches = patchCollections.stream().reduce(
-                    Tuple2.of(PatchCollection.Immutable.of(), PatchCollection.Immutable.of()),
-                    (set1, set2) -> Tuple2.of(set1._1().putAll(set2._1()), set1._2().putAll(set2._2()))
-                );
-            return ConfirmResult.confirm(aggregatedPatches._1(), aggregatedPatches._2());
-        }, futures).whenComplete((r, ex) -> {
+        AggregateFuture.ofShortCircuitable(patchCollections -> patchCollections.stream().reduce(ConfirmResult.confirm(), ConfirmResult::add), futures).whenComplete((r, ex) -> {
                 if(ex == Release.instance) {
                     logger.debug("Confirmation received release.");
                     // Do nothing, unit is already released by deadlock resolution.
@@ -591,16 +592,18 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                         if(doRestart(true)) {
                             stateTransitionTrace = TransitionTrace.RESTARTED;
                         }
-                    }, (resultPatches, globalPatches) -> {
+                    }, (addedQueries, removedQueries, resultPatches, globalPatches) -> {
                         logger.debug("Queries confirmed - releasing.");
-                        this.doRelease(resultPatches, globalPatches);
+                        this.doRelease(addedQueries, removedQueries, resultPatches, globalPatches);
                     });
                 }
             });
         // @formatter:on
     }
 
-    private void doRelease(IPatchCollection.Immutable<S> resultPatches, IPatchCollection.Immutable<S> globalPatches) {
+    private void doRelease(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
+            Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
+            IPatchCollection.Immutable<S> globalPatches) {
         assertIncrementalEnabled();
         if(state == UnitState.UNKNOWN) {
             logger.debug("{} releasing.", this);
@@ -684,8 +687,12 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             }));
 
             final IPatchCollection.Immutable<S> allPatches = resultPatches.putAll(globalPatches);
-            recordedQueries.addAll(
-                    previousResult.queries().stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet()));
+            java.util.Set<IRecordedQuery<S, L, D>> newRecordedQueries = previousResult.queries().stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
+            java.util.Set<IRecordedQuery<S, L, D>> patchedRemovedQueries = removedQueries.stream().map(q -> q.patch(allPatches)).collect(Collectors.toSet());
+            newRecordedQueries.removeAll(patchedRemovedQueries);
+            newRecordedQueries.addAll(addedQueries);
+            recordedQueries.addAll(newRecordedQueries);
+
             stateTransitionTrace = TransitionTrace.RELEASED;
 
             self.complete(confirmationResult, Optional.of(resultPatches), null);
@@ -770,7 +777,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         if(nodes.size() == 1 && !whenActive.isDone()) {
             assertInState(UnitState.UNKNOWN);
             logger.debug("{} self-deadlocked before activation, releasing", this);
-            doRelease(PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());
+            doRelease(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
+                    PatchCollection.Immutable.<S>of().putAll(externalMatches), PatchCollection.Immutable.of());
         } else if(state.active() && inLocalPhase()) {
             doCapture();
             resume();
@@ -829,7 +837,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     dataWf, dataEquiv, null, null);
         }
 
-        @Override public IFuture<Env<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
+        @Override public IFuture<IQueryAnswer<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf,
                 DataWf<S, L, D> dataWf, LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv) {
             assertPreviousResultProvided();
             logger.debug("previous query from env differ.");
@@ -837,8 +845,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     new NameResolutionQuery<>(labelWf, labelOrder, edgeLabels), dataWf, dataEquiv);
         }
 
-        @Override public IFuture<Optional<ConfirmResult<S>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-                DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        @Override public IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(ScopePath<S, L> path,
+                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             logger.debug("{} try external confirm.", this);
             final S scope = path.getTarget();
             return getOwner(path.getTarget()).thenCompose(owner -> {
@@ -847,7 +855,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     return CompletableFuture.completedFuture(Optional.empty());
                 }
                 logger.debug("{} external confirm.", this);
-                final ICompletableFuture<ConfirmResult<S>> result = new CompletableFuture<>();
+                final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
                 self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
