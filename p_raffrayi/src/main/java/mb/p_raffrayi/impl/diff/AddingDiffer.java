@@ -33,6 +33,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final AtomicInteger pendingResults = new AtomicInteger(0);
     private final IDifferContext<S, L, D> context;
     private final IDifferOps<S, L, D> differOps;
+    private final Set.Immutable<L> edgeLabels;
 
     private final Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
     private final Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
@@ -45,9 +46,10 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final AtomicBoolean typeCheckerFinished = new AtomicBoolean();
     private final AtomicInteger nesting = new AtomicInteger(0);
 
-    public AddingDiffer(IDifferContext<S, L, D> context, IDifferOps<S, L, D> differOps) {
+    public AddingDiffer(IDifferContext<S, L, D> context, IDifferOps<S, L, D> differOps, Set.Immutable<L> edgeLabels) {
         this.context = context;
         this.differOps = differOps;
+        this.edgeLabels = edgeLabels;
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes) {
@@ -94,21 +96,16 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             }
 
             if(differOps.ownOrSharedScope(scope)) {
-                IFuture<Set.Immutable<L>> labelsFuture = context.labels(scope);
-                K<Set.Immutable<L>> processLabels = lbls -> {
-                    lbls.forEach(lbl -> {
-                        IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, lbl);
-                        K<Iterable<S>> processEdges = targets -> {
-                            targets.forEach(target -> {
-                                addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
-                                worklist.add(target);
-                            });
-                        };
-                        future(edgesFuture, processEdges);
-                    });
-                };
-                logger.trace("Schedule labels {}: {}", scope, labelsFuture);
-                future(labelsFuture, processLabels);
+                for(L lbl : edgeLabels) {
+                    IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, lbl);
+                    K<Iterable<S>> processEdges = targets -> {
+                        targets.forEach(target -> {
+                            addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
+                            worklist.add(target);
+                        });
+                    };
+                    future(edgesFuture, processEdges);
+                }
             }
         }
     }

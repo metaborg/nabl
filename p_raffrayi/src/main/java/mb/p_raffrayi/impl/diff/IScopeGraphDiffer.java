@@ -26,7 +26,7 @@ public interface IScopeGraphDiffer<S, L, D> {
      * scopes/edges to match anymore.
      */
     IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph,
-            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Collection<S> scopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
             Multimap<S, EdgeOrData<L>> openEdges);
 
     /**

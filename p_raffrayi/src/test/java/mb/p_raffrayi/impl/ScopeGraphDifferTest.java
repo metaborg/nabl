@@ -21,7 +21,6 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.impl.diff.IDifferContext;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.StaticDifferContext;
@@ -46,7 +45,7 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
 
     private final Integer l1 = 1;
 
-    private final Set.Immutable<Integer> labels = CapsuleUtil.immutableSet(l1);
+    private final Set.Immutable<Integer> edgeLabels = CapsuleUtil.immutableSet(l1);
 
     @Test public void testAdded() {
         // @formatter:off
@@ -57,12 +56,12 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
                 new TestDifferContext<>(new StaticDifferContext<>(currentGraph, CapsuleUtil.immutableSet(s0n, s1n),
-                        labels, TestDifferDataOps.instance));
+                        TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext = new StaticDifferContext<>(
-                ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(), labels, TestDifferDataOps.instance);
+                ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(),  TestDifferDataOps.instance);
 
         final ScopeGraphDiffer<String, Integer, List<String>> differ =
-                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance);
+                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance, edgeLabels);
 
         final Ref<ScopeGraphDiff<String, Integer, List<String>>> result = new Ref<>();
         differ.diff(Arrays.asList(s0n), Arrays.asList(s0o)).thenAccept(result::set);
@@ -88,12 +87,12 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
         // @formatter:on
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
-                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, CapsuleUtil.toSet(s0n, s1n, s2n), labels, TestDifferDataOps.instance));
+                new TestDifferContext<>(new StaticDifferContext<>(currentGraph, CapsuleUtil.toSet(s0n, s1n, s2n), TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext =
-                new StaticDifferContext<>(ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(), labels, TestDifferDataOps.instance);
+                new StaticDifferContext<>(ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(),  TestDifferDataOps.instance);
 
         final ScopeGraphDiffer<String, Integer, List<String>> differ =
-                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance);
+                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance, edgeLabels);
 
         final Ref<ScopeGraphDiff<String, Integer, List<String>>> result = new Ref<>();
         differ.diff(Arrays.asList(s0n), Arrays.asList(s0o)).thenAccept(result::set);
@@ -124,12 +123,12 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
 
         final TestDifferContext<String, Integer, List<String>> currentContext =
                 new TestDifferContext<>(new StaticDifferContext<>(currentGraph, CapsuleUtil.toSet(s0n, s1n, s2n, s3n),
-                        labels, TestDifferDataOps.instance));
+                        TestDifferDataOps.instance));
         final IDifferContext<String, Integer, List<String>> previousContext = new StaticDifferContext<>(
-                ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(), labels, TestDifferDataOps.instance);
+                ScopeGraph.Immutable.of(), CapsuleUtil.immutableSet(), TestDifferDataOps.instance);
 
         final ScopeGraphDiffer<String, Integer, List<String>> differ =
-                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance);
+                new ScopeGraphDiffer<>(currentContext, previousContext, TestDifferOps.instance, edgeLabels);
 
         final Ref<ScopeGraphDiff<String, Integer, List<String>>> result = new Ref<>();
         differ.diff(Arrays.asList(s0n), Arrays.asList(s0o)).thenAccept(result::set);
@@ -160,10 +159,6 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
 
         @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
             return signal().thenCompose(__ -> inner.getEdges(scope, label));
-        }
-
-        @Override public IFuture<Immutable<L>> labels(S scope) {
-            return signal().thenCompose(__ -> inner.labels(scope));
         }
 
         @Override public IFuture<Optional<D>> datum(S scope) {

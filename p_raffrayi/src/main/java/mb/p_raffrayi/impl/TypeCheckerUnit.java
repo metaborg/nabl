@@ -276,7 +276,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
     @Override public IFuture<Optional<S>> _match(S previousScope) {
         assertOwnScope(previousScope);
-        if(matchedBySharing.isIdentity(previousScope)) {
+        if(matchedBySharing.identityPatches().contains(previousScope)) {
             return CompletableFuture.completedFuture(Optional.of(previousScope));
         }
         if(matchedBySharing.patchDomain().contains(previousScope)) {
@@ -625,12 +625,12 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             final IScopeGraphDiffer<S, L, D> differ = localPatches.isIdentity() && this.addedUnitIds.isEmpty() ?
                 new MatchingDiffer<S, L, D>(differOps(), differContext(typeChecker::internalData), resultPatches.allPatches()) :
                 new ScopeGraphDiffer<>(differContext(typeChecker::internalData), new StaticDifferContext<>(previousResult.scopeGraph(),
-                        previousResult.scopes(), edgeLabels, new DifferDataOps()), differOps());
+                        previousResult.scopes(), new DifferDataOps()), differOps(), edgeLabels);
             // @formatter:on
 
             final Collection<S> openScopes =
                     this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
-            initDiffer(differ, previousResult.scopeGraph(), previousResult.rootScopes(), localPatches, openScopes,
+            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(), localPatches, openScopes,
                     ImmutableMultimap.of());
             if(isConfirmationEnabled()) {
                 this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
@@ -720,21 +720,22 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 final IDifferOps<S, L, D> differOps = differOps();
                 if(previousResult != null) {
                     final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
-                            previousResult.scopes(), edgeLabels, new DifferDataOps());
+                            previousResult.scopes(), new DifferDataOps());
 
                     if(external) {
                         final StateCapture<S, L, D, T> capture = previousResult.result().localState();
                         final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
                                 capture.unInitializedScopes().elementSet());
 
-                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), capture.scopeGraph(),
-                                rootScopes, matchedBySharing.freeze(), openScopes, capture.openEdges());
+                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
+                                capture.scopeGraph(), capture.scopes(), matchedBySharing.freeze(), openScopes,
+                                capture.openEdges());
                     } else {
-                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps), this.rootScopes,
-                                previousResult.rootScopes());
+                        initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
+                                this.rootScopes, previousResult.rootScopes());
                     }
                 } else {
-                    initDiffer(new AddingDiffer<>(context, differOps), Collections.emptyList(),
+                    initDiffer(new AddingDiffer<>(context, differOps, edgeLabels), Collections.emptyList(),
                             Collections.emptyList());
                 }
                 if(isConfirmationEnabled()) {

@@ -5,6 +5,8 @@ import org.metaborg.util.functions.Action0;
 import org.metaborg.util.functions.Action4;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function4;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
@@ -13,6 +15,8 @@ import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 
 public abstract class ConfirmResult<S, L, D> {
+
+    private static final ILogger logger = LoggerUtils.logger(ConfirmResult.class);
 
     @SuppressWarnings("rawtypes") private static final ConfirmResult.Deny DENY = new ConfirmResult.Deny<>();
 
@@ -114,6 +118,11 @@ public abstract class ConfirmResult<S, L, D> {
         private Confirm(Set.Immutable<IRecordedQuery<S, L, D>> addedQueries,
                 Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
                 IPatchCollection.Immutable<S> globalPatches) {
+            logger.trace("Making new confirm result.");
+            logger.trace("* added queries:   {}.", addedQueries);
+            logger.trace("* removed queries: {}.", removedQueries);
+            logger.trace("* result patches:  {}.", resultPatches);
+            logger.trace("* global patches:  {}.", globalPatches);
             this.addedQueries = addedQueries;
             this.removedQueries = removedQueries;
             this.resultPatches = resultPatches;

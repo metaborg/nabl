@@ -268,12 +268,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph,
-            List<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Collection<S> scopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
             Multimap<S, EdgeOrData<L>> openEdges) {
         assertDifferEnabled();
         logger.debug("Initializing differ: {} with initial scope graph: {}.", differ, scopeGraph);
         this.differ = differ;
-        doFinishDiffer(differ.diff(scopeGraph, rootScopes, patches, openScopes, openEdges));
+        doFinishDiffer(differ.diff(scopeGraph, scopes, patches, openScopes, openEdges));
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 
@@ -1469,12 +1469,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     }
                     return scopeGraph.get().getEdges(scope, label);
                 });
-            }
-
-            @Override public IFuture<Set.Immutable<L>> labels(S scope) {
-                assertOwnOrSharedScope(scope);
-                // TODO make more precise with labels for which scope was initialized.
-                return CompletableFuture.completedFuture(edgeLabels);
             }
 
             @Override public IFuture<Optional<D>> datum(S scope) {
