@@ -191,7 +191,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         resume();
 
         doStart(rootScopes);
-        if(previousResult != null) {
+        if(isIncrementalEnabled() && previousResult != null) {
             if(previousResult.rootScopes().size() != rootScopes.size()) {
                 throw new IllegalStateException("Root scope counts do not match.");
             }
@@ -223,7 +223,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         }
 
         // Start phantom units for all units that have not yet been restarted
-        if(previousResult != null) {
+        if(isIncrementalEnabled() && previousResult != null) {
             for(String removedId : Sets.difference(previousResult.subUnitResults().keySet(), addedUnitIds)) {
                 @SuppressWarnings("unchecked") final IUnitResult<S, L, D, ? extends IOutput<S, L, D>> subResult =
                         (IUnitResult<S, L, D, ? extends IOutput<S, L, D>>) previousResult.subUnitResults()
@@ -328,7 +328,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         return self.id();
     }
 
-    @Override public <Q extends IOutput<S, L, D>, U extends IState<S, L, D>>
+    @SuppressWarnings("unchecked") @Override public <Q extends IOutput<S, L, D>, U extends IState<S, L, D>>
             IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, U>>>
             add(String id, ITypeChecker<S, L, D, Q, U> unitChecker, List<S> rootScopes, boolean changed) {
         assertActive();
@@ -342,43 +342,49 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             }, rootScopes, false)._2()));
         }
 
-        @SuppressWarnings("unchecked") final IUnitResult<S, L, D, Result<S, L, D, Q, U>> subUnitPreviousResult =
-                (IUnitResult<S, L, D, Result<S, L, D, Q, U>>) this.previousResult.subUnitResults().get(id);
+        final IUnitResult<S, L, D, Result<S, L, D, Q, U>> subUnitPreviousResult;
+        if(isIncrementalEnabled()) {
+
+            subUnitPreviousResult =
+                    (IUnitResult<S, L, D, Result<S, L, D, Q, U>>) this.previousResult.subUnitResults().get(id);
 
 
-        // When a scope is shared, the shares must be consistent.
-        // Also, it is not necessary that shared scopes are reachable from the root scopes
-        // (A unit started by the Broker does not even have root scopes)
-        // Therefore we enforce here that the current root scopes and the previous ones match.
-        List<S> previousRootScopes = subUnitPreviousResult.rootScopes();
+            // When a scope is shared, the shares must be consistent.
+            // Also, it is not necessary that shared scopes are reachable from the root scopes
+            // (A unit started by the Broker does not even have root scopes)
+            // Therefore we enforce here that the current root scopes and the previous ones match.
+            List<S> previousRootScopes = subUnitPreviousResult.rootScopes();
 
-        int pSize = previousRootScopes.size();
-        int cSize = rootScopes.size();
-        if(cSize != pSize) {
-            logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
-            throw new IllegalStateException("Different root scope count.");
-        }
-
-        final BiMap.Transient<S> req = BiMap.Transient.of();
-        for(int i = 0; i < rootScopes.size(); i++) {
-            final S cRoot = rootScopes.get(i);
-            final S pRoot = previousRootScopes.get(i);
-            req.put(cRoot, pRoot);
-            if(isOwner(cRoot)) {
-                matchedBySharing.put(cRoot, pRoot);
+            int pSize = previousRootScopes.size();
+            int cSize = rootScopes.size();
+            if(cSize != pSize) {
+                logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                throw new IllegalStateException("Different root scope count.");
             }
-        }
 
-        if(isDifferEnabled()) {
-            whenDifferActivated.thenAccept(__ -> {
-                if(!differ.matchScopes(req.freeze())) {
-                    logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
-                    throw new IllegalStateException("Could not match.");
+            final BiMap.Transient<S> req = BiMap.Transient.of();
+            for(int i = 0; i < rootScopes.size(); i++) {
+                final S cRoot = rootScopes.get(i);
+                final S pRoot = previousRootScopes.get(i);
+                req.put(cRoot, pRoot);
+                if(isOwner(cRoot)) {
+                    matchedBySharing.put(cRoot, pRoot);
                 }
-            });
-        }
+            }
 
-        this.addedUnitIds.__insert(id);
+            if(isDifferEnabled()) {
+                whenDifferActivated.thenAccept(__ -> {
+                    if(!differ.matchScopes(req.freeze())) {
+                        logger.error("Unit {} adds subunit {} with initial state but with different root scope count.");
+                        throw new IllegalStateException("Could not match.");
+                    }
+                });
+            }
+
+            this.addedUnitIds.__insert(id);
+        } else {
+            subUnitPreviousResult = null;
+        }
         final IFuture<IUnitResult<S, L, D, Result<S, L, D, Q, U>>> result =
                 this.<Result<S, L, D, Q, U>>doAddSubUnit(id, (subself, subcontext) -> {
                     return new TypeCheckerUnit<S, L, D, Q, U>(subself, self, subcontext, unitChecker, edgeLabels,
