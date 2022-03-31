@@ -857,7 +857,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
-        resume(); // Always needed?
+        if(!waitForsByProcess.containsKey(process)) {
+            resume();
+        }
         logger.debug("{} wait for {}/{}", self, process, token);
         waitFors = waitFors.add(token);
         waitForsByProcess = waitForsByProcess.put(process, token);
@@ -868,7 +870,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
-        // resume();
         if(!waitForsByProcess.contains(process, token)) {
             logger.error("{} not waiting for granted {}/{}", self, process, token);
             throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
@@ -876,6 +877,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         logger.debug("{} granted {} by {}", self, token, process);
         waitFors = waitFors.remove(token);
         waitForsByProcess = waitForsByProcess.remove(process, token);
+        if(!waitForsByProcess.containsKey(process)) {
+            resume();
+        }
     }
 
     private IProcess<S, L, D> process(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
