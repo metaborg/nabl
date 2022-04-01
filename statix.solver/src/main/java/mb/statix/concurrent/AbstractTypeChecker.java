@@ -221,7 +221,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         }
 
         // Convert patches to replacement
-        final Replacement.Builder builder = Replacement.builder();
+        final Replacement.Builder builder = Replacement.builder().put(true);
         patches.patches().asMap().forEach((newScope, oldScope) -> {
             builder.put(oldScope, newScope);
         });

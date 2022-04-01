@@ -95,7 +95,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         final Tuple2<? extends Set<S>, IScopeGraph.Immutable<S, L, D>> libraryResult =
                 library.initialize(rootScopes, context::makeScope);
         this.scopes.__insertAll(libraryResult._1());
-        this.scopeGraph.set(libraryResult._2());
+        scopeGraph.set(libraryResult._2());
 
         // add root scope edges and close root scopes
         for(S rootScope : rootScopes) {

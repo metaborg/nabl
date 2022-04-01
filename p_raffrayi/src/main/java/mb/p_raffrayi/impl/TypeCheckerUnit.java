@@ -161,8 +161,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         return whenActive.compose((u, ex) -> {
             if(this.state.equals(UnitState.RELEASED) || this.state.equals(UnitState.DONE)
                     && this.stateTransitionTrace.equals(TransitionTrace.RELEASED)) {
-                return CompletableFuture
-                        .completedFuture(previousResult.result().analysis().getExternalRepresentation(datum));
+                final D result = previousResult.result().analysis().getExternalRepresentation(datum);
+                return CompletableFuture.completedFuture(context.substituteScopes(result, resultPatches.patches().invert()));
             }
             final IFuture<D> future = typeChecker.getExternalDatum(datum);
             if(future.isDone()) {
@@ -568,25 +568,25 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         final IConfirmation<S, L, D> confirmaton = confirmation.getConfirmation(new ConfirmationContext(self));
 
         // @formatter:off
-        final List<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>> futures = previousResult.queries().stream()
+        final List<IFuture<SC<Boolean, Boolean>>> futures = previousResult.queries().stream()
                 .map(confirmaton::confirm)
-                .<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>>map(intermediateFuture -> {
+                .<IFuture<SC<Boolean, Boolean>>>map(intermediateFuture -> {
                     return intermediateFuture.thenApply(intermediate -> intermediate.match(
-                        () -> SC.shortCircuit(intermediate),
+                        () -> SC.shortCircuit(false),
                         (addedQueries, removedQueries, resultPatches, globalPatches) -> {
                             // Store intermediate set of patches, to be used on deadlock.
                             this.resultPatches.putAll(resultPatches);
                             this.globalPatches.putAll(globalPatches);
                             this.addedQueries.__insertAll(addedQueries);
                             this.removedQueries.__insertAll(removedQueries);
-                            return SC.of(intermediate);
+                            return SC.<Boolean, Boolean>of(true);
                         }
                     ));
                 }).collect(Collectors.toList());
         // @formatter:on
 
         // @formatter:off
-        AggregateFuture.ofShortCircuitable(patchCollections -> patchCollections.stream().reduce(ConfirmResult.confirm(), ConfirmResult::add), futures).whenComplete((r, ex) -> {
+        AggregateFuture.ofShortCircuitable(patchCollections -> true, futures).whenComplete((r, ex) -> {
                 if(ex == Release.instance) {
                     logger.debug("Confirmation received release.");
                     // Do nothing, unit is already released by deadlock resolution.
@@ -594,16 +594,16 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     logger.error("Failure in confirmation.", ex);
                     failures.add(ex);
                 } else {
-                    r.visit(() -> {
+                    if(r) {
+                        logger.debug("Queries confirmed - releasing.");
+                        this.doRelease(addedQueries.freeze(), removedQueries.freeze(), resultPatches.freeze(), globalPatches.freeze());
+                    } else {
                         // No confirmation, hence restart
                         logger.debug("Query confirmation denied - restarting.");
                         if(doRestart(true)) {
                             stateTransitionTrace = TransitionTrace.RESTARTED;
                         }
-                    }, (addedQueries, removedQueries, resultPatches, globalPatches) -> {
-                        logger.debug("Queries confirmed - releasing.");
-                        this.doRelease(addedQueries, removedQueries, resultPatches, globalPatches);
-                    });
+                    }
                 }
             });
         // @formatter:on
@@ -691,7 +691,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             });
 
             pendingExternalDatums.asMap().forEach((d, futures) -> futures.elementSet().forEach(future -> {
-                self.complete(future, previousResult.result().analysis().getExternalRepresentation(d), null);
+                final D datum = previousResult.result().analysis().getExternalRepresentation(d);
+                final D result = context.substituteScopes(datum, resultPatches.patches().invert());
+                self.complete(future, result, null);
             }));
 
             final IPatchCollection.Immutable<S> allPatches = resultPatches.putAll(globalPatches);
@@ -1011,7 +1013,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
         // TODO: assert empty?
         // TODO: patch root scopes?
-        this.scopeGraph.set(snapshot.scopeGraph());
+        scopeGraph.set(snapshot.scopeGraph());
 
         final BiMap.Transient<S> scopesToProcess = BiMap.Transient.of();
         stableScopes.forEach(name -> {

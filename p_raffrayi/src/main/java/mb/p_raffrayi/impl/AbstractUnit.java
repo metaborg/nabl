@@ -722,8 +722,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     // Hence, we just ignore it.
                     if(!context.scopeId(path.getTarget()).equals(origin.id())) {
                         recordQuery(ARecordedQuery.of(path, datumScopes(ans.env()), query.labelWf(), dataWF, ans.env(),
-                                true));
+                                false));
                     }
+
+                    // Patches for transitive queries in nested(/predicate) query do not have to
+                    // be applied to type-checker result
                     ans.transitiveQueries().forEach(q -> recordQuery(q.withIncludePatches(false)));
                     recordQueries(ans.predicateQueries());
                 }
@@ -816,10 +819,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return Streams.stream(env).map(ResolutionPath::getDatum).map(context::getScopes)
                 .reduce(CapsuleUtil.immutableSet(), Set.Immutable::__insertAll);
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Scopegraph Capture
-    ///////////////////////////////////////////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////////////////
     // Wait fors & finalization
@@ -1432,7 +1431,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected boolean isQueryRecordingEnabled() {
-        return context.settings().isIncremental();
+        return context.settings().recording();
     }
 
     protected boolean isIncrementalDeadlockEnabled() {

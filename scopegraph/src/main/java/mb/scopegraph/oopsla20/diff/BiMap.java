@@ -144,6 +144,10 @@ public abstract class BiMap<E> {
             return new Immutable<>(fwd.__put(key, value), bwd.__put(value, key));
         }
 
+        public Immutable<E> invert() {
+            return new BiMap.Immutable<>(bwd, fwd);
+        }
+
     }
 
     public static class Transient<E> extends BiMap<E> {

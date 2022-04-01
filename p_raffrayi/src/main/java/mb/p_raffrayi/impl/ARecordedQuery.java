@@ -39,7 +39,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             Env<S, L, D> result) {
-        return of(path, datumScopes, labelWf, dataWf, result, false);
+        return of(path, datumScopes, labelWf, dataWf, result, true);
     }
 
     public static <S, L, D> RecordedQuery<S, L, D> of(S scope, Set<S> datumScopes, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
@@ -49,7 +49,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
-        return RecordedQuery.of(path, datumScopes, labelWf, dataWf, false, false);
+        return RecordedQuery.of(path, datumScopes, labelWf, dataWf, false, true);
     }
 
     @Override public IRecordedQuery<S, L, D> patch(IPatchCollection.Immutable<S> patches) {
