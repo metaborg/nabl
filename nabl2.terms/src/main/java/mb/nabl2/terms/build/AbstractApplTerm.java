@@ -70,9 +70,15 @@ public abstract class AbstractApplTerm extends AbstractTerm implements IApplTerm
         return cases.caseAppl(this);
     }
 
+    private volatile int hashCode;
 
     @Override public int hashCode() {
-        return Objects.hash(getOp(), getArgs());
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getOp(), getArgs());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {

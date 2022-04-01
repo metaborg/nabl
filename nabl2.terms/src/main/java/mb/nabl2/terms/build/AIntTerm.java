@@ -1,7 +1,5 @@
 package mb.nabl2.terms.build;
 
-import java.util.Objects;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
@@ -38,7 +36,7 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
 
 
     @Override public int hashCode() {
-        return Objects.hash(getValue());
+        return getValue();
     }
 
     @Override public boolean equals(Object other) {
@@ -46,12 +44,8 @@ abstract class AIntTerm extends AbstractTerm implements IIntTerm {
             return true;
         if(!(other instanceof IIntTerm))
             return false;
-        IIntTerm that = (IIntTerm) other;
-        if(this.hashCode() != that.hashCode())
-            return false;
-        // @formatter:off
-        return Objects.equals(this.getValue(), that.getValue());
-        // @formatter:on
+        final IIntTerm that = (IIntTerm) other;
+        return this.getValue() == that.getValue();
     }
 
     @Override public String toString() {
