@@ -9,7 +9,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 abstract class AIntTerm extends AbstractTerm implements IIntTerm {
 

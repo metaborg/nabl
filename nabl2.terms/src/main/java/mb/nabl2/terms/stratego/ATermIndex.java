@@ -18,7 +18,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex, IApplTerm {
 
@@ -30,7 +30,7 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
 
     @Override @Value.Parameter public abstract int getId();
 
-    @SuppressWarnings({ "unchecked" }) 
+    @SuppressWarnings({ "unchecked" })
     public <T extends ITerm> T put(T term) {
         final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermIndex.class, (TermIndex) this);
