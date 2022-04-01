@@ -1,5 +1,7 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Set;
+
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
@@ -30,5 +32,10 @@ public abstract class AResult<S, L, D, A extends IOutput<S, L, D>, T extends ISt
      * @return Local scope graph created by this type-checker.
      */
     @Value.Parameter @Nullable public abstract IScopeGraph.Immutable<S, L, D> scopeGraph();
+
+    /**
+     * @return Scopes shared with subunits.
+     */
+    @Value.Parameter @Nullable public abstract Set<S> sharedScopes();
 
 }

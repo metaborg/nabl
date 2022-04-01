@@ -25,8 +25,8 @@ public interface IScopeGraphDiffer<S, L, D> {
      * Entry point. Accepts a context-free scope graph, and returns a future that is completed when there are no
      * scopes/edges to match anymore.
      */
-    IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph,
-            Collection<S> scopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+    IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph, Collection<S> scopes,
+            Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
             Multimap<S, EdgeOrData<L>> openEdges);
 
     /**

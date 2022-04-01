@@ -66,7 +66,7 @@ public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
-            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
             Multimap<S, EdgeOrData<L>> openEdges) {
         throw new IllegalStateException("Removing differ cannot be used with initial scopegraph.");
     }

@@ -215,7 +215,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 resume();
                 tryFinish();
             }).thenApply(r -> {
-                return Result.<S, L, D, R, T>of(r, localCapture.get(), localScopeGraph.get());
+                return Result.<S, L, D, R, T>of(r, localCapture.get(), localScopeGraph.get(),
+                        matchedBySharing.patchRange());
             });
         } catch(Exception e) {
             logger.error("Exception starting type-checker {}.", e);
@@ -260,7 +261,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             if(ex != null && ex != Release.instance) {
                 result.completeExceptionally(ex);
             } else {
-                // TODO: Can we immediately confirm on `Release.instance` exception?
+                // Cannot immediately confirm on `Release.instance` exception
+                // because subunits might change edges in shared scopes.
                 confirmation.getConfirmation(new ConfirmationContext(sender))
                         .confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
             }
@@ -636,8 +638,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
             final Collection<S> openScopes =
                     this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
-            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(), localPatches, openScopes,
-                    ImmutableMultimap.of());
+            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
+                    previousResult.result().sharedScopes(), localPatches, openScopes, ImmutableMultimap.of());
             if(isConfirmationEnabled()) {
                 this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
             }
@@ -734,8 +736,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                                 capture.unInitializedScopes().elementSet());
 
                         initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
-                                capture.scopeGraph(), capture.scopes(), matchedBySharing.freeze(), openScopes,
-                                capture.openEdges());
+                                capture.scopeGraph(), capture.scopes(), previousResult.result().sharedScopes(),
+                                matchedBySharing.freeze(), openScopes, capture.openEdges());
                     } else {
                         initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
                                 this.rootScopes, previousResult.rootScopes());
@@ -859,7 +861,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             logger.debug("{} try external confirm.", this);
             final S scope = path.getTarget();
-            return getOwner(path.getTarget()).thenCompose(owner -> {
+            return getOwner(scope).thenCompose(owner -> {
                 if(owner.equals(self)) {
                     logger.debug("{} local confirm.", this);
                     return CompletableFuture.completedFuture(Optional.empty());

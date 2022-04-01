@@ -43,7 +43,9 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
                 logger.debug("{} matched", scope);
                 final List<IFuture<ScopeDiff<S, L, D>>> futures = new ArrayList<>();
                 for(L label : this.context.edgeLabels()) {
-                    futures.add(context.scopeDiff(scope, label));
+                    if(labelWf.step(label).isPresent()) {
+                        futures.add(context.scopeDiff(scope, label));
+                    }
                 }
 
                 return AggregateFuture.of(futures).thenCompose(diffs -> {

@@ -203,8 +203,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> scopeGraph,
-            Collection<S> scopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
-            Multimap<S, EdgeOrData<L>> openEdges) {
+            Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches,
+            Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
         logger.debug("Initializing differ from initial graph.");
         logger.trace("* scopes:      {}.", scopes);
         logger.trace("* scopeGraph:  {}.", scopeGraph);
@@ -242,7 +242,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                             logger.trace("Initial edge match: {} ~ {}.", newEdge, oldEdge);
                         }
 
-                        if(openScopes.contains(oldScope) || openEdges.containsEntry(oldScope, EdgeOrData.edge(lbl))) {
+                        if(openScopes.contains(oldScope) || openEdges.containsEntry(oldScope, EdgeOrData.edge(lbl))
+                                || sharedScopes.contains(oldScope)) {
                             logger.trace("Edge {}/{} open, scheduling residual matches.", oldScope, lbl);
                             IFuture<Iterable<S>> currentResidualTargetsFuture =
                                     currentContext.getEdges(newScope, lbl).thenApply(targets -> {

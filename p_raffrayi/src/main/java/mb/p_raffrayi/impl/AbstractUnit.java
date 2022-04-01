@@ -268,12 +268,12 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph,
-            Collection<S> scopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
             Multimap<S, EdgeOrData<L>> openEdges) {
         assertDifferEnabled();
         logger.debug("Initializing differ: {} with initial scope graph: {}.", differ, scopeGraph);
         this.differ = differ;
-        doFinishDiffer(differ.diff(scopeGraph, scopes, patches, openScopes, openEdges));
+        doFinishDiffer(differ.diff(scopeGraph, scopes, sharedScopes, patches, openScopes, openEdges));
         self.complete(whenDifferActivated, Unit.unit, null);
     }
 

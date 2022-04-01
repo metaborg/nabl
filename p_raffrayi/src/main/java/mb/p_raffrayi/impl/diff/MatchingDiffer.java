@@ -56,8 +56,8 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
-            Collection<S> rootScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
-            Multimap<S, EdgeOrData<L>> openEdges) {
+            Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches,
+            Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
         if(!openScopes.isEmpty() || !openEdges.isEmpty() || !patches.isIdentity()) {
             throw new IllegalStateException("Cannot create matching differ with open scopes/edges.");
         }

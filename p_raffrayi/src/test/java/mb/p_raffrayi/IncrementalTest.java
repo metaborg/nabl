@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -205,7 +207,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
                     .usedStableScopes(CapsuleUtil.immutableSet())
                     .typeCheckerState(EmptyI.of())
                     .build(),
-                ScopeGraph.Immutable.of()))
+                ScopeGraph.Immutable.of(),
+                ImmutableSet.of()))
             .addQueries(recordedQuery(root, env).build())
             .build();
         // @formatter:on
@@ -247,7 +250,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
 
         // @formatter:off
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> childResult = subResult("/./sub", root,
-                unitTCResult(ImmutableMultiset.of(), root).withScopeGraph(sg))
+                unitTCResult(ImmutableMultiset.of(), Collections.singleton(root), root).withScopeGraph(sg))
             .addScopes(d)
             .scopeGraph(sg)
             .addQueries(recordedQuery(root, env).build())
@@ -587,7 +590,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.INITIALLY_STARTED, result.stateTransitionTrace());
     }
 
-    @Test(timeout = 10000) public void testRestart_NewUnitChangesSharedEdge()
+    @Test(timeout = 10000000) public void testRestart_NewUnitChangesSharedEdge()
             throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);
         final Integer lbl = 1;
@@ -1109,7 +1112,8 @@ public class IncrementalTest extends PRaffrayiTestBase {
             .result(Result.<Scope, Integer, IDatum, Output<Integer, Integer>, EmptyI>of(
                 Output.<Integer, Integer>of(-1),
                 StateCapture.<Scope, Integer, IDatum, EmptyI>of(CapsuleUtil.immutableSet(root, d1), sg, HashMultiset.create(), HashMultiset.create(), HashMultimap.create(), MultiSet.Immutable.of(), CapsuleUtil.immutableSet(), EmptyI.of()),
-                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1)))
+                ScopeGraph.Immutable.<Scope, Integer, IDatum>of().addEdge(root, lbl, d1).setDatum(d1, d1),
+                ImmutableSet.of()))
             .build();
         // @formatter:on
 
@@ -1690,7 +1694,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 .id("/.")
                 .addScopes(roots)
                 .scopeGraph(ScopeGraph.Immutable.of())
-                .result(unitTCResult(ImmutableMultiset.of(), roots));
+                .result(unitTCResult(ImmutableMultiset.of(), ImmutableSet.copyOf(roots), roots));
         // @formatter:on
     }
 
@@ -1745,26 +1749,37 @@ public class IncrementalTest extends PRaffrayiTestBase {
     }
 
     public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unitTCResult(
-            Multimap<Scope, EdgeOrData<Integer>> openEdges, Multiset<Scope> uninitializedScopes, Scope... scopes) {
+            Multimap<Scope, EdgeOrData<Integer>> openEdges, Multiset<Scope> uninitializedScopes,
+            java.util.Set<Scope> sharedScopes, Scope... scopes) {
         return Result.of(Output.of(Unit.unit),
                 StateCapture.of(CapsuleUtil.toSet(scopes), ScopeGraph.Immutable.of(), uninitializedScopes,
                         HashMultiset.create(), openEdges, MultiSet.Immutable.of(), CapsuleUtil.immutableSet(),
                         EmptyI.of()),
-                ScopeGraph.Immutable.of());
+                ScopeGraph.Immutable.of(), sharedScopes);
+    }
+
+    public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unitTCResult(
+            Multimap<Scope, EdgeOrData<Integer>> openEdges, java.util.Set<Scope> sharedScopes, Scope... scopes) {
+        return unitTCResult(openEdges, HashMultiset.create(Arrays.asList(scopes)), sharedScopes, scopes);
     }
 
     public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>
             unitTCResult(Multimap<Scope, EdgeOrData<Integer>> openEdges, Scope... scopes) {
-        return unitTCResult(openEdges, HashMultiset.create(Arrays.asList(scopes)), scopes);
+        return unitTCResult(openEdges, HashMultiset.create(Arrays.asList(scopes)), Collections.emptySet(), scopes);
     }
 
     public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>
-            unitTCResult(Multiset<Scope> uninitializedScopes, Scope... scopes) {
-        return unitTCResult(ImmutableMultimap.of(), uninitializedScopes, scopes);
+            unitTCResult(Multiset<Scope> uninitializedScopes, java.util.Set<Scope> sharedScopes, Scope... scopes) {
+        return unitTCResult(ImmutableMultimap.of(), uninitializedScopes, sharedScopes, scopes);
+    }
+
+    public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unitTCResult(java.util.Set<Scope> sharedScopes,
+            Scope... scopes) {
+        return unitTCResult(ImmutableMultimap.of(), sharedScopes, scopes);
     }
 
     public Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI> unitTCResult(Scope... scopes) {
-        return unitTCResult(ImmutableMultimap.of(), scopes);
+        return unitTCResult(ImmutableMultimap.of(), Collections.emptySet(), scopes);
     }
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path) {
