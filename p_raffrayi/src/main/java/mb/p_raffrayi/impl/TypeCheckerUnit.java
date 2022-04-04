@@ -314,9 +314,11 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     }
 
     @Override public void _release() {
-        doRelease(CapsuleUtil.toSet(this.addedQueries), CapsuleUtil.toSet(this.removedQueries),
-                PatchCollection.Immutable.<S>of().putAll(this.resultPatches),
-                PatchCollection.Immutable.<S>of().putAll(globalPatches));
+        if(state == UnitState.UNKNOWN) {
+            doRelease(CapsuleUtil.toSet(this.addedQueries), CapsuleUtil.toSet(this.removedQueries),
+                    PatchCollection.Immutable.<S>of().putAll(this.resultPatches),
+                    PatchCollection.Immutable.<S>of().putAll(globalPatches));
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////

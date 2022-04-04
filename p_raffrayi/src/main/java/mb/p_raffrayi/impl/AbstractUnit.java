@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1164,7 +1165,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         }
 
         if(nodes.size() == 1) {
-            handleDeadlock(nodes);
+            if(!failDelays(nodes)) {
+                resume();
+            }
         } else if(failDelays(nodes)) {
             resume();
         }
@@ -1272,7 +1275,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             logger.debug("{} self-deadlocked with {}", this, getTokens(process));
             if(failDelays(nodes)) {
                 resume(); // resume to ensure further deadlock detection after these are handled
-            } else {
+            } else if (dependentSet().equals(Collections.singleton(process))) {
                 failAll();
             }
         } else {
