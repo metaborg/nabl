@@ -9,8 +9,8 @@ assignees: AZWN
 
 <!--
 To consider beforehand:
-- Have you read and applied the Statix debugging guide at https://www.spoofax.dev/spoofax-docs/howtos/statix/debugging/?
-- Have you checked the reference documentation at https://www.spoofax.dev/spoofax-docs/references/statix/ on whether your idea of expected behavior is actually correct?
+- Have you read and applied the Statix debugging guide at https://www.spoofax.dev/howtos/statix/debugging/?
+- Have you checked the reference documentation at https://www.spoofax.dev/references/statix/ on whether your idea of expected behavior is actually correct?
 - Have you checked whether the issue is already reported. If so, consider commenting on that issue with your specific scenario, instead of opening a new issue.
 -->
 
