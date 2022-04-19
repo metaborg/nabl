@@ -207,7 +207,7 @@ public class StatixTerms {
                         throw new IllegalStateException("Invalid initial state: " + initial);
                     }
                     final StateMachine<ITerm> stateMachine = new StateMachine<>(states, initialState);
-                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), stateMachine);
+                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), query.message().orElse(null), stateMachine);
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
