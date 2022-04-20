@@ -38,12 +38,16 @@ signature
     StatixUnit
     StatixProject
     StatixLibrary
+
+    CustomAnalysis
+
   constructors
 
     : List(string) -> Key
 
-    ProjectAnalysis : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
-    FileAnalysis    : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult -> AnalysisResult
+    ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
+    FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
+    NoCustomAnalysis : CustomAnalysis
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -83,7 +87,7 @@ signature
     Changed         : UnitState
 
     // Results
-    ProjectAnalysis : Analysis * UnitResult -> AnalysisResult
+    ProjectAnalysis : Analysis * UnitResult * CustomAnalysis -> AnalysisResult
     FileAnalysis    : Key * FileTask * AST * SubAnalysis -> AnalysisResult
     SubAnalysis     : Term * Constraint * Analysis * UnitResult * List(String, FileAnalysis) -> SubAnalysis
 
@@ -95,7 +99,7 @@ signature
 
 rules // single file analysis
 
-  stx--editor-analyze(pre, post|spec-name, init-constraint):
+  stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
       AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -106,12 +110,13 @@ rules // single file analysis
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
-    ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
+    ; result* := <zip({ ast'', custom-analysis, file-analysis, error*, warning*, note*: \
         ((resource, ast'), Solution(_, a)) ->
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(a, a)
+             ; custom-analysis := <analyze-custom> a
+             ; file-analysis := FileAnalysis(a, a, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post|spec-name, init-constraint):
@@ -136,7 +141,7 @@ rules // single file elaboration
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
-             ; file-analysis := FileAnalysis(a, a)
+             ; file-analysis := FileAnalysis(a, a, NoCustomAnalysis())
       \})> (resource-ast'*, solve-result*)
 
 rules // multi file analysis (new)
@@ -144,7 +149,7 @@ rules // multi file analysis (new)
   stx--no-grouping: (resource, ast) -> key
     with key := [<current-language-relative-source-or-include-path> resource]
 
-  cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
+  cstx--editor-analyze(pre, group-key, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; libs  := <stx--local-libs>
@@ -162,7 +167,7 @@ rules // multi file analysis (new)
       //
       project-ast  := ()
     ; project-rule := LLam([s-proj], C(proj-c-name, [s-proj], NoMessage()))
-    ; project-res  := <?Cached(ProjectAnalysis(_, <!Cached(<id>)>)) + ?Changed(_, ProjectAnalysis(_, <!Changed(<id>)>)) + ?Added(<!Added()>)> project-change
+    ; project-res  := <?Cached(ProjectAnalysis(_, <!Cached(<id>)>, _)) + ?Changed(_, ProjectAnalysis(_, <!Changed(<id>)>, _)) + ?Added(<!Added()>)> project-change
     ; project-task := ProjectTask(project-resource, project-rule, project-res)
       //
       // 2. Build file tasks
@@ -176,7 +181,7 @@ rules // multi file analysis (new)
       //
       // 5. Construct results
       //
-    ; project-result := <cstx--mk-project-result(|config, analysis*)> (project-resource, project-ast, project-change)
+    ; project-result := <cstx--mk-project-result(analyze-custom|config, analysis*)> (project-resource, project-ast, project-change)
     ; file-result*   := <map(cstx--mk-file-result(post|config, file-task*, analysis*))> file-change*
     ; result* := [project-result|file-result*]
       //
@@ -309,10 +314,11 @@ rules // cstx -- project/group tasks
 
 rules // cstx -- results
 
-  cstx--mk-project-result(|config, analysis*): (project-res, ast, change) -> (project-res, result)
+  cstx--mk-project-result(analyze-custom|config, analysis*): (project-res, ast, change) -> (project-res, result)
     with if ProjectResult(state, unit-result) := <lookup'> (project-res, analysis*) then
          (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
-       ; analysis := ProjectAnalysis(state, unit-result)
+       ; custom-analysis := <analyze-custom> unit-result
+       ; analysis := ProjectAnalysis(state, unit-result, custom-analysis)
        ; switch !change
            case ?Added(_) + ?Changed(_, _):
              result := Full(ast, analysis, error*, warning*, note*)
@@ -361,7 +367,7 @@ rules // cstx -- results
 
 rules // multi file analysis
 
-  stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint):
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; level := <stx--log-level>
@@ -383,7 +389,7 @@ rules // multi file analysis
           //
         ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
         ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> [(project-resource, project-C)]
-        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _)):
+        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _, _)):
           id
         otherwise:
           fatal-err(|"Unexpected change on project")
@@ -395,20 +401,22 @@ rules // multi file analysis
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
-    ; initial-file-result* := <zip({ file-state', ast'', file-analysis: \
+    ; initial-file-result* := <zip({ file-state', ast'', custom-file-analysis, file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
           with ast'' := <post> ast'
-             ; file-analysis := FileAnalysis(file-state, None())
+             ; custom-file-analysis := <analyze-unit> (resource, ast', file-state)
+             ; file-analysis := FileAnalysis(file-state, None(), custom-file-analysis)
       \})> (resource-ast'*, initial-file-state*)
       //
       // 4. Combine and solve all partial solution
       //
-    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _))))> change*
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _, _))))> change*
     ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
-    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state)
-    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state), id, id, id)))> initial-file-result*
+    ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state, custom-analysis)
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, error*, warning*, note*)
@@ -556,6 +564,8 @@ rules
 
 rules
 
+  stx--no-custom-analysis = !NoCustomAnalysis()
+
   stx--get-ast-analysis =
     stx--get-ast-resource
   ; stx--get-resource-analysis(stx--get-analysis)
@@ -573,14 +583,18 @@ rules
   ; map((id, extract-analysis))
 
   stx--get-analysis =
-    ( ?FileAnalysis(_, <id>) + ?ProjectAnalysis(_, _, _, <id>)
-   <+ ?FileAnalysis(_, _, _, SubAnalysis(_, _, <id>, _, _)) + ?ProjectAnalysis(<id>, _) // cstx
+    ( ?FileAnalysis(_, <id>, _) + ?ProjectAnalysis(_, _, _, <id>, _)
+   <+ ?FileAnalysis(_, _, _, SubAnalysis(_, _, <id>, _, _)) + ?ProjectAnalysis(<id>, _, _) // cstx
     )
 
   stx--get-result =
     ( ?FileAnalysis(_, _, _, SubAnalysis(_, _, _,<id>, _)) +
-      ?ProjectAnalysis(_, <id>)
+      ?ProjectAnalysis(_, <id>, _)
     )
+
+  stx--get-custom-file-analysis = ?FileAnalysis(_, _, <id>)
+
+  stx--get-custom-analysis = ?ProjectAnalysis(_, _, _, _, <id>) + ?ProjectAnalysis(_, _, <id>)
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")
