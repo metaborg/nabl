@@ -581,7 +581,7 @@ class GreedySolver {
                     return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
                             NO_EXISTENTIALS, fuel);
                 } else {
-                    final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
+                    final Optional<TermIndex> maybeIndex = TermIndex.find(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                         eq = new CEqual(idTerm, indexTerm);

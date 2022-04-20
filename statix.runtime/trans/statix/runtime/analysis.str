@@ -107,7 +107,7 @@ rules // single file analysis
        ; config := <stx--project-config>
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
     ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
     ; result* := <zip({ ast'', custom-analysis, file-analysis, error*, warning*, note*: \
@@ -119,8 +119,8 @@ rules // single file analysis
              ; file-analysis := FileAnalysis(a, a, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 
-  stx--editor-analyze(pre, post|spec-name, init-constraint):
-      AnalyzeMulti(_, _, _, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_1_2` called for multi-file analysis. Use `stx-editor-analyze_1_3` instead.")>
+  stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
+      AnalyzeMulti(_, _, _, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_3_2` called for multi-file analysis. Use `stx-editor-analyze_4_3` instead.")>
 
 rules // single file elaboration
 
@@ -132,7 +132,7 @@ rules // single file elaboration
        ; config := <stx--project-config>
     with
       resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
     ; V := Var("out")
     ; C* := <map(\ (resource, ast') -> <stx--exists>([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
@@ -201,7 +201,7 @@ rules // cstx -- file tasks
     with task' := <cstx--update-initial-state> task
 
   cstx--make-file(pre,group-key,qualify|file-c-name): (resource, change) -> (key*, task)
-    with ast                   := <(?Added(<id>) + ?Changed(<id>, _)); pre; stx--index-ast(|resource)> change
+    with ast                   := <(?Added(<id>) + ?Changed(<id>, _)); stx--index-ast(|resource); pre> change
        ; Key(key*, name, unit) := <cstx--composite-group-key(group-key)> (resource, ast)
        ; prev-res              := <?Changed(_, <id>) <+ !()> change
        ; task                  := <cstx--file-unit-to-task(qualify|file-c-name)> (resource, key*, ast, name, unit, prev-res)
@@ -398,7 +398,7 @@ rules // multi file analysis
       // 3. Partially solve file constraints
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
-    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <pre;stx--index-ast(|resource)> ast) \)> resource-ast*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
     ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
     ; initial-file-result* := <zip({ file-state', ast'', custom-file-analysis, file-analysis: \
@@ -432,8 +432,8 @@ rules // multi file analysis
     //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
     //  end
 
-  stx--editor-analyze(pre, post|spec-name, init-constraint):
-      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_1_3` called for single-file analysis. Use `stx-editor-analyze_1_2` instead.")>
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
+      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_4_2` instead.")>
 
   stx--prepare-project(|project-constraint, group-constraint, file-constraint) = fail
 
