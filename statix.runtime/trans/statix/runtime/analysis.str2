@@ -432,7 +432,7 @@ rules // multi file analysis
     //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
     //  end
 
-  stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
       AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_3_2` instead.")>
 
   stx--prepare-project(|project-constraint, group-constraint, file-constraint) = fail

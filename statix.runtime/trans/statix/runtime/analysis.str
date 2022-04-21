@@ -43,7 +43,7 @@ signature
 
   constructors
 
-    : List(string) -> Key
+    : list(string) -> Key
 
     ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
     FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
@@ -308,7 +308,7 @@ rules // cstx -- project/group tasks
 
   // @param spec  : Spec
   // @param level : LogLevel
-  // @type StatixProject -> [(String, SolverResult)]
+  // @type StatixProject -> [(string, SolverResult)]
   cstx--solve-multi(|solver-mode, spec, level, progress, cancel) =
     prim("STX_solve_multi", solver-mode, spec, level, progress, cancel)
 
@@ -419,9 +419,9 @@ rules // multi file analysis
     ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
-          project-result := Full(project-ast, project-analysis, error*, warning*, note*)
+          project-result := Full(project-ast, project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
         case ?Cached(_):
-          project-result := Update(project-analysis, error*, warning*, note*)
+          project-result := Update(project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
       end
     ; result* := [(project-resource, project-result)|file-result*]
       //
@@ -433,13 +433,13 @@ rules // multi file analysis
     //  end
 
   stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
-      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_4_2` instead.")>
+      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_3_2` instead.")>
 
   stx--prepare-project(|project-constraint, group-constraint, file-constraint) = fail
 
   // @param state : SolverResult
   // @param level : LogLevel
-  // @type [(String, Constraint)] -> [SolverResult]
+  // @type [(string, Constraint)] -> [SolverResult]
   stx--solve-multi-file(|spec, state, level, progress, cancel) = prim("STX_solve_multi_file", spec, state, level, progress, cancel)
 
   // @param state : SolverResult
