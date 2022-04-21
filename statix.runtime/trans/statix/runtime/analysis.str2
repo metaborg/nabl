@@ -110,12 +110,12 @@ rules // single file analysis
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
     ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
     ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
-    ; result* := <zip({ ast'', custom-analysis, file-analysis, error*, warning*, note*: \
+    ; result* := <zip({ ast'', custom-analysis, file-analysis, error*, warning*, note*, c-e*, c-w*, c-n*: \
         ((resource, ast'), Solution(_, a)) ->
-            (resource, Full(ast'', file-analysis, error*, warning*, note*))
+            (resource, Full(ast'', file-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*]))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
-             ; custom-analysis := <analyze-custom> a
+             ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> a
              ; file-analysis := FileAnalysis(a, a, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 
@@ -564,7 +564,8 @@ rules
 
 rules
 
-  stx--no-custom-analysis = !NoCustomAnalysis()
+  stx--no-custom-unit-analysis  = !NoCustomAnalysis()
+  stx--no-custom-final-analysis = !([], [], [], NoCustomAnalysis())
 
   stx--get-ast-analysis =
     stx--get-ast-resource
