@@ -149,7 +149,7 @@ rules // multi file analysis (new)
   stx--no-grouping: (resource, ast) -> key
     with key := [<current-language-relative-source-or-include-path> resource]
 
-  cstx--editor-analyze(pre, group-key, post|spec-name, project-constraint, group-constraint, file-constraint):
+  cstx--editor-analyze(pre, group-key, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint):
       AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
     with spec  := <stx--language-spec-by-name> spec-name
        ; libs  := <stx--local-libs>
