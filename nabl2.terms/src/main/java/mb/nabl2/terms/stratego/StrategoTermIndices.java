@@ -54,10 +54,10 @@ public final class StrategoTermIndices {
                     plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
                 ));
             // @formatter:on
-            termFactory.copyAttachments(term, result);
             final TermIndex index1 = TermIndex.of(resource, ++currentId);
             final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
             result = put(index2, result, termFactory);
+            termFactory.copyAttachments(term, result);
             return result;
         }
 
