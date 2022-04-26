@@ -321,9 +321,8 @@ class GreedySolver {
         }
 
         // solve
-        return constraint.matchOrThrow(new IConstraint.CheckedCases<Boolean, InterruptedException>() {
-
-            @Override public Boolean caseArith(CArith c) throws InterruptedException {
+        switch(constraint.constraintTag()) {
+            case CArith: { CArith c = (CArith) constraint;
                 final IUniDisunifier unifier = state.unifier();
                 final Optional<ITerm> term1 = c.expr1().isTerm();
                 final Optional<ITerm> term2 = c.expr2().isTerm();
@@ -353,11 +352,11 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseConj(CConj c) throws InterruptedException {
+            case CConj: { CConj c = (CConj) constraint;
                 return success(c, state, NO_UPDATED_VARS, disjoin(c), NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseEqual(CEqual c) throws InterruptedException {
+            case CEqual: { CEqual c = (CEqual) constraint;
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
@@ -389,7 +388,7 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseExists(CExists c) throws InterruptedException {
+            case CExists: { CExists c = (CExists) constraint;
                 final Renaming.Builder _existentials = Renaming.builder();
                 IState.Immutable newState = state;
                 for(ITermVar var : c.vars()) {
@@ -412,11 +411,11 @@ class GreedySolver {
                         existentials.asMap(), fuel);
             }
 
-            @Override public Boolean caseFalse(CFalse c) {
+            case CFalse: { CFalse c = (CFalse) constraint;
                 return fail(c);
             }
 
-            @Override public Boolean caseInequal(CInequal c) throws InterruptedException {
+            case CInequal: { CInequal c = (CInequal) constraint;
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IDebugContext debug = params.debug();
@@ -442,7 +441,7 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseNew(CNew c) throws InterruptedException {
+            case CNew: { CNew c = (CNew) constraint;
                 IState.Immutable newState = state;
 
                 final ITerm scopeTerm = c.scopeTerm();
@@ -462,7 +461,7 @@ class GreedySolver {
                         NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseResolveQuery(IResolveQuery c) throws InterruptedException {
+            case IResolveQuery: { IResolveQuery c = (IResolveQuery) constraint;
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
@@ -534,7 +533,7 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseTellEdge(CTellEdge c) throws InterruptedException {
+            case CTellEdge: { CTellEdge c = (CTellEdge) constraint;
                 final ITerm sourceTerm = c.sourceTerm();
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
@@ -565,7 +564,7 @@ class GreedySolver {
                         NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseTermId(CAstId c) throws InterruptedException {
+            case CAstId: { CAstId c = (CAstId) constraint;
                 final ITerm term = c.astTerm();
                 final ITerm idTerm = c.idTerm();
 
@@ -593,7 +592,7 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseTermProperty(CAstProperty c) throws InterruptedException {
+            case CAstProperty: { CAstProperty c = (CAstProperty) constraint;
                 final ITerm idTerm = c.idTerm();
                 final ITerm prop = c.property();
                 final ITerm value = c.value();
@@ -642,12 +641,12 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseTrue(CTrue c) throws InterruptedException {
+            case CTrue: { CTrue c = (CTrue) constraint;
                 return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
                         fuel);
             }
 
-            @Override public Boolean caseTry(CTry c) throws InterruptedException {
+            case CTry: { CTry c = (CTry) constraint;
                 final IDebugContext debug = params.debug();
                 try {
                     if(Solver.entails(spec, state, c.constraint(), params::isComplete, new NullDebugContext(),
@@ -663,7 +662,7 @@ class GreedySolver {
                 }
             }
 
-            @Override public Boolean caseUser(CUser c) throws InterruptedException {
+            case CUser: { CUser c = (CUser) constraint;
                 final String name = c.name();
                 final List<ITerm> args = c.args();
 
@@ -694,7 +693,9 @@ class GreedySolver {
                         applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
             }
 
-        });
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IConstraint subclass/tag");
 
     }
 

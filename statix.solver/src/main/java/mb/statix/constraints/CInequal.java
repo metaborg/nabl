@@ -75,14 +75,6 @@ public class CInequal implements IConstraint, Serializable {
         return new CInequal(universals, term1, term2, cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseInequal(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseInequal(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         final Set.Transient<ITermVar> vars = Set.Transient.of();
         vars.__insertAll(universals);
@@ -145,6 +137,10 @@ public class CInequal implements IConstraint, Serializable {
             sb.append(")");
         }
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CInequal;
     }
 
     @Override public String toString() {

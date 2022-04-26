@@ -20,6 +20,7 @@ import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.statix.constraints.CCompiledQuery;
 import mb.statix.constraints.CConj;
+import mb.statix.constraints.CExists;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
@@ -41,44 +42,48 @@ public class CompletenessUtil {
      * Discover critical edges in constraint. The scopeTerm is not guaranteed to be ground or instantiated.
      */
     static void criticalEdges(IConstraint constraint, Spec spec, Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
-        // @formatter:off
-        constraint.match(Constraints.cases(
-            onArith -> Unit.unit,
-            onConj -> {
+        switch(constraint.constraintTag()) {
+            case CConj: {
+                CConj onConj = (CConj) constraint;
                 Constraints.disjoin(onConj).forEach(c -> criticalEdges(c, spec, criticalEdge));
-                return Unit.unit;
-            },
-            onEqual -> Unit.unit,
-            onExists -> {
+                break;
+            }
+            case CExists: {
+                CExists onExists = (CExists) constraint;
                 criticalEdges(onExists.constraint(), spec, (s, l) -> {
                     if(!onExists.vars().contains(s)) {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return Unit.unit;
-            },
-            onFalse -> Unit.unit,
-            onInequal -> Unit.unit,
-            onNew -> {
-                criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data());
-                return Unit.unit;
-            },
-            onResolveQuery -> Unit.unit,
-            onTellEdge -> {
-                criticalEdge.apply(onTellEdge.sourceTerm(), EdgeOrData.edge(onTellEdge.label()));
-                return Unit.unit;
-            },
-            onTermId -> Unit.unit,
-            onTermProperty -> Unit.unit,
-            onTrue -> Unit.unit,
-            onTry -> Unit.unit,
-            onUser -> {
-                spec.scopeExtensions().get(onUser.name()).stream()
-                        .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
-                return Unit.unit;
+                break;
             }
-        ));
-        // @formatter:on
+            case CNew: {
+                CNew onNew = (CNew) constraint;
+                criticalEdge.apply(onNew.scopeTerm(), EdgeOrData.data());
+                break;
+            }
+            case CTellEdge: {
+                CTellEdge onTellEdge = (CTellEdge) constraint;
+                criticalEdge.apply(onTellEdge.sourceTerm(), EdgeOrData.edge(onTellEdge.label()));
+                break;
+            }
+            case CUser: {
+                CUser onUser = (CUser) constraint;
+                spec.scopeExtensions().get(onUser.name()).stream()
+                    .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
+                break;
+            }
+            case CArith:
+            case CEqual:
+            case CFalse:
+            case CInequal:
+            case IResolveQuery:
+            case CAstId:
+            case CAstProperty:
+            case CTrue:
+            case CTry:
+                break;
+        }
     }
 
     /**
@@ -144,16 +149,15 @@ public class CompletenessUtil {
 
     static IConstraint precomputeCriticalEdges(IConstraint constraint, SetMultimap<String, Tuple2<Integer, ITerm>> spec,
             Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
-        // @formatter:off
-        return constraint.match(Constraints.cases(
-            carith -> carith,
-            cconj -> {
+        switch(constraint.constraintTag()) {
+            case CConj: {
+                CConj cconj = (CConj) constraint;
                 final IConstraint newLeft = precomputeCriticalEdges(cconj.left(), spec, criticalEdge);
                 final IConstraint newRight = precomputeCriticalEdges(cconj.right(), spec, criticalEdge);
                 return new CConj(newLeft, newRight, cconj.cause().orElse(null));
-            },
-            cequal -> cequal,
-            cexists -> {
+            }
+            case CExists: {
+                CExists cexists = (CExists) constraint;
                 final ICompleteness.Transient bodyCriticalEdges = Completeness.Transient.of();
                 final IConstraint newBody = precomputeCriticalEdges(cexists.constraint(), spec, (s, l) -> {
                     if(cexists.vars().contains(s)) {
@@ -163,10 +167,9 @@ public class CompletenessUtil {
                     }
                 });
                 return cexists.withConstraint(newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
-            },
-            cfalse -> cfalse,
-            cinequal -> cinequal,
-            cnew -> {
+            }
+            case CNew: {
+                CNew cnew = (CNew) constraint;
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
                 final ITerm scopeOrVar;
                 if((scopeOrVar = scopeOrVar().match(cnew.scopeTerm()).orElse(null)) != null) {
@@ -174,25 +177,27 @@ public class CompletenessUtil {
                     criticalEdge.apply(scopeOrVar, EdgeOrData.data());
                 }
                 return new CNew(cnew.scopeTerm(), cnew.datumTerm(), cnew.cause().orElse(null), ownCriticalEdges.freeze());
-            },
-            iresolveQuery -> {
+            }
+            case IResolveQuery: {
+                IResolveQuery iresolveQuery = (IResolveQuery) constraint;
                 final QueryFilter newFilter =
-                        new QueryFilter(iresolveQuery.filter().getLabelWF(), precomputeCriticalEdges(iresolveQuery.filter().getDataWF(), spec));
+                    new QueryFilter(iresolveQuery.filter().getLabelWF(), precomputeCriticalEdges(iresolveQuery.filter().getDataWF(), spec));
                 final QueryMin newMin =
-                        new QueryMin(iresolveQuery.min().getLabelOrder(), precomputeCriticalEdges(iresolveQuery.min().getDataEquiv(), spec));
-                return iresolveQuery.match(new IResolveQuery.Cases<IResolveQuery>() {
-
-                    @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
+                    new QueryMin(iresolveQuery.min().getLabelOrder(), precomputeCriticalEdges(iresolveQuery.min().getDataEquiv(), spec));
+                switch(iresolveQuery.resolveQueryTag()) {
+                    case CResolveQuery: { CResolveQuery q = (CResolveQuery) iresolveQuery;
                         return new CResolveQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null));
+                            q.cause().orElse(null), q.message().orElse(null));
                     }
 
-                    @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
+                    case CCompiledQuery: { CCompiledQuery q = (CCompiledQuery) iresolveQuery;
                         return new CCompiledQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
-                    }});
-            },
-            ctellEdge -> {
+                            q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
+                    }
+                }
+            }
+            case CTellEdge: {
+                CTellEdge ctellEdge = (CTellEdge) constraint;
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
                 final ITerm scopeOrVar;
                 if((scopeOrVar = scopeOrVar().match(ctellEdge.sourceTerm()).orElse(null)) != null) {
@@ -200,16 +205,15 @@ public class CompletenessUtil {
                     criticalEdge.apply(scopeOrVar, EdgeOrData.edge(ctellEdge.label()));
                 }
                 return new CTellEdge(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm(),
-                        ctellEdge.cause().orElse(null), ownCriticalEdges.freeze());
-            },
-            ctermId -> ctermId,
-            ctermProperty -> ctermProperty,
-            ctrue -> ctrue,
-            ctry -> {
+                    ctellEdge.cause().orElse(null), ownCriticalEdges.freeze());
+            }
+            case CTry: {
+                CTry ctry = (CTry) constraint;
                 final IConstraint newBody = precomputeCriticalEdges(ctry.constraint(), spec, criticalEdge);
                 return new CTry(newBody, ctry.cause().orElse(null), ctry.message().orElse(null));
-            },
-            cuser -> {
+            }
+            case CUser: {
+                CUser cuser = (CUser) constraint;
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
                 spec.get(cuser.name()).stream().forEach(il -> {
                     final ITerm scopeOrVar;
@@ -221,8 +225,18 @@ public class CompletenessUtil {
                 });
                 return new CUser(cuser.name(), cuser.args(), cuser.cause().orElse(null), cuser.message().orElse(null), ownCriticalEdges.freeze());
             }
-        ));
-        // @formatter:on
+            case CArith:
+            case CEqual:
+            case CFalse:
+            case CInequal:
+            case CAstId:
+            case CAstProperty:
+            case CTrue: {
+                return constraint;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IConstraint subclass/tag");
     }
 
 }

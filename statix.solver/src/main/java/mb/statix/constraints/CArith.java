@@ -75,14 +75,6 @@ public class CArith implements IConstraint, Serializable {
         return new CArith(expr1, op, expr2, cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseArith(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseArith(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             expr1.getVars(),
@@ -129,6 +121,10 @@ public class CArith implements IConstraint, Serializable {
         sb.append(" #").append(op).append(" ");
         sb.append(expr2.toString(termToString));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CArith;
     }
 
     @Override public String toString() {

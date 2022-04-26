@@ -38,14 +38,6 @@ public class CTrue implements IConstraint, Serializable {
         return new CTrue(cause);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTrue(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTrue(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
     }
@@ -77,6 +69,10 @@ public class CTrue implements IConstraint, Serializable {
 
     @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {
         return "true";
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CTrue;
     }
 
     @Override public String toString() {

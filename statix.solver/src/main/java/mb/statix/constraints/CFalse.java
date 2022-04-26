@@ -53,14 +53,6 @@ public class CFalse implements IConstraint, Serializable {
         return new CFalse(cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseFalse(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseFalse(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.of();
     }
@@ -95,6 +87,10 @@ public class CFalse implements IConstraint, Serializable {
 
     @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {
         return "false";
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CFalse;
     }
 
     @Override public String toString() {

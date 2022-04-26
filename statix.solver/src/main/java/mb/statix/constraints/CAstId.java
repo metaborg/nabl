@@ -51,14 +51,6 @@ public class CAstId implements IConstraint, Serializable {
         return new CAstId(term, idTerm, cause);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTermId(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTermId(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             term.getVars(),
@@ -101,6 +93,10 @@ public class CAstId implements IConstraint, Serializable {
         sb.append(termToString.format(idTerm));
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CAstId;
     }
 
     @Override public String toString() {

@@ -69,14 +69,6 @@ public class CTellEdge implements IConstraint, Serializable {
         return new CTellEdge(sourceTerm, label, targetTerm, cause, criticalEdges);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTellEdge(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTellEdge(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             sourceTerm.getVars(),
@@ -122,6 +114,10 @@ public class CTellEdge implements IConstraint, Serializable {
         sb.append("-> ");
         sb.append(termToString.format(targetTerm));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CTellEdge;
     }
 
     @Override public String toString() {

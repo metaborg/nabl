@@ -38,7 +38,6 @@ import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
-import mb.statix.solver.IConstraint.Cases;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
@@ -62,37 +61,34 @@ public class Patching {
     }
 
     public static Set.Immutable<Scope> constraintScopes(IConstraint constraint) {
-        return constraint.match(new Cases<Set.Immutable<Scope>>() {
-
-            @Override public Immutable<Scope> caseArith(CArith c) {
+        switch(constraint.constraintTag()) {
+            case CArith:
+            case CTrue:
+            case CFalse: {
                 return CapsuleUtil.immutableSet();
             }
-
-            @Override public Immutable<Scope> caseConj(CConj c) {
+            case CConj: {
+                CConj c = (CConj) constraint;
                 return constraintScopes(c.left()).__insertAll(constraintScopes(c.right()));
             }
-
-            @Override public Immutable<Scope> caseEqual(CEqual c) {
+            case CEqual: {
+                CEqual c = (CEqual) constraint;
                 return termScopes(c.term1()).__insertAll(termScopes(c.term2()));
             }
-
-            @Override public Immutable<Scope> caseExists(CExists c) {
+            case CExists: {
+                CExists c = (CExists) constraint;
                 return constraintScopes(c.constraint());
             }
-
-            @Override public Immutable<Scope> caseFalse(CFalse c) {
-                return CapsuleUtil.immutableSet();
-            }
-
-            @Override public Immutable<Scope> caseInequal(CInequal c) {
+            case CInequal: {
+                CInequal c = (CInequal) constraint;
                 return termScopes(c.term1()).__insertAll(termScopes(c.term2()));
             }
-
-            @Override public Immutable<Scope> caseNew(CNew c) {
+            case CNew: {
+                CNew c = (CNew) constraint;
                 return termScopes(c.datumTerm());
             }
-
-            @Override public Immutable<Scope> caseResolveQuery(IResolveQuery c) {
+            case IResolveQuery: {
+                IResolveQuery c = (IResolveQuery) constraint;
                 final Set.Immutable<Scope> scopeTermScopes = termScopes(c.scopeTerm());
                 final Set.Immutable<Scope> resultTermScopes = termScopes(c.resultTerm());
 
@@ -100,34 +96,32 @@ public class Patching {
                 final Set.Immutable<Scope> dataEquivScopes = ruleScopes(c.min().getDataEquiv());
 
                 return scopeTermScopes.__insertAll(resultTermScopes).__insertAll(dataWfScopes)
-                        .__insertAll(dataEquivScopes);
+                    .__insertAll(dataEquivScopes);
             }
-
-            @Override public Immutable<Scope> caseTellEdge(CTellEdge c) {
+            case CTellEdge: {
+                CTellEdge c = (CTellEdge) constraint;
                 return termScopes(c.sourceTerm()).__insertAll(termScopes(c.targetTerm()));
             }
-
-            @Override public Immutable<Scope> caseTermId(CAstId c) {
+            case CAstId: {
+                CAstId c = (CAstId) constraint;
                 return termScopes(c.astTerm()).__insertAll(termScopes(c.idTerm()));
             }
-
-            @Override public Immutable<Scope> caseTermProperty(CAstProperty c) {
+            case CAstProperty: {
+                CAstProperty c = (CAstProperty) constraint;
                 return termScopes(c.idTerm()).__insertAll(termScopes(c.value()));
             }
-
-            @Override public Immutable<Scope> caseTrue(CTrue c) {
-                return CapsuleUtil.immutableSet();
-            }
-
-            @Override public Immutable<Scope> caseTry(CTry c) {
+            case CTry: {
+                CTry c = (CTry) constraint;
                 return constraintScopes(c.constraint());
             }
-
-            @Override public Immutable<Scope> caseUser(CUser c) {
+            case CUser: {
+                CUser c = (CUser) constraint;
                 return c.args().stream().map(Patching::termScopes).flatMap(Set.Immutable::stream)
-                        .collect(CapsuleCollectors.toSet());
+                    .collect(CapsuleCollectors.toSet());
             }
-        });
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IConstraint subclass/tag");
     }
 
     public static Set.Immutable<Scope> termScopes(ITerm term) {
@@ -153,36 +147,34 @@ public class Patching {
     }
 
     public static IConstraint patch(IConstraint constraint, IPatchCollection<Scope> patches) {
-        return constraint.match(new Cases<IConstraint>() {
+        switch(constraint.constraintTag()) {
 
-            @Override public IConstraint caseArith(CArith c) {
-                return c;
+            case CArith:
+            case CFalse:
+            case CTrue: {
+                return constraint;
             }
 
-            @Override public IConstraint caseConj(CConj c) {
+            case CConj: { CConj c = (CConj) constraint;
                 final IConstraint newLeft = patch(c.left(), patches);
                 final IConstraint newRight = patch(c.right(), patches);
 
                 return new CConj(newLeft, newRight, c.cause().orElse(null));
             }
 
-            @Override public IConstraint caseEqual(CEqual c) {
+            case CEqual: { CEqual c = (CEqual) constraint;
                 final ITerm newTerm1 = patch(c.term1(), patches);
                 final ITerm newTerm2 = patch(c.term2(), patches);
 
                 return new CEqual(newTerm1, newTerm2, c.cause().orElse(null), c.message().orElse(null));
             }
 
-            @Override public IConstraint caseExists(CExists c) {
+            case CExists: { CExists c = (CExists) constraint;
                 // TODO: preserve free vars?
                 return c.withConstraint(patch(c.constraint(), patches));
             }
 
-            @Override public IConstraint caseFalse(CFalse c) {
-                return c;
-            }
-
-            @Override public IConstraint caseInequal(CInequal c) {
+            case CInequal: { CInequal c = (CInequal) constraint;
                 final ITerm newTerm1 = patch(c.term1(), patches);
                 final ITerm newTerm2 = patch(c.term2(), patches);
 
@@ -192,14 +184,14 @@ public class Patching {
                 return new CInequal(c.universals(), newTerm1, newTerm2, cause, message);
             }
 
-            @Override public IConstraint caseNew(CNew c) {
+            case CNew: { CNew c = (CNew) constraint;
                 final ITerm newScopeTerm = patch(c.scopeTerm(), patches);
                 final ITerm newDatumTerm = patch(c.datumTerm(), patches);
 
                 return new CNew(newScopeTerm, newDatumTerm, c.cause().orElse(null), c.ownCriticalEdges().orElse(null));
             }
 
-            @Override public IConstraint caseResolveQuery(IResolveQuery c) {
+            case IResolveQuery: { IResolveQuery c = (IResolveQuery) constraint;
                 final ITerm newScopeTerm = patch(c.scopeTerm(), patches);
                 final ITerm newResultTerm = patch(c.resultTerm(), patches);
 
@@ -212,18 +204,20 @@ public class Patching {
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable IMessage message = c.message().orElse(null);
 
-                return c.match(new IResolveQuery.Cases<IResolveQuery>() {
-                    @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
+                switch(c.resolveQueryTag()) {
+                    case CResolveQuery: {
                         return new CResolveQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message);
                     }
 
-                    @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
+                    case CCompiledQuery: { CCompiledQuery q = (CCompiledQuery) c;
                         return new CCompiledQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message, q.stateMachine());
                     }
-                });
+                }
+                // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                throw new RuntimeException("Missing case for IResolveQuery subclass/tag");
             }
 
-            @Override public IConstraint caseTellEdge(CTellEdge c) {
+            case CTellEdge: { CTellEdge c = (CTellEdge) constraint;
                 // TODO: patch critical edges?
                 final ITerm newSourceTerm = patch(c.sourceTerm(), patches);
                 final ITerm newTargetTerm = patch(c.targetTerm(), patches);
@@ -234,36 +228,34 @@ public class Patching {
                 return new CTellEdge(newSourceTerm, c.label(), newTargetTerm, cause, bodyCriticalEdges);
             }
 
-            @Override public IConstraint caseTermId(CAstId c) {
+            case CAstId: { CAstId c = (CAstId) constraint;
                 final ITerm newAstTerm = patch(c.astTerm(), patches);
                 final ITerm newIdTerm = patch(c.idTerm(), patches);
 
                 return new CAstId(newAstTerm, newIdTerm, c.cause().orElse(null));
             }
 
-            @Override public IConstraint caseTermProperty(CAstProperty c) {
+            case CAstProperty: { CAstProperty c = (CAstProperty) constraint;
                 final ITerm newIdTerm = patch(c.idTerm(), patches);
                 final ITerm newValue = patch(c.value(), patches);
 
                 return new CAstProperty(newIdTerm, c.property(), c.op(), newValue, c.cause().orElse(null));
             }
 
-            @Override public IConstraint caseTrue(CTrue c) {
-                return c;
-            }
-
-            @Override public IConstraint caseTry(CTry c) {
+            case CTry: { CTry c = (CTry) constraint;
                 final IConstraint newConstraint = patch(c.constraint(), patches);
 
                 return new CTry(newConstraint, c.cause().orElse(null), c.message().orElse(null));
             }
 
-            @Override public IConstraint caseUser(CUser c) {
+            case CUser: { CUser c = (CUser) constraint;
                 final ImmutableList<ITerm> newArgs = c.args().stream().map(arg -> patch(arg, patches)).collect(ImmutableList.toImmutableList());
                 // TODO Patch ownCriticalEdges?
                 return new CUser(c.name(), newArgs, c.cause().orElse(null), c.message().orElse(null), c.ownCriticalEdges().orElse(null));
             }
-        });
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IConstraint subclass/tag");
     }
 
     public static Pattern patch(Pattern pattern, IPatchCollection<Scope> patches) {

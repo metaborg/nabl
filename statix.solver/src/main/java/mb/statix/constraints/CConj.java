@@ -51,14 +51,6 @@ public class CConj implements IConstraint, Serializable {
         return new CConj(left, right, cause);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseConj(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseConj(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             left.getVars(),
@@ -99,6 +91,10 @@ public class CConj implements IConstraint, Serializable {
         sb.append(", ");
         sb.append(right.toString(termToString));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CConj;
     }
 
     @Override public String toString() {

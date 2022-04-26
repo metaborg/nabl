@@ -70,14 +70,6 @@ public class CEqual implements IConstraint, Serializable {
         return new CEqual(term1, term2, cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseEqual(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseEqual(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             term1.getVars(),
@@ -121,6 +113,10 @@ public class CEqual implements IConstraint, Serializable {
         sb.append(" == ");
         sb.append(termToString.format(term2));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CEqual;
     }
 
     @Override public String toString() {

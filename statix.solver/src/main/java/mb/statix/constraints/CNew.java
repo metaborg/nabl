@@ -47,14 +47,6 @@ public class CNew implements IConstraint, Serializable {
         return datumTerm;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseNew(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseNew(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             scopeTerm.getVars(),
@@ -115,6 +107,10 @@ public class CNew implements IConstraint, Serializable {
         sb.append(" : ");
         sb.append(termToString.format(datumTerm));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CNew;
     }
 
     @Override public String toString() {

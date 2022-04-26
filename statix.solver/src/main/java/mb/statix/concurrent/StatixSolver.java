@@ -477,9 +477,8 @@ public class StatixSolver {
         }
 
         // solve
-        return constraint.matchOrThrow(new IConstraint.CheckedCases<Boolean, InterruptedException>() {
-
-            @Override public Boolean caseArith(CArith c) throws InterruptedException {
+        switch(constraint.constraintTag()) {
+            case CArith: { CArith c = (CArith) constraint;
                 final IUniDisunifier unifier = state.unifier();
                 final Optional<ITerm> term1 = c.expr1().isTerm();
                 final Optional<ITerm> term2 = c.expr2().isTerm();
@@ -509,11 +508,11 @@ public class StatixSolver {
                 }
             }
 
-            @Override public Boolean caseConj(CConj c) throws InterruptedException {
+            case CConj: { CConj c = (CConj) constraint;
                 return success(c, state, NO_UPDATED_VARS, disjoin(c), NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseEqual(CEqual c) throws InterruptedException {
+            case CEqual: { CEqual c = (CEqual) constraint;
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 IUniDisunifier.Immutable unifier = state.unifier();
@@ -544,7 +543,7 @@ public class StatixSolver {
                 }
             }
 
-            @Override public Boolean caseExists(CExists c) throws InterruptedException {
+            case CExists: { CExists c = (CExists) constraint;
                 final Renaming.Builder _existentials = Renaming.builder();
                 IState.Immutable newState = state;
                 for(ITermVar var : c.vars()) {
@@ -567,11 +566,11 @@ public class StatixSolver {
                         existentials.asMap(), fuel);
             }
 
-            @Override public Boolean caseFalse(CFalse c) throws InterruptedException {
+            case CFalse: { CFalse c = (CFalse) constraint;
                 return fail(c);
             }
 
-            @Override public Boolean caseInequal(CInequal c) throws InterruptedException {
+            case CInequal: { CInequal c = (CInequal) constraint;
                 final ITerm term1 = c.term1();
                 final ITerm term2 = c.term2();
                 final IUniDisunifier.Immutable unifier = state.unifier();
@@ -598,7 +597,7 @@ public class StatixSolver {
                 }
             }
 
-            @Override public Boolean caseNew(CNew c) throws InterruptedException {
+            case CNew: { CNew c = (CNew) constraint;
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm datumTerm = c.datumTerm();
                 final String name = M.var(ITermVar::getName).match(scopeTerm).orElse("s");
@@ -611,7 +610,7 @@ public class StatixSolver {
                         fuel);
             }
 
-            @Override public Boolean caseResolveQuery(IResolveQuery c) throws InterruptedException {
+            case IResolveQuery: { IResolveQuery c = (IResolveQuery) constraint;
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
@@ -644,31 +643,29 @@ public class StatixSolver {
                 final DataLeq<Scope, ITerm, ITerm> dataEquivInternal =
                         LOCAL_INFERENCE ? new ConstraintDataEquivInternal(dataLeqRule) : null;
 
-                final IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future;
+                IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> future = null;
                 if((flags & Solver.FORCE_INTERP_QUERIES) == 0) {
-                    // @formatter:off
-                    future = c.match(new IResolveQuery.Cases<IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>>>() {
-
-                        @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseResolveQuery(CResolveQuery q) {
+                    switch(c.resolveQueryTag()) {
+                        case CResolveQuery: { CResolveQuery q = (CResolveQuery) c;
                             final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
-                            return scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv,
-                                    dataWFInternal, dataEquivInternal);
+                            future = scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv,
+                                dataWFInternal, dataEquivInternal);
+                            break;
                         }
 
-                        @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseCompiledQuery(CCompiledQuery q) {
-                            return scopeGraph.query(scope, q.stateMachine(), labelWF, dataWF, dataEquiv,
-                                    dataWFInternal, dataEquivInternal);
+                        case CCompiledQuery: { CCompiledQuery q = (CCompiledQuery) c;
+                            future = scopeGraph.query(scope, q.stateMachine(), labelWF, dataWF,
+                                dataEquiv, dataWFInternal, dataEquivInternal);
+                            break;
                         }
-
-                    });
-                    // @formatter:on
+                    }
                 } else {
                     final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
                     future = scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal,
                             dataEquivInternal);
                 }
 
-                final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel) -> {
+                final K<java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> k = (paths, ex, fuel2) -> {
                     if(ex != null) {
                         // pattern matching for the brave and stupid
                         try {
@@ -696,13 +693,13 @@ public class StatixSolver {
                                         .collect(ImmutableList.toImmutableList());
                         final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                         return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,
-                                NO_EXISTENTIALS, fuel);
+                                NO_EXISTENTIALS, fuel2);
                     }
                 };
                 return future(c, future, k);
             }
 
-            @Override public Boolean caseTellEdge(CTellEdge c) throws InterruptedException {
+            case CTellEdge: { CTellEdge c = (CTellEdge) constraint;
                 final ITerm sourceTerm = c.sourceTerm();
                 final ITerm label = c.label();
                 final ITerm targetTerm = c.targetTerm();
@@ -724,7 +721,7 @@ public class StatixSolver {
                         fuel);
             }
 
-            @Override public Boolean caseTermId(CAstId c) throws InterruptedException {
+            case CAstId: { CAstId c = (CAstId) constraint;
                 final ITerm term = c.astTerm();
                 final ITerm idTerm = c.idTerm();
 
@@ -752,7 +749,7 @@ public class StatixSolver {
                 }
             }
 
-            @Override public Boolean caseTermProperty(CAstProperty c) throws InterruptedException {
+            case CAstProperty: { CAstProperty c = (CAstProperty) constraint;
                 final ITerm idTerm = c.idTerm();
                 final ITerm prop = c.property();
                 final ITerm value = c.value();
@@ -801,19 +798,19 @@ public class StatixSolver {
                 }
             }
 
-            @Override public Boolean caseTrue(CTrue c) throws InterruptedException {
+            case CTrue: { CTrue c = (CTrue) constraint;
                 return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES, NO_EXISTENTIALS,
                         fuel);
             }
 
-            @Override public Boolean caseTry(CTry c) throws InterruptedException {
+            case CTry: { CTry c = (CTry) constraint;
                 final IDebugContext subDebug = debug.subContext();
                 final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = scopeGraph.subContext("try");
                 final IState.Immutable subState = state.subState().withResource(subContext.id());
                 final StatixSolver subSolver = new StatixSolver(c.constraint(), spec, subState, completeness, subDebug,
                         progress, cancel, subContext, RETURN_ON_FIRST_ERROR);
                 final IFuture<SolverResult> subResult = subSolver.entail();
-                final K<SolverResult> k = (r, ex, fuel) -> {
+                final K<SolverResult> k = (r, ex, fuel2) -> {
                     if(ex != null) {
                         debug.error("try {} failed", ex, c.toString(state.unifier()::toString));
                         return fail(c);
@@ -826,7 +823,7 @@ public class StatixSolver {
                                     debug.debug("constraint {} entailed", c.toString(state.unifier()::toString));
                                 }
                                 return success(c, state, NO_UPDATED_VARS, NO_NEW_CONSTRAINTS, NO_NEW_CRITICAL_EDGES,
-                                        NO_EXISTENTIALS, fuel);
+                                        NO_EXISTENTIALS, fuel2);
                             } else {
                                 if(debug.isEnabled(Level.Debug)) {
                                     debug.debug("constraint {} not entailed", c.toString(state.unifier()::toString));
@@ -841,7 +838,7 @@ public class StatixSolver {
                 return future(c, subResult, k);
             }
 
-            @Override public Boolean caseUser(CUser c) throws InterruptedException {
+            case CUser: { CUser c = (CUser) constraint;
                 final String name = c.name();
                 final List<ITerm> args = c.args();
 
@@ -871,8 +868,10 @@ public class StatixSolver {
                         applyResult.criticalEdges(), NO_EXISTENTIALS, fuel);
             }
 
-        });
+        }
 
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IConstraint subclass/tag");
     }
 
     ///////////////////////////////////////////////////////////////////////////

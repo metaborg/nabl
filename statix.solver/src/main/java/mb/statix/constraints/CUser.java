@@ -81,14 +81,6 @@ public class CUser implements IConstraint, Serializable {
         return new CUser(name, args, cause, message, criticalEdges);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseUser(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseUser(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         final Set.Transient<ITermVar> vars = Set.Transient.of();
         for(ITerm a : args) {
@@ -136,6 +128,10 @@ public class CUser implements IConstraint, Serializable {
         sb.append(termToString.format(args));
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CUser;
     }
 
     @Override public String toString() {
