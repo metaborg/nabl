@@ -403,9 +403,13 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         assertActive();
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
-        }, rootScopes, true)._2();
+            IUnitResult<S, L, D, ?> previousResult = this.previousResult != null ?
+                    this.previousResult.subUnitResults().get(id) : null;
 
+            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, previousResult);
+        }, rootScopes, false)._2();
+
+        this.addedUnitIds.__insert(id);
         return ifActive(whenContextActive(result));
     }
 
