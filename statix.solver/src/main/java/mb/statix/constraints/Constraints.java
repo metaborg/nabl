@@ -326,10 +326,8 @@ public final class Constraints {
                 //           the cause of the constraints. This is a heuristic which seems
                 //           to work well, but in general maintaining causes requires some
                 //           care throughout the solver code.
-                worklist.push(
-                    conj.left().withCause(conj.cause().orElse(conj.left().cause().orElse(null))));
-                worklist.push(
-                    conj.right().withCause(conj.cause().orElse(conj.right().cause().orElse(null))));
+                worklist.push(conj.left().withCause(conj.cause().orElse(conj.left().cause().orElse(null))));
+                worklist.push(conj.right().withCause(conj.cause().orElse(conj.right().cause().orElse(null))));
             } else {
                 action.apply(c);
             }
@@ -377,15 +375,10 @@ public final class Constraints {
                 vars(onExists.constraint(), onVar);
                 break;
             }
-            case CFalse:
-            case CTrue:
-                break;
             case CInequal: {
                 CInequal onInequal = (CInequal) constraint;
-                onInequal.term1().getVars().stream()
-                    .filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
-                onInequal.term2().getVars().stream()
-                    .filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                onInequal.term1().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
+                onInequal.term2().getVars().stream().filter(v -> !onInequal.universals().contains(v)).forEach(onVar::apply);
                 break;
             }
             case CNew: {
@@ -430,6 +423,9 @@ public final class Constraints {
                 onUser.args().forEach(t -> t.getVars().forEach(onVar::apply));
                 break;
             }
+            case CFalse:
+            case CTrue:
+                break;
         }
     }
 

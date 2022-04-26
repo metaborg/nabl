@@ -446,9 +446,7 @@ public class PreSolvedConstraint implements Serializable {
                     CEqual cequal = (CEqual) c;
                     try {
                         final IUnifier.Immutable result;
-                        if((result =
-                            unifier.unify(cequal.term1(), cequal.term2(), isRigid).orElse(null))
-                            == null) {
+                        if((result = unifier.unify(cequal.term1(), cequal.term2(), isRigid).orElse(null)) == null) {
                             failures.add(cequal.withCause(cause));
                             okay = false;
                             break;
@@ -468,8 +466,7 @@ public class PreSolvedConstraint implements Serializable {
                 }
                 case CExists: {
                     CExists cexists = (CExists) c;
-                    final IRenaming renaming = fresh.apply(
-                        cexists.vars()/*FIXME possible opt: .__retainAll(cexists.constraint().freeVars())*/);
+                    final IRenaming renaming = fresh.apply(cexists.vars()/*FIXME possible opt: .__retainAll(cexists.constraint().freeVars())*/);
                     if(first.get()) {
                         existentials.putAll(renaming.asMap());
                     }
@@ -488,8 +485,7 @@ public class PreSolvedConstraint implements Serializable {
                 case CInequal: {
                     CInequal cinequal = (CInequal) c;
                     try {
-                        if(!unifier.disunify(cinequal.universals(), cinequal.term1(),
-                            cinequal.term2(), isRigid).isPresent()) {
+                        if(!unifier.disunify(cinequal.universals(), cinequal.term1(), cinequal.term2(), isRigid).isPresent()) {
                             failures.add(cinequal.withCause(cause));
                             okay = false;
                             break;
