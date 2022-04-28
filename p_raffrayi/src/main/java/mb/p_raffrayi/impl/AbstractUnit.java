@@ -601,7 +601,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 } else {
                     result = dataWfInternal.wf(d, queryContext, cancel);
                 }
-                if(future.isDone()) {
+                if(result.isDone()) {
                     result.whenComplete(future::complete);
                 } else {
                     final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
