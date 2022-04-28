@@ -3,7 +3,6 @@ package mb.statix.concurrent.util;
 import org.metaborg.util.collection.CapsuleUtil;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -13,7 +12,7 @@ import mb.nabl2.terms.unification.u.IUnifier;
 
 public class VarIndexedCollection<V> {
 
-    private final Multimap<ITermVar, Entry> index;
+    private final HashMultimap<ITermVar, Entry> index;
 
     public VarIndexedCollection() {
         this.index = HashMultimap.create();
