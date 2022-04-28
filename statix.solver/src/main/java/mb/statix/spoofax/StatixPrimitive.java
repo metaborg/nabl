@@ -239,7 +239,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         if(constraint.constraintTag() == IConstraint.Tag.CUser) {
             CUser onUser = (CUser) constraint;
-            onUser.args().stream()
+            return onUser.args().stream()
                 .flatMap(t -> Streams.stream(getOriginTerm(t, unifier)))
                 .findFirst();
         }
