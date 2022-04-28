@@ -676,25 +676,26 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
             logger.debug("Close pending tokens.");
-            ownTokens().forEach(wf -> {
-                // @formatter:off
-                wf.visit(IWaitFor.cases(
-                    initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
-                    closeScope -> {},
-                    closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
-                    query -> {},
-                    pQuery -> {},
-                    confirm -> {},
-                    match -> {},
-                    result -> {},
-                    typeCheckerState -> {},
-                    differResult -> {},
-                    differState -> {},
-                    envDifferState -> {},
-                    unitAdd -> {}
-                ));
-                // @formatter:on
-            });
+            // @formatter:off
+            final IWaitFor.Cases<S, L, D> cases = IWaitFor.cases(
+                initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
+                closeScope -> {},
+                closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
+                query -> {},
+                pQuery -> {},
+                confirm -> {},
+                match -> {},
+                result -> {},
+                typeCheckerState -> {},
+                differResult -> {},
+                differState -> {},
+                envDifferState -> {},
+                unitAdd -> {}
+            );
+            // @formatter:on
+            for(IWaitFor<S, L, D> wf: ownTokens()) {
+                wf.visit(cases);
+            }
 
             pendingExternalDatums.asMap().forEach((d, futures) -> futures.elementSet().forEach(future -> {
                 final D datum = previousResult.result().analysis().getExternalRepresentation(d);
