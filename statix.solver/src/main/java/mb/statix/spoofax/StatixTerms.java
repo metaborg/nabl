@@ -6,6 +6,8 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +30,6 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -466,13 +466,13 @@ public class StatixTerms {
         return M.casesFix(m -> Iterables2.from(
             varTerm(),
             M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
-                final List<IAttachments> as = Lists.newArrayList();
+                final List<IAttachments> as = new ArrayList<>();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 as.add(t.getAttachments());
                 return B.newList(elems, as);
             }),
             M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
-                final List<IAttachments> as = Lists.newArrayList();
+                final List<IAttachments> as = new ArrayList<>();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
             })
@@ -678,8 +678,8 @@ public class StatixTerms {
     }
 
     public static ITerm toTerm(IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph, IUnifier.Immutable unifier) {
-        final Map<Scope, ITerm> dataEntries = Maps.newHashMap(); // Scope * ITerm
-        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = Maps.newHashMap(); // Scope * (Label * Scope)
+        final Map<Scope, ITerm> dataEntries = new HashMap<>(); // Scope * ITerm
+        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = new HashMap<>(); // Scope * (Label * Scope)
 
         scopeGraph.getData().forEach((s, d) -> {
             d = unifier.findRecursive(d);
@@ -692,13 +692,13 @@ public class StatixTerms {
             edgeEntries.put(src_lbl.getKey(), edges);
         });
 
-        final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * ITerm? * [Label * [Scope]]]
+        final List<ITerm> scopeEntries = new ArrayList<>(); // [Scope * ITerm? * [Label * [Scope]]]
         for(Scope scope : Sets.union(edgeEntries.keySet(), dataEntries.keySet())) {
             final ITerm data = Optional.ofNullable(dataEntries.get(scope)).map(d -> B.newAppl("Some", d))
                     .orElse(B.newAppl("None"));
 
             final ITerm edges = Optional.ofNullable(edgeEntries.get(scope)).map(es -> {
-                final List<ITerm> lblTgts = Lists.newArrayList();
+                final List<ITerm> lblTgts = new ArrayList<>();
                 es.asMap().entrySet().forEach(ee -> {
                     final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicateVars(ee.getValue())));
                     lblTgts.add(lbl_tgt);
@@ -752,8 +752,8 @@ public class StatixTerms {
 
     private static ITerm explode(IListTerm list) {
         // @formatter:off
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<IAttachments> attachments = Lists.newArrayList();
+        final List<ITerm> terms = new ArrayList<>();
+        final List<IAttachments> attachments = new ArrayList<>();
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(

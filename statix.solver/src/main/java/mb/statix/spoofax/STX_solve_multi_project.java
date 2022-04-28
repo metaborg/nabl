@@ -4,6 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,7 +16,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -53,7 +53,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
 
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
-        final Map<IConstraint, IMessage> messages = Maps.newHashMap(initial.messages());
+        final Map<IConstraint, IMessage> messages = new HashMap<>(initial.messages());
         IState.Immutable state = initial.state();
         for(SolverResult result : results) {
             try {

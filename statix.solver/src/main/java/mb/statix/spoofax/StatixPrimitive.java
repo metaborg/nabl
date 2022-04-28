@@ -3,6 +3,7 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
@@ -196,7 +197,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
                 config.messageTraceLength(config.messageTraceLength(IStatixProjectConfig.DEFAULT_MESSAGE_TRACE_LENGTH));
 
         ITerm originTerm = message.origin().flatMap(t -> getOriginTerm(t, unifier)).orElse(null);
-        final Deque<String> trace = Lists.newLinkedList();
+        final Deque<String> trace = new ArrayDeque<>();
         IConstraint current = constraint;
         int traceCount = 0;
         while(current != null) {

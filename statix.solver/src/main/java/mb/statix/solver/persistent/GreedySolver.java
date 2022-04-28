@@ -6,8 +6,10 @@ import static mb.statix.constraints.Constraints.disjoin;
 import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +25,6 @@ import org.metaborg.util.tuple.Tuple3;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -116,9 +116,9 @@ class GreedySolver {
     private IState.Immutable state;
     private ICompleteness.Immutable completeness;
     private Map<ITermVar, ITermVar> existentials = null;
-    private final List<ITermVar> updatedVars = Lists.newArrayList();
-    private final List<CriticalEdge> removedEdges = Lists.newArrayList();
-    private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
+    private final List<ITermVar> updatedVars = new ArrayList<>();
+    private final List<CriticalEdge> removedEdges = new ArrayList<>();
+    private final Map<IConstraint, IMessage> failed = new HashMap<>();
 
     private int solved = 0;
     private int criticalEdges = 0;

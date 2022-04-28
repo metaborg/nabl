@@ -3,6 +3,7 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -17,7 +18,6 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -70,7 +70,7 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
         }
         final IUniDisunifier.Immutable unifier = resultConfig.state().unifier();
 
-        final List<ITerm> substEntries = Lists.newArrayList();
+        final List<ITerm> substEntries = new ArrayList<>();
         for(Entry<ITermVar, ITermVar> e : resultConfig.existentials().entrySet()) {
             final ITerm v = StatixTerms.explode(e.getKey());
             final ITerm t = StatixTerms.explicateVars(unifier.findRecursive(e.getValue()));

@@ -3,6 +3,8 @@ package mb.statix.concurrent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,9 +24,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -290,8 +290,8 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     @Override public SolverState snapshot() {
         if(solver == null) {
-            return SolverState.of(State.of(), Completeness.Immutable.of(), Sets.newHashSet(), null, Arrays.asList(),
-                    Maps.newHashMap(), CapsuleUtil.immutableSet());
+            return SolverState.of(State.of(), Completeness.Immutable.of(), new HashSet<>(), null, Arrays.asList(),
+                    new HashMap<>(), CapsuleUtil.immutableSet());
         }
         final SolverState snapshot = solver.snapshot();
         snapshotTaken = true;

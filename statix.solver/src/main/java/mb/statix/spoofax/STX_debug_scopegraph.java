@@ -4,6 +4,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 import static mb.statix.spoofax.StatixTerms.explicateVars;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,8 +19,6 @@ import org.spoofax.interpreter.core.InterpreterException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
@@ -47,14 +47,14 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         ).match(term).orElseThrow(() -> new InterpreterException("Expected solver result."));
         // @formatter:on
 
-        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = Maps.newHashMap(); // Scope * (Label * Scope)
-        final Map<Scope, ListMultimap<ITerm, ITerm>> relationEntries = Maps.newHashMap(); // Scope * (Label * Scope)
+        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = new HashMap<>(); // Scope * (Label * Scope)
+        final Map<Scope, ListMultimap<ITerm, ITerm>> relationEntries = new HashMap<>(); // Scope * (Label * Scope)
         final Set<Scope> dataScopes = Sets.newHashSet();
         for(SolverResult analysis : analyses) {
             addScopeEntries(analysis, edgeEntries, relationEntries, dataScopes);
         }
 
-        final List<ITerm> scopeEntries = Lists.newArrayList(); // [InlinedEntry(Scope * [Label * [ITerm]] * [Label * [Scope]])]
+        final List<ITerm> scopeEntries = new ArrayList<>(); // [InlinedEntry(Scope * [Label * [ITerm]] * [Label * [Scope]])]
         for(Scope scope : Sets.union(edgeEntries.keySet(), relationEntries.keySet())) {
             if(dataScopes.contains(scope)) {
                 if((relationEntries.containsKey(scope) && !relationEntries.get(scope).isEmpty())) {
@@ -68,7 +68,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
                 continue;
             }
             final ITerm relations = Optional.ofNullable(relationEntries.get(scope)).map(rs -> {
-                final List<ITerm> lblDatums = Lists.newArrayList();
+                final List<ITerm> lblDatums = new ArrayList<>();
                 rs.asMap().entrySet().forEach(rr -> {
                     final ITerm lbl_datum = B.newTuple(rr.getKey(), B.newList(explicateVars(rr.getValue())));
                     lblDatums.add(lbl_datum);
@@ -76,7 +76,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
                 return B.newList(lblDatums);
             }).orElse(B.newList());
             final ITerm edges = Optional.ofNullable(edgeEntries.get(scope)).map(es -> {
-                final List<ITerm> lblTgts = Lists.newArrayList();
+                final List<ITerm> lblTgts = new ArrayList<>();
                 es.asMap().entrySet().forEach(ee -> {
                     final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicateVars(ee.getValue())));
                     lblTgts.add(lbl_tgt);
