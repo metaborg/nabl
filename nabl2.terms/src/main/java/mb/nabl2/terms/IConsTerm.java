@@ -9,4 +9,7 @@ public interface IConsTerm extends IListTerm {
     @Override
     IConsTerm withAttachments(IAttachments value);
 
+    @Override default Tag listTermTag() {
+        return Tag.IConsTerm;
+    }
 }

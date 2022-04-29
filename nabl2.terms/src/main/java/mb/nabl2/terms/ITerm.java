@@ -64,4 +64,15 @@ public interface ITerm {
 
     }
 
+    Tag termTag();
+
+    enum Tag {
+        IApplTerm,
+        IListTerm,
+        IStringTerm,
+        IIntTerm,
+        IBlobTerm,
+        ITermVar,
+    }
+
 }

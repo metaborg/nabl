@@ -19,4 +19,12 @@ public interface ITermVar extends ITerm, IListTerm, Comparable<ITermVar> {
         return c;
     }
 
+    @Override default ITerm.Tag termTag() {
+        return ITerm.Tag.ITermVar;
+    }
+
+    @Override default IListTerm.Tag listTermTag() {
+        return IListTerm.Tag.ITermVar;
+    }
+
 }
