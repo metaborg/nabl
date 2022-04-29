@@ -49,16 +49,16 @@ public class Patching {
     // Collect domain of scopes.
 
     public static Set.Immutable<Scope> ruleScopes(Rule rule) {
-        // @formatter:off
-        final Set.Immutable<Scope> headScopes = rule.params().stream()
-            .map(Patching::patternScopes)
-            .flatMap(Set.Immutable::stream)
-            .collect(CapsuleCollectors.toSet());
-        // @formatter:on
+        final Set.Transient<Scope> resultSet = Set.Transient.of();
+        for(Pattern param : rule.params()) {
+            // head scopes
+            resultSet.__insertAll(patternScopes(param));
+        }
 
-        final Set.Immutable<Scope> bodyScopes = constraintScopes(rule.body());
+        // body scopes
+        resultSet.__insertAll(constraintScopes(rule.body()));
 
-        return headScopes.__insertAll(bodyScopes);
+        return resultSet.freeze();
     }
 
     public static Set.Immutable<Scope> constraintScopes(IConstraint constraint) {
@@ -124,8 +124,11 @@ public class Patching {
             }
 
             @Override public Immutable<Scope> caseUser(CUser c) {
-                return c.args().stream().map(Patching::termScopes).flatMap(Set.Immutable::stream)
-                        .collect(CapsuleCollectors.toSet());
+                final Set.Transient<Scope> resultSet = Set.Transient.of();
+                for(ITerm arg : c.args()) {
+                    resultSet.__insertAll(termScopes(arg));
+                }
+                return resultSet.freeze();
             }
         });
     }
@@ -141,15 +144,14 @@ public class Patching {
     // Apply patch collection to rule/constraint/pattern/term
 
     public static Rule patch(Rule rule, IPatchCollection<Scope> patches) {
-        // @formatter:off
-        final ImmutableList<Pattern> newParams = rule.params().stream()
-            .map(p -> patch(p, patches))
-            .collect(ImmutableList.toImmutableList());
-        // @formatter:on
+        final ImmutableList.Builder<Pattern> newParams = ImmutableList.builder();
+        for(Pattern p : rule.params()) {
+            newParams.add(patch(p, patches));
+        }
 
         final IConstraint newBody = patch(rule.body(), patches);
 
-        return rule.withParams(newParams).withBody(newBody);
+        return rule.withParams(newParams.build()).withBody(newBody);
     }
 
     public static IConstraint patch(IConstraint constraint, IPatchCollection<Scope> patches) {
@@ -259,9 +261,12 @@ public class Patching {
             }
 
             @Override public IConstraint caseUser(CUser c) {
-                final ImmutableList<ITerm> newArgs = c.args().stream().map(arg -> patch(arg, patches)).collect(ImmutableList.toImmutableList());
+                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builder();
+                for(ITerm arg : c.args()) {
+                    newArgs.add(patch(arg, patches));
+                }
                 // TODO Patch ownCriticalEdges?
-                return new CUser(c.name(), newArgs, c.cause().orElse(null), c.message().orElse(null), c.ownCriticalEdges().orElse(null));
+                return new CUser(c.name(), newArgs.build(), c.cause().orElse(null), c.message().orElse(null), c.ownCriticalEdges().orElse(null));
             }
         });
     }

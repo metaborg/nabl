@@ -1,5 +1,7 @@
 package mb.statix.concurrent.util;
 
+import java.util.HashSet;
+
 import org.metaborg.util.collection.CapsuleUtil;
 
 import com.google.common.collect.Streams;
@@ -23,13 +25,18 @@ public class VarIndexedCollection<V> {
     }
 
     public boolean put(V value, Iterable<ITermVar> indexVars, IUnifier unifier) {
-        final Set<ITermVar> vars =
-                Streams.stream(indexVars).flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
+        final java.util.Set<ITermVar> vars = new HashSet<>();
+        for(ITermVar v : indexVars) {
+            vars.addAll(unifier.getVars(v));
+        }
+        if(vars.isEmpty()) {
+            return false;
+        }
         final Entry entry = new Entry(value);
         for(ITermVar var : vars) {
             index.__insert(var, entry.inc());
         }
-        return !vars.isEmpty();
+        return true;
     }
 
     public Set.Immutable<V> update(Iterable<ITermVar> indexVars, IUnifier unifier) {

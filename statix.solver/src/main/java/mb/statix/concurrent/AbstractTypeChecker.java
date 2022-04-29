@@ -71,6 +71,16 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     private boolean snapshotTaken = false;
 
+    private static <K, V> Map<K, V> assocListToMap(List<Tuple2<K, V>> es) {
+        Map<K, V> map = new HashMap<>();
+        for(Tuple2<K, V> e : es) {
+            if(map.put(e.getKey(), e.getValue()) != null) {
+                throw new IllegalStateException("Duplicate key");
+            }
+        }
+        return map;
+    }
+
     protected Scope makeSharedScope(ITypeCheckerContext<Scope, ITerm, ITerm> context, String name) {
         final Scope s = context.stableFreshScope(name, Collections.emptyList(), true);
         context.setDatum(s, s);
@@ -98,7 +108,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .thenApply(AbstractTypeChecker::assocListToMap)
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all groups returned.", context.id());
                 });
@@ -124,7 +134,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .thenApply(AbstractTypeChecker::assocListToMap)
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all units returned.", context.id());
                 });
@@ -142,13 +152,13 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             final String key = entry.getKey();
             IStatixLibrary library = entry.getValue();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, Unit>> result =
-                    context.add(key, library, Arrays.asList(parentScope));
+                    context.add(key, library, Collections.singletonList(parentScope));
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: library {} returned.", context.id(), key);
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .thenApply(AbstractTypeChecker::assocListToMap)
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all libraries returned.", context.id());
                 });

@@ -1,13 +1,5 @@
 package mb.statix.concurrent;
 
-import static com.google.common.collect.Streams.stream;
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.nabl2.terms.matching.Transform.T;
-import static mb.statix.constraints.Constraints.disjoin;
-import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
-import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -38,12 +28,9 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
-import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.stratego.TermIndex;
@@ -120,6 +107,12 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.statix.constraints.Constraints.disjoin;
+import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
+import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
 public class StatixSolver {
 
@@ -394,8 +387,7 @@ public class StatixSolver {
             return fail(constraint);
         }
 
-        final Set.Immutable<ITermVar> vars = delay.vars().stream().flatMap(v -> state.unifier().getVars(v).stream())
-                .collect(CapsuleCollectors.toSet());
+        final Set.Immutable<ITermVar> vars = getDelayVars(delay);
         if(vars.isEmpty()) {
             debug.error("FIXME: constraint delayed on no vars: {}", delay.criticalEdges(),
                     constraint.toString(state.unifier()::toString));
@@ -413,6 +405,14 @@ public class StatixSolver {
         }
 
         return true;
+    }
+
+    private Set.Immutable<ITermVar> getDelayVars(Delay delay) {
+        final Set.Transient<ITermVar> resultSet = Set.Transient.of();
+        for(ITermVar v : delay.vars()) {
+            resultSet.__insertAll(state.unifier().getVars(v));
+        }
+        return resultSet.freeze();
     }
 
     private <R> boolean future(IConstraint constraint, IFuture<R> future, K<? super R> k) throws InterruptedException {
@@ -618,13 +618,8 @@ public class StatixSolver {
                 final ITerm resultTerm = c.resultTerm();
 
                 final IUniDisunifier unifier = state.unifier();
-                // @formatter:off
-                final Set.Immutable<ITermVar> freeVars = Streams.concat(
-                        unifier.getVars(scopeTerm).stream(),
-                        filter.getDataWF().freeVars().stream().flatMap(v -> unifier.getVars(v).stream()),
-                        min.getDataEquiv().freeVars().stream().flatMap(v -> unifier.getVars(v).stream())
-                ).collect(CapsuleCollectors.toSet());
-                // @formatter:on
+                final Set.Immutable<ITermVar> freeVars = getFreeVars(unifier, scopeTerm,
+                    filter.getDataWF().freeVars(), min.getDataEquiv().freeVars());
                 if(!freeVars.isEmpty()) {
                     return delay(c, Delay.ofVars(freeVars));
                 }
@@ -691,9 +686,11 @@ public class StatixSolver {
                             return fail(c);
                         }
                     } else {
-                        final List<ITerm> pathTerms =
-                                paths.stream().map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
-                                        .collect(ImmutableList.toImmutableList());
+                        final List<ITerm> pathTerms = new ArrayList<>();
+                        for(IResolutionPath<Scope, ITerm, ITerm> p : paths) {
+                            ITerm iTerm = StatixTerms.pathToTerm(p, spec.dataLabels());
+                            pathTerms.add(iTerm);
+                        }
                         final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                         return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
@@ -857,8 +854,7 @@ public class StatixSolver {
                 }
                 final ApplyResult applyResult = result._2();
                 if(!result._3()) {
-                    final Set<ITermVar> stuckVars = Streams.stream(applyResult.guard())
-                            .flatMap(g -> g.domainSet().stream()).collect(CapsuleCollectors.toSet());
+                    final Set<ITermVar> stuckVars = guardDomainSet(applyResult);
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
                     return delay(c, Delay.ofVars(stuckVars));
                 }
@@ -873,6 +869,28 @@ public class StatixSolver {
 
         });
 
+    }
+
+    private Immutable<ITermVar> guardDomainSet(ApplyResult applyResult) {
+        final Optional<Diseq> guard = applyResult.guard();
+        if (guard.isPresent()) {
+            return guard.get().domainSet();
+        } else {
+            return Set.Immutable.of();
+        }
+    }
+
+    private Set.Immutable<ITermVar> getFreeVars(IUniDisunifier unifier, ITerm scopeTerm, Iterable<ITermVar> filterFreeVars,
+        Iterable<ITermVar> minQueryFreeVars) {
+        final Set.Transient<ITermVar> resultSet = Set.Transient.of();
+        resultSet.__insertAll(unifier.getVars(scopeTerm));
+        for(ITermVar v : filterFreeVars) {
+            resultSet.__insertAll(unifier.getVars(v));
+        }
+        for(ITermVar v : minQueryFreeVars) {
+            resultSet.__insertAll(unifier.getVars(v));
+        }
+        return resultSet.freeze();
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1002,15 +1020,23 @@ public class StatixSolver {
     private Set.Immutable<ITerm> getOpenEdges(ITerm varOrScope) {
         // we must include queued edge closes here, to ensure we registered the open
         // edge when the close is released
-        final List<EdgeOrData<ITerm>> openEdges =
-                Streams.stream(completeness.get(varOrScope, state.unifier())).collect(Collectors.toList());
-        final List<EdgeOrData<ITerm>> queuedEdges = M.var().match(varOrScope)
-                .map(var -> delayedCloses.stream().filter(e -> state.unifier().equal(var, e.scope()))
-                        .map(e -> e.edgeOrData()))
-                .orElse(Stream.<EdgeOrData<ITerm>>empty()).collect(Collectors.toList());
-        return stream(Iterables.concat(openEdges, queuedEdges)).<ITerm>flatMap(eod -> {
-            return eod.match(() -> Stream.<ITerm>empty(), (l) -> Stream.of(l));
-        }).collect(CapsuleCollectors.toSet());
+        final Set.Transient<ITerm> resultSet = Set.Transient.of();
+        // open edges
+        for(EdgeOrData<ITerm> eod : completeness.get(varOrScope, state.unifier())) {
+            eod.match(() -> Unit.unit, resultSet::__insert);
+        }
+        // queued edges
+        final Optional<ITermVar> matchedVar = M.var().match(varOrScope);
+        if(matchedVar.isPresent()) {
+            ITermVar var = matchedVar.get();
+            for(CriticalEdge e : delayedCloses) {
+                if(state.unifier().equal(var, e.scope())) {
+                    e.edgeOrData().match(() -> Unit.unit, resultSet::__insert);
+                }
+            }
+        }
+
+        return resultSet.freeze();
     }
 
     private void closeEdge(CriticalEdge criticalEdge) throws InterruptedException {
@@ -1054,10 +1080,9 @@ public class StatixSolver {
     private final VarIndexedCollection<CheckedAction0<InterruptedException>> delayedActions =
             new VarIndexedCollection<>();
 
-    private void delayAction(CheckedAction0<InterruptedException> action, Iterable<ITermVar> vars)
+    private void delayAction(CheckedAction0<InterruptedException> action, Set.Immutable<ITermVar> vars)
             throws InterruptedException {
-        final Set.Immutable<ITermVar> foreignVars =
-                Streams.stream(vars).filter(v -> !state.vars().contains(v)).collect(CapsuleCollectors.toSet());
+        final Set.Immutable<ITermVar> foreignVars = vars.__removeAll(state.vars());
         if(!foreignVars.isEmpty()) {
             throw new IllegalStateException("Cannot delay on foreign variables: " + foreignVars);
         }

@@ -1,5 +1,6 @@
 package mb.statix.concurrent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,7 +35,11 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
     @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult, SolverState> context,
             List<Scope> rootScopes) {
 
-        final List<Scope> thisGroupScopes = group.scopeNames().stream().map(name -> makeSharedScope(context, name)).collect(Collectors.toList());
+        final List<Scope> thisGroupScopes = new ArrayList<>();
+        for(String name : group.scopeNames()) {
+            Scope scope = makeSharedScope(context, name);
+            thisGroupScopes.add(scope);
+        }
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
             runGroups(context, group.groups(), thisGroupScopes);
         final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =

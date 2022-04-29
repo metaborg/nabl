@@ -1,6 +1,7 @@
 package mb.statix.generator.scopegraph;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -49,8 +50,13 @@ public class NameResolution<S extends D, L, D, X> {
         this.spec = spec;
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data();
-        this.allLabels = Streams.concat(Stream.of(dataLabel), edgeLabels.stream().map(EdgeOrData::edge))
-                .collect(Collectors.toSet());
+        this.allLabels = new HashSet<>(Math.max((int) (edgeLabels.size()/.75f) + 1, 16));
+
+        this.allLabels.add(dataLabel);
+        for(L edgeLabel : edgeLabels) {
+            this.allLabels.add(EdgeOrData.edge(edgeLabel));
+        }
+
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
         this.dataWF = dataWF;
