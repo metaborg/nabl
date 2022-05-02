@@ -36,8 +36,11 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.CConj;
+import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
+import mb.statix.constraints.CInequal;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -432,29 +435,37 @@ public class PreSolvedConstraint implements Serializable {
         AtomicBoolean first = new AtomicBoolean(true);
         while(!worklist.isEmpty()) {
             final IConstraint c = worklist.removeLast();
-            // @formatter:off
-            final boolean okay = c.match(Constraints.<Boolean>cases(
-                carith -> { constraints.add(c.withCause(cause)); return true; },
-                conj   -> { worklist.addAll(Constraints.disjoin(conj)); return true; },
-                cequal -> {
+            boolean okay = true;
+            switch(c.constraintTag()) {
+                case CConj: {
+                    CConj conj = (CConj) c;
+                    worklist.addAll(Constraints.disjoin(conj));
+                    break;
+                }
+                case CEqual: {
+                    CEqual cequal = (CEqual) c;
                     try {
                         final IUnifier.Immutable result;
                         if((result = unifier.unify(cequal.term1(), cequal.term2(), isRigid).orElse(null)) == null) {
                             failures.add(cequal.withCause(cause));
-                            return false;
+                            okay = false;
+                            break;
                         }
                         updatedVars.addAll(result.domainSet());
                         bodyCriticalEdges.updateAll(result.domainSet(), result);
-                        return true;
+                        break;
                     } catch(OccursException e) {
                         failures.add(cequal.withCause(cause));
-                        return false;
+                        okay = false;
+                        break;
                     } catch(RigidException e) {
                         delays.put(cequal, Delay.ofVars(e.vars()));
-                        return false;
+                        okay = false;
+                        break;
                     }
-                },
-                cexists -> {
+                }
+                case CExists: {
+                    CExists cexists = (CExists) c;
                     final IRenaming renaming = fresh.apply(cexists.vars()/*FIXME possible opt: .__retainAll(cexists.constraint().freeVars())*/);
                     if(first.get()) {
                         existentials.putAll(renaming.asMap());
@@ -463,35 +474,45 @@ public class PreSolvedConstraint implements Serializable {
                     cexists.bodyCriticalEdges().ifPresent(bce -> {
                         bodyCriticalEdges.addAll(bce.apply(renaming), unifier);
                     });
-                    return true;
-                },
-                cfalse -> {
+                    break;
+                }
+                case CFalse: {
+                    CFalse cfalse = (CFalse) c;
                     failures.add(cfalse.withCause(cause));
-                    return false;
-                },
-                cinequal  -> {
+                    okay = false;
+                    break;
+                }
+                case CInequal: {
+                    CInequal cinequal = (CInequal) c;
                     try {
                         if(!unifier.disunify(cinequal.universals(), cinequal.term1(), cinequal.term2(), isRigid).isPresent()) {
                             failures.add(cinequal.withCause(cause));
-                            return false;
+                            okay = false;
+                            break;
                         }
-                    } catch (RigidException e) {
+                        break;
+                    } catch(RigidException e) {
                         delays.put(cinequal, Delay.ofVars(e.vars()));
-                        return false;
+                        okay = false;
+                        break;
                     }
-                    return true;
-                },
-                cnew      -> { constraints.add(c.withCause(cause)); return true; },
-                cquery    -> { constraints.add(c.withCause(cause)); return true; },
-                ctelledge -> { constraints.add(c.withCause(cause)); return true; },
-                castid    -> { constraints.add(c.withCause(cause)); return true; },
-                castprop  -> { constraints.add(c.withCause(cause)); return true; },
-                ctrue     -> { return true; },
-                ctry      -> { constraints.add(c.withCause(cause)); return true; },
-                cuser     -> { constraints.add(c.withCause(cause)); return true; }
-            ));
+                }
+                case CTrue: {
+                    break;
+                }
+                case CArith:
+                case CNew:
+                case IResolveQuery:
+                case CTellEdge:
+                case CAstId:
+                case CAstProperty:
+                case CTry:
+                case CUser: {
+                    constraints.add(c.withCause(cause));
+                    break;
+                }
+            }
             first.set(false);
-            // @formatter:on
             if(!okay && returnOnFirstErrorOrDelay) {
                 return;
             }

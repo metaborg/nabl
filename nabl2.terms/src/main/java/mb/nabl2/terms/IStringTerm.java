@@ -7,4 +7,8 @@ public interface IStringTerm extends ITerm {
     @Override
     IStringTerm withAttachments(IAttachments value);
 
+    @Override default Tag termTag() {
+        return Tag.IStringTerm;
+    }
+
 }

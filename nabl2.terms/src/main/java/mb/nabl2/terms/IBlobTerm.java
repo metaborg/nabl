@@ -7,4 +7,8 @@ public interface IBlobTerm extends ITerm {
     @Override
     IBlobTerm withAttachments(IAttachments value);
 
+    @Override default Tag termTag() {
+        return Tag.IBlobTerm;
+    }
+
 }

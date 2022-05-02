@@ -7,4 +7,8 @@ public interface IIntTerm extends ITerm {
     @Override
     IIntTerm withAttachments(IAttachments value);
 
+    @Override default Tag termTag() {
+        return Tag.IIntTerm;
+    }
+
 }

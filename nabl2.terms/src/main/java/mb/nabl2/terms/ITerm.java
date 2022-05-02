@@ -30,13 +30,13 @@ public interface ITerm {
 
         T caseAppl(IApplTerm appl);
 
-        T caseList(IListTerm cons);
+        T caseList(IListTerm list);
 
         T caseString(IStringTerm string);
 
         T caseInt(IIntTerm integer);
 
-        T caseBlob(IBlobTerm integer);
+        T caseBlob(IBlobTerm blob);
 
         T caseVar(ITermVar var);
 
@@ -48,13 +48,13 @@ public interface ITerm {
 
         T caseAppl(IApplTerm appl) throws E;
 
-        T caseList(IListTerm cons) throws E;
+        T caseList(IListTerm list) throws E;
 
         T caseString(IStringTerm string) throws E;
 
         T caseInt(IIntTerm integer) throws E;
 
-        T caseBlob(IBlobTerm integer) throws E;
+        T caseBlob(IBlobTerm blob) throws E;
 
         T caseVar(ITermVar var) throws E;
 
@@ -62,6 +62,18 @@ public interface ITerm {
             return term.matchOrThrow(this);
         }
 
+    }
+
+    Tag termTag();
+
+    enum Tag {
+        IApplTerm,
+        IConsTerm,
+        INilTerm,
+        IStringTerm,
+        IIntTerm,
+        IBlobTerm,
+        ITermVar,
     }
 
 }

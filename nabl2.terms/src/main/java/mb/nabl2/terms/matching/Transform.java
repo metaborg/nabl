@@ -1,8 +1,6 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -13,13 +11,15 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 public class Transform {
 
@@ -28,86 +28,109 @@ public class Transform {
     public static class T {
 
         public static Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {
-            // @formatter:off
-            return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
-                (appl) -> {
-                    final ImmutableList<ITerm> newArgs;
-                    if((newArgs = Terms.applyLazy(appl.getArgs(), sometd(m)::apply)) == null) {
-                        return appl;
+            return term -> m.apply(term).orElseGet(() -> {
+                switch(term.termTag()) {
+                    case IApplTerm: {
+                        IApplTerm appl = (IApplTerm) term;
+                        final ImmutableList<ITerm> newArgs;
+                        if((newArgs = Terms.applyLazy(appl.getArgs(), sometd(m))) == null) {
+                            return appl;
+                        }
+                        return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
                     }
-                    return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
-                },
-                (list) -> list.match(ListTerms.<IListTerm> cases(
-                    (cons) -> B.newCons(sometd(m).apply(cons.getHead()), (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments()),
-                    (nil) -> nil,
-                    (var) -> var
-                )),
-                (string) -> string,
-                (integer) -> integer,
-                (blob) -> blob,
-                (var) -> var
-            )));
-            // @formatter:on
+
+                    case IConsTerm: {
+                        IConsTerm cons = (IConsTerm) term;
+                        return B.newCons(sometd(m).apply(cons.getHead()),
+                            (IListTerm) sometd(m).apply(cons.getTail()), cons.getAttachments());
+                    }
+
+                    case INilTerm:
+                    case ITermVar:
+                    case IBlobTerm:
+                    case IIntTerm:
+                    case IStringTerm: {
+                        return term;
+                    }
+                }
+                // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                throw new RuntimeException("Missing case for ITerm subclass/tag");
+            });
         }
 
         public static Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
             return term -> {
-                // @formatter:off
-                ITerm next = term.match(Terms.<ITerm>cases(
-                    (appl) -> {
+                ITerm next = null;
+                switch(term.termTag()) {
+                    case IApplTerm: {
+                        IApplTerm appl = (IApplTerm) term;
                         final ImmutableList<ITerm> newArgs;
-                        if((newArgs = Terms.applyLazy(appl.getArgs(), somebu(m)::apply)) == null) {
-                            return appl;
+                        if((newArgs = Terms.applyLazy(appl.getArgs(), somebu(m)))
+                            == null) {
+                            next = appl;
+                            break;
                         }
-                        return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
-                    },
-                    (list) -> list.match(ListTerms.<IListTerm> cases(
-                        (cons) -> B.newCons(somebu(m).apply(cons.getHead()), (IListTerm) somebu(m).apply(cons.getTail()), cons.getAttachments()),
-                        (nil) -> nil,
-                        (var) -> var
-                    )),
-                    (string) -> string,
-                    (integer) -> integer,
-                    (blob) -> blob,
-                    (var) -> var
-                ));
-                // @formatter:on
+                        next = B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
+                        break;
+                    }
+
+                    case IConsTerm: {
+                        IConsTerm cons = (IConsTerm) term;
+                        next = B.newCons(somebu(m).apply(cons.getHead()),
+                            (IListTerm) somebu(m).apply(cons.getTail()),
+                            cons.getAttachments());
+                        break;
+                    }
+
+                    case INilTerm:
+                    case ITermVar:
+                    case IBlobTerm:
+                    case IIntTerm:
+                    case IStringTerm: {
+                        next = term;
+                        break;
+                    }
+                }
                 return m.apply(next).orElse(next);
             };
         }
 
-        public static <R> Function1<ITerm, Collection<R>> collecttd(PartialFunction1<ITerm, ? extends R> m) {
+        public static <R> Function1<ITerm, Collection<R>> collecttd(
+            PartialFunction1<ITerm, ? extends R> m) {
             return term -> {
-                List<R> results = Lists.newArrayList();
-                M.<Unit>casesFix(f -> Iterables2.<IMatcher<? extends Unit>>from(
-                // @formatter:off
-                    (t, u) -> m.apply(t).map(r -> {
+                List<R> results = new ArrayList<>();
+                M.<Unit>casesFix(
+                    f -> Iterables2.from((t, u) -> m.apply(t).map(r -> {
                         results.add(r);
                         return Unit.unit;
-                    }),
-                    (t, u) -> Optional.of(t.match(Terms.<Unit>cases(
-                        (appl) -> {
-                            for(ITerm arg : appl.getArgs()) {
-                                f.match(arg, u);
+                    }), (t, u) -> {
+                        switch(t.termTag()) {
+                            case IApplTerm: {
+                                IApplTerm appl = (IApplTerm) t;
+                                for(ITerm arg : appl.getArgs()) {
+                                    f.match(arg, u);
+                                }
+                                return Optional.of(Unit.unit);
                             }
-                            return Unit.unit;
-                        },
-                        (list) -> list.match(ListTerms.<Unit> cases(
-                            (cons) -> {
+
+                            case IConsTerm: {
+                                IConsTerm cons = (IConsTerm) t;
                                 f.match(cons.getHead(), u);
                                 f.match(cons.getTail(), u);
-                                return Unit.unit;
-                            },
-                            (nil) -> Unit.unit,
-                            (var) -> Unit.unit
-                        )),
-                        (string) -> Unit.unit,
-                        (integer) -> Unit.unit,
-                        (blob) -> Unit.unit,
-                        (var) -> Unit.unit
-                    )))
-                    // @formatter:on
-                )).match(term);
+                                return Optional.of(Unit.unit);
+                            }
+
+                            case INilTerm:
+                            case IStringTerm:
+                            case IIntTerm:
+                            case IBlobTerm:
+                            case ITermVar: {
+                                return Optional.of(Unit.unit);
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    })).match(term);
                 return results;
             };
         }

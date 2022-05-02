@@ -65,10 +65,6 @@ public interface IConstraint {
         throw new UnsupportedOperationException("Constraint does not support body critical edges.");
     }
 
-    <R> R match(Cases<R> cases);
-
-    <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E;
-
     Set.Immutable<ITermVar> getVars();
 
     Set.Immutable<ITermVar> freeVars();
@@ -92,76 +88,23 @@ public interface IConstraint {
 
     String toString(TermFormatter termToString);
 
-    interface Cases<R> extends Function1<IConstraint, R> {
+    Tag constraintTag();
 
-        R caseArith(CArith c);
-
-        R caseConj(CConj c);
-
-        R caseEqual(CEqual c);
-
-        R caseExists(CExists c);
-
-        R caseFalse(CFalse c);
-
-        R caseInequal(CInequal c);
-
-        R caseNew(CNew c);
-
-        R caseResolveQuery(IResolveQuery c);
-
-        R caseTellEdge(CTellEdge c);
-
-        R caseTermId(CAstId c);
-
-        R caseTermProperty(CAstProperty c);
-
-        R caseTrue(CTrue c);
-
-        R caseTry(CTry c);
-
-        R caseUser(CUser c);
-
-        @Override default R apply(IConstraint c) {
-            return c.match(this);
-        }
-
-    }
-
-    interface CheckedCases<R, E extends Throwable> extends CheckedFunction1<IConstraint, R, E> {
-
-        R caseArith(CArith c) throws E;
-
-        R caseConj(CConj c) throws E;
-
-        R caseEqual(CEqual c) throws E;
-
-        R caseExists(CExists c) throws E;
-
-        R caseFalse(CFalse c) throws E;
-
-        R caseInequal(CInequal c) throws E;
-
-        R caseNew(CNew c) throws E;
-
-        R caseResolveQuery(IResolveQuery c) throws E;
-
-        R caseTellEdge(CTellEdge c) throws E;
-
-        R caseTermId(CAstId c) throws E;
-
-        R caseTermProperty(CAstProperty c) throws E;
-
-        R caseTrue(CTrue c) throws E;
-
-        R caseTry(CTry c) throws E;
-
-        R caseUser(CUser c) throws E;
-
-        @Override default R apply(IConstraint c) throws E {
-            return c.matchOrThrow(this);
-        }
-
+    enum Tag {
+        CArith,
+        CConj,
+        CEqual,
+        CExists,
+        CFalse,
+        CInequal,
+        CNew,
+        IResolveQuery,
+        CTellEdge,
+        CAstId,
+        CAstProperty,
+        CTrue,
+        CTry,
+        CUser
     }
 
 }

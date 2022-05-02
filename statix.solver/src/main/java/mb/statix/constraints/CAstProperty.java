@@ -76,14 +76,6 @@ public class CAstProperty implements IConstraint, Serializable {
         return new CAstProperty(idTerm, property, op, value, cause);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTermProperty(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTermProperty(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             idTerm.getVars(),
@@ -127,6 +119,10 @@ public class CAstProperty implements IConstraint, Serializable {
         sb.append(" ").append(op).append(" ");
         sb.append(termToString.format(value));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CAstProperty;
     }
 
     @Override public String toString() {

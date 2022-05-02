@@ -8,6 +8,7 @@
  *******************************************************************************/
 package mb.nabl2.util.graph.alg.misc;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public final class CollectionsFactory {
      * @since 1.7
      */
     public static <O> List<O> createObserverList() {
-        return Lists.newArrayList();
+        return new ArrayList<>();
     }
 
     /**

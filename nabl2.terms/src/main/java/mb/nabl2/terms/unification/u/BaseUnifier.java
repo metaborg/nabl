@@ -1,9 +1,8 @@
 package mb.nabl2.terms.unification.u;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,16 +21,22 @@ import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
 import mb.nabl2.terms.unification.SpecializedTermFormatter;
 import mb.nabl2.terms.unification.TermSize;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public abstract class BaseUnifier implements IUnifier, Serializable {
 
@@ -92,10 +97,14 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     }
 
     @Override public ITerm findTerm(ITerm term) {
-        return term.match(Terms.<ITerm>cases().var(var -> {
+        ITerm.Tag tag = term.termTag();
+        if(tag == ITerm.Tag.ITermVar) {
+            ITermVar var = (ITermVar) term;
             final ITermVar rep = findRep(var);
             return terms().getOrDefault(rep, rep);
-        }).otherwise(t -> t));
+        } else {
+            return term;
+        }
     }
 
     ///////////////////////////////////////////
@@ -108,48 +117,74 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private ITerm findTermRecursive(final ITerm term, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
-        return term.match(Terms.cases(
-        // @formatter:off
-            appl -> B.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited), appl.getAttachments()),
-            list -> findListTermRecursive(list, stack, visited),
-            string -> string,
-            integer -> integer,
-            blob -> blob,
-            var -> findVarRecursive(var, stack, visited)
-            // @formatter:on
-        ));
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                return B.newAppl(appl.getOp(), findRecursiveTerms(appl.getArgs(), stack, visited),
+                    appl.getAttachments());
+            }
+
+            case IConsTerm:
+            case INilTerm: { IListTerm list = (IListTerm) term;
+                return findListTermRecursive(list, stack, visited);
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) term;
+                return findVarRecursive(var, stack, visited);
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private IListTerm findListTermRecursive(IListTerm list, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
         Deque<IListTerm> elements = new ArrayDeque<>();
         while(list != null) {
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
+            switch(list.listTermTag()) {
+                case IConsTerm: { IConsTerm cons = (IConsTerm) list;
                     elements.push(cons);
-                    return cons.getTail();
-                },
-                nil -> {
-                    elements.push(nil);
-                    return null;
-                },
-                var -> {
-                    elements.push(var);
-                    return null;
+                    list =  cons.getTail();
+                    continue;
                 }
-                // @formatter:on
-            ));
+
+                case INilTerm:
+                case ITermVar: {
+                    elements.push(list);
+                    list =  null;
+                    continue;
+                }
+            }
+            // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+            throw new RuntimeException("Missing case for IListTerm subclass/tag");
         }
         Ref<IListTerm> instance = new Ref<>();
         while(!elements.isEmpty()) {
-            instance.set(elements.pop().match(ListTerms.<IListTerm>cases(
-            // @formatter:off
-                cons -> B.newCons(findTermRecursive(cons.getHead(), stack, visited), instance.get(), cons.getAttachments()),
-                nil -> nil,
-                var -> (IListTerm) findVarRecursive(var, stack, visited)
-                // @formatter:on
-            )));
+            IListTerm element = elements.pop();
+            switch(element.listTermTag()) {
+                case IConsTerm: { IConsTerm cons = (IConsTerm) element;
+                    instance.set(B.newCons(findTermRecursive(cons.getHead(), stack, visited),
+                        instance.get(), cons.getAttachments()));
+                    continue;
+                }
+
+                case INilTerm: { INilTerm nil = (INilTerm) element;
+                    instance.set(nil);
+                    continue;
+                }
+
+                case ITermVar: { ITermVar var = (ITermVar) element;
+                    instance.set((IListTerm) findVarRecursive(var, stack, visited));
+                    continue;
+                }
+            }
+            // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+            throw new RuntimeException("Missing case for IListTerm subclass/tag");
         }
         return instance.get();
     }
@@ -176,7 +211,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private Iterable<ITerm> findRecursiveTerms(final Iterable<ITerm> terms, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
-        List<ITerm> instances = Lists.newArrayList();
+        List<ITerm> instances = new ArrayList<>();
         for(ITerm term : terms) {
             instances.add(findTermRecursive(term, stack, visited));
         }
@@ -306,38 +341,53 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private TermSize size(final ITerm term, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
-        return term.match(Terms.cases(
-        // @formatter:off
-            appl -> TermSize.ONE.add(sizes(appl.getArgs(), stack, visited)),
-            list -> size(list, stack, visited),
-            string -> TermSize.ONE,
-            integer -> TermSize.ONE,
-            blob -> TermSize.ONE,
-            var -> size(var, stack, visited)
-            // @formatter:on
-        ));
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                return TermSize.ONE.add(sizes(appl.getArgs(), stack, visited));
+            }
+
+            case IConsTerm:
+            case INilTerm:
+            case ITermVar: {
+                return size((IListTerm) term, stack, visited);
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return TermSize.ONE;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private TermSize size(IListTerm list, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, TermSize> visited) {
         final Ref<TermSize> size = new Ref<>(TermSize.ZERO);
         while(list != null) {
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
-                    size.set(size.get().add(TermSize.ONE).add(size(cons.getHead(), stack, visited)));
-                    return cons.getTail();
-                },
-                nil -> {
-                    size.set(size.get().add(TermSize.ONE));
-                    return null;
-                },
-                var -> {
-                    size.set(size.get().add(size(var, stack, visited)));
-                    return null;
+            switch(list.listTermTag()) {
+                case IConsTerm: { IConsTerm cons = (IConsTerm) list;
+                    size.set(size.get().add(TermSize.ONE)
+                        .add(size(cons.getHead(), stack, visited)));
+                    list = cons.getTail();
+                    continue;
                 }
-                // @formatter:on
-            ));
+
+                case INilTerm: {
+                    size.set(size.get().add(TermSize.ONE));
+                    list = null;
+                    continue;
+                }
+
+                case ITermVar: { ITermVar var = (ITermVar) list;
+                    size.set(size.get().add(size(var, stack, visited)));
+                    list = null;
+                    continue;
+                }
+            }
+            // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+            throw new RuntimeException("Missing case for IListTerm subclass/tag");
         }
         return size.get();
     }
@@ -384,24 +434,48 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
-            final java.util.Map<ITermVar, String> visited, final int maxDepth,
-            final SpecializedTermFormatter specializedTermFormatter) {
+        final java.util.Map<ITermVar, String> visited, final int maxDepth,
+        final SpecializedTermFormatter specializedTermFormatter) {
         if(maxDepth == 0) {
             return "…";
         }
-        final PartialFunction1<ITerm, String> tf = t -> specializedTermFormatter.formatSpecialized(term, this, st -> {
-            return toString(st, stack, visited, maxDepth - 1, specializedTermFormatter);
-        });
-        // @formatter:off
-        return term.<String>match(Terms.cases(
-            appl -> tf.apply(appl).orElseGet(() -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited, maxDepth - 1, specializedTermFormatter) + ")"),
-            list -> tf.apply(list).orElseGet(() -> toString(list, stack, visited, maxDepth, specializedTermFormatter)),
-            string -> tf.apply(string).orElseGet(() -> string.toString()),
-            integer -> tf.apply(integer).orElseGet(() -> integer.toString()),
-            blob -> tf.apply(blob).orElseGet(() -> blob.toString()),
-            var -> toString(var, stack, visited, maxDepth, specializedTermFormatter)
-        ));
-        // @formatter:on
+        if(term.termTag() == ITerm.Tag.ITermVar) {
+            ITermVar var = (ITermVar) term;
+            return toString(var, stack, visited, maxDepth,
+                specializedTermFormatter);
+        }
+        final Optional<String> formatted =
+            specializedTermFormatter.formatSpecialized(term, this,
+                st -> toString(st, stack, visited, maxDepth - 1, specializedTermFormatter));
+        switch(term.termTag()) {
+            case IApplTerm: {
+                IApplTerm appl = (IApplTerm) term;
+                return formatted.orElseGet(
+                    () -> appl.getOp() + "(" + toStrings(appl.getArgs(), stack, visited,
+                        maxDepth - 1, specializedTermFormatter) + ")");
+            }
+
+            case IConsTerm:
+            case INilTerm: {
+                IListTerm list = (IListTerm) term;
+                return formatted.orElseGet(
+                    () -> toString(list, stack, visited, maxDepth,
+                        specializedTermFormatter));
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return formatted.orElseGet(term::toString);
+            }
+
+            case ITermVar: {
+                // impossible branch due to earlier if + return
+                break;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private String toString(IListTerm list, final java.util.Map<ITermVar, String> stack,
@@ -416,30 +490,36 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
         sb.append("[");
         while(list != null) {
             if(remaining == 0) {
-                if(list.match(ListTerms.<Boolean>cases().nil(nil -> false).otherwise(l -> true))) {
+                if(list.listTermTag() != IListTerm.Tag.INilTerm) {
                     sb.append("|…");
                 }
                 break;
             }
-            list = list.match(ListTerms.cases(
-            // @formatter:off
-                cons -> {
+            switch(list.listTermTag()) {
+                case IConsTerm: { IConsTerm cons = (IConsTerm) list;
                     if(tail.getAndSet(true)) {
                         sb.append(",");
                     }
-                    sb.append(toString(cons.getHead(), stack, visited, maxDepth - 1, specializedTermFormatter));
-                    return cons.getTail();
-                },
-                nil -> {
-                    return null;
-                },
-                var -> {
-                    sb.append("|");
-                    sb.append(toString(var, stack, visited, maxDepth - 1, specializedTermFormatter));
-                    return null;
+                    sb.append(
+                        toString(cons.getHead(), stack, visited, maxDepth - 1,
+                            specializedTermFormatter));
+                    list =  cons.getTail();
+                    break;
                 }
-                // @formatter:on
-            ));
+
+                case INilTerm: {
+                    list = null;
+                    break;
+                }
+
+                case ITermVar: { ITermVar var = (ITermVar) list;
+                    sb.append("|");
+                    sb.append(toString(var, stack, visited, maxDepth - 1,
+                        specializedTermFormatter));
+                    list = null;
+                    break;
+                }
+            }
             remaining--;
         }
         sb.append("]");

@@ -115,14 +115,10 @@ public class CountingTcRelation<V> implements ITcRelation<V> {
     public void deleteTupleEnd(V deleted) {
         Set<V> sourcesToDelete = CollectionsFactory.createSet();
         Set<V> targetsToDelete = CollectionsFactory.createSet();
-        
-        for (V target : tuplesForward.lookupOrEmpty(deleted).distinctValues()) {
-            targetsToDelete.add(target);
-        }
+
+        targetsToDelete.addAll(tuplesForward.lookupOrEmpty(deleted).distinctValues());
         if (tuplesBackward != null) {
-            for (V source : tuplesBackward.lookupOrEmpty(deleted).distinctValues()) {
-                sourcesToDelete.add(source);
-            }
+            sourcesToDelete.addAll(tuplesBackward.lookupOrEmpty(deleted).distinctValues());
         } else {
             for (V sourceCandidate : tuplesForward.distinctKeys()) {
                 if (tuplesForward.lookupOrEmpty(sourceCandidate).containsNonZero(deleted))

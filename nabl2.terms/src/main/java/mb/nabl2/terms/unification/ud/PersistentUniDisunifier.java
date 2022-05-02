@@ -114,9 +114,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             if((r = unifier.unify(left, right, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> {
-                return new ImmutableResult<>(r.result(), ud);
-            });
+            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> new ImmutableResult<>(r.result(), ud));
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(
@@ -126,9 +124,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             if((r = unifier.unify(equalities, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> {
-                return new ImmutableResult<>(r.result(), ud);
-            });
+            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> new ImmutableResult<>(r.result(), ud));
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> unify(IUnifier other,
@@ -137,9 +133,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             if((r = unifier.unify(other, isRigid).orElse(null)) == null) {
                 return Optional.empty();
             }
-            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> {
-                return new ImmutableResult<>(r.result(), ud);
-            });
+            return normalizeDiseqs(r.unifier(), disequalities).map(ud -> new ImmutableResult<>(r.result(), ud));
         }
 
         @Override public Optional<IUniDisunifier.Result<IUnifier.Immutable>> uniDisunify(IUniDisunifier other,
@@ -156,9 +150,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
                     unifier.addRangeVar(var, 1);
                 }
             }
-            return normalizeDiseqs(unifier.freeze(), disequalities.__insertAll(other.disequalities())).map(ud -> {
-                return new ImmutableResult<>(r.result(), ud);
-            });
+            return normalizeDiseqs(unifier.freeze(), disequalities.__insertAll(other.disequalities())).map(ud -> new ImmutableResult<>(r.result(), ud));
         }
 
         ///////////////////////////////////////////

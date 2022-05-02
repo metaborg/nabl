@@ -42,13 +42,13 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
         return stateMachine;
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseCompiledQuery(this);
-    }
-
     @Override public <R, E extends Throwable> R matchInResolution(ResolutionFunction1<CResolveQuery, R> onResolveQuery,
             ResolutionFunction1<CCompiledQuery, R> onCompiledQuery) throws ResolutionException, InterruptedException {
         return onCompiledQuery.apply(this);
+    }
+
+    @Override public Tag resolveQueryTag() {
+        return Tag.CCompiledQuery;
     }
 
     @Override public CCompiledQuery withCause(IConstraint cause) {

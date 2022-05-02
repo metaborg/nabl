@@ -81,15 +81,6 @@ public class CExists implements IConstraint, Serializable {
         return new CExists(vars, constraint, cause, criticalEdges, freeVars);
     }
 
-
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseExists(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseExists(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
             vars,
@@ -190,6 +181,10 @@ public class CExists implements IConstraint, Serializable {
         sb.append("{").append(termToString.format(vars)).append("} ");
         sb.append(constraint.toString(termToString));
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CExists;
     }
 
     @Override public String toString() {

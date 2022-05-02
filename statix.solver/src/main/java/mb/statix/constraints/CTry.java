@@ -60,14 +60,6 @@ public class CTry implements IConstraint, Serializable {
         return new CTry(constraint, cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseTry(this);
-    }
-
-    @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
-        return cases.caseTry(this);
-    }
-
     @Override public Set.Immutable<ITermVar> getVars() {
         return constraint.getVars();
     }
@@ -107,6 +99,10 @@ public class CTry implements IConstraint, Serializable {
         sb.append(constraint.toString(termToString));
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override public Tag constraintTag() {
+        return Tag.CTry;
     }
 
     @Override public String toString() {

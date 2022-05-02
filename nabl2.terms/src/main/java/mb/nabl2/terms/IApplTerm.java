@@ -12,4 +12,7 @@ public interface IApplTerm extends ITerm {
 
     @Override IApplTerm withAttachments(IAttachments value);
 
+    @Override default Tag termTag() {
+        return Tag.IApplTerm;
+    }
 }

@@ -1,22 +1,27 @@
 package mb.nabl2.terms.substitution;
 
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.util.Set;
-
 import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class Replacement implements IReplacement {
 
@@ -51,26 +56,38 @@ public class Replacement implements IReplacement {
     }
 
     @Override public ITerm apply(ITerm term) {
-        // @formatter:off
-        return term.match(Terms.cases(
-            appl -> {
+        // Cannot happen
+        switch(term.termTag()) {
+            case IApplTerm: {
                 final IApplTerm newAppl = (IApplTerm) replace(term);
                 if(!traverseSubTerms) {
                     return newAppl;
                 }
                 final ImmutableList<ITerm> newArgs;
-                if((newArgs = Terms.applyLazy(newAppl.getArgs(), this::apply)) == null) {
+                if((newArgs = Terms.applyLazy(newAppl.getArgs(), this::apply))
+                    == null) {
                     return newAppl;
                 }
-                return B.newAppl(newAppl.getOp(), newArgs, appl.getAttachments());
-            },
-            list -> apply(list),
-            string -> replace(string),
-            integer -> replace(integer),
-            blob -> replace(blob),
-            var -> var // Cannot happen
-        ));
-        // @formatter:on
+                return B.newAppl(newAppl.getOp(), newArgs, term.getAttachments());
+            }
+
+            case IConsTerm:
+            case INilTerm: {
+                return apply((IListTerm) term);
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return replace(term);
+            }
+
+            case ITermVar: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private IListTerm apply(IListTerm list) {
@@ -78,21 +95,19 @@ public class Replacement implements IReplacement {
         if(!traverseSubTerms) {
             return newList;
         }
-        // @formatter:off
-        return newList.<IListTerm>match(ListTerms.cases(
-            cons -> {
-                final ITerm newHead = apply(cons.getHead());
-                final IListTerm newTail = apply(cons.getTail());
+        // Cannot happen
+        if(newList.listTermTag() == IListTerm.Tag.IConsTerm) {
+            IConsTerm cons = (IConsTerm) newList;
+            final ITerm newHead = apply(cons.getHead());
+            final IListTerm newTail = apply(cons.getTail());
 
-                if(newHead != cons.getHead() || newTail != cons.getTail()) {
-                    B.newCons(newHead, newTail, cons.getAttachments());
-                }
-                return cons;
-            },
-            nil -> nil,
-            var -> var // Cannot happen
-        ));
-        // @formatter:on
+            if(newHead != cons.getHead() || newTail != cons.getTail()) {
+                B.newCons(newHead, newTail, cons.getAttachments());
+            }
+            return cons;
+        } else {
+            return newList;
+        }
     }
 
 

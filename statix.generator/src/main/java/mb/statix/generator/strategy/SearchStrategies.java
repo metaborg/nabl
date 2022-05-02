@@ -1,5 +1,6 @@
 package mb.statix.generator.strategy;
 
+import java.util.EnumSet;
 import java.util.Map;
 
 import org.metaborg.util.functions.Action1;
@@ -201,13 +202,15 @@ public final class SearchStrategies {
 
     public static  SearchStrategy<SearchState, SearchState> mapPred(String pattern, Function1<CUser, IConstraint> f) {
         final mb.statix.generator.predicate.Match match = new mb.statix.generator.predicate.Match(pattern);
-        return map(Constraints.bottomup(Constraints.<IConstraint>cases().user(c -> {
-            if(match.test(c)) {
-                return f.apply(c);
-            } else {
-                return c;
+        return map(Constraints.bottomup(constraint -> {
+            if(constraint.constraintTag() == IConstraint.Tag.CUser) {
+                CUser c = (CUser) constraint;
+                if(match.test(c)) {
+                    return f.apply(c);
+                }
             }
-        }).otherwise(c -> c), false));
+            return constraint;
+        }, false));
     }
 
     public static  SearchStrategy<SearchState, SearchState> addAuxPred(String pattern, Function1<CUser, IConstraint> f) {
@@ -216,12 +219,14 @@ public final class SearchStrategies {
 
     public static  SearchStrategy<SearchState, SearchState> dropPred(String pattern) {
         final mb.statix.generator.predicate.Match match = new mb.statix.generator.predicate.Match(pattern);
-        return filter(Constraints.<Boolean>cases().user(c -> !match.test(c)).otherwise(c -> true)::apply);
+        return filter(constraint -> constraint.constraintTag() != IConstraint.Tag.CUser || !match.test(
+            (CUser) constraint));
     }
 
+    public static final EnumSet<IConstraint.Tag> astTags = EnumSet.of(IConstraint.Tag.CAstId, IConstraint.Tag.CAstProperty);
+
     public static SearchStrategy<SearchState, SearchState> dropAst() {
-        return filter(
-                Constraints.<Boolean>cases().termId(c -> false).termProperty(c -> false).otherwise(c -> true)::apply);
+        return filter(constraint -> !astTags.contains(constraint.constraintTag()));
     }
 
 

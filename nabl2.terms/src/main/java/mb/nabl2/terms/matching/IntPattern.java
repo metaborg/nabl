@@ -11,7 +11,12 @@ import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IIntTerm;
+import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
@@ -43,18 +48,28 @@ class IntPattern extends Pattern {
 
     @Override protected boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
             Eqs eqs) {
-        // @formatter:off
-        return unifier.findTerm(term).match(Terms.<Boolean>cases()
-            .integer(intTerm -> {
+        final IntPattern pattern = this;
+        ITerm subj = unifier.findTerm(term);
+        switch(subj.termTag()) {
+            case IIntTerm: { IIntTerm intTerm = (IIntTerm) subj;
                 return intTerm.getValue() == value;
-            }).var(v -> {
-                eqs.add(v, this);
+            }
+
+            case ITermVar: { ITermVar v = (ITermVar) subj;
+                eqs.add(v, pattern);
                 return true;
-            }).otherwise(t -> {
+            }
+
+            case IApplTerm:
+            case IConsTerm:
+            case INilTerm:
+            case IStringTerm:
+            case IBlobTerm: {
                 return false;
-            })
-        );
-        // @formatter:on
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     @Override public IntPattern apply(IRenaming subst) {

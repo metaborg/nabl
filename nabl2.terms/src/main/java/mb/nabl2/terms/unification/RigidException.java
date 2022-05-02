@@ -17,9 +17,9 @@ public class RigidException extends Exception {
         this.vars = ImmutableSet.of(var);
     }
 
-    public RigidException(ITermVar var1, ITermVar var2) {
+    public RigidException(ITermVar var, ITermVar var2) {
         super("rigid", null, false, false);
-        this.vars = ImmutableSet.of(var1, var2);
+        this.vars = ImmutableSet.of(var, var2);
     }
 
     public RigidException(Iterable<ITermVar> vars) {

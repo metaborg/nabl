@@ -45,4 +45,12 @@ public interface IListTerm extends ITerm {
     @Override
     IListTerm withAttachments(IAttachments value);
 
+    Tag listTermTag();
+
+    enum Tag {
+        IConsTerm,
+        INilTerm,
+        ITermVar
+    }
+
 }

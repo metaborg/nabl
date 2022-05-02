@@ -2,6 +2,7 @@ package mb.nabl2.terms.unification.u;
 
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -18,15 +19,18 @@ import org.metaborg.util.tuple.Tuple2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -145,7 +149,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private final Predicate1<ITermVar> isRigid;
             private final Deque<Map.Entry<ITerm, ITerm>> worklist = new ArrayDeque<>();
-            private final List<ITermVar> result = Lists.newArrayList();
+            private final List<ITermVar> result = new ArrayList<>();
 
             public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, Predicate1<ITermVar> isRigid) {
                 super(unifier);
@@ -201,114 +205,202 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             }
 
             private boolean unifyTerms(final ITerm left, final ITerm right) throws RigidException {
-                // @formatter:off
-                return left.matchOrThrow(Terms.<Boolean,RigidException>checkedCases(
-                    applLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .appl(applRight -> {
-                            return applLeft.getArity() == applRight.getArity() &&
-                                    applLeft.getOp().equals(applRight.getOp()) &&
-                                    unifys(applLeft.getArgs(), applRight.getArgs());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, applLeft)  ;
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    listLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .list(listRight -> {
-                            return unifyLists(listLeft, listRight);
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, listLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    stringLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .string(stringRight -> {
-                            return stringLeft.getValue().equals(stringRight.getValue());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, stringLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    integerLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .integer(integerRight -> {
-                            return integerLeft.getValue() == integerRight.getValue();
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, integerLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    blobLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .blob(blobRight -> {
-                            return blobLeft.getValue().equals(blobRight.getValue());
-                        })
-                        .var(varRight -> {
-                            return unifyTerms(varRight, blobLeft);
-                        })
-                        .otherwise(t -> {
-                            return false;
-                        })
-                    ),
-                    varLeft -> right.matchOrThrow(Terms.<Boolean,RigidException>checkedCases()
-                        .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
-                        })
-                        .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
-                        })
-                    )
-                ));
-                // @formatter:on
+                switch(left.termTag()) {
+                    case IApplTerm: { IApplTerm applTerm = (IApplTerm) left;
+                        switch(right.termTag()) {
+                            case IApplTerm: { IApplTerm applRight = (IApplTerm) right;
+                                return applTerm.getArity() == applRight.getArity() &&
+                                    applTerm.getOp().equals(applRight.getOp()) &&
+                                    unifys(applTerm.getArgs(), applRight.getArgs());
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyTerms(varRight, applTerm);
+                            }
+                            case IConsTerm:
+                            case INilTerm:
+                            case IStringTerm:
+                            case IIntTerm:
+                            case IBlobTerm: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+
+                    case IConsTerm:
+                    case INilTerm: { IListTerm list = (IListTerm) left;
+                        switch(right.termTag()) {
+                            case IConsTerm:
+                            case INilTerm: { IListTerm listRight = (IListTerm) right;
+                                return unifyLists(list, listRight);
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyTerms(varRight, list);
+                            }
+                            case IApplTerm:
+                            case IStringTerm:
+                            case IIntTerm:
+                            case IBlobTerm: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+
+                    case IStringTerm: { IStringTerm string = (IStringTerm) left;
+                        switch(right.termTag()) {
+                            case IStringTerm: { IStringTerm stringRight = (IStringTerm) right;
+                                return string.getValue().equals(stringRight.getValue());
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyTerms(varRight, string);
+                            }
+                            case IApplTerm:
+                            case IConsTerm:
+                            case INilTerm:
+                            case IIntTerm:
+                            case IBlobTerm: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+
+                    case IIntTerm: { IIntTerm integer = (IIntTerm) left;
+                        switch(right.termTag()) {
+                            case IIntTerm: { IIntTerm integerRight = (IIntTerm) right;
+                                return integer.getValue() == integerRight.getValue();
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyTerms(varRight, integer);
+                            }
+                            case IApplTerm:
+                            case IConsTerm:
+                            case INilTerm:
+                            case IStringTerm:
+                            case IBlobTerm: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+
+                    case IBlobTerm: { IBlobTerm blob = (IBlobTerm) left;
+                        switch(right.termTag()) {
+                            case IBlobTerm: { IBlobTerm blobRight = (IBlobTerm) right;
+                                return blob.getValue().equals(blobRight.getValue());
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyTerms(varRight, blob);
+                            }
+                            case IApplTerm:
+                            case IConsTerm:
+                            case INilTerm:
+                            case IStringTerm:
+                            case IIntTerm: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+
+                    case ITermVar: { ITermVar var = (ITermVar) left;
+                        switch(right.termTag()) {
+                            case IApplTerm:
+                            case IConsTerm:
+                            case INilTerm:
+                            case IStringTerm:
+                            case IIntTerm:
+                            case IBlobTerm: {
+                                return unifyVarTerm(var, right);
+                            }
+                            case ITermVar: { ITermVar varRight = (ITermVar) right;
+                                return unifyVars(var, varRight);
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for ITerm subclass/tag");
+                    }
+                }
+                // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                throw new RuntimeException("Missing case for ITerm subclass/tag");
             }
 
-            private boolean unifyLists(final IListTerm left, final IListTerm right) throws RigidException {
-                // @formatter:off
-                return left.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases(
-                    consLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
-                        .cons(consRight -> {
-                            worklist.push(Tuple2.of(consLeft.getHead(), consRight.getHead()));
-                            worklist.push(Tuple2.of(consLeft.getTail(), consRight.getTail()));
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyLists(varRight, consLeft);
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    nilLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
-                        .nil(nilRight -> {
-                            return true;
-                        })
-                        .var(varRight -> {
-                            return unifyVarTerm(varRight, nilLeft)  ;
-                        })
-                        .otherwise(l -> {
-                            return false;
-                        })
-                    ),
-                    varLeft -> right.matchOrThrow(ListTerms.<Boolean,RigidException>checkedCases()
-                        .var(varRight -> {
-                            return unifyVars(varLeft, varRight);
-                        })
-                        .otherwise(termRight -> {
-                            return unifyVarTerm(varLeft, termRight);
-                        })
-                    )
-                ));
-                // @formatter:on
+            private boolean unifyLists(final IListTerm left, final IListTerm right)
+                throws RigidException {
+                switch(left.listTermTag()) {
+                    case IConsTerm: {
+                        IConsTerm cons = (IConsTerm) left;
+                        switch(right.listTermTag()) {
+                            case IConsTerm: {
+                                IConsTerm consRight = (IConsTerm) right;
+                                worklist.push(Tuple2.of(cons.getHead(), consRight.getHead()));
+                                worklist.push(Tuple2.of(cons.getTail(), consRight.getTail()));
+                                return true;
+                            }
+
+                            case INilTerm: {
+                                INilTerm varRight = (INilTerm) right;
+                                return unifyLists(varRight, cons);
+                            }
+
+                            case ITermVar: {
+                                return false;
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for IListTerm subclass/tag");
+                    }
+
+                    case INilTerm: {
+                        INilTerm nil = (INilTerm) left;
+                        switch(right.listTermTag()) {
+                            case IConsTerm: {
+                                return false;
+                            }
+
+                            case INilTerm: {
+                                return true;
+                            }
+
+                            case ITermVar: {
+                                ITermVar varRight = (ITermVar) right;
+                                return unifyVarTerm(varRight, nil);
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for IListTerm subclass/tag");
+                    }
+
+                    case ITermVar: {
+                        ITermVar var = (ITermVar) left;
+                        switch(right.listTermTag()) {
+                            case IConsTerm: {
+                                IConsTerm termRight = (IConsTerm) right;
+                                return unifyVarTerm(var, termRight);
+                            }
+
+                            case INilTerm: {
+                                INilTerm termRight = (INilTerm) right;
+                                return unifyVarTerm(var, termRight);
+                            }
+
+                            case ITermVar: {
+                                ITermVar varRight = (ITermVar) right;
+                                return unifyVars(var, varRight);
+                            }
+                        }
+                        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                        throw new RuntimeException("Missing case for IListTerm subclass/tag");
+                    }
+                }
+                // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+                throw new RuntimeException("Missing case for IListTerm subclass/tag");
             }
 
             private boolean unifyVarTerm(final ITermVar var, final ITerm term) throws RigidException {
@@ -831,10 +923,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                     && domainSetCache.isEmpty() && rangeSetCache.isEmpty() && varSetCache.isEmpty()) {
                 return Immutable.of(finite);
             } else {
-                final PersistentUnifier.Immutable unifier = new PersistentUnifier.Immutable(finite, reps.freeze(),
+                return new Immutable(finite, reps.freeze(),
                         ranks.freeze(), terms.freeze(), repAndTermVarsCache.freeze(), domainSetCache.freeze(),
                         rangeSetCache.freeze(), varSetCache.freeze());
-                return unifier;
             }
         }
 

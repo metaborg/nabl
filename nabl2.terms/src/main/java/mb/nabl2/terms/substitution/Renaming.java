@@ -1,22 +1,25 @@
 package mb.nabl2.terms.substitution;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.functions.Function1;
+
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class Renaming implements IRenaming {
 
@@ -47,32 +50,53 @@ public class Renaming implements IRenaming {
     }
 
     @Override public ITerm apply(ITerm term) {
-        // @formatter:off
-        return term.match(Terms.cases(
-            appl -> {
+        switch(term.termTag()) {
+            case IApplTerm: {
+                IApplTerm appl = (IApplTerm) term;
                 final ImmutableList<ITerm> newArgs;
                 if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
                     return appl;
                 }
                 return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
-            },
-            list -> apply(list),
-            string -> string,
-            integer -> integer,
-            blob -> blob,
-            var -> rename(var)
-        ));
-        // @formatter:on
+            }
+
+            case IConsTerm: {
+                return apply((IListTerm) term);
+            }
+
+            case ITermVar: {
+                return rename((ITermVar) term);
+            }
+
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private IListTerm apply(IListTerm list) {
-        // @formatter:off
-        return list.<IListTerm>match(ListTerms.cases(
-            cons -> B.newCons(apply(cons.getHead()), apply(cons.getTail()), cons.getAttachments()),
-            nil -> nil,
-            var -> (IListTerm) rename(var)
-        ));
-        // @formatter:on
+        switch(list.listTermTag()) {
+            case IConsTerm: {
+                IConsTerm cons = (IConsTerm) list;
+                return B.newCons(apply(cons.getHead()),
+                    apply(cons.getTail()), cons.getAttachments());
+            }
+
+            case INilTerm: {
+                return list;
+            }
+
+            case ITermVar: {
+                return rename((ITermVar) list);
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IListTerm subclass/tag");
     }
 
     @Override public Map<ITermVar, ITermVar> asMap() {

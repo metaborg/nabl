@@ -33,13 +33,13 @@ public class CResolveQuery extends AResolveQuery implements Serializable {
         super(filter, min, scopeTerm, resultTerm, cause, message);
     }
 
-    @Override public <R> R match(Cases<R> cases) {
-        return cases.caseResolveQuery(this);
-    }
-
     @Override public <R, E extends Throwable> R matchInResolution(ResolutionFunction1<CResolveQuery, R> onResolveQuery,
             ResolutionFunction1<CCompiledQuery, R> onCompiledQuery) throws ResolutionException, InterruptedException {
         return onResolveQuery.apply(this);
+    }
+
+    @Override public Tag resolveQueryTag() {
+        return Tag.CResolveQuery;
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {

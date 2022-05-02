@@ -1,22 +1,24 @@
 package mb.nabl2.terms.substitution;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public abstract class PersistentSubstitution implements ISubstitution {
 
@@ -48,42 +50,61 @@ public abstract class PersistentSubstitution implements ISubstitution {
         if(term.isGround()) {
             return term;
         }
-        // @formatter:off
-        return term.match(Terms.cases(
-            appl -> {
+        switch(term.termTag()) {
+            case IApplTerm: {
+                IApplTerm appl = (IApplTerm) term;
                 final ImmutableList<ITerm> newArgs;
-                if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
+                if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply))
+                    == null) {
                     return appl;
                 }
                 return B.newAppl(appl.getOp(), newArgs, appl.getAttachments());
-            },
-            list -> apply(list),
-            string -> string,
-            integer -> integer,
-            blob -> blob,
-            var -> apply(var)
-        ));
-        // @formatter:on
+            }
+
+            case IConsTerm:
+            case INilTerm: {
+                return apply((IListTerm) term);
+            }
+
+            case ITermVar: {
+                return apply((ITermVar) term);
+            }
+
+            case IStringTerm:
+            case IBlobTerm:
+            case IIntTerm: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     private IListTerm apply(IListTerm list) {
         if(list.isGround()) {
             return list;
         }
-        // @formatter:off
-        return list.<IListTerm>match(ListTerms.cases(
-            cons -> {
+        switch(list.listTermTag()) {
+            case IConsTerm: {
+                IConsTerm cons = (IConsTerm) list;
                 final ITerm newHead = apply(cons.getHead());
                 final IListTerm newTail = apply(cons.getTail());
                 if(newHead == cons.getHead() && newTail == cons.getTail()) {
                     return cons;
                 }
                 return B.newCons(newHead, newTail, cons.getAttachments());
-            },
-            nil -> nil,
-            var -> (IListTerm) apply(var)
-        ));
-        // @formatter:on
+            }
+
+            case INilTerm: {
+                return list;
+            }
+
+            case ITermVar: {
+                return (IListTerm) apply((ITermVar) list);
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IListTerm subclass/tag");
     }
 
     private ITerm apply(ITermVar var) {

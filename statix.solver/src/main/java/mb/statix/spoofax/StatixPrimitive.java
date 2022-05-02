@@ -43,6 +43,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
+import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
@@ -236,27 +237,13 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     }
 
     private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
-        // @formatter:off
-        final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
-            onArith -> Stream.empty(),
-            onConj -> Stream.empty(),
-            onEqual -> Stream.empty(),
-            onExists -> Stream.empty(),
-            onFalse -> Stream.empty(),
-            onInequal -> Stream.empty(),
-            onNew -> Stream.empty(),
-            onResolveQuery -> Stream.empty(),
-            onTellEdge -> Stream.empty(),
-            onTermId -> Stream.empty(),
-            onTermProperty -> Stream.empty(),
-            onTrue -> Stream.empty(),
-            onTry -> Stream.empty(),
-            onUser -> onUser.args().stream()
-        );
-        return terms.apply(constraint)
+        if(constraint.constraintTag() == IConstraint.Tag.CUser) {
+            CUser onUser = (CUser) constraint;
+            return onUser.args().stream()
                 .flatMap(t -> Streams.stream(getOriginTerm(t, unifier)))
                 .findFirst();
-        // @formatter:on
+        }
+        return Optional.empty();
     }
 
     private static Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {

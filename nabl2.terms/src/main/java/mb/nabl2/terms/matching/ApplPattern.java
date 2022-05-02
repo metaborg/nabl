@@ -15,7 +15,12 @@ import org.metaborg.util.functions.Function1;
 import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
+import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IIntTerm;
+import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
@@ -57,22 +62,32 @@ class ApplPattern extends Pattern {
 
     @Override protected boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
             Eqs eqs) {
-        // @formatter:off
-        return unifier.findTerm(term).match(Terms.<Boolean>cases()
-            .appl(applTerm -> {
-                if(applTerm.getArity() == this.args.size() && applTerm.getOp().equals(op)) {
+        final ApplPattern pattern = this;
+        ITerm subj = unifier.findTerm(term);
+        switch(subj.termTag()) {
+            case IApplTerm: { IApplTerm applTerm = (IApplTerm) subj;
+                if(applTerm.getArity() == pattern.args.size() && applTerm.getOp().equals(op)) {
                     return matchTerms(args, applTerm.getArgs(), subst, unifier, eqs);
                 } else {
                     return false;
                 }
-            }).var(v -> {
-                eqs.add(v, this);
+            }
+
+            case ITermVar: { ITermVar v = (ITermVar) subj;
+                eqs.add(v, pattern);
                 return true;
-            }).otherwise(t -> {
+            }
+
+            case IConsTerm:
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
                 return false;
-            })
-        );
-        // @formatter:on
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     @Override public Pattern apply(IRenaming subst) {

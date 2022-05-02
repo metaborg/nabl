@@ -8,13 +8,14 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function2;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IConsTerm;
 import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 
 @Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
@@ -94,23 +95,30 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         sb.append(getHead());
-        getTail().match(ListTerms.casesFix(
-        // @formatter:off
-            (f,cons) -> {
-                sb.append(",");
-                sb.append(cons.getHead());
-                return cons.getTail().match(f);
-            },
-            (f,nil) -> unit,
-            (f,var) -> {
-                sb.append("|");
-                sb.append(var);
-                return unit;
-            }
-            // @formatter:on
-        ));
+        toString(getTail(), sb);
         sb.append("]");
         return sb.toString();
+    }
+
+    private static void toString(IListTerm subj, StringBuilder sb) {
+        switch(subj.listTermTag()) {
+            case IConsTerm: { IConsTerm cons = (IConsTerm) subj;
+                sb.append(",");
+                sb.append(cons.getHead());
+                toString(cons.getTail(), sb);
+                break;
+            }
+
+            case INilTerm: {
+                break;
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) subj;
+                sb.append("|");
+                sb.append(var);
+                break;
+            }
+        }
     }
 
 }
