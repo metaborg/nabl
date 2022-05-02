@@ -47,6 +47,7 @@ import mb.statix.spec.Rule;
 public class Patching {
 
     // Collect domain of scopes.
+    // FIXME: Pass transients down recursive calls
 
     public static Set.Immutable<Scope> ruleScopes(Rule rule) {
         // @formatter:off

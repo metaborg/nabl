@@ -11,7 +11,7 @@ import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.oopsla20.path.IScopePath;
 import mb.scopegraph.oopsla20.reference.Env;
 
-@Value.Immutable(prehash = false)
+@Value.Immutable(prehash = true)
 public abstract class APQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
@@ -45,15 +45,8 @@ public abstract class APQuery<S, L, D> implements IWaitFor<S, L, D> {
      * The tokens CloseScope & CloseLabel are created for such checks, and must have structural equality.
      */
 
-    private volatile int hashCode;
-
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = super.hashCode();
-            hashCode = result;
-        }
-        return hashCode;
+        return super.hashCode();
     }
 
     @Override public boolean equals(Object obj) {
