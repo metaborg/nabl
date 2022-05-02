@@ -174,8 +174,20 @@ public class ListTerms {
     }
 
     public static String toString(IListTerm list) {
-        return list
-                .match(cases(cons -> toStringTail(cons.getHead(), cons.getTail()), nil -> "[]", var -> var.toString()));
+        switch(list.listTermTag()) {
+            case IConsTerm: {
+                IConsTerm cons = (IConsTerm) list;
+                return toStringTail(cons.getHead(), cons.getTail());
+            }
+            case INilTerm: {
+                return "[]";
+            }
+            case ITermVar: {
+                return list.toString();
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IListTerm subclass/tag");
     }
 
     private static String toStringTail(ITerm head, IListTerm tail) {

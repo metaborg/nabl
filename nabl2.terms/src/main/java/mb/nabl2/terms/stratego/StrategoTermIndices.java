@@ -5,10 +5,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
+import org.spoofax.interpreter.terms.IStrategoInt;
 import org.spoofax.interpreter.terms.IStrategoList;
+import org.spoofax.interpreter.terms.IStrategoPlaceholder;
+import org.spoofax.interpreter.terms.IStrategoReal;
+import org.spoofax.interpreter.terms.IStrategoString;
 import org.spoofax.interpreter.terms.IStrategoTerm;
+import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
+import org.spoofax.terms.StrategoTerm;
 import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.TermUtils;
 
@@ -41,21 +48,62 @@ public final class StrategoTermIndices {
         }
 
         private IStrategoTerm index(final IStrategoTerm term) {
-            // @formatter:off
-            IStrategoTerm result = StrategoTerms.match(term,
-                StrategoTerms.<IStrategoTerm>cases(
-                    appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
-                    tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
-                    list -> index(list),
-                    integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
-                    real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
-                    string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                    blob -> new StrategoBlob(blob.value()),
-                    plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
-                ));
-            // @formatter:on
+            IStrategoTerm result;
+            switch(term.getType()) {
+                case APPL: {
+                    IStrategoAppl appl = (IStrategoAppl) term;
+                    result =
+                        termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()),
+                            appl.getAnnotations());
+                    break;
+                }
+                case TUPLE: {
+                    IStrategoTuple tuple = (IStrategoTuple) term;
+                    result = termFactory.makeTuple(index(tuple.getAllSubterms()),
+                        tuple.getAnnotations());
+                    break;
+                }
+                case LIST: {
+                    result = index((IStrategoList) term);
+                    break;
+                }
+                case INT: {
+                    IStrategoInt integer = (IStrategoInt) term;
+                    result = termFactory.annotateTerm(termFactory.makeInt(integer.intValue()),
+                        integer.getAnnotations());
+                    break;
+                }
+                case REAL: {
+                    IStrategoReal real = (IStrategoReal) term;
+                    result = termFactory.annotateTerm(termFactory.makeReal(real.realValue()),
+                        real.getAnnotations());
+                    break;
+                }
+                case STRING: {
+                    IStrategoString string = (IStrategoString) term;
+                    result = termFactory.annotateTerm(termFactory.makeString(string.stringValue()),
+                        string.getAnnotations());
+                    break;
+                }
+                case BLOB: {
+                    StrategoBlob blob = (StrategoBlob) term;
+                    result = new StrategoBlob(blob.value());
+                    break;
+                }
+                case PLACEHOLDER: {
+                    IStrategoPlaceholder plhdr = (IStrategoPlaceholder) term;
+                    result =
+                        termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()),
+                            plhdr.getAnnotations());
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException(
+                        "Unsupported Stratego term type " + term.getType());
+                }
+            }
             final TermIndex index1 = TermIndex.of(resource, ++currentId);
-            final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
+            final TermIndex index2 = TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
             result = put(index2, result, termFactory);
             termFactory.copyAttachments(term, result);
             return result;
@@ -70,8 +118,8 @@ public final class StrategoTermIndices {
             }
             termFactory.copyAttachments(list, result);
             final TermIndex index1 = TermIndex.of(resource, ++currentId);
-            final TermIndex index2 = (TermIndex) TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
-            result = (IStrategoList) put(index2, result, termFactory);
+            final TermIndex index2 = TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
+            result = put(index2, result, termFactory);
             return result;
         }
 
@@ -97,19 +145,60 @@ public final class StrategoTermIndices {
         }
 
         private IStrategoTerm erase(final IStrategoTerm term) {
-            IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm>cases(
-            // @formatter:off
-                            appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()),
-                                    appl.getAnnotations()),
-                            tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
-                            list -> erase(list),
-                            integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
-                            real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
-                            string -> termFactory.annotateTerm(termFactory.makeString(string.stringValue()), string.getAnnotations()),
-                            blob -> new StrategoBlob(blob.value()),
-                            plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
-                    // @formatter:on
-            ));
+            IStrategoTerm result;
+            switch(term.getType()) {
+                case APPL: {
+                    IStrategoAppl appl = (IStrategoAppl) term;
+                    result =
+                        termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()),
+                            appl.getAnnotations());
+                    break;
+                }
+                case TUPLE: {
+                    IStrategoTuple tuple = (IStrategoTuple) term;
+                    result = termFactory.makeTuple(erase(tuple.getAllSubterms()),
+                        tuple.getAnnotations());
+                    break;
+                }
+                case LIST: {
+                    result = erase((IStrategoList) term);
+                    break;
+                }
+                case INT: {
+                    IStrategoInt integer = (IStrategoInt) term;
+                    result = termFactory.annotateTerm(termFactory.makeInt(integer.intValue()),
+                        integer.getAnnotations());
+                    break;
+                }
+                case REAL: {
+                    IStrategoReal real = (IStrategoReal) term;
+                    result = termFactory.annotateTerm(termFactory.makeReal(real.realValue()),
+                        real.getAnnotations());
+                    break;
+                }
+                case STRING: {
+                    IStrategoString string = (IStrategoString) term;
+                    result = termFactory.annotateTerm(termFactory.makeString(string.stringValue()),
+                        string.getAnnotations());
+                    break;
+                }
+                case BLOB: {
+                    StrategoBlob blob = (StrategoBlob) term;
+                    result = new StrategoBlob(blob.value());
+                    break;
+                }
+                case PLACEHOLDER: {
+                    IStrategoPlaceholder plhdr = (IStrategoPlaceholder) term;
+                    result =
+                        termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()),
+                            plhdr.getAnnotations());
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException(
+                        "Unsupported Stratego term type " + term.getType());
+                }
+            }
             termFactory.copyAttachments(term, result);
             result = remove(result, termFactory);
             assert !get(result).isPresent();
@@ -124,7 +213,7 @@ public final class StrategoTermIndices {
                 result = termFactory.makeListCons(erase(list.head()), erase(list.tail()), list.getAnnotations());
             }
             termFactory.copyAttachments(list, result);
-            result = (IStrategoList) remove(result, termFactory);
+            result = remove(result, termFactory);
             assert !get(result).isPresent();
             return result;
         }
@@ -177,7 +266,7 @@ public final class StrategoTermIndices {
         IStrategoTerm idTerm = term.getSubterm(1);
 
         final TermIndex index1 = TermIndex.of(TermUtils.toJavaString(resourceTerm), TermUtils.toJavaInt(idTerm));
-        final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
+        final TermIndex index2 = TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
         return Optional.of(index2);
     }
 

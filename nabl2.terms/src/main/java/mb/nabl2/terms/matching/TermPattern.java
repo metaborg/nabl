@@ -1,7 +1,5 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -10,14 +8,20 @@ import org.metaborg.util.functions.Predicate1;
 
 import com.google.common.collect.ImmutableList;
 
+import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class TermPattern {
 
@@ -30,7 +34,7 @@ public class TermPattern {
         }
 
         public Pattern newAppl(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
-            if(op.equals("")) {
+            if(op.isEmpty()) {
                 throw new IllegalArgumentException();
             }
             return new ApplPattern(op, args, attachments);
@@ -130,29 +134,50 @@ public class TermPattern {
         }
 
         public Pattern fromTerm(ITerm term, Predicate1<ITermVar> isWildcard) {
-            // @formatter:off
-            return term.match(Terms.cases(
-                appl -> {
+            switch(term.termTag()) {
+                case IApplTerm: {
+                    IApplTerm appl = (IApplTerm) term;
                     final List<ITerm> args = appl.getArgs();
-                    final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                    final ImmutableList.Builder<Pattern> newArgs =
+                        ImmutableList.builderWithExpectedSize(args.size());
                     for(ITerm arg : args) {
                         newArgs.add(fromTerm(arg, isWildcard));
                     }
                     return new ApplPattern(appl.getOp(), newArgs.build(), appl.getAttachments());
-                },
-                list -> list.match(ListTerms.cases(
-                    cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard), cons.getAttachments()),
-                    nil -> new NilPattern(nil.getAttachments()),
-                    var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
-                )),
-                string -> new StringPattern(string.getValue(), string.getAttachments()),
-                integer -> new IntPattern(integer.getValue(), integer.getAttachments()),
-                blob -> {
+                }
+
+                case IConsTerm: {
+                    IConsTerm cons = (IConsTerm) term;
+                    return new ConsPattern(fromTerm(cons.getHead(), isWildcard),
+                        fromTerm(cons.getTail(), isWildcard), cons.getAttachments());
+                }
+
+                case INilTerm: {
+                    INilTerm nil = (INilTerm) term;
+                    return new NilPattern(nil.getAttachments());
+                }
+
+                case IStringTerm: {
+                    IStringTerm string = (IStringTerm) term;
+                    return new StringPattern(string.getValue(), string.getAttachments());
+                }
+
+                case IIntTerm: {
+                    IIntTerm integer = (IIntTerm) term;
+                    return new IntPattern(integer.getValue(), integer.getAttachments());
+                }
+
+                case IBlobTerm: {
                     throw new IllegalArgumentException("Cannot create blob patterns.");
-                },
-                var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
-            ));
-            // @formatter:on
+                }
+
+                case ITermVar: {
+                    ITermVar var = (ITermVar) term;
+                    return isWildcard.test(var) ? new PatternVar() : new PatternVar(var);
+                }
+            }
+            // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+            throw new RuntimeException("Missing case for ITerm subclass/tag");
         }
 
         public Optional<ISubstitution.Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms) {

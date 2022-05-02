@@ -1,8 +1,5 @@
 package mb.nabl2.terms.stratego;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -15,11 +12,20 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
+import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 @Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
@@ -108,16 +114,27 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
      * @return The {@link TermIndex} of the first eligible term.
      */
     public static Optional<TermIndex> find(ITerm term) {
-        // @formatter:off
-        return get(term.getAttachments()).map(Optional::of).orElseGet(() ->
-            term.match(Terms.<Optional<TermIndex>>cases()
-                .appl(appl -> find(appl.getArgs().iterator()))
-                .list(list -> list.match(ListTerms.<Optional<TermIndex>>cases()
-                    .cons(cons -> find(cons.getHead()).map(Optional::of).orElseGet(() -> find(cons.getTail())))
-                    .otherwise(__ -> Optional.empty())))
-                .otherwise(__ -> Optional.empty()))
-        );
-        // @formatter:on
+        return get(term.getAttachments()).map(Optional::of).orElseGet(() -> {
+            switch(term.termTag()) {
+                case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                    return find(appl.getArgs().iterator());
+                }
+
+                case IConsTerm: { IConsTerm cons = (IConsTerm) term;
+                    return find(cons.getHead()).map(Optional::of).orElseGet(() -> find(cons.getTail()));
+                }
+
+                case INilTerm:
+                case IStringTerm:
+                case IIntTerm:
+                case IBlobTerm:
+                case ITermVar: {
+                    return Optional.empty();
+                }
+            }
+            // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+            throw new RuntimeException("Missing case for ITerm subclass/tag");
+        });
     }
 
     private static Optional<TermIndex> find(Iterator<ITerm> termIterator) {

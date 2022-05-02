@@ -13,11 +13,14 @@ import org.spoofax.terms.util.TermUtils;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
+import mb.nabl2.terms.IBlobTerm;
+import mb.nabl2.terms.IConsTerm;
+import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
+import mb.nabl2.terms.INilTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.TermBuild;
 
 /**
@@ -38,22 +41,29 @@ public final class StrategoPlaceholders {
      * otherwise, {@code false}
      */
     public static boolean isLiteralVar(ITerm term) {
-        return term.match(Terms.<Boolean>casesFix(
-            (m, appl) ->  {
-                if (!isInjectionConstructor(appl)) return false;
+        // Injection
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                if(!StrategoPlaceholders.isInjectionConstructor(appl))
+                    return false;
                 // Injection
                 return isLiteralVar(appl.getArgs().get(0));
-            },
-            (m, list) -> list.match(ListTerms.<Boolean>casesFix(
-                (lm, cons) -> false,
-                (lm, nil) -> false,
-                (lm, var) -> false
-            )),
-            (m, string) -> false,
-            (m, integer) -> false,
-            (m, blob) -> false,
-            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments()))
-        ));
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) term;
+                return isLiteralSort(getSortFromAttachments(var.getAttachments()));
+            }
+
+            case IConsTerm:
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return false;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     /**
@@ -64,25 +74,35 @@ public final class StrategoPlaceholders {
      * otherwise, {@code false}
      */
     public static boolean containsLiteralVar(ITerm term) {
-        return term.match(Terms.<Boolean>casesFix(
-            (m, appl) ->  {
-                if (isPlaceholder(appl)) {
+        // Placeholder
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                if(StrategoPlaceholders.isPlaceholder(appl)) {
                     // Placeholder
                     return isLiteralSort(getSortFromAttachments(appl.getAttachments()));
                 } else {
-                    return appl.getArgs().stream().anyMatch(a -> a.match(m));
+                    return appl.getArgs().stream().anyMatch(
+                        StrategoPlaceholders::containsLiteralVar);
                 }
-            },
-            (m, list) -> list.match(ListTerms.<Boolean>casesFix(
-                (lm, cons) -> cons.getHead().match(m) || cons.getTail().match(lm),
-                (lm, nil) -> false,
-                (lm, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments()))
-            )),
-            (m, string) -> false,
-            (m, integer) -> false,
-            (m, blob) -> false,
-            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments()))
-        ));
+            }
+
+            case IConsTerm: { IConsTerm cons = (IConsTerm) term;
+                return containsLiteralVar(cons.getHead()) || containsLiteralVar(cons.getTail());
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) term;
+                return isLiteralSort(getSortFromAttachments(var.getAttachments()));
+            }
+
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return false;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     /**
@@ -189,25 +209,38 @@ public final class StrategoPlaceholders {
      * @return the term with its placeholders replaced
      */
     public static ITerm replacePlaceholdersByVariables(ITerm term, PlaceholderVarMap placeholderVarMap) {
-        return term.match(Terms.<ITerm>casesFix(
-            (m, appl) ->  {
-                if (isPlaceholder(appl)) {
+        // Placeholder
+        switch(term.termTag()) {
+            case IApplTerm: {
+                IApplTerm appl = (IApplTerm) term;
+                if(StrategoPlaceholders.isPlaceholder(appl)) {
                     // Placeholder
                     return placeholderVarMap.addPlaceholderMapping(appl);
                 } else {
-                    return TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream().map(a -> a.match(m)).collect(Collectors.toList()), appl.getAttachments());
+                    return TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream()
+                        .map(a -> replacePlaceholdersByVariables(a, placeholderVarMap))
+                        .collect(Collectors.toList()), appl.getAttachments());
                 }
-            },
-            (m, list) -> list.match(ListTerms.<IListTerm>casesFix(
-                (lm, cons) -> TermBuild.B.newCons(cons.getHead().match(m), cons.getTail().match(lm), cons.getAttachments()),
-                (lm, nil) -> nil,
-                (lm, var) -> var
-            )),
-            (m, string) -> string,
-            (m, integer) -> integer,
-            (m, blob) -> blob,
-            (m, var) -> var
-        ));
+            }
+
+            case IConsTerm: {
+                IConsTerm cons = (IConsTerm) term;
+                return TermBuild.B.newCons(
+                    replacePlaceholdersByVariables(cons.getHead(), placeholderVarMap),
+                    (IListTerm) replacePlaceholdersByVariables(cons.getTail(), placeholderVarMap),
+                    cons.getAttachments());
+            }
+
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm:
+            case ITermVar: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     /**
@@ -218,30 +251,59 @@ public final class StrategoPlaceholders {
      * @return the term with its term variables replaced
      */
     public static ITerm replaceVariablesByPlaceholders(ITerm term, PlaceholderVarMap placeholderVarMap) {
-        return term.match(Terms.cases(
-            appl -> {
-                if (isInjectionConstructor(appl) && onlyInjectionConstructorsAndVariables(appl)) {
+        // TODO: Ability to relate placeholders, such that typing in the editor in one placeholder also types in another
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                if(StrategoPlaceholders.isInjectionConstructor(appl)
+                    && onlyInjectionConstructorsAndVariables(appl)) {
                     return getPlaceholderForTerm(appl);
                 } else {
-                    return TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream().map(a -> replaceVariablesByPlaceholders(a, placeholderVarMap)).collect(Collectors.toList()), appl.getAttachments());
+                    return TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream()
+                        .map(a -> replaceVariablesByPlaceholders(a, placeholderVarMap))
+                        .collect(Collectors.toList()), appl.getAttachments());
                 }
-            },
-            list -> replaceVariablesByPlaceholdersInList(list, placeholderVarMap),
-            string -> string,
-            integer -> integer,
-            blob -> blob,
-            // TODO: Ability to relate placeholders, such that typing in the editor in one placeholder also types in another
-            var -> getPlaceholderForVar(var, placeholderVarMap)
-        ));
+            }
+
+            case IConsTerm:
+            case INilTerm: { IListTerm list = (IListTerm) term;
+                return replaceVariablesByPlaceholdersInList(list, placeholderVarMap);
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) term;
+                return getPlaceholderForVar(var, placeholderVarMap);
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     public static IListTerm replaceVariablesByPlaceholdersInList(IListTerm term, PlaceholderVarMap placeholderVarMap) {
-        return term.match(ListTerms.cases(
-            cons -> TermBuild.B.newCons(replaceVariablesByPlaceholders(cons.getHead(), placeholderVarMap), replaceVariablesByPlaceholdersInList(cons.getTail(), placeholderVarMap), cons.getAttachments()),
-            nil -> nil,
-            var -> TermBuild.B.newCons(replaceVariablesByPlaceholders(var, placeholderVarMap), TermBuild.B.newNil())
-            //var -> TermBuild.B.newNil()// var    // FIXME: Should be make a placeholder for list tails?
-        ));
+        //var -> TermBuild.B.newNil()// var    // FIXME: Should be make a placeholder for list tails?
+        switch(term.listTermTag()) {
+            case IConsTerm: { IConsTerm cons = (IConsTerm) term;
+                return TermBuild.B.newCons(
+                    replaceVariablesByPlaceholders(cons.getHead(), placeholderVarMap),
+                    replaceVariablesByPlaceholdersInList(cons.getTail(), placeholderVarMap),
+                    cons.getAttachments());
+            }
+
+            case ITermVar: { ITermVar var = (ITermVar) term;
+                return TermBuild.B.newCons(replaceVariablesByPlaceholders(var, placeholderVarMap),
+                    TermBuild.B.newNil());
+            }
+
+            case INilTerm: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IListTerm subclass/tag");
     }
 
     /**
@@ -253,22 +315,46 @@ public final class StrategoPlaceholders {
      * @return the term with its term variables replaced
      */
     public static ITerm replaceListVariablesByEmptyList(ITerm term) {
-        return term.match(Terms.cases(
-            appl -> TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream().map(StrategoPlaceholders::replaceListVariablesByEmptyList).collect(Collectors.toList()), appl.getAttachments()),
-            list -> replaceListVariablesByEmptyListInList(list),
-            string -> string,
-            integer -> integer,
-            blob -> blob,
-            var -> var
-        ));
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                return TermBuild.B.newAppl(appl.getOp(), appl.getArgs().stream().map(StrategoPlaceholders::replaceListVariablesByEmptyList)
+                    .collect(Collectors.toList()), appl.getAttachments());
+            }
+
+            case IConsTerm:
+            case INilTerm: { IListTerm list = (IListTerm) term;
+                return replaceListVariablesByEmptyListInList(list);
+            }
+
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm:
+            case ITermVar: {
+                return term;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     public static IListTerm replaceListVariablesByEmptyListInList(IListTerm term) {
-        return term.match(ListTerms.cases(
-            cons -> TermBuild.B.newCons(replaceListVariablesByEmptyList(cons.getHead()), replaceListVariablesByEmptyListInList(cons.getTail()), cons.getAttachments()),
-            nil -> nil,
-            var -> TermBuild.B.newNil()
-        ));
+        switch(term.listTermTag()) {
+            case IConsTerm: {
+                IConsTerm cons = (IConsTerm) term;
+                return TermBuild.B.newCons(replaceListVariablesByEmptyList(cons.getHead()),
+                    replaceListVariablesByEmptyListInList(cons.getTail()), cons.getAttachments());
+            }
+
+            case INilTerm: {
+                return term;
+            }
+
+            case ITermVar: {
+                return TermBuild.B.newNil();
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for IListTerm subclass/tag");
     }
 
     public static boolean isInjectionConstructor(ITerm term) {
@@ -314,20 +400,30 @@ public final class StrategoPlaceholders {
     }
 
     public static boolean onlyInjectionConstructorsAndVariables(ITerm term) {
-        return term.match(Terms.cases(
-            appl -> {
-                if (!isInjectionConstructor(appl)) {
+        switch(term.termTag()) {
+            case IApplTerm: { IApplTerm appl = (IApplTerm) term;
+                if(!StrategoPlaceholders.isInjectionConstructor(appl)) {
                     return false;
                 } else {
-                    return appl.getArgs().stream().allMatch(StrategoPlaceholders::onlyInjectionConstructorsAndVariables);
+                    return appl.getArgs().stream()
+                        .allMatch(StrategoPlaceholders::onlyInjectionConstructorsAndVariables);
                 }
-            },
-            list -> false,
-            string -> false,
-            integer -> false,
-            blob -> false,
-            var -> true
-        ));
+            }
+
+            case IConsTerm:
+            case INilTerm:
+            case IStringTerm:
+            case IIntTerm:
+            case IBlobTerm: {
+                return false;
+            }
+
+            case ITermVar: {
+                return true;
+            }
+        }
+        // N.B. don't use this in default case branch, instead use IDE to catch non-exhaustive switch statements
+        throw new RuntimeException("Missing case for ITerm subclass/tag");
     }
 
     /**

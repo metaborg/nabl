@@ -45,10 +45,6 @@ public interface IListTerm extends ITerm {
     @Override
     IListTerm withAttachments(IAttachments value);
 
-    @Override default ITerm.Tag termTag() {
-        return ITerm.Tag.IListTerm;
-    }
-
     Tag listTermTag();
 
     enum Tag {

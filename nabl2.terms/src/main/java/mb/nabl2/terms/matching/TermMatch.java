@@ -2,6 +2,7 @@ package mb.nabl2.terms.matching;
 
 import static mb.nabl2.terms.Terms.TUPLE_OP;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -32,7 +33,6 @@ import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
-import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
 
@@ -63,8 +63,15 @@ public class TermMatch {
         // appl
 
         public IMatcher<IApplTerm> appl() {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<IApplTerm>>cases(Optional::of,
-                    this::empty, this::empty, this::empty, this::empty, this::empty));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
+                    return Optional.of(appl);
+                } else {
+                    return Optional.empty();
+                }
+            };
         }
 
         public <R> IMatcher<R> appl(String op, Function1<? super IApplTerm, R> f) {
@@ -72,23 +79,33 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> appl(Function1<? super IApplTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term)
-                    .match(Terms.<Optional<R>>cases(appl -> Optional.of(f.apply(appl)), this::empty, this::empty,
-                            this::empty, this::empty, this::empty));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
+                    return Optional.of(f.apply(appl));
+                } else {
+                    return Optional.empty();
+                }
+            };
         }
 
         public IMatcher<IApplTerm> appl0(String op) {
-            return appl0(op, (appl) -> appl);
+            return appl0(op, appl -> appl);
         }
 
         public <R> IMatcher<R> appl0(String op, Function1<? super IApplTerm, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 0 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -99,12 +116,16 @@ public class TermMatch {
         public <T, R> IMatcher<R> appl1(String op, IMatcher<? extends T> m,
                 Function2<? super IApplTerm, ? super T, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 1 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     return m.match(appl.getArgs().get(0), unifier).map(t -> f.apply(appl, t));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -115,14 +136,18 @@ public class TermMatch {
         public <T1, T2, R> IMatcher<R> appl2(String op, IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
                 Function3<? super IApplTerm, ? super T1, ? super T2, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 2 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
                     Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1), unifier);
                     return Optionals.lift(o1, o2, (t1, t2) -> f.apply(appl, t1, t2));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -134,15 +159,20 @@ public class TermMatch {
         public <T1, T2, T3, R> IMatcher<R> appl3(String op, IMatcher<? extends T1> m1, IMatcher<? extends T2> m2,
                 IMatcher<? extends T3> m3, Function4<? super IApplTerm, ? super T1, ? super T2, ? super T3, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 3 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
                     Optional<? extends T1> o1 = m1.match(appl.getArgs().get(0), unifier);
                     Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1), unifier);
                     Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2), unifier);
-                    return Optionals.lift(o1, o2, o3, (t1, t2, t3) -> f.apply(appl, t1, t2, t3));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                    return Optionals.lift(o1, o2, o3,
+                        (t1, t2, t3) -> f.apply(appl, t1, t2, t3));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -155,7 +185,9 @@ public class TermMatch {
                 IMatcher<? extends T3> m3, IMatcher<? extends T4> m4,
                 Function5<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 4 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
@@ -163,8 +195,11 @@ public class TermMatch {
                     Optional<? extends T2> o2 = m2.match(appl.getArgs().get(1), unifier);
                     Optional<? extends T3> o3 = m3.match(appl.getArgs().get(2), unifier);
                     Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3), unifier);
-                    return Optionals.lift(o1, o2, o3, o4, (t1, t2, t3, t4) -> f.apply(appl, t1, t2, t3, t4));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                    return Optionals.lift(o1, o2, o3, o4,
+                        (t1, t2, t3, t4) -> f.apply(appl, t1, t2, t3, t4));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -178,7 +213,9 @@ public class TermMatch {
                 IMatcher<? extends T5> m5,
                 Function6<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 5 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
@@ -188,8 +225,10 @@ public class TermMatch {
                     Optional<? extends T4> o4 = m4.match(appl.getArgs().get(3), unifier);
                     Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4), unifier);
                     return Optionals.lift(o1, o2, o3, o4, o5,
-                            (t1, t2, t3, t4, t5) -> f.apply(appl, t1, t2, t3, t4, t5));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                        (t1, t2, t3, t4, t5) -> f.apply(appl, t1, t2, t3, t4, t5));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -203,7 +242,9 @@ public class TermMatch {
                 IMatcher<? extends T5> m5, IMatcher<T6> m6,
                 Function7<? super IApplTerm, ? super T1, ? super T2, ? super T3, ? super T4, ? super T5, ? super T6, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(appl -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IApplTerm) {
+                    IApplTerm appl = (IApplTerm) subj;
                     if(!(appl.getArity() == 6 && op.equals(appl.getOp()))) {
                         return Optional.empty();
                     }
@@ -214,8 +255,10 @@ public class TermMatch {
                     Optional<? extends T5> o5 = m5.match(appl.getArgs().get(4), unifier);
                     Optional<? extends T6> o6 = m6.match(appl.getArgs().get(5), unifier);
                     return Optionals.lift(o1, o2, o3, o4, o5, o6,
-                            (t1, t2, t3, t4, t5, t6) -> f.apply(appl, t1, t2, t3, t4, t5, t6));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                        (t1, t2, t3, t4, t5, t6) -> f.apply(appl, t1, t2, t3, t4, t5, t6));
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -285,14 +328,18 @@ public class TermMatch {
         // list
 
         public IMatcher<IListTerm> list() {
-            return list((l) -> l);
+            return list(l -> l);
         }
 
         public <R> IMatcher<R> list(Function1<? super IListTerm, R> f) {
             final Function1<? super IListTerm, ? extends Optional<R>> g = list -> Optional.of(f.apply(list));
             return (term, unifier) -> {
-                return unifier.findTerm(term)
-                        .match(Terms.<Optional<R>>cases(this::empty, g, this::empty, this::empty, this::empty, g));
+                ITerm subj = unifier.findTerm(term);
+                if(subj instanceof IListTerm) {
+                    return g.apply((IListTerm) subj);
+                } else {
+                    return Optional.empty();
+                }
             };
         }
 
@@ -307,34 +354,44 @@ public class TermMatch {
         public <T, R> IMatcher<R> listElems(IMatcher<T> m,
                 Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
             return (term, unifier) -> {
-                return unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                    List<Optional<T>> os = Lists.newArrayList();
+                ITerm subj = unifier.findTerm(term);
+                if(subj instanceof IListTerm && subj.termTag() != ITerm.Tag.ITermVar) {
+                    IListTerm list = (IListTerm) subj;
+                    List<Optional<T>> os = new ArrayList<>();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t, unifier));
                     }
-                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
-                }, this::empty, this::empty, this::empty, this::empty));
+                    return Optionals.sequence(os)
+                        .map(ts -> f.apply(list, ImmutableList.copyOf(ts)));
+                }
+                return Optional.empty();
             };
         }
 
         public <R> IMatcher<R> cons(Function1<? super IConsTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.of(f.apply(cons)),
-                        nil -> Optional.empty(), var -> Optional.empty()));
-            }, this::empty, this::empty, this::empty, this::empty));
-
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IConsTerm) {
+                    IConsTerm cons = (IConsTerm) subj;
+                    return Optional.of(f.apply(cons));
+                }
+                return Optional.empty();
+            };
         }
 
         public <THd, TTl, R> IMatcher<R> cons(IMatcher<? extends THd> mhd, IMatcher<? extends TTl> mtl,
                 Function3<? super IConsTerm, ? super THd, ? super TTl, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                return list.match(ListTerms.<Optional<R>>cases(cons -> {
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IConsTerm) {
+                    IConsTerm cons = (IConsTerm) subj;
                     Optional<? extends THd> ohd = mhd.match(cons.getHead(), unifier);
                     Optional<? extends TTl> otl = mtl.match(cons.getTail(), unifier);
-                    return Optionals.lift(ohd, otl, (thd, ttl) -> f.apply(cons, thd, ttl));
-                }, this::empty, this::empty));
-            }, this::empty, this::empty, this::empty, this::empty));
-
+                    return Optionals.lift(ohd, otl,
+                        (thd, ttl) -> f.apply(cons, thd, ttl));
+                }
+                return Optional.empty();
+            };
         }
 
         public IMatcher<INilTerm> nil() {
@@ -342,11 +399,14 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> nil(Function1<? super INilTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                return list.match(ListTerms.<Optional<R>>cases(cons -> Optional.empty(),
-                        nil -> Optional.of(f.apply(nil)), var -> Optional.empty()));
-            }, this::empty, this::empty, this::empty, this::empty));
-
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.INilTerm) {
+                    INilTerm nil = (INilTerm) subj;
+                    return Optional.of(f.apply(nil));
+                }
+                return Optional.empty();
+            };
         }
 
         // string
@@ -356,12 +416,18 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> string(Function1<? super IStringTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, this::empty,
-                    string -> Optional.of(f.apply(string)), this::empty, this::empty, this::empty));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IStringTerm) {
+                    IStringTerm string = (IStringTerm) subj;
+                    return Optional.of(f.apply(string));
+                }
+                return Optional.empty();
+            };
         }
 
         public IMatcher<String> stringValue() {
-            return string(s -> s.getValue());
+            return string(IStringTerm::getValue);
         }
 
         // integer
@@ -371,12 +437,18 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> integer(Function1<? super IIntTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, this::empty,
-                    this::empty, integer -> Optional.of(f.apply(integer)), this::empty, this::empty));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IIntTerm) {
+                    IIntTerm integer = (IIntTerm) subj;
+                    return Optional.of(f.apply(integer));
+                }
+                return Optional.empty();
+            };
         }
 
         public IMatcher<Integer> integerValue() {
-            return integer(i -> i.getValue());
+            return integer(IIntTerm::getValue);
         }
 
         // blob
@@ -386,8 +458,14 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> blob(Function1<? super IBlobTerm, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, this::empty,
-                    this::empty, this::empty, blob -> Optional.of(f.apply(blob)), this::empty));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.IBlobTerm) {
+                    IBlobTerm blob = (IBlobTerm) subj;
+                    return Optional.of(f.apply(blob));
+                }
+                return Optional.empty();
+            };
         }
 
         @SuppressWarnings("unchecked") public <T> IMatcher<T> blobValue(Class<T> blobClass) {
@@ -407,8 +485,14 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> var(Function1<? super ITermVar, R> f) {
-            return (term, unifier) -> unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, this::empty,
-                    this::empty, this::empty, this::empty, var -> Optional.of(f.apply(var))));
+            return (term, unifier) -> {
+                ITerm subj = unifier.findTerm(term);
+                if(subj.termTag() == ITerm.Tag.ITermVar) {
+                    ITermVar var = (ITermVar) subj;
+                    return Optional.of(f.apply(var));
+                }
+                return Optional.empty();
+            };
         }
 
         /**
@@ -461,10 +545,8 @@ public class TermMatch {
         }
 
         public <R> IMatcher<R> req(String msg, IMatcher<R> matcher) {
-            return (term, unifier) -> {
-                return matcher.match(term, unifier).map(Optional::of)
-                        .orElseThrow(() -> new IllegalArgumentException(msg + ": " + Unifiers.Immutable.of().toString(term, 4)));
-            };
+            return (term, unifier) -> matcher.match(term, unifier).map(Optional::of)
+                    .orElseThrow(() -> new IllegalArgumentException(msg + ": " + Unifiers.Immutable.of().toString(term, 4)));
         }
 
         @SuppressWarnings("unchecked") public <R extends ITerm> IMatcher<R> preserveAttachments(IMatcher<R> matcher) {
@@ -499,11 +581,6 @@ public class TermMatch {
             // @formatter:on
         }
 
-        // util
-
-        private <T> Optional<T> empty(@SuppressWarnings("unused") ITerm term) {
-            return Optional.empty();
-        }
     }
 
     @FunctionalInterface
@@ -549,7 +626,7 @@ public class TermMatch {
         }
 
         static <T> IMatcher<T> flatten(IMatcher<Optional<T>> m) {
-            return m.flatMap(o -> o)::match;
+            return m.flatMap(o -> o);
         }
 
     }

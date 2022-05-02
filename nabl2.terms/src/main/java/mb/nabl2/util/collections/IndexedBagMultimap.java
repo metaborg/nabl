@@ -1,5 +1,6 @@
 package mb.nabl2.util.collections;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -105,7 +106,7 @@ public class IndexedBagMultimap<K, V, I> {
     }
 
     public Collection<Entry> reindexAll(Function1<I, ? extends Iterable<? extends I>> normalize) {
-        return Lists.newArrayList(entries.keySet()).stream().flatMap(i -> reindex(i, normalize).stream())
+        return new ArrayList<>(entries.keySet()).stream().flatMap(i -> reindex(i, normalize).stream())
                 .collect(ImmutableList.toImmutableList());
     }
 
