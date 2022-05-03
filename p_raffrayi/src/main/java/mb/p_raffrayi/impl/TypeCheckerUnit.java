@@ -644,11 +644,11 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
             final Collection<S> openScopes =
                     this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
-            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
-                    previousResult.result().sharedScopes(), localPatches, openScopes, ImmutableMultimap.of());
             if(isConfirmationEnabled()) {
                 this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
             }
+            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
+                    previousResult.result().sharedScopes(), localPatches, openScopes, ImmutableMultimap.of());
 
             logger.debug("Rebuilding scope graph.");
             // @formatter:off
@@ -739,6 +739,10 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
                             previousResult.scopes(), new DifferDataOps());
 
+                    if(isConfirmationEnabled()) {
+                        this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
+                    }
+
                     if(external) {
                         final StateCapture<S, L, D, T> capture = previousResult.result().localState();
                         final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
@@ -754,9 +758,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps, edgeLabels), Collections.emptyList(),
                             Collections.emptyList());
-                }
-                if(isConfirmationEnabled()) {
-                    this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
                 }
             }
             pendingExternalDatums.asMap().forEach((d, futures) -> {
