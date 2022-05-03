@@ -1,9 +1,5 @@
 package mb.statix.spoofax;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.nabl2.terms.matching.TermPattern.P;
-
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Iterator;
@@ -33,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
@@ -100,6 +97,10 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.nabl2.terms.matching.TermPattern.P;
 
 public class StatixTerms {
 
@@ -170,67 +171,100 @@ public class StatixTerms {
     }
 
     public static IMatcher<IConstraint> constraint() {
-        return (t, u) -> {
-            // @formatter:off
-            return M.<IConstraint>casesFix(m -> Iterables2.from(
-                M.appl4("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(), ArithTerms.matchExpr(), message(), (c, ae1, op, ae2, msg) -> {
-                    return new CArith(ae1, op, ae2, msg.orElse(null));
-                }),
-                M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
-                    return new CAstId(t1, t2);
-                }),
-                M.appl4("CAstProperty", term(), label(), propertyOp(), term(), (c, idTerm, property, op, valueTerm) -> {
-                    return new CAstProperty(idTerm, property, op, valueTerm);
-                }),
-                M.appl2("CConj", m, m, (c, c1, c2) -> {
-                    return new CConj(c1, c2);
-                }),
-                M.appl3("CEqual", term(), term(), message(), (c, t1, t2, msg) -> {
-                    return new CEqual(t1, t2, msg.orElse(null));
-                }),
-                M.appl2("CExists", M.listElems(varTerm()), constraint(), (c, vs, body) -> {
-                    return new CExists(vs, body);
-                }),
-                M.appl1("CFalse", message(), (c, msg) -> {
-                    return new CFalse(msg.orElse(null));
-                }),
-                M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
-                    return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
-                }),
-                M.appl1("CNew", M.listElems(term()), (c, ts) -> {
-                    return Constraints.conjoin(ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
-                }),
-                resolveQuery(),
-                M.appl3("CPreCompiledQuery", resolveQuery(), states(), M.stringValue(), (c, query, states, initial) -> {
-                    final State<ITerm> initialState = states.get(initial);
-                    if(initialState == null) {
-                        throw new IllegalStateException("Invalid initial state: " + initial);
-                    }
-                    final StateMachine<ITerm> stateMachine = new StateMachine<>(states, initialState);
-                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), query.message().orElse(null), stateMachine);
-                }),
-                M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
-                    return new CTellEdge(sourceScope, label, targetScope);
-                }),
-                M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
-                    final FreshVars f = new FreshVars(args.stream().flatMap(a -> a.getVars().stream()).collect(Collectors.toList()));
-                    final ITermVar d = f.fresh("d");
-                    return (IConstraint) Constraints.exists(ImmutableSet.of(d), Constraints.conjoin(Iterables2.from(
-                        new CNew(d, B.newTuple(args, c.getAttachments())),
-                        new CTellEdge(scope, rel, d)
-                    )));
-                }),
-                M.appl0("CTrue", (c) -> {
-                    return new CTrue();
-                }),
-                M.appl2("CTry", constraint(), message(), (c, body, msg) -> {
-                    return new CTry(body, msg.orElse(null));
-                }),
-                M.appl3("C", constraintName(), M.listElems(term()), message(), (c, name, args, msg) -> {
-                    return new CUser(name, args, msg.orElse(null));
-                })
-            )).match(t, u);
-            // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "CArith":
+                        return M.appl4("CArith", ArithTerms.matchExpr(), ArithTerms.matchTest(),
+                            ArithTerms.matchExpr(), message(), (c, ae1, op, ae2, msg) -> {
+                                return (IConstraint) new CArith(ae1, op, ae2, msg.orElse(null));
+                            }).match(subj, u);
+                    case "CAstId":
+                        return M.appl2("CAstId", term(), term(), (c, t1, t2) -> {
+                            return (IConstraint) new CAstId(t1, t2);
+                        }).match(subj, u);
+                    case "CAstProperty":
+                        return M.appl4("CAstProperty", term(), label(), propertyOp(), term(),
+                            (c, idTerm, property, op, valueTerm) -> {
+                                return (IConstraint) new CAstProperty(idTerm, property, op, valueTerm);
+                            }).match(subj, u);
+                    case "CConj":
+                        return M.appl2("CConj", constraint(), constraint(), (c, c1, c2) -> {
+                            return (IConstraint) new CConj(c1, c2);
+                        }).match(subj, u);
+                    case "CEqual":
+                        return M.appl3("CEqual", term(), term(), message(), (c, t1, t2, msg) -> {
+                            return (IConstraint) new CEqual(t1, t2, msg.orElse(null));
+                        }).match(subj, u);
+                    case "CExists":
+                        return M.appl2("CExists", M.listElems(varTerm()), constraint(),
+                            (c, vs, body) -> {
+                                return (IConstraint) new CExists(vs, body);
+                            }).match(subj, u);
+                    case "CFalse":
+                        return M.appl1("CFalse", message(), (c, msg) -> {
+                            return (IConstraint) new CFalse(msg.orElse(null));
+                        }).match(subj, u);
+                    case "CInequal":
+                        return M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
+                            return (IConstraint) new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
+                        }).match(subj, u);
+                    case "CNew":
+                        return M.appl1("CNew", M.listElems(term()), (c, ts) -> {
+                            return Constraints.conjoin(
+                                ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
+                        }).match(subj, u);
+                    case "CResolveQuery":
+                        return resolveQuery().match(subj, u).map(IConstraint.class::cast);
+                    case "CPreCompiledQuery":
+                        return M.appl3("CPreCompiledQuery", resolveQuery(), states(),
+                            M.stringValue(), (c, query, states, initial) -> {
+                                final State<ITerm> initialState = states.get(initial);
+                                if(initialState == null) {
+                                    throw new IllegalStateException(
+                                        "Invalid initial state: " + initial);
+                                }
+                                final StateMachine<ITerm> stateMachine =
+                                    new StateMachine<>(states, initialState);
+                                return (IConstraint) new CCompiledQuery(query.filter(), query.min(),
+                                    query.scopeTerm(), query.resultTerm(),
+                                    query.message().orElse(null), stateMachine);
+                            }).match(subj, u);
+                    case "CTellEdge":
+                        return M.appl3("CTellEdge", term(), label(), term(),
+                            (c, sourceScope, label, targetScope) -> {
+                                return (IConstraint) new CTellEdge(sourceScope, label, targetScope);
+                            }).match(subj, u);
+                    case "CTellRel":
+                        return M.appl3("CTellRel", label(), M.listElems(term()), term(),
+                            (c, rel, args, scope) -> {
+                                final FreshVars f = new FreshVars(
+                                    args.stream().flatMap(a -> a.getVars().stream())
+                                        .collect(Collectors.toList()));
+                                final ITermVar d = f.fresh("d");
+                                return (IConstraint) Constraints.exists(ImmutableSet.of(d),
+                                    Constraints.conjoin(Iterables2.from(
+                                        new CNew(d, B.newTuple(args, c.getAttachments())),
+                                        new CTellEdge(scope, rel, d))));
+                            }).match(subj, u);
+                    case "CTrue":
+                        return M.appl0("CTrue", (c) -> {
+                            return (IConstraint) new CTrue();
+                        }).match(subj, u);
+                    case "CTry":
+                        return M.appl2("CTry", constraint(), message(), (c, body, msg) -> {
+                            return (IConstraint) new CTry(body, msg.orElse(null));
+                        }).match(subj, u);
+                    case "C":
+                        return M.appl3("C", constraintName(), M.listElems(term()), message(),
+                            (c, name, args, msg) -> {
+                                return (IConstraint) new CUser(name, args, msg.orElse(null));
+                            }).match(subj, u);
+                }
+            }
+            return Optional.empty();
         };
     }
 
@@ -243,8 +277,7 @@ public class StatixTerms {
                 return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
                     return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
                 });
-            }).flatMap(o -> o)
-            .match(t, u);
+            }).flatMap(o -> o).match(t, u);
         // @formatter:on
     }
 
@@ -268,15 +301,32 @@ public class StatixTerms {
     }
 
     public static IMatcher<RExp<ITerm>> rexp() {
-        // @formatter:off
-        return M.casesFix(m -> Iterables2.from(
-            M.appl0(RESOLVE_OP, appl -> RResolve.of()),
-            M.appl2(SUBENV_OP, StatixTerms.label(), M.stringValue(), (appl, lbl, state) -> new RSubEnv<>(lbl, state)),
-            M.appl1(MERGE_OP, M.listElems(rvar()), (appl, envs) -> new RMerge<>(envs)),
-            M.appl2(SHADOW_OP, rvar(), rvar(), (appl, left, right) -> new RShadow<>(left, right)),
-            M.appl2(CEXP_OP, rvar(), m, (appl, env, exp) -> new RCExp<>(env, exp))
-        ));
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case RESOLVE_OP:
+                        return M.appl0(RESOLVE_OP, appl -> (RExp<ITerm>) RResolve.<ITerm>of())
+                            .match(subj, u);
+                    case SUBENV_OP:
+                        return M.appl2(SUBENV_OP, StatixTerms.label(), M.stringValue(),
+                                (appl, lbl, state) -> (RExp<ITerm>) new RSubEnv<>(lbl, state))
+                            .match(subj, u);
+                    case MERGE_OP:
+                        return M.appl1(MERGE_OP, M.listElems(rvar()),
+                            (appl, envs) -> (RExp<ITerm>) new RMerge<ITerm>(envs)).match(subj, u);
+                    case SHADOW_OP:
+                        return M.appl2(SHADOW_OP, rvar(), rvar(),
+                                (appl, left, right) -> (RExp<ITerm>) new RShadow<ITerm>(left, right))
+                            .match(subj, u);
+                    case CEXP_OP:
+                        return M.appl2(CEXP_OP, rvar(), rexp(),
+                            (appl, env, exp) -> (RExp<ITerm>) new RCExp<>(env, exp)).match(subj, u);
+                }
+            }
+            return Optional.empty();
+        };
     }
 
     public static IMatcher<RVar> rvar() {
@@ -365,18 +415,34 @@ public class StatixTerms {
     }
 
     private static IMatcher<IRegExp<ITerm>> labelRE(IRegExpBuilder<ITerm> builder) {
-        // @formatter:off
-        return M.casesFix(m -> Iterables2.from(
-            M.appl0("Empty", (t) -> builder.emptySet()),
-            M.appl0("Epsilon", (t) -> builder.emptyString()),
-            M.appl1("Closure", m, (t, re) -> builder.closure(re)),
-            M.appl1("Neg", m, (t, re) -> builder.complement(re)),
-            M.appl2("Concat", m, m, (t, re1, re2) -> builder.concat(re1, re2)),
-            M.appl2("And", m, m, (t, re1, re2) -> builder.and(re1, re2)),
-            M.appl2("Or", m, m, (t, re1, re2) -> builder.or(re1, re2)),
-            label().map(l -> builder.symbol(l))
-        ));
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "Empty":
+                        return M.appl0("Empty", (t) -> builder.emptySet()).match(subj, u);
+                    case "Epsilon":
+                        return M.appl0("Epsilon", (t) -> builder.emptyString()).match(subj, u);
+                    case "Closure":
+                        return M.appl1("Closure", labelRE(builder), (t, re) -> builder.closure(re))
+                            .match(subj, u);
+                    case "Neg":
+                        return M.appl1("Neg", labelRE(builder), (t, re) -> builder.complement(re))
+                            .match(subj, u);
+                    case "Concat":
+                        return M.appl2("Concat", labelRE(builder), labelRE(builder),
+                            (t, re1, re2) -> builder.concat(re1, re2)).match(subj, u);
+                    case "And":
+                        return M.appl2("And", labelRE(builder), labelRE(builder),
+                            (t, re1, re2) -> builder.and(re1, re2)).match(subj, u);
+                    case "Or":
+                        return M.appl2("Or", labelRE(builder), labelRE(builder),
+                            (t, re1, re2) -> builder.or(re1, re2)).match(subj, u);
+                }
+            }
+            return Optional.of(builder.symbol(subj));
+        };
     }
 
     public static IMatcher<IRelation.Immutable<EdgeOrData<ITerm>>> labelLt() {
@@ -412,38 +478,57 @@ public class StatixTerms {
     }
 
     public static IMatcher<ITerm> term() {
-        // @formatter:off
-        return M.<ITerm>casesFix(m -> Iterables2.from(
-            varTerm(),
-            M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
-                return B.newAppl(op, args, t.getAttachments());
-            }),
-            M.appl1("Tuple", M.listElems(m), (t, args) -> {
-                return B.newTuple(args, t.getAttachments());
-            }),
-            M.appl1("Str", M.stringValue(), (t, string) -> {
-                return B.newString(Terms.unescapeString(string), t.getAttachments());
-            }),
-            intTerm(),
-            listTerm(),
-            M.appl(SCOPE_OP, t -> t),
-            M.appl(TERMINDEX_OP, t -> t),
-            M.appl(NOID_OP, t -> t),
-            M.appl(WITHID_OP, t -> t),
-            M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
-                List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
-                return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
-            }),
-            M.appl1(PATH_EMPTY_OP, term(), (t, s) -> {
-                List<ITerm> applArgs = ImmutableList.of(s);
-                return B.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
-            }),
-            M.appl3(PATH_STEP_OP, term(), term(), term(), (t, p, l, s) -> {
-                List<ITerm> applArgs = ImmutableList.of(p, l, s);
-                return B.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
-            })
-        ));
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "Var":
+                        return varTerm().match(subj, u).map(ITerm.class::cast);
+                    case "Op":
+                        return M.appl2("Op", M.stringValue(), M.listElems(term()), (t, op, args) -> {
+                            return (ITerm) B.newAppl(op, args, t.getAttachments());
+                        }).match(subj, u);
+                    case "Tuple":
+                        return M.appl1("Tuple", M.listElems(term()), (t, args) -> {
+                            return B.newTuple(args, t.getAttachments());
+                        }).match(subj, u);
+                    case "Str":
+                        return M.appl1("Str", M.stringValue(), (t, string) -> {
+                            return (ITerm) B.newString(Terms.unescapeString(string), t.getAttachments());
+                        }).match(subj, u);
+                    case "Int":
+                        return intTerm().match(subj, u).map(ITerm.class::cast);
+                    case "List":
+                    case "ListTail":
+                        return listTerm().match(subj, u).map(ITerm.class::cast);
+                    case SCOPE_OP:
+                        return M.appl(SCOPE_OP, t -> (ITerm) t).match(subj, u);
+                    case TERMINDEX_OP:
+                        return M.appl(TERMINDEX_OP, t -> (ITerm) t).match(subj, u);
+                    case NOID_OP:
+                        return M.appl(NOID_OP, t -> (ITerm) t).match(subj, u);
+                    case WITHID_OP:
+                        return M.appl(WITHID_OP, t -> (ITerm) t).match(subj, u);
+                    case OCCURRENCE_OP:
+                        return M.appl3(OCCURRENCE_OP, M.string(), M.listElems(term()), positionTerm(), (t, ns, args, pos) -> {
+                            List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
+                            return (ITerm) B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                    case PATH_EMPTY_OP:
+                        return M.appl1(PATH_EMPTY_OP, term(), (t, s) -> {
+                            List<ITerm> applArgs = ImmutableList.of(s);
+                            return (ITerm) B.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                    case PATH_STEP_OP:
+                        return M.appl3(PATH_STEP_OP, term(), term(), term(), (t, p, l, s) -> {
+                            List<ITerm> applArgs = ImmutableList.of(p, l, s);
+                            return (ITerm) B.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                }
+            }
+            return Optional.empty();
+        };
     }
 
     public static IMatcher<IIntTerm> intTerm() {
@@ -462,22 +547,30 @@ public class StatixTerms {
     }
 
     public static IMatcher<IListTerm> listTerm() {
-        // @formatter:off
-        return M.casesFix(m -> Iterables2.from(
-            varTerm(),
-            M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
-                final List<IAttachments> as = Lists.newArrayList();
-                elems.stream().map(ITerm::getAttachments).forEach(as::add);
-                as.add(t.getAttachments());
-                return B.newList(elems, as);
-            }),
-            M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
-                final List<IAttachments> as = Lists.newArrayList();
-                elems.stream().map(ITerm::getAttachments).forEach(as::add);
-                return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
-            })
-        ));
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "Var":
+                        return varTerm().match(subj, u).map(IListTerm.class::cast);
+                    case "List":
+                        return M.appl1("List", M.listElems(term()), (t, elems) -> {
+                            final List<IAttachments> as = Lists.newArrayList();
+                            elems.stream().map(ITerm::getAttachments).forEach(as::add);
+                            as.add(t.getAttachments());
+                            return B.newList(elems, as);
+                        }).match(subj, u);
+                    case "ListTail":
+                        return M.appl2("ListTail", M.listElems(term()), listTerm(), (t, elems, tail) -> {
+                            final List<IAttachments> as = Lists.newArrayList();
+                            elems.stream().map(ITerm::getAttachments).forEach(as::add);
+                            return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
+                        }).match(subj, u);
+                }
+            }
+            return Optional.empty();
+        };
     }
 
     public static IMatcher<ITermVar> varTerm() {
@@ -487,44 +580,60 @@ public class StatixTerms {
     }
 
     public static IMatcher<Pattern> pattern() {
-        // @formatter:off
-        return M.<Pattern>casesFix(m -> Iterables2.from(
-            varPattern(),
-            M.appl2("As", varOrWld(), m, (t, var, pattern) -> {
-                return var.map(v -> P.newAs(v, pattern)).orElseGet(() -> P.newAs(pattern));
-            }),
-            M.appl2("Op", M.stringValue(), M.listElems(m), (t, op, args) -> {
-                return P.newAppl(op, args, t.getAttachments());
-            }),
-            M.appl1("Tuple", M.listElems(M.req(m)), (t, args) -> {
-                return P.newTuple(args, t.getAttachments());
-            }),
-            M.appl1("List", M.listElems((t, u) -> m.match(t, u)), (t, elems) -> {
-                return P.newList(elems, t.getAttachments());
-            }),
-            M.appl2("ListTail", M.listElems((t, u) -> m.match(t, u)), m, (t, elems, tail) -> {
-                return P.newListTail(elems, tail, t.getAttachments());
-            }),
-            M.appl1("Str", M.stringValue(), (t, string) -> {
-                return P.newString(Terms.unescapeString(string), t.getAttachments());
-            }),
-            M.appl1("Int", M.stringValue(), (t, integer) -> {
-                return P.newInt(Integer.parseInt(integer), t.getAttachments());
-            }),
-            M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
-                List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
-                return P.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
-            }),
-            M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
-                List<Pattern> applArgs = ImmutableList.of(s);
-                return P.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
-            }),
-            M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
-                List<Pattern> applArgs = ImmutableList.of(p, l, s);
-                return P.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
-            })
-        ));
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "Var":
+                        return varPattern().match(subj, u);
+                    case "As":
+                        return M.appl2("As", varOrWld(), pattern(), (t, var, pattern) -> {
+                            return var.map(v -> P.newAs(v, pattern)).orElseGet(() -> P.newAs(pattern));
+                        }).match(subj, u);
+                    case "Op":
+                        return M.appl2("Op", M.stringValue(), M.listElems(pattern()), (t, op, args) -> {
+                            return P.newAppl(op, args, t.getAttachments());
+                        }).match(subj, u);
+                    case "Tuple":
+                        return M.appl1("Tuple", M.listElems(M.req(pattern())), (t, args) -> {
+                            return P.newTuple(args, t.getAttachments());
+                        }).match(subj, u);
+                    case "List":
+                        return M.appl1("List", M.listElems(pattern()), (t, elems) -> {
+                            return P.newList(elems, t.getAttachments());
+                        }).match(subj, u);
+                    case "ListTail":
+                        return M.appl2("ListTail", M.listElems(pattern()), pattern(), (t, elems, tail) -> {
+                            return P.newListTail(elems, tail, t.getAttachments());
+                        }).match(subj, u);
+                    case "Str":
+                        return M.appl1("Str", M.stringValue(), (t, string) -> {
+                            return P.newString(Terms.unescapeString(string), t.getAttachments());
+                        }).match(subj, u);
+                    case "Int":
+                        return M.appl1("Int", M.stringValue(), (t, integer) -> {
+                            return P.newInt(Integer.parseInt(integer), t.getAttachments());
+                        }).match(subj, u);
+                    case OCCURRENCE_OP:
+                        return M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(pattern()), positionPattern(), (t, ns, args, pos) -> {
+                            List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
+                            return P.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                    case PATH_EMPTY_OP:
+                        return M.appl1(PATH_EMPTY_OP, pattern(), (t, s) -> {
+                            List<Pattern> applArgs = ImmutableList.of(s);
+                            return P.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                    case PATH_STEP_OP:
+                        return M.appl3(PATH_STEP_OP, pattern(), pattern(), pattern(), (t, p, l, s) -> {
+                            List<Pattern> applArgs = ImmutableList.of(p, l, s);
+                            return P.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
+                        }).match(subj, u);
+                }
+            }
+            return Optional.empty();
+        };
     }
 
     public static IMatcher<Optional<ITermVar>> varOrWld() {
@@ -621,13 +730,21 @@ public class StatixTerms {
     }
 
     public static IMatcher<MessageKind> messageKind() {
-        // @formatter:off
-        return M.cases(
-            M.appl0("Error", t -> MessageKind.ERROR),
-            M.appl0("Warning", t -> MessageKind.WARNING),
-            M.appl0("Note", t -> MessageKind.NOTE)
-        );
-        // @formatter:on
+        return (subj, u) -> {
+            if(subj instanceof IApplTerm) {
+                final IApplTerm applTerm = (IApplTerm) subj;
+                final String termOp = applTerm.getOp();
+                switch(termOp) {
+                    case "Error":
+                        return M.appl0("Error", t -> MessageKind.ERROR).match(subj, u);
+                    case "Warning":
+                        return M.appl0("Warning", t -> MessageKind.WARNING).match(subj, u);
+                    case "Note":
+                        return M.appl0("Note", t -> MessageKind.NOTE).match(subj, u);
+                }
+            }
+            return Optional.empty();
+        };
     }
 
     public static IMatcher<Optional<ITerm>> messageOrigin() {

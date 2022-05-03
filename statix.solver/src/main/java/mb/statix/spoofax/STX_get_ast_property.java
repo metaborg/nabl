@@ -1,8 +1,5 @@
 package mb.statix.spoofax;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -14,11 +11,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 
+import mb.nabl2.terms.IApplTerm;
+import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.statix.solver.ITermProperty;
 import mb.statix.solver.persistent.SolverResult;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 public class STX_get_ast_property extends StatixPrimitive {
 
@@ -61,16 +62,29 @@ public class STX_get_ast_property extends StatixPrimitive {
     }
 
     private void warnOnInvalidProp(ITerm prop) {
-        // @formatter:off
-        IMatcher<ITerm> propMatcher = M.cases(
-            M.appl0("Type"),
-            M.appl0("Ref"),
-            M.appl1("Prop", M.string())
-        );
-        // @formatter:on
-        if(!propMatcher.match(prop).isPresent()) {
-            logger.warn("Expected Type(), Ref() or Prop(\"<name>\") as property, but got {}.", prop);
+        if(prop instanceof IApplTerm) {
+            final IApplTerm applTerm = (IApplTerm) prop;
+            final String termOp = applTerm.getOp();
+            switch(termOp) {
+                case "Type":
+                    if(applTerm.getArity() == 0) {
+                        return;
+                    }
+                    break;
+                case "Ref":
+                    if(applTerm.getArity() == 0) {
+                        return;
+                    }
+                    break;
+                case "Prop":
+                    if(applTerm.getArity() == 1 && applTerm.getArgs()
+                        .get(0) instanceof IStringTerm) {
+                        return;
+                    }
+                    break;
+            }
         }
+        logger.warn("Expected Type(), Ref() or Prop(\"<name>\") as property, but got {}.", prop);
     }
 
 }
