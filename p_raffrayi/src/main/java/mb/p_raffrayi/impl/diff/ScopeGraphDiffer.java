@@ -918,8 +918,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             if(pendingResults.get() != 0 || !typeCheckerFinished.get()) {
                 return;
             }
-            openCurrentScopes.forEach(this::added);
-            openPreviousScopes.forEach(this::removed);
+            ImmutableSet.copyOf(openCurrentScopes).forEach(this::added);
+            ImmutableSet.copyOf(openPreviousScopes).forEach(this::removed);
         } while(edgeMatches.isEmpty() && (!openCurrentScopes.isEmpty() || !openPreviousScopes.isEmpty()));
         logger.debug("Marked all open scopes as added/removed.");
 

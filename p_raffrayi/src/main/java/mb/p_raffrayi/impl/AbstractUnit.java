@@ -237,6 +237,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             logger.debug("{} type checker finished", id);
             resume(); // FIXME necessary?
             if(isDifferEnabled()) {
+                self.assertOnActorThread();
                 whenDifferActivated.thenAccept(__ -> differ.typeCheckerFinished());
             }
             if(ex != null) {
