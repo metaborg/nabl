@@ -20,7 +20,6 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation3;
 import org.metaborg.util.collection.MultiSet;
-import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
@@ -39,6 +38,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -247,7 +247,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 analysis.set(r);
             }
             granted(token, self);
-            final MultiSet.Immutable<IWaitFor<S, L, D>> selfTokens = getTokens(process);
+            final Multiset<IWaitFor<S, L, D>> selfTokens = getTokens(process);
             if(!selfTokens.isEmpty()) {
                 logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
@@ -826,30 +826,29 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     // Wait fors & finalization
     ///////////////////////////////////////////////////////////////////////////
 
-    private MultiSet.Immutable<IWaitFor<S, L, D>> waitFors = MultiSet.Immutable.of();
-    private MultiSetMap.Immutable<IProcess<S, L, D>, IWaitFor<S, L, D>> waitForsByProcess = MultiSetMap.Immutable.of();
+    private WaitForGraph<IProcess<S, L, D>, IWaitFor<S, L, D>> wfg = new WaitForGraph<>();
 
     protected boolean isWaiting() {
-        return !waitFors.isEmpty();
+        return wfg.isWaiting();
     }
 
     protected boolean isWaitingFor(IWaitFor<S, L, D> token) {
-        return waitFors.contains(token);
+        return wfg.isWaitingFor(token);
     }
 
     protected boolean isWaitingFor(IWaitFor<S, L, D> token, IActor<? extends IUnit<S, L, D, ?>> from) {
-        return waitForsByProcess.get(new UnitProcess<>(from)).contains(token);
+        return wfg.isWaitingFor(new UnitProcess<>(from), token);
     }
 
     protected int countWaitingFor(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> from) {
-        return waitForsByProcess.get(new UnitProcess<>(from)).count(token);
+        return wfg.countWaitingFor(new UnitProcess<>(from), token);
     }
 
-    private MultiSet.Immutable<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
-        return waitForsByProcess.get(unit);
+    private Multiset<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
+        return wfg.getTokens(unit);
     }
 
-    protected MultiSet.Immutable<IWaitFor<S, L, D>> ownTokens() {
+    protected Multiset<IWaitFor<S, L, D>> ownTokens() {
         return getTokens(process);
     }
 
@@ -858,12 +857,19 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void waitFor(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
-        if(!waitForsByProcess.containsKey(process)) {
+        if(wfg.waitFor(process, token)) {
             resume();
         }
-        logger.debug("{} wait for {}/{}", self, process, token);
-        waitFors = waitFors.add(token);
-        waitForsByProcess = waitForsByProcess.put(process, token);
+    }
+
+    protected void waitFor(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        waitFor(process(actor));
+    }
+
+    protected void waitFor(IProcess<S, L, D> process) {
+        if(wfg.waitFor(process)) {
+            resume();
+        }
     }
 
     protected void granted(IWaitFor<S, L, D> token, IActorRef<? extends IUnit<S, L, D, ?>> actor) {
@@ -871,14 +877,17 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     protected void granted(IWaitFor<S, L, D> token, IProcess<S, L, D> process) {
-        if(!waitForsByProcess.contains(process, token)) {
-            logger.error("{} not waiting for granted {}/{}", self, process, token);
-            throw new IllegalStateException(self + " not waiting for granted " + process + "/" + token);
+        if(wfg.granted(process, token)) {
+            resume();
         }
-        logger.debug("{} granted {} by {}", self, token, process);
-        waitFors = waitFors.remove(token);
-        waitForsByProcess = waitForsByProcess.remove(process, token);
-        if(!waitForsByProcess.containsKey(process)) {
+    }
+
+    protected void granted(IActorRef<? extends IUnit<S, L, D, ?>> actor) {
+        granted(process(actor));
+    }
+
+    protected void granted(IProcess<S, L, D> process) {
+        if(wfg.granted(process)) {
             resume();
         }
     }
@@ -913,7 +922,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             );
             // @formatter:on
         } else {
-            logger.trace("Still waiting for {}{}", innerResult ? "inner result and " : "", waitForsByProcess);
+            logger.trace("Still waiting for {}{}", !innerResult ? "inner result and " : "", wfg);
         }
     }
 
@@ -1356,7 +1365,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     private void failAll() {
         // Grants are processed immediately, while the result failure is scheduled.
         // This ensures that all labels are closed by the time the result failure is processed.
-        for(IWaitFor<S, L, D> wf : waitFors) {
+        for(IWaitFor<S, L, D> wf : CapsuleUtil.toSet(wfg.getTokens())) {
             // @formatter:off
             wf.visit(IWaitFor.cases(
                 initScope -> {
@@ -1451,7 +1460,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     @Override public java.util.Set<IProcess<S, L, D>> dependentSet() {
-        return waitForsByProcess.keySet();
+        return wfg.dependencies();
     }
 
     @Override public void query(IProcess<S, L, D> k, IProcess<S, L, D> i, int m) {
