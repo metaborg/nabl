@@ -35,25 +35,26 @@ public class ResolutionInterpreter<S, L, D, M> {
         this.EMPTY_ENV = CompletableFuture.completedFuture(Tuple2.of(Env.empty(), context.unitMetadata()));
     }
 
-    public IFuture<Tuple2<Env<S, L, D>, M>> resolve(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: for confirmation. */, ICancel cancel)
+    public IFuture<Tuple2<Env<S, L, D>, M>> resolve(ScopePath<S, L> path, State<L> state, ICancel cancel)
             throws InterruptedException {
         cancel.throwIfCancelled();
 
         final Store<S, L, D, M> store = new Store<>();
 
         for(RStep<L> step : state.resolutionSteps()) {
-            evaluateStep(path, step, store, labelWf, cancel);
+            evaluateStep(path, step, store, cancel);
         }
 
         return store.lookup(state.resultVar());
     }
 
-    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D, M> store, LabelWf<L> labelWf, ICancel cancel) {
-        final IFuture<Tuple2<Env<S, L, D>, M>> env = evaluateExp(path, step.getExp(), store, labelWf, cancel);
+    private void evaluateStep(ScopePath<S, L> path, RStep<L> step, Store<S, L, D, M> store, ICancel cancel) {
+        final IFuture<Tuple2<Env<S, L, D>, M>> env = evaluateExp(path, step.getExp(), store, cancel);
         store.store(step.getVar(), env);
     }
 
-    private IFuture<Tuple2<Env<S, L, D>, M>> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D, M> store, LabelWf<L> labelWf, ICancel cancel) {
+    private IFuture<Tuple2<Env<S, L, D>, M>> evaluateExp(ScopePath<S, L> path, RExp<L> exp, Store<S, L, D, M> store,
+            ICancel cancel) {
         final S scope = path.getTarget();
         final IFuture<Tuple2<Env<S, L, D>, M>> env = exp.match(new RExp.Cases<L, IFuture<Tuple2<Env<S, L, D>, M>>>() {
 
@@ -78,7 +79,7 @@ public class ResolutionInterpreter<S, L, D, M> {
                     return AggregateFuture.forAll(tgts, tgt -> {
                         final Optional<ScopePath<S, L>> newPathOpt = path.step(label, tgt);
                         if(newPathOpt.isPresent()) {
-                            return context.externalEnv(newPathOpt.get(), newState, labelWf.step(label).get() /* Safe in valid SM */);
+                            return context.externalEnv(newPathOpt.get(), newState);
                         } else {
                             return EMPTY_ENV;
                         }
@@ -87,7 +88,8 @@ public class ResolutionInterpreter<S, L, D, M> {
             }
 
             @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseMerge(List<RVar> vars) {
-                return AggregateFuture.forAll(vars, store::lookup).thenApply(ResolutionInterpreter.this::mergeSubEnvironments);
+                return AggregateFuture.forAll(vars, store::lookup)
+                        .thenApply(ResolutionInterpreter.this::mergeSubEnvironments);
             }
 
             @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseShadow(RVar left, RVar right) {
@@ -137,7 +139,7 @@ public class ResolutionInterpreter<S, L, D, M> {
             @Override public IFuture<Tuple2<Env<S, L, D>, M>> caseCExp(RVar envVar, RExp<L> exp) {
                 return store.lookup(envVar).thenCompose(env -> {
                     if(env._1().isEmpty()) {
-                        return evaluateExp(path, exp, store, labelWf, cancel).thenApply(res -> {
+                        return evaluateExp(path, exp, store, cancel).thenApply(res -> {
                             return Tuple2.of(res._1(), context.compose(env._2(), res._2()));
                         });
                     }
@@ -149,11 +151,13 @@ public class ResolutionInterpreter<S, L, D, M> {
         return env;
     }
 
-    private IFuture<Tuple2<Boolean, M>> isShadowed(D datum, Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel) {
+    private IFuture<Tuple2<Boolean, M>> isShadowed(D datum, Iterable<ResolutionPath<S, L, D>> specifics,
+            ICancel cancel) {
         return Futures.reduce(Tuple2.of(false, context.unitMetadata()), specifics, (acc, path) -> {
-            return acc._1() ? CompletableFuture.completedFuture(acc) : context.dataLeq(datum, path.getDatum(), cancel).thenApply(res -> {
-                return Tuple2.of(res._1(), context.compose(acc._2(), res._2()));
-            });
+            return acc._1() ? CompletableFuture.completedFuture(acc)
+                    : context.dataLeq(datum, path.getDatum(), cancel).thenApply(res -> {
+                        return Tuple2.of(res._1(), context.compose(acc._2(), res._2()));
+                    });
         });
     }
 
@@ -204,7 +208,7 @@ public class ResolutionInterpreter<S, L, D, M> {
 
     public interface ResolutionContext<S, L, D, M> {
 
-        IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf /* FIXME: For confirmation */);
+        IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state);
 
         IFuture<Iterable<S>> getEdges(S scope, L label);
 

@@ -1,21 +1,30 @@
 package mb.scopegraph.resolution;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class State<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private final ImmutableList<RStep<L>> resolutionSteps;
-
     private final RVar resultVar;
 
-    public State(Iterable<RStep<L>> resolutionSteps, RVar resultVar) {
+    private final boolean accepting;
+    private final ImmutableMap<L, String> transitions;
+
+    public State(Iterable<RStep<L>> resolutionSteps, RVar resultVar, boolean accepting, Map<L, String> transitions) {
         this.resolutionSteps = ImmutableList.copyOf(resolutionSteps);
         this.resultVar = resultVar;
+
+        this.accepting = accepting;
+        this.transitions = ImmutableMap.copyOf(transitions);
     }
 
     public ImmutableList<RStep<L>> resolutionSteps() {
@@ -24,6 +33,14 @@ public class State<L> implements Serializable {
 
     public RVar resultVar() {
         return resultVar;
+    }
+
+    public boolean isAccepting() {
+        return accepting;
+    }
+
+    public @Nullable String transitionStateId(L label) {
+        return transitions.get(label);
     }
 
     @Override public String toString() {
@@ -41,8 +58,15 @@ public class State<L> implements Serializable {
         return Objects.equals(resolutionSteps, other.resolutionSteps) && Objects.equals(resultVar, other.resultVar);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(resolutionSteps, resultVar);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(resolutionSteps, resultVar);
+            hashCode = result;
+        }
+        return result;
     }
 
 }

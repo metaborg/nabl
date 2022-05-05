@@ -251,7 +251,7 @@ public class StatixTerms {
     public static IMatcher<Map<String, State<ITerm>>> states() {
         return M.listElems(state()).map(states -> {
             final ImmutableMap.Builder<String, State<ITerm>> mapBuilder = ImmutableMap.builder();
-            for(Tuple2<String, State<ITerm>> state: states) {
+            for(Tuple2<String, State<ITerm>> state : states) {
                 mapBuilder.put(state._1(), state._2());
             }
             return mapBuilder.build();
@@ -259,22 +259,42 @@ public class StatixTerms {
     }
 
     public static IMatcher<Tuple2<String, State<ITerm>>> state() {
-        return M.appl3(STATE_OP, M.stringValue(), M.listElems(step()), rvar(),
-                (appl, name, steps, var) -> Tuple2.of(name, new State<ITerm>(steps, var)));
+        return M.appl3(STATE_OP, M.stringValue(), M.listElems(step()), rvar(), (appl, name, steps, var) -> {
+            // @formatter:off
+            final ImmutableList<RStep<ITerm>> ss = steps.stream()
+                    .map(Tuple3::_1)
+                    .collect(ImmutableList.toImmutableList());
+            final boolean accepting = steps.stream().anyMatch(Tuple3::_2);
+            final ImmutableMap<ITerm, String> transitions = steps.stream()
+                    .map(Tuple3::_3)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(ImmutableMap.toImmutableMap(Tuple2::_1, Tuple2::_2, (v1, v2) -> {
+                        if(!v1.equals(v2)) {
+                            throw new IllegalArgumentException("Conflicting states " + v1 + " and " + v2 + ".");
+                        }
+                        return v1;
+                    }));
+            // @formatter:off
+
+            return Tuple2.of(name, new State<ITerm>(ss, var, accepting, transitions));
+        });
     }
 
-    public static IMatcher<RStep<ITerm>> step() {
-        return M.appl2(STEP_OP, rvar(), rexp(), (appl, var, exp) -> new RStep<>(var, exp));
+    public static IMatcher<Tuple3<RStep<ITerm>, Boolean, Optional<Tuple2<ITerm, String>>>> step() {
+        return M.appl2(STEP_OP, rvar(), rexp(), (appl, var, exp) -> {
+            return Tuple3.of(new RStep<>(var, exp._1()), exp._2(), exp._3());
+        });
     }
 
-    public static IMatcher<RExp<ITerm>> rexp() {
+    public static IMatcher<Tuple3<RExp<ITerm>, Boolean, Optional<Tuple2<ITerm, String>>>> rexp() {
         // @formatter:off
         return M.casesFix(m -> Iterables2.from(
-            M.appl0(RESOLVE_OP, appl -> RResolve.of()),
-            M.appl2(SUBENV_OP, StatixTerms.label(), M.stringValue(), (appl, lbl, state) -> new RSubEnv<>(lbl, state)),
-            M.appl1(MERGE_OP, M.listElems(rvar()), (appl, envs) -> new RMerge<>(envs)),
-            M.appl2(SHADOW_OP, rvar(), rvar(), (appl, left, right) -> new RShadow<>(left, right)),
-            M.appl2(CEXP_OP, rvar(), m, (appl, env, exp) -> new RCExp<>(env, exp))
+            M.appl0(RESOLVE_OP, appl -> Tuple3.of(RResolve.of(), true, Optional.empty())),
+            M.appl2(SUBENV_OP, StatixTerms.label(), M.stringValue(), (appl, lbl, state) -> Tuple3.of(new RSubEnv<>(lbl, state), false, Optional.of(Tuple2.<ITerm, String>of(lbl, state)))),
+            M.appl1(MERGE_OP, M.listElems(rvar()), (appl, envs) -> Tuple3.of(new RMerge<>(envs), false, Optional.empty())),
+            M.appl2(SHADOW_OP, rvar(), rvar(), (appl, left, right) -> Tuple3.of(new RShadow<>(left, right), false, Optional.empty())),
+            M.appl2(CEXP_OP, rvar(), m, (appl, env, exp) -> Tuple3.of(new RCExp<>(env, exp._1()), exp._2(), exp._3()))
         ));
         // @formatter:on
     }

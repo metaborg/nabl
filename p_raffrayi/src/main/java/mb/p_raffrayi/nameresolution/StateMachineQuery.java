@@ -9,6 +9,7 @@ import org.metaborg.util.tuple.Tuple2;
 
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.ecoop21.ResolutionInterpreter;
+import mb.scopegraph.ecoop21.StateLabelWf;
 import mb.scopegraph.ecoop21.ResolutionInterpreter.ResolutionContext;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -22,21 +23,21 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
 
     private final LabelWf<L> labelWf;
 
-    public StateMachineQuery(StateMachine<L> stateMachine, LabelWf<L> labelWf) {
-        this(stateMachine, stateMachine.initial(), labelWf);
+    public StateMachineQuery(StateMachine<L> stateMachine) {
+        this(stateMachine, stateMachine.initial());
     }
 
-    private StateMachineQuery(StateMachine<L> stateMachine, State<L> state, LabelWf<L> labelWf) {
+    private StateMachineQuery(StateMachine<L> stateMachine, State<L> state) {
         this.stateMachine = stateMachine;
         this.state = state;
-        this.labelWf = labelWf;
+        this.labelWf = new StateLabelWf<L>(stateMachine, state);
     }
 
     @Override public <M> IFuture<Tuple2<Env<S, L, D>, M>> resolve(IResolutionContext<S, L, D, M> context, ScopePath<S, L> path, ICancel cancel) {
         final ResolutionContext<S, L, D, M> resolutionContext = new ResolutionContext<S, L, D, M>() {
 
-            @Override public IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state, LabelWf<L> labelWf) {
-                return context.externalEnv(path, new StateMachineQuery<>(stateMachine, state, labelWf), cancel);
+            @Override public IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state) {
+                return context.externalEnv(path, new StateMachineQuery<>(stateMachine, state), cancel);
             }
 
             @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
@@ -67,7 +68,7 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
 
         try {
             final ResolutionInterpreter<S, L, D ,M> interp = new ResolutionInterpreter<>(resolutionContext, stateMachine);
-            return interp.resolve(path, state, labelWf, cancel);
+            return interp.resolve(path, state, cancel);
         } catch(InterruptedException e) {
             return CompletableFuture.completedExceptionally(e);
         }

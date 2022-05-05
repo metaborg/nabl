@@ -137,7 +137,7 @@ public interface ITypeCheckerContext<S, L, D> {
      * The internal variants of these parameters are only executed on the local type checker, and may refer to the local
      * type checker state safely.
      */
-    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, StateMachine<L> stateMachine, LabelWf<L> labelWf,
+    IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, StateMachine<L> stateMachine,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv, DataWf<S, L, D> dataWfInternal,
             DataLeq<S, L, D> dataEquivInternal);
 
@@ -203,9 +203,9 @@ public interface ITypeCheckerContext<S, L, D> {
             }
 
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope,
-                    StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+                    StateMachine<L> stateMachine, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                     DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-                return outer.query(scope, stateMachine, labelWf, dataWF, dataEquiv, null, null);
+                return outer.query(scope, stateMachine, dataWF, dataEquiv, null, null);
             }
 
             @Override public IFuture<? extends Set<IResolutionPath<S, L, D>>> query(S scope, LabelWf<L> labelWF,

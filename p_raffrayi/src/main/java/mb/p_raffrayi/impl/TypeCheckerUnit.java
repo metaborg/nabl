@@ -515,9 +515,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     }
 
     @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
-            StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            StateMachine<L> stateMachine, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
             DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-        return query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
+        return query(scope, new StateMachineQuery<>(stateMachine), dataWF, dataEquiv, dataWfInternal,
                 dataEquivInternal);
     }
 

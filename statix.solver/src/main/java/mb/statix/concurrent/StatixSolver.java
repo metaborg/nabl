@@ -656,7 +656,7 @@ public class StatixSolver {
                         }
 
                         @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseCompiledQuery(CCompiledQuery q) {
-                            return scopeGraph.query(scope, q.stateMachine(), labelWF, dataWF, dataEquiv,
+                            return scopeGraph.query(scope, q.stateMachine(), dataWF, dataEquiv,
                                     dataWFInternal, dataEquivInternal);
                         }
 
