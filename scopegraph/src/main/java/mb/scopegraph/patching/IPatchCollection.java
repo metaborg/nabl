@@ -47,6 +47,8 @@ public interface IPatchCollection<S> {
      */
     Set<S> patchRange();
 
+    void assertConsistent() throws InvalidPatchCompositionException;
+
     interface Immutable<S> extends IPatchCollection<S> {
 
         Transient<S> melt();

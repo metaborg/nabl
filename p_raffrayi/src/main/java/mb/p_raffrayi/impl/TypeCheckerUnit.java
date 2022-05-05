@@ -619,6 +619,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
             IPatchCollection.Immutable<S> globalPatches) {
         assertIncrementalEnabled();
+        resultPatches.assertConsistent();
+        globalPatches.assertConsistent();
+
         if(state == UnitState.UNKNOWN) {
             logger.debug("{} releasing.", this);
             logger.trace("Patches: result: {}; global: {}.", resultPatches, globalPatches);

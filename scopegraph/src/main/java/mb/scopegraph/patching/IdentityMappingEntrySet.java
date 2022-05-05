@@ -63,7 +63,7 @@ class IdentityMappingEntrySet<E> extends AbstractSet<Map.Entry<E, E>> {
     }
 
     private static boolean isIdentity(Entry<?, ?> entry) {
-        return !entry.getKey().equals(entry.getValue());
+        return entry.getKey().equals(entry.getValue());
     }
 
     private static boolean throwNotIdentityExpection(Entry<?, ?> entry) {

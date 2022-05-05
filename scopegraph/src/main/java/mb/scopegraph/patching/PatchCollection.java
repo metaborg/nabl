@@ -19,7 +19,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     private static final ILogger logger = LoggerUtils.logger(PatchCollection.class);
 
-    private int hashCode = -1; // lazily computed.
+    private volatile int hashCode = 0; // lazily computed.
 
     @Override public java.util.Set<Entry<S, S>> allPatches() {
         return Sets.union(patches().entrySet(), new IdentityMappingEntrySet<>(identityPatches()));
@@ -42,12 +42,14 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
     }
 
     @Override public int hashCode() {
-        if(hashCode == -1) {
-            hashCode = 11;
-            hashCode += 31 * identityPatches().hashCode();
-            hashCode += 37 * patches().hashCode();
+        int result = hashCode;
+        if(result == -1) {
+            result = 11;
+            result += 31 * identityPatches().hashCode();
+            result += 37 * patches().hashCode();
+            hashCode = result;
         }
-        return hashCode;
+        return result;
     }
 
     @Override public String toString() {
@@ -76,6 +78,11 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
         sb.append("}");
         return sb.toString();
+    }
+
+    public void assertConsistent() throws InvalidPatchCompositionException {
+        checkInvalidIdentities(identityPatches(), patchDomain());
+        checkInvalidIdentities(identityPatches(), patchRange());
     }
 
     public static class Immutable<S> extends PatchCollection<S> implements IPatchCollection.Immutable<S> {
@@ -332,28 +339,6 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
         }
 
         @Override public boolean putAll(IPatchCollection<S> patches) throws InvalidPatchCompositionException {
-            checkInvalidIdentities(patches.identityPatches(), patchDomain());
-            checkInvalidIdentities(patches.identityPatches(), patchRange());
-            checkInvalidIdentities(identityPatches, patches.patchDomain());
-            checkInvalidIdentities(identityPatches, patches.patchRange());
-
-            for(Entry<S, S> patch : patches.patches().entrySet()) {
-                final S newScope = patch.getKey();
-                final S oldScope = patch.getValue();
-
-                final S otherSrc = this.patches.getKeyOrDefault(newScope, newScope);
-                if(!otherSrc.equals(newScope) && !otherSrc.equals(oldScope)) {
-                    // Different non-identity patch
-                    throwInvalidNewPatch(newScope, oldScope, otherSrc);
-                }
-
-                final S otherPatch = this.patches.getValueOrDefault(oldScope, oldScope);
-                if(!otherPatch.equals(oldScope) && !otherPatch.equals(newScope)) {
-                    // Different non-identity patch
-                    throwInvalidOldPatch(newScope, oldScope, otherPatch);
-                }
-            }
-
             boolean changed = identityPatches.__insertAll(patches.identityPatches());
             changed |= this.patches.putAll(patches.patches().entrySet());
             return changed;
@@ -373,19 +358,19 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     }
 
-    public static <S> void throwInvalidNewPatch(S newScope, S oldScope, S existingOldScope)
+    private static <S> void throwInvalidNewPatch(S newScope, S oldScope, S existingOldScope)
             throws InvalidPatchCompositionException {
         throw new InvalidPatchCompositionException("Cannot insert patch " + oldScope + " |-> " + newScope + ". "
                 + newScope + " already patched by " + existingOldScope + ".");
     }
 
-    public static <S> void throwInvalidOldPatch(S newScope, S oldScope, S existingNewScope)
+    private static <S> void throwInvalidOldPatch(S newScope, S oldScope, S existingNewScope)
             throws InvalidPatchCompositionException {
         throw new InvalidPatchCompositionException("Cannot insert patch " + oldScope + " |-> " + newScope + ". "
                 + oldScope + " already patching to " + existingNewScope + ".");
     }
 
-    public static <S> void checkInvalidIdentities(java.util.Set<S> identities, java.util.Set<S> nonIdentities)
+    private static <S> void checkInvalidIdentities(java.util.Set<S> identities, java.util.Set<S> nonIdentities)
             throws InvalidPatchCompositionException {
         final SetView<S> conflicts = Sets.intersection(nonIdentities, identities);
         if(!conflicts.isEmpty()) {
