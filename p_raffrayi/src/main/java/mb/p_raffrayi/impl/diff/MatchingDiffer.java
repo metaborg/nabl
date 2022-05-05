@@ -1,6 +1,7 @@
 package mb.p_raffrayi.impl.diff;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Multimap;
 
@@ -84,13 +86,17 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return CompletableFuture.completedFuture(Optional.of(previousScope));
     }
 
+    private final Map<Tuple2<S, L>, IFuture<ScopeDiff<S, L, D>>> scopeDiffs = new HashMap<>();
+
     @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
         assertOwnScope(previousScope);
-        final S currentScope = getCurrent(previousScope);
-        return context.getEdges(currentScope, label).thenApply(tgts -> {
-            final ScopeDiff.Builder<S, L, D> builder = ScopeDiff.builder();
-            tgts.forEach(tgt -> builder.addMatchedEdges(new Edge<S, L>(currentScope, label, tgt)));
-            return builder.build();
+        return scopeDiffs.computeIfAbsent(Tuple2.of(previousScope, label), __ -> {
+            final S currentScope = getCurrent(previousScope);
+            return context.getEdges(currentScope, label).thenApply(tgts -> {
+                final ScopeDiff.Builder<S, L, D> builder = ScopeDiff.builder();
+                tgts.forEach(tgt -> builder.addMatchedEdges(new Edge<S, L>(currentScope, label, tgt)));
+                return builder.build();
+            });
         });
     }
 
