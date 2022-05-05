@@ -1,13 +1,16 @@
 package mb.p_raffrayi.actors.deadlock;
 
-import org.metaborg.util.collection.MultiSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import io.usethesource.capsule.Map;
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
@@ -35,19 +38,19 @@ public class ChandyMisraHaas<P> {
 
     private State state;
 
-    private final MultiSet.Transient<P> latest;
-    private final Map.Transient<P, P> engager;
-    private final MultiSet.Transient<P> num;
-    private SetMultimap.Transient<P, P> wait;
+    private final Multiset<P> latest;
+    private final Map<P, P> engager;
+    private final Multiset<P> num;
+    private Map<P, Set<P>> wait;
 
     public ChandyMisraHaas(Host<P> self, Action1<java.util.Set<P>> deadlockHandler) {
         this.self = self;
         this.deadlockHandler = deadlockHandler;
         this.state = State.EXECUTING;
-        this.latest = MultiSet.Transient.of();
-        this.engager = Map.Transient.of();
-        this.num = MultiSet.Transient.of();
-        this.wait = SetMultimap.Transient.of();
+        this.latest = HashMultiset.create();
+        this.engager = new HashMap<>();
+        this.num = HashMultiset.create();
+        this.wait = new HashMap<>();
     }
 
     /**
@@ -60,13 +63,13 @@ public class ChandyMisraHaas<P> {
         logger.debug("{} idle", self);
         final P i = self.process();
         state = State.IDLE;
-        latest.add(i);
-        wait.__insert(i, i);
+        int c = latest.add(i, 1) + 1;
+        wait.computeIfAbsent(i, __ -> new HashSet<>()).add(i);
         final java.util.Set<P> S = self/*i*/.dependentSet();
         for(P j : S) {
-            self/*i*/.query(j, i, latest.count(i));
+            self/*i*/.query(j, i, c);
         }
-        num.set(i, S.size());
+        num.setCount(i, S.size());
         return true;
     }
 
@@ -80,7 +83,7 @@ public class ChandyMisraHaas<P> {
         logger.debug("{} exec", self);
         @SuppressWarnings("unused") final P k = self.process();
         state = State.EXECUTING;
-        wait = SetMultimap.Transient.of();
+        wait = new HashMap<>();
         return true;
     }
 
@@ -100,17 +103,18 @@ public class ChandyMisraHaas<P> {
         }
         logger.debug("{} query {}.{} from {}", self, i, m, j);
         final P k = self.process();
-        if(m > latest.count(i)) {
-            latest.set(i, m);
+        int c = latest.count(i);
+        if(m > c) {
+            latest.setCount(i, m);
             engager.put(i, j);
-            wait.__insert(i, k);
+            wait.computeIfAbsent(i, __ -> new HashSet<>()).add(k);
             final java.util.Set<P> S = self/*k*/.dependentSet();
             for(P r : S) {
                 self/*k*/.query(r, i, m);
             }
-            num.set(i, S.size());
-        } else if(wait.containsKey(i) && m == latest.count(i)) {
-            self/*k*/.reply(j, i, m, wait.get(i));
+            num.setCount(i, S.size());
+        } else if(wait.containsKey(i) && m == c) {
+            self/*k*/.reply(j, i, m, wait.put(i, new HashSet<>()));
         }
     }
 
@@ -131,11 +135,12 @@ public class ChandyMisraHaas<P> {
         logger.debug("{} reply {}.{} from {}", self, i, m, R);
         final P k = self.process();
         if(m == latest.count(i) && wait.containsKey(i)) {
+            final Set<P> units = wait.computeIfAbsent(i, __ -> new HashSet<>());
             for(P r : R) {
-                wait.__insert(i, r);
+                units.add(r);
             }
-            if(num.remove(i) == 1) {
-                final Set.Immutable<P> Q = wait.get(i);
+            if(num.remove(i, 1) == 1) {
+                final java.util.Set<P> Q = wait.put(i, new HashSet<>());
                 if(i.equals(k)) {
                     logger.debug("{} deadlocked with {}", self, Q);
                     deadlockHandler.apply(Q);

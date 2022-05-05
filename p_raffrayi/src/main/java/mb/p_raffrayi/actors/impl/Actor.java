@@ -52,6 +52,8 @@ class Actor<T> implements IActorImpl<T>, Runnable {
     private @Nullable IActorMonitor monitor;
     private @Nullable Throwable stopCause;
 
+    private final int hashCode;
+
     private volatile Thread thread = null;
     private static final ThreadLocal<IActorInternal<?>> current = ThreadLocal.withInitial(() -> {
         final IllegalStateException ex = new IllegalStateException("Cannot get current actor.");
@@ -80,10 +82,16 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         this.state = ActorState.INITIAL;
         this.priority = new AtomicInteger(0);
         this.messages = new ConcurrentLinkedDeque<>();
+
+        this.hashCode = super.hashCode();
     }
 
     @Override public String id() {
         return id;
+    }
+
+    @Override public int hashCode() {
+        return hashCode;
     }
 
     ///////////////////////////////////////////////////////////////////////////
