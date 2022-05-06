@@ -905,7 +905,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         if(innerResult && !unitResult.isDone() && !isWaiting()) {
             logger.debug("{} finish", this);
             // @formatter:off
-            unitResult.complete(UnitResult.<S, L, D, R>builder()
+            final UnitResult<S, L, D, R> result = UnitResult.<S, L, D, R>builder()
                 .id(self.id())
                 .scopeGraph(scopeGraph.get())
                 .queries(recordedQueries)
@@ -917,9 +917,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 .stats(stats)
                 .stateTransitionTrace(stateTransitionTrace)
                 .diff(diffResult.get())
-                .build()
-            );
+                .build();
             // @formatter:on
+            self.complete(unitResult, result, null);
         } else {
             logger.trace("Still waiting for {}{}", !innerResult ? "inner result and " : "", wfg);
         }
