@@ -267,7 +267,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
         }
 
         @Override public PatchCollection.Immutable<S> freeze() {
-            return new PatchCollection.Immutable<>(patches.freeze(), identityPatches.freeze());
+            return new PatchCollection.Immutable<>(patches(), identityPatches.freeze());
         }
 
         @Override public BiMap.Immutable<S> patches() {

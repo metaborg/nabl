@@ -844,7 +844,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             differ.scopeDiff(previousScope, label).whenComplete(future::complete);
             future.whenComplete((r, ex) -> {
                 granted(/*state, */self);
-                resume(); // FIXME necessary?
             });
             return future;
         }
@@ -897,7 +896,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
                     logger.trace("{} rec external confirm: {}.", this, v);
                     granted(confirm, owner);
-                    resume();
+                    resume(); // necessary!
                     if(ex == Release.instance) {
                         logger.debug("{} got release, confirming.", this);
                         result.complete(ConfirmResult.confirm());
@@ -924,7 +923,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 future.whenComplete((r, ex) -> {
                     logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
                     granted(/* state, */self);
-                    resume(); // FIXME needed?
                 });
                 return future;
             });
@@ -942,7 +940,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
                 result.whenComplete((__, ex) -> {
                     granted(differState, owner);
-                    resume();
                 });
 
                 return result;

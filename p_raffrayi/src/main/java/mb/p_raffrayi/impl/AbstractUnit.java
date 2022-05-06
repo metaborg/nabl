@@ -392,7 +392,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 differ.match(previousScope).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
                     granted(state, self);
-                    resume(); // FIXME needed?
                 });
                 return future;
             });
@@ -804,7 +803,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         // Due to the synchronous nature of the Broker, this future may be completed by
         // another unit's thread. Hence we wrap it in self.schedule, so we do not break
         // the actor abstraction.
-        self.schedule(context.owner(scope)).whenComplete((r, ex) -> {
+        self.schedule(future).whenComplete((r, ex) -> {
             self.assertOnActorThread();
             granted(unitAdd, broker);
             result.complete(r, ex);
@@ -1499,7 +1498,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     getExternalDatum(datum.get()).whenComplete(future::complete);
                     return future.whenComplete((r, ex) -> {
                         granted(state, self);
-                        resume(); // FIXME necessary?
                     }).thenApply(Optional::of);
                 });
             }
@@ -1551,7 +1549,6 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     waitFor(match, owner);
                     return self.async(owner)._match(previousScope).whenComplete((__, ___) -> {
                         granted(match, owner);
-                        resume();
                     });
                 });
             }
