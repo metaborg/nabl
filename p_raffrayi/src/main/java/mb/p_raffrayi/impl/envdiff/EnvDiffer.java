@@ -31,7 +31,11 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         this.context = context;
     }
 
-    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf) {
+        return diff(scope, CapsuleUtil.immutableSet(scope), labelWf);
+    }
+
+    private IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {
         logger.debug("Computing env diff for {} ~ {}.", scope, labelWf);
         if(!differOps.ownScope(scope)) {
             logger.debug("{} external", scope);

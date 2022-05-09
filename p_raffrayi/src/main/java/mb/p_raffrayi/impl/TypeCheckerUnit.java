@@ -919,7 +919,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 // final EnvDifferState<S, L, D> state =
                 //        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, future);
                 waitFor(/* state, */self);
-                envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf).whenComplete(future::complete);
+                envDiffer.diff(path.getTarget(), labelWf).whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
                     logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
                     granted(/* state, */self);
