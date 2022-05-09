@@ -2,6 +2,7 @@ package mb.p_raffrayi;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -110,7 +111,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
         assertNotNull(result.result());
-        assertFalse(result.failures().isEmpty());
+        assertNotEquals(Arrays.asList(), result.failures());
     }
 
 

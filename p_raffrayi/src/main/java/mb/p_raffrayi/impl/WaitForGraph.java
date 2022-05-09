@@ -22,7 +22,7 @@ public class WaitForGraph<P, T> {
     private Multiset<P> waits = HashMultiset.create();
 
     public boolean isWaiting() {
-        return !waitFors.isEmpty() && !waits.isEmpty();
+        return !waitFors.isEmpty() || !waits.isEmpty();
     }
 
     public boolean isWaitingFor(T token) {
