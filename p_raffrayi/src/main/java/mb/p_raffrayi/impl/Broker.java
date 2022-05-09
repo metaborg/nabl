@@ -2,11 +2,12 @@ package mb.p_raffrayi.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -28,7 +29,6 @@ import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.DeadlockException;
@@ -113,11 +113,11 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
         this.scheduler = scheduler;
         this.system = new ActorSystem(scheduler);
 
-        this.units = new ConcurrentHashMap<>();
+        this.units = new HashMap<>();
         this.unfinishedUnits = new AtomicInteger();
         this.totalUnits = new AtomicInteger();
 
-        this.delays = new ConcurrentHashMap<>();
+        this.delays = new HashMap<>();
         this.process = BrokerProcess.of();
         this.cmh = new ChandyMisraHaas<>(this, this::_deadlocked);
     }
@@ -306,7 +306,7 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
                     final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
                     dependentSet.getAndUpdate(ds -> ds.add(origin));
                     final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
-                    delays.computeIfAbsent(unitId, key -> Sets.newConcurrentHashSet()).add(future);
+                    delays.computeIfAbsent(unitId, key -> new HashSet<>()).add(future);
                     return future.whenComplete((ref, ex) -> {
                         synchronized(lock) {
                             dependentSet.getAndUpdate(ds -> ds.remove(origin));
@@ -323,10 +323,12 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _deadlocked(Set<IProcess<S, L, D>> nodes) {
-        delays.entrySet().forEach(delays -> delays.getValue().forEach(future -> future.completeExceptionally(
-                new DeadlockException("Deadlocked while waiting for unit " + delays.getKey() + " to be added."))));
-        dependentSet.set(MultiSet.Immutable.of());
-        cmh.exec();
+        synchronized(lock) {
+            delays.forEach((unit, delays) -> delays.forEach(future -> future.completeExceptionally(
+                    new DeadlockException("Deadlocked while waiting for unit " + unit + " to be added."))));
+            dependentSet.set(MultiSet.Immutable.of());
+            cmh.exec();
+        }
     }
 
     @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
