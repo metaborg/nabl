@@ -3,7 +3,6 @@ package mb.p_raffrayi.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +26,7 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
+import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -72,7 +72,7 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
     private final AtomicInteger unfinishedUnits;
     private final AtomicInteger totalUnits;
 
-    private final Map<String, Set<ICompletable<IActorRef<? extends IUnit<S, L, D, ?>>>>> delays;
+    private final Map<String, ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>>> delays;
     private final Object lock = new Object(); // Used to synchronize updates/queries of `units` and `delays`
 
     private final BrokerProcess<S, L, D> process;
@@ -145,12 +145,13 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
     private void addUnit(IActorRef<? extends IUnit<S, L, D, ?>> unit) {
         unfinishedUnits.incrementAndGet();
         totalUnits.incrementAndGet();
+        final ICompletable<IActorRef<? extends IUnit<S, L, D, ?>>> future;
         synchronized(lock) {
             units.put(unit.id(), unit);
-            delays.computeIfPresent(unit.id(), (id, futures) -> {
-                futures.forEach(f -> f.complete(unit));
-                return null; // remove mapping
-            });
+            future = delays.remove(unit.id());
+        }
+        if(future != null) {
+            future.complete(unit);
         }
     }
 
@@ -239,8 +240,9 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
         @Override public IFuture<IActorRef<? extends IUnit<S, L, D, ?>>> owner(S scope) {
             final String id = scopeImpl.id(scope);
             // No synchronization and deadlock handling when unit can be found.
-            if(units.containsKey(id)) {
-                return CompletableFuture.completedFuture(units.get(id));
+            final IActorRef<? extends IUnit<S, L, D, ?>> unit;
+            if((unit = units.get(id)) != null) {
+                return CompletableFuture.completedFuture(unit);
             }
             synchronized(lock) {
                 cmh.exec();
@@ -297,16 +299,17 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
         }
 
         // Should be synchronized by `parent(String)` already.
-        if(units.containsKey(unitId)) {
-            return CompletableFuture.completedFuture(units.get(unitId));
+
+        final IActorRef<? extends IUnit<S, L, D, ?>> unit;
+        if((unit = units.get(unitId)) != null) {
+            return CompletableFuture.completedFuture(unit);
         } else {
             segments.remove(segments.size() - 1);
             return getActorRef(segments).thenCompose(parent -> {
                 synchronized(lock) {
                     final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
                     dependentSet.getAndUpdate(ds -> ds.add(origin));
-                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = new CompletableFuture<>();
-                    delays.computeIfAbsent(unitId, key -> new HashSet<>()).add(future);
+                    final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future = delays.computeIfAbsent(unitId, key -> new CompletableFuture<>());
                     return future.whenComplete((ref, ex) -> {
                         synchronized(lock) {
                             dependentSet.getAndUpdate(ds -> ds.remove(origin));
@@ -323,12 +326,14 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
     ///////////////////////////////////////////////////////////////////////////
 
     @Override public void _deadlocked(Set<IProcess<S, L, D>> nodes) {
+        final Map<String, ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>>> delays = new HashMap<>();
         synchronized(lock) {
-            delays.forEach((unit, delays) -> delays.forEach(future -> future.completeExceptionally(
-                    new DeadlockException("Deadlocked while waiting for unit " + unit + " to be added."))));
+            delays.putAll(this.delays);
             dependentSet.set(MultiSet.Immutable.of());
             cmh.exec();
         }
+        delays.forEach((unit, future) -> future.completeExceptionally(
+                new DeadlockException("Deadlocked while waiting for unit " + unit + " to be added.")));
     }
 
     @Override public void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k) {
