@@ -423,7 +423,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(InitScope.of(self, scope), sender);
-        resume(); // FIXME necessary?
+        // resume(); // seems unnecessary (tested with unit tests + CSV-IO)
 
         for(EdgeOrData<L> edge : edges) {
             waitFor(CloseLabel.of(self, scope, edge), sender);
@@ -453,7 +453,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(CloseScope.of(self, scope), sender);
-        resume(); // FIXME necessary?
+        // resume(); // seems unnecessary (tested with unit tests + CSV-IO)
 
         if(isScopeInitialized(scope)) {
             releaseDelays(scope);
@@ -468,7 +468,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         assertOwnOrSharedScope(scope);
 
         granted(CloseLabel.of(self, scope, edge), sender);
-        resume(); // FIXME necessary?
+        // resume(); // seems unnecessary (tested with unit tests + CSV-IO)
 
         if(isEdgeClosed(scope, edge)) {
             releaseDelays(scope, edge);
@@ -734,7 +734,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 return CapsuleUtil.<IResolutionPath<S, L, D>>toSet(ans.env());
             }).whenComplete((ans, ex) -> {
                 granted(wf, self);
-                resume(); // FIXME needed?
+                // resume(); // seems unnecessary (unit tests + CSV IO)
             });
         }
 
