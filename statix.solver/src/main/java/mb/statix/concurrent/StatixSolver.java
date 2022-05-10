@@ -1141,6 +1141,39 @@ public class StatixSolver {
             return constraint.toString();
         }
 
+        @Override public boolean equals(Object obj) {
+            if(obj == this) {
+                return true;
+            }
+
+            if(obj == null || obj.getClass() != this.getClass()) {
+                return false;
+            }
+
+            final ConstraintDataWF other = (ConstraintDataWF) obj;
+
+            final int h = hashCode;
+            final int oh = other.hashCode;
+
+            if(h != oh && h != 0 && oh != 0) {
+                return false;
+            }
+
+            // TODO: test alpha equivalence?
+            return constraint.equals(other.constraint);
+        }
+
+        private volatile int hashCode = 0;
+
+        @Override public int hashCode() {
+            int result = hashCode;
+            if(result == 0) {
+                result = constraint.hashCode();
+                hashCode = result;
+            }
+            return result;
+        }
+
     }
 
     private class ConstraintDataWFInternal implements DataWf<Scope, ITerm, ITerm> {
@@ -1261,6 +1294,39 @@ public class StatixSolver {
 
         @Override public String toString() {
             return constraint.toString(state.unifier()::toString);
+        }
+
+        @Override public boolean equals(Object obj) {
+            if(obj == this) {
+                return true;
+            }
+
+            if(obj == null || obj.getClass() != this.getClass()) {
+                return false;
+            }
+
+            final ConstraintDataEquiv other = (ConstraintDataEquiv) obj;
+
+            final int h = hashCode;
+            final int oh = other.hashCode;
+
+            if(h != oh && h != 0 && oh != 0) {
+                return false;
+            }
+
+            // TODO: test alpha equivalence?
+            return constraint.equals(other.constraint);
+        }
+
+        private volatile int hashCode = 0;
+
+        @Override public int hashCode() {
+            int result = hashCode;
+            if(result == 0) {
+                result = constraint.hashCode();
+                hashCode = result;
+            }
+            return result;
         }
 
     }
