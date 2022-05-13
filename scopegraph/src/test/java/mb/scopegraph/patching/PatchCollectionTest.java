@@ -163,14 +163,14 @@ public class PatchCollectionTest {
 
     // Invalid compositions
 
-    @Test(expected = InvalidPatchCompositionException.class) public void testCompose_DoubleSrc() throws InvalidPatchCompositionException {
+    @Test(expected = IllegalArgumentException.class) public void testCompose_DoubleSrc() throws InvalidPatchCompositionException {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s3, s1);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s2, s1);
 
         p1.putAll(p2);
     }
 
-    @Test(expected = InvalidPatchCompositionException.class) public void testCompose_DoubleTgt() throws InvalidPatchCompositionException {
+    @Test(expected = IllegalArgumentException.class) public void testCompose_DoubleTgt() throws InvalidPatchCompositionException {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s1, s2);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s1, s3);
 
@@ -181,28 +181,32 @@ public class PatchCollectionTest {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s1, s1);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s2, s1);
 
-        p1.putAll(p2);
+        final PatchCollection.Immutable<String> pc = p1.putAll(p2);
+        pc.assertConsistent();
     }
 
     @Test(expected = InvalidPatchCompositionException.class) public void testCompose_IDTgt() throws InvalidPatchCompositionException {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s1, s1);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s1, s2);
 
-        p1.putAll(p2);
+        final PatchCollection.Immutable<String> pc = p1.putAll(p2);
+        pc.assertConsistent();
     }
 
     @Test(expected = InvalidPatchCompositionException.class) public void testCompose_SrcID() throws InvalidPatchCompositionException {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s2, s1);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s1, s1);
 
-        p1.putAll(p2);
+        final PatchCollection.Immutable<String> pc = p1.putAll(p2);
+        pc.assertConsistent();
     }
 
     @Test(expected = InvalidPatchCompositionException.class) public void testCompose_TgtID() throws InvalidPatchCompositionException {
         final PatchCollection.Immutable<String> p1 = PatchCollection.Immutable.<String>of().put(s1, s2);
         final PatchCollection.Immutable<String> p2 = PatchCollection.Immutable.<String>of().put(s1, s1);
 
-        p1.putAll(p2);
+        final PatchCollection.Immutable<String> pc = p1.putAll(p2);
+        pc.assertConsistent();
     }
 
     // Helper assertions
