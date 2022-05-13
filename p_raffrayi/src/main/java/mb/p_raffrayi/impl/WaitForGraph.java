@@ -82,6 +82,10 @@ public class WaitForGraph<P, T> {
     public boolean granted(P process) {
         logger.debug("tokenless wait for {}", process);
         int oldCount = waits.remove(process, 1);
+        if(oldCount == 0) {
+            logger.error("not waiting for granted {}", process);
+            throw new IllegalStateException("not waiting for granted " + process);
+        }
         return oldCount == 1 && !waitForsByProcess.containsKey(process);
     }
 

@@ -19,10 +19,10 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
-class NilPattern extends Pattern {
+public final class NilPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
-    public NilPattern(IAttachments attachments) {
+    NilPattern(IAttachments attachments) {
         super(attachments);
     }
 

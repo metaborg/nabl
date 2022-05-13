@@ -72,6 +72,7 @@ import mb.p_raffrayi.impl.tokens.CloseLabel;
 import mb.p_raffrayi.impl.tokens.CloseScope;
 import mb.p_raffrayi.impl.tokens.Confirm;
 import mb.p_raffrayi.impl.tokens.DifferState;
+import mb.p_raffrayi.impl.tokens.EnvDifferState;
 import mb.p_raffrayi.impl.tokens.IWaitFor;
 import mb.p_raffrayi.impl.tokens.InitScope;
 import mb.p_raffrayi.impl.tokens.Query;
@@ -253,8 +254,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         assertConfirmationEnabled();
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
@@ -266,7 +267,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 // Cannot immediately confirm on `Release.instance` exception
                 // because subunits might change edges in shared scopes.
                 confirmation.getConfirmation(new ConfirmationContext(sender))
-                        .confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
+                        .confirm(scope, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
             }
         });
         return result;
@@ -838,12 +839,16 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     private final IEnvDifferContext<S, L, D> envDifferContext = new IEnvDifferContext<S, L, D>() {
 
         @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
+            final IFuture<ScopeDiff<S, L, D>> result = differ.scopeDiff(previousScope, label);
+            if(result.isDone()) {
+                return result;
+            }
             final ICompletableFuture<ScopeDiff<S, L, D>> future = new CompletableFuture<>();
-            // final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, label, future);
-            waitFor(/*state, */self);
-            differ.scopeDiff(previousScope, label).whenComplete(future::complete);
+            final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, label, future);
+            waitFor(state, self);
+            result.whenComplete(future::complete);
             future.whenComplete((r, ex) -> {
-                granted(/*state, */self);
+                granted(state, self);
             });
             return future;
         }
@@ -880,10 +885,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     new NameResolutionQuery<>(labelWf, labelOrder, edgeLabels), dataWf, dataEquiv);
         }
 
-        @Override public IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(ScopePath<S, L> path,
-                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        @Override public IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(S scope, LabelWf<L> labelWF,
+                DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             logger.debug("{} try external confirm.", this);
-            final S scope = path.getTarget();
             return getOwner(scope).thenCompose(owner -> {
                 if(owner.equals(self)) {
                     logger.debug("{} local confirm.", this);
@@ -893,7 +897,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
-                self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
+                self.async(owner)._confirm(scope, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
                     logger.trace("{} rec external confirm: {}.", this, v);
                     granted(confirm, owner);
                     resume(); // necessary!
@@ -911,18 +915,21 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             });
         }
 
-        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf) {
+        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(S scope, LabelWf<L> labelWf) {
             assertConfirmationEnabled();
-            logger.debug("{} local env diff: {}/{}.", this, path.getTarget(), labelWf);
+            logger.debug("{} local env diff: {}/{}.", this, scope, labelWf);
             return whenDifferActivated.thenCompose(__ -> {
+                final IFuture<IEnvDiff<S, L, D>> result = envDiffer.diff(scope, labelWf);
+                if(result.isDone()) {
+                    return result;
+                }
                 final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
-                // final EnvDifferState<S, L, D> state =
-                //        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, future);
-                waitFor(/* state, */self);
-                envDiffer.diff(path.getTarget(), labelWf).whenComplete(future::complete);
+                final EnvDifferState<S, L, D> state = EnvDifferState.of(sender, scope, labelWf, future);
+                waitFor(state, self);
+                result.whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
-                    logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
-                    granted(/* state, */self);
+                    logger.debug("{} granted local env diff: {}/{}: {}.", this, scope, labelWf, r);
+                    granted(state, self);
                 });
                 return future;
             });

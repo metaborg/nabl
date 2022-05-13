@@ -1782,12 +1782,12 @@ public class IncrementalTest extends PRaffrayiTestBase {
         return unitTCResult(ImmutableMultimap.of(), Collections.emptySet(), scopes);
     }
 
-    private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path) {
-        return recordedQuery().scopePath(path);
+    private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(Scope root) {
+        return recordedQuery().source(root);
     }
 
-    private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(Scope root) {
-        return recordedQuery(new ScopePath<PRaffrayiTestBase.Scope, Integer>(root));
+    private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path) {
+        return recordedQuery(path.getTarget());
     }
 
     private RecordedQuery.Builder<Scope, Integer, IDatum> recordedQuery(ScopePath<Scope, Integer> path,

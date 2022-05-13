@@ -26,7 +26,6 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
-import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableSet;
 

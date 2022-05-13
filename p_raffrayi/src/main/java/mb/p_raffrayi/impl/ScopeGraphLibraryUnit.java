@@ -116,26 +116,24 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
         final IPatchCollection.Transient<S> patches = PatchCollection.Transient.of();
         final Iterator<S> previousScopes = previousResult.rootScopes().iterator();
-        for(S currentScope: rootScopes) {
+        for(S currentScope : rootScopes) {
             patches.put(currentScope, previousScopes.next());
         }
 
         if(patches.isIdentity()) {
             scopeGraph.set(previousResult.scopeGraph());
         } else {
-            // @formatter::off
+            // @formatter:off
             final Patcher<S, L, D> patcher = new Patcher.Builder<S, L, D>()
-                .patchSources(patches)
-                .patchEdgeTargets(patches)
-                .patchDatumSources(patches)
-                .patchDatums(patches, context::substituteScopes)
+                .patchSources(patches).patchEdgeTargets(patches)
+                .patchDatumSources(patches).patchDatums(patches, context::substituteScopes)
                 .build();
             scopeGraph.set(patcher.apply(previousResult.scopeGraph(),
                 (s, t) -> Unit.unit,
-                (s_o, s_n, l, t_o, t_n, u) -> {},
+                (s_o, s_n, l, t_o, t_n, u) -> { },
                 DataPatchCallback.noop()
             ));
-            // @formatter::on
+            // @formatter:on
         }
         this.scopes.__insertAll(previousResult.scopes());
 
@@ -219,8 +217,8 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return _query(self.sender(TYPE), path, query, dataWF, dataEquiv);
     }
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 

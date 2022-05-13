@@ -25,9 +25,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private static final ILogger logger = LoggerUtils.logger(ScopeGraphLibraryWorker.class);
 
-    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self,
-            IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context, Iterable<L> edgeLabels,
-            Set<S> scopes, Immutable<S, L, D> scopeGraph) {
+    ScopeGraphLibraryWorker(IActor<? extends IUnit<S, L, D, Unit>> self, IActorRef<? extends IUnit<S, L, D, ?>> parent,
+            IUnitContext<S, L, D> context, Iterable<L> edgeLabels, Set<S> scopes, Immutable<S, L, D> scopeGraph) {
         super(self, parent, context, edgeLabels);
 
         this.scopes.__insertAll(scopes);
@@ -88,8 +87,8 @@ class ScopeGraphLibraryWorker<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         throw new UnsupportedOperationException("Library workers cannot receive queries in previous scope graphs.");
     }
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 

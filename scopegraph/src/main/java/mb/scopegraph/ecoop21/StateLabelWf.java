@@ -1,12 +1,15 @@
 package mb.scopegraph.ecoop21;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
 import mb.scopegraph.resolution.State;
 import mb.scopegraph.resolution.StateMachine;
 
-public class StateLabelWf<L> implements LabelWf<L> {
+public class StateLabelWf<L> implements LabelWf<L>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final StateMachine<L> stateMachine;
     private final State<L> state;

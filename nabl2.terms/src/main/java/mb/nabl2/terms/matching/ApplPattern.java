@@ -23,13 +23,13 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
-class ApplPattern extends Pattern {
+public final class ApplPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final String op;
     private final List<Pattern> args;
 
-    public ApplPattern(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
+    ApplPattern(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
         super(attachments);
         this.op = op;
         this.args = ImmutableList.copyOf(args);

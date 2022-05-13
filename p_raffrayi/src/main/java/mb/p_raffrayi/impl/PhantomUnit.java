@@ -70,12 +70,12 @@ public class PhantomUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         // ignore
     }
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         if(prevEnvEmpty) {
             return CompletableFuture.completedFuture(ConfirmResult.confirm());
         }
-        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), path,
+        return doQueryPrevious(self.sender(TYPE), previousResult.scopeGraph(), new ScopePath<>(scope),
                 new NameResolutionQuery<>(labelWF, LabelOrder.none(), edgeLabels), dataWF, DataLeq.any())
                         .thenApply(ans -> {
                             if(!ans.env().isEmpty()) {

@@ -20,10 +20,10 @@ public interface IConfirmationContext<S, L, D> {
     IFuture<IQueryAnswer<S, L, D>> queryPrevious(ScopePath<S, L> scopePath, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
             LabelOrder<L> labelOrder, DataLeq<S, L, D> dataEquiv);
 
-    IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(ScopePath<S, L> path, LabelWf<L> labelWf,
-            DataWf<S, L, D> dataWf, boolean prevEnvEmpty);
+    IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+            boolean prevEnvEmpty);
 
-    IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf);
+    IFuture<IEnvDiff<S, L, D>> envDiff(S scope, LabelWf<L> labelWf);
 
     IFuture<Optional<S>> match(S scope);
 }

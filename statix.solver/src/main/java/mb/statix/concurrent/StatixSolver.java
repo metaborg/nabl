@@ -1129,8 +1129,15 @@ public class StatixSolver {
             }
         }
 
+        private Set.Immutable<Scope> scopes;
+
         @Override public Immutable<Scope> scopes() {
-            return Patching.ruleScopes(constraint);
+            Set.Immutable<Scope> result = scopes;
+            if(result == null) {
+                result = Patching.ruleScopes(constraint);
+                scopes = result;
+            }
+            return result;
         }
 
         @Override public DataWf<Scope, ITerm, ITerm> patch(IPatchCollection.Immutable<Scope> patches) {
