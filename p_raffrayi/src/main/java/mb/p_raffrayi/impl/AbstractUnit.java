@@ -78,7 +78,8 @@ import mb.p_raffrayi.nameresolution.IResolutionContext;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.p_raffrayi.nameresolution.NameResolutionQuery;
 import mb.p_raffrayi.nameresolution.StateMachineQuery;
-import mb.p_raffrayi.nameresolution.tracing.ExtQueries;
+import mb.p_raffrayi.nameresolution.tracing.ExtQuerySet;
+import mb.p_raffrayi.nameresolution.tracing.ExtQuerySets;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -500,10 +501,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
         final boolean external = !sender.equals(self);
 
-        final Ref<IResolutionContext<S, L, D, ExtQueries<S, L, D>>> context = new Ref<>();
-        context.set(new IResolutionContext<S, L, D, ExtQueries<S, L, D>>() {
+        final Ref<IResolutionContext<S, L, D, ExtQuerySet<S, L, D>>> context = new Ref<>();
+        context.set(new IResolutionContext<S, L, D, ExtQuerySet<S, L, D>>() {
 
-            @Override public IFuture<Tuple2<Env<S, L, D>, ExtQueries<S, L, D>>> externalEnv(ScopePath<S, L> path,
+            @Override public IFuture<Tuple2<Env<S, L, D>, ExtQuerySet<S, L, D>>> externalEnv(ScopePath<S, L> path,
                     IQuery<S, L, D> query, ICancel cancel) {
                 final S scope = path.getTarget();
                 if(canAnswer(scope)) {
@@ -530,8 +531,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             stats.outgoingQueries += 1;
                         }
                         return result.thenApply(ans -> {
-                            ExtQueries.Builder<S, L, D> extQueriesBuilder =
-                                    ExtQueries.<S, L, D>builder().from(ExtQueries.empty());
+                            ExtQuerySet.Builder<S, L, D> extQueriesBuilder =
+                                    ExtQuerySet.<S, L, D>builder().from(ExtQuerySets.empty());
                             if(isQueryRecordingEnabled()) {
                                 extQueriesBuilder.addAllTransitiveQueries(ans.transitiveQueries());
                                 extQueriesBuilder.addAllPredicateQueries(ans.predicateQueries());
@@ -589,7 +590,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
 
-            @Override public IFuture<Tuple2<Boolean, ExtQueries<S, L, D>>> dataWf(D d, ICancel cancel)
+            @Override public IFuture<Tuple2<Boolean, ExtQuerySet<S, L, D>>> dataWf(D d, ICancel cancel)
                     throws InterruptedException {
                 stats.dataWfChecks += 1;
                 final IFuture<Boolean> result;
@@ -617,11 +618,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
                 return future.thenApply(wf -> {
                     return Tuple2.of(wf,
-                            ExtQueries.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                            ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
                 });
             }
 
-            @Override public IFuture<Tuple2<Boolean, ExtQueries<S, L, D>>> dataEquiv(D d1, D d2, ICancel cancel)
+            @Override public IFuture<Tuple2<Boolean, ExtQuerySet<S, L, D>>> dataEquiv(D d1, D d2, ICancel cancel)
                     throws InterruptedException {
                 stats.dataLeqChecks += 1;
                 final IFuture<Boolean> result;
@@ -650,7 +651,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
                 return future.thenApply(wf -> {
                     return Tuple2.of(wf,
-                            ExtQueries.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                            ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
                 });
             }
 
@@ -664,17 +665,17 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
 
-            @Override public ExtQueries<S, L, D> unitMetadata() {
-                return ExtQueries.empty();
+            @Override public ExtQuerySet<S, L, D> unitMetadata() {
+                return ExtQuerySets.empty();
             }
 
-            @Override public ExtQueries<S, L, D> compose(ExtQueries<S, L, D> queries1, ExtQueries<S, L, D> queries2) {
+            @Override public ExtQuerySet<S, L, D> compose(ExtQuerySet<S, L, D> queries1, ExtQuerySet<S, L, D> queries2) {
                 return queries1.addQueries(queries2);
             }
 
         });
 
-        final IFuture<Tuple2<Env<S, L, D>, ExtQueries<S, L, D>>> result =
+        final IFuture<Tuple2<Env<S, L, D>, ExtQuerySet<S, L, D>>> result =
                 context.get().externalEnv(path, query, this.context.cancel());
 
         result.whenComplete((env, ex) -> {
@@ -780,7 +781,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             IScopeGraph.Immutable<S, L, D> scopeGraph, ScopePath<S, L> path, IQuery<S, L, D> query,
             DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         logger.debug("rec pquery from {}", sender);
-        final IResolutionContext<S, L, D, ExtQueries<S, L, D>> context =
+        final IResolutionContext<S, L, D, ExtQuerySet<S, L, D>> context =
                 new StaticNameResolutionContext(sender, scopeGraph, dataWF, dataEquiv);
 
         return query.resolve(context, path, this.context.cancel()).thenApply(env -> {
@@ -985,7 +986,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     }
 
-    protected final class StaticNameResolutionContext implements IResolutionContext<S, L, D, ExtQueries<S, L, D>> {
+    protected final class StaticNameResolutionContext implements IResolutionContext<S, L, D, ExtQuerySet<S, L, D>> {
 
         private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final DataLeq<S, L, D> dataLeq;
@@ -1000,7 +1001,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             this.dataLeq = dataLeq;
         }
 
-        @Override public IFuture<Tuple2<Env<S, L, D>, ExtQueries<S, L, D>>> externalEnv(ScopePath<S, L> path,
+        @Override public IFuture<Tuple2<Env<S, L, D>, ExtQuerySet<S, L, D>>> externalEnv(ScopePath<S, L> path,
                 IQuery<S, L, D> query, ICancel cancel) {
             final S scope = path.getTarget();
             if(canAnswer(scope)) {
@@ -1010,14 +1011,14 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
             return getOwner(scope).thenCompose(owner -> {
                 logger.debug("remote p_env from {}", owner);
-                final ICompletableFuture<Tuple2<Env<S, L, D>, ExtQueries<S, L, D>>> future = new CompletableFuture<>();
+                final ICompletableFuture<Tuple2<Env<S, L, D>, ExtQuerySet<S, L, D>>> future = new CompletableFuture<>();
                 final PQuery<S, L, D> pQuery = PQuery.of(sender, path, dataWf, future);
                 waitFor(pQuery, owner);
                 self.async(owner)._queryPrevious(path, query, dataWf, dataLeq).whenComplete((env, ex) -> {
                     logger.debug("got p_env from {}", sender);
                     granted(pQuery, owner);
                     future.complete(
-                            Tuple2.of(env.env(), ExtQueries.of(env.transitiveQueries(), env.predicateQueries())), ex);
+                            Tuple2.of(env.env(), ExtQuerySet.of(env.transitiveQueries(), env.predicateQueries())), ex);
                     resume();
                 });
 
@@ -1034,19 +1035,19 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             return CompletableFuture.completedFuture(scopeGraph.getEdges(scope, label));
         }
 
-        @Override public IFuture<Tuple2<Boolean, ExtQueries<S, L, D>>> dataWf(D datum, ICancel cancel)
+        @Override public IFuture<Tuple2<Boolean, ExtQuerySet<S, L, D>>> dataWf(D datum, ICancel cancel)
                 throws InterruptedException {
             final StaticQueryContext queryContext = new StaticQueryContext(sender, scopeGraph);
             return dataWf.wf(datum, queryContext, cancel).thenApply(wf -> {
-                return Tuple2.of(wf, ExtQueries.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                return Tuple2.of(wf, ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
             });
         }
 
-        @Override public IFuture<Tuple2<Boolean, ExtQueries<S, L, D>>> dataEquiv(D d1, D d2, ICancel cancel)
+        @Override public IFuture<Tuple2<Boolean, ExtQuerySet<S, L, D>>> dataEquiv(D d1, D d2, ICancel cancel)
                 throws InterruptedException {
             final StaticQueryContext queryContext = new StaticQueryContext(sender, scopeGraph);
             return dataLeq.leq(d1, d2, queryContext, cancel).thenApply(wf -> {
-                return Tuple2.of(wf, ExtQueries.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                return Tuple2.of(wf, ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
             });
         }
 
@@ -1060,11 +1061,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             });
         }
 
-        @Override public ExtQueries<S, L, D> unitMetadata() {
-            return ExtQueries.empty();
+        @Override public ExtQuerySet<S, L, D> unitMetadata() {
+            return ExtQuerySets.empty();
         }
 
-        @Override public ExtQueries<S, L, D> compose(ExtQueries<S, L, D> queries1, ExtQueries<S, L, D> queries2) {
+        @Override public ExtQuerySet<S, L, D> compose(ExtQuerySet<S, L, D> queries1, ExtQuerySet<S, L, D> queries2) {
             return queries1.addQueries(queries2);
         }
 
@@ -1091,7 +1092,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
                 IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
                 DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-            final IResolutionContext<S, L, D, ExtQueries<S, L, D>> pContext =
+            final IResolutionContext<S, L, D, ExtQuerySet<S, L, D>> pContext =
                     new StaticNameResolutionContext(sender, scopeGraph, dataWF, dataEquiv);
 
             return query.resolve(pContext, new ScopePath<>(scope), context.cancel()).thenApply(ans -> {

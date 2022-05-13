@@ -39,7 +39,7 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         logger.debug("Computing env diff for {} ~ {}.", scope, labelWf);
         if(!differOps.ownScope(scope)) {
             logger.debug("{} external", scope);
-            return CompletableFuture.completedFuture(EnvDiff.empty());
+            return CompletableFuture.completedFuture(EnvDiffs.empty());
         }
 
         return context.match(scope).thenCompose(match_opt -> {
