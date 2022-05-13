@@ -48,7 +48,7 @@ public final class PatternAs extends Pattern {
         this.pattern = pattern;
     }
 
-    @Nullable ITermVar getVar() {
+    public @Nullable ITermVar getVar() {
         return var.getVar();
     }
 

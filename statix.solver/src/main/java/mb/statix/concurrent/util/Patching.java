@@ -1,6 +1,9 @@
 package mb.statix.concurrent.util;
 
 import static mb.nabl2.terms.matching.TermPattern.P;
+import static mb.nabl2.terms.build.TermBuild.B;
+
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -24,8 +27,6 @@ import mb.nabl2.terms.matching.ConsPattern;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.PatternAs;
 import mb.nabl2.terms.matching.StringPattern;
-import mb.nabl2.terms.matching.Transform.T;
-import mb.nabl2.terms.substitution.FreshVars;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -53,6 +54,8 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.spec.Rule;
 
 public class Patching {
+
+    private static final String SCOPE_OP = "Scope";
 
     // Collect domain of scopes.
 
@@ -178,7 +181,7 @@ public class Patching {
             @Override public Unit caseAppl(IApplTerm appl) {
                 if(appl instanceof Scope) {
                     scopes.get().__insert((Scope) appl);
-                } else if(appl.getOp().equals("Scope") && appl.getArity() == 2) {
+                } else if(appl.getOp().equals(SCOPE_OP) && appl.getArity() == 2) {
                     final ITerm arg1 = appl.getArgs().get(0);
                     final ITerm arg2 = appl.getArgs().get(1);
 
@@ -191,7 +194,7 @@ public class Patching {
                         termScopes(arg2, scopes);
                     }
                 } else {
-                    for(ITerm arg: appl.getArgs()) {
+                    for(ITerm arg : appl.getArgs()) {
                         termScopes(arg, scopes);
                     }
                 }
@@ -247,7 +250,7 @@ public class Patching {
     private static void patternScopes(Pattern pattern, LazyScopeSetSupplier scopes) {
         if(pattern instanceof ApplPattern) {
             final ApplPattern appl = (ApplPattern) pattern;
-            if(appl.getOp().equals("Scope") && appl.getArgs().size() == 2) {
+            if(appl.getOp().equals(SCOPE_OP) && appl.getArgs().size() == 2) {
                 final Pattern arg1 = appl.getArgs().get(0);
                 final Pattern arg2 = appl.getArgs().get(1);
 
@@ -275,73 +278,134 @@ public class Patching {
     // Apply patch collection to rule/constraint/pattern/term
 
     public static Rule patch(Rule rule, IPatchCollection<Scope> patches) {
-        // @formatter:off
-        final ImmutableList<Pattern> newParams = rule.params().stream()
-            .map(p -> patch(p, patches))
-            .collect(ImmutableList.toImmutableList());
-        // @formatter:on
+        final List<Pattern> params = rule.params();
+        ImmutableList.Builder<Pattern> newParamsBuilder = null;
+        for(int i = 0; i < params.size(); i++) {
+            final Pattern param = params.get(i);
+            final Pattern newParam = patch(param, patches);
+            if(newParam != null) {
+                if(newParamsBuilder == null) {
+                    newParamsBuilder = ImmutableList.builderWithExpectedSize(params.size());
+                    for(int j = 0; j < i; j++) {
+                        newParamsBuilder.add(params.get(j));
+                    }
+                }
+                newParamsBuilder.add(newParam);
+            } else if(newParamsBuilder != null) {
+                newParamsBuilder.add(param);
+            }
+        }
 
         final IConstraint newBody = patch(rule.body(), patches);
+        if(newParamsBuilder == null && newBody == null) {
+            // no change
+            return null;
+        }
 
-        return rule.withParams(newParams).withBody(newBody);
+        Rule result = rule;
+        if(newParamsBuilder != null) {
+            result = result.withParams(newParamsBuilder.build());
+        }
+        if(newBody != null) {
+            result = result.withBody(newBody);
+        }
+
+        return result;
     }
 
     public static IConstraint patch(IConstraint constraint, IPatchCollection<Scope> patches) {
         return constraint.match(new Cases<IConstraint>() {
 
             @Override public IConstraint caseArith(CArith c) {
-                return c;
+                return null;
             }
 
             @Override public IConstraint caseConj(CConj c) {
-                final IConstraint newLeft = patch(c.left(), patches);
-                final IConstraint newRight = patch(c.right(), patches);
+                IConstraint newLeft = patch(c.left(), patches);
+                IConstraint newRight = patch(c.right(), patches);
+
+                if(newLeft == null && newRight == null) {
+                    return null;
+                }
+
+                newLeft = newLeft == null ? c.left() : newLeft;
+                newRight = newRight == null ? c.right() : newRight;
 
                 return new CConj(newLeft, newRight, c.cause().orElse(null));
             }
 
             @Override public IConstraint caseEqual(CEqual c) {
-                final ITerm newTerm1 = patch(c.term1(), patches);
-                final ITerm newTerm2 = patch(c.term2(), patches);
+                ITerm newTerm1 = patch(c.term1(), patches);
+                ITerm newTerm2 = patch(c.term2(), patches);
+
+                if(newTerm1 == null && newTerm2 == null) {
+                    return null;
+                }
+
+                newTerm1 = newTerm1 == null ? c.term1() : newTerm1;
+                newTerm2 = newTerm2 == null ? c.term2() : newTerm2;
 
                 return new CEqual(newTerm1, newTerm2, c.cause().orElse(null), c.message().orElse(null));
             }
 
             @Override public IConstraint caseExists(CExists c) {
                 // TODO: preserve free vars?
-                return c.withConstraint(patch(c.constraint(), patches));
+                final IConstraint newConstraint = patch(c.constraint(), patches);
+                return newConstraint == null ? null : c.withConstraint(newConstraint);
             }
 
             @Override public IConstraint caseFalse(CFalse c) {
-                return c;
+                return null;
             }
 
             @Override public IConstraint caseInequal(CInequal c) {
-                final ITerm newTerm1 = patch(c.term1(), patches);
-                final ITerm newTerm2 = patch(c.term2(), patches);
+                ITerm newTerm1 = patch(c.term1(), patches);
+                ITerm newTerm2 = patch(c.term2(), patches);
 
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable IMessage message = c.message().orElse(null);
+
+                if(newTerm1 == null && newTerm2 == null) {
+                    return null;
+                }
+
+                newTerm1 = newTerm1 == null ? c.term1() : newTerm1;
+                newTerm2 = newTerm2 == null ? c.term2() : newTerm2;
 
                 return new CInequal(c.universals(), newTerm1, newTerm2, cause, message);
             }
 
             @Override public IConstraint caseNew(CNew c) {
-                final ITerm newScopeTerm = patch(c.scopeTerm(), patches);
-                final ITerm newDatumTerm = patch(c.datumTerm(), patches);
+                ITerm newScopeTerm = patch(c.scopeTerm(), patches);
+                ITerm newDatumTerm = patch(c.datumTerm(), patches);
+
+                if(newScopeTerm == null && newDatumTerm == null) {
+                    return null;
+                }
+
+                newScopeTerm = newScopeTerm == null ? c.scopeTerm() : newScopeTerm;
+                newDatumTerm = newDatumTerm == null ? c.datumTerm() : newDatumTerm;
 
                 return new CNew(newScopeTerm, newDatumTerm, c.cause().orElse(null), c.ownCriticalEdges().orElse(null));
             }
 
             @Override public IConstraint caseResolveQuery(IResolveQuery c) {
-                final ITerm newScopeTerm = patch(c.scopeTerm(), patches);
-                final ITerm newResultTerm = patch(c.resultTerm(), patches);
+                final ITerm scopeTerm = patch(c.scopeTerm(), patches);
+                final ITerm resultTerm = patch(c.resultTerm(), patches);
 
                 final Rule newDataWf = patch(c.filter().getDataWF(), patches);
-                final QueryFilter newFilter = new QueryFilter(c.filter().getLabelWF(), newDataWf);
-
                 final Rule newDataEquiv = patch(c.min().getDataEquiv(), patches);
-                final QueryMin newMin = new QueryMin(c.min().getLabelOrder(), newDataEquiv);
+
+                if(scopeTerm == null && resultTerm == null && newDataWf == null && newDataEquiv == null) {
+                    return null;
+                }
+
+                final ITerm newScopeTerm = scopeTerm == null ? c.scopeTerm() : scopeTerm;
+                final ITerm newResultTerm = resultTerm == null ? c.resultTerm() : resultTerm;
+                final QueryFilter newFilter = new QueryFilter(c.filter().getLabelWF(),
+                        newDataWf == null ? c.filter().getDataWF() : newDataWf);
+                final QueryMin newMin = new QueryMin(c.min().getLabelOrder(),
+                        newDataEquiv == null ? c.min().getDataEquiv() : newDataEquiv);
 
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable IMessage message = c.message().orElse(null);
@@ -360,8 +424,15 @@ public class Patching {
 
             @Override public IConstraint caseTellEdge(CTellEdge c) {
                 // TODO: patch critical edges?
-                final ITerm newSourceTerm = patch(c.sourceTerm(), patches);
-                final ITerm newTargetTerm = patch(c.targetTerm(), patches);
+                ITerm newSourceTerm = patch(c.sourceTerm(), patches);
+                ITerm newTargetTerm = patch(c.targetTerm(), patches);
+
+                if(newSourceTerm == null && newTargetTerm == null) {
+                    return null;
+                }
+
+                newSourceTerm = newSourceTerm == null ? c.sourceTerm() : newSourceTerm;
+                newTargetTerm = newTargetTerm == null ? c.targetTerm() : newTargetTerm;
 
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable ICompleteness.Immutable bodyCriticalEdges = c.bodyCriticalEdges().orElse(null);
@@ -370,50 +441,248 @@ public class Patching {
             }
 
             @Override public IConstraint caseTermId(CAstId c) {
-                final ITerm newAstTerm = patch(c.astTerm(), patches);
-                final ITerm newIdTerm = patch(c.idTerm(), patches);
+                ITerm newAstTerm = patch(c.astTerm(), patches);
+                ITerm newIdTerm = patch(c.idTerm(), patches);
+
+                if(newAstTerm == null && newIdTerm == null) {
+                    return null;
+                }
+
+                newAstTerm = newAstTerm == null ? c.astTerm() : newAstTerm;
+                newIdTerm = newIdTerm == null ? c.idTerm() : newIdTerm;
 
                 return new CAstId(newAstTerm, newIdTerm, c.cause().orElse(null));
             }
 
             @Override public IConstraint caseTermProperty(CAstProperty c) {
-                final ITerm newIdTerm = patch(c.idTerm(), patches);
-                final ITerm newValue = patch(c.value(), patches);
+                ITerm newIdTerm = patch(c.idTerm(), patches);
+                ITerm newValue = patch(c.value(), patches);
+
+                if(newIdTerm == null && newValue == null) {
+                    return null;
+                }
+
+                newIdTerm = newIdTerm == null ? c.idTerm() : newIdTerm;
+                newValue = newValue == null ? c.value() : newValue;
 
                 return new CAstProperty(newIdTerm, c.property(), c.op(), newValue, c.cause().orElse(null));
             }
 
             @Override public IConstraint caseTrue(CTrue c) {
-                return c;
+                return null;
             }
 
             @Override public IConstraint caseTry(CTry c) {
                 final IConstraint newConstraint = patch(c.constraint(), patches);
 
-                return new CTry(newConstraint, c.cause().orElse(null), c.message().orElse(null));
+                return newConstraint == null ? null
+                        : new CTry(newConstraint, c.cause().orElse(null), c.message().orElse(null));
             }
 
             @Override public IConstraint caseUser(CUser c) {
-                final ImmutableList<ITerm> newArgs =
-                        c.args().stream().map(arg -> patch(arg, patches)).collect(ImmutableList.toImmutableList());
+                final List<ITerm> args = c.args();
+                final int size = args.size();
+                ImmutableList.Builder<ITerm> newArgsBuilder = null;
+                for(int i = 0; i < size; i++) {
+                    final ITerm arg = args.get(i);
+                    final ITerm newArg = patch(arg, patches);
+                    if(newArg != null) {
+                        if(newArgsBuilder == null) {
+                            newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                            for(int j = 0; j < i; j++) {
+                                newArgsBuilder.add(args.get(j));
+                            }
+                        }
+                        newArgsBuilder.add(newArg);
+                    } else if(newArgsBuilder != null) {
+                        newArgsBuilder.add(arg);
+                    }
+                }
+
+                if(newArgsBuilder == null) {
+                    return null;
+                }
+
                 // TODO Patch ownCriticalEdges?
-                return new CUser(c.name(), newArgs, c.cause().orElse(null), c.message().orElse(null),
+                return new CUser(c.name(), newArgsBuilder.build(), c.cause().orElse(null), c.message().orElse(null),
                         c.ownCriticalEdges().orElse(null));
             }
         });
     }
 
     public static Pattern patch(Pattern pattern, IPatchCollection<Scope> patches) {
-        final FreshVars fresh = new FreshVars(pattern.getVars());
-        final ITerm patternTerm = pattern.asTerm(var -> var.orElseGet(() -> fresh.fresh("wld")))._1();
-        final Set.Immutable<ITermVar> wildCards = fresh.reset();
+        if(pattern instanceof ApplPattern) {
+            final ApplPattern appl = (ApplPattern) pattern;
+            final List<Pattern> args = appl.getArgs();
+            final int size = args.size();
+            if(appl.getOp().equals(SCOPE_OP) && size == 2) {
+                final Pattern arg1 = appl.getArgs().get(0);
+                final Pattern arg2 = appl.getArgs().get(1);
 
-        final ITerm patchedTerm = patch(patternTerm, patches);
-        return P.fromTerm(patchedTerm, wildCards::contains);
+                if(arg1 instanceof StringPattern && arg2 instanceof StringPattern) {
+                    final String resource = ((StringPattern) arg1).getValue();
+                    final String id = ((StringPattern) arg2).getValue();
+
+                    final Scope scope = Scope.of(resource, id);
+                    final Scope newScope = patches.patch(scope);
+
+                    if(scope == newScope) {
+                        return null;
+                    }
+
+                    final ImmutableList<Pattern> newArgs =
+                            ImmutableList.of(P.newString(newScope.getResource(), arg1.getAttachments()),
+                                    P.newString(newScope.getName(), arg2.getAttachments()));
+                    return P.newAppl(SCOPE_OP, newArgs, appl.getAttachments());
+                }
+            }
+
+            ImmutableList.Builder<Pattern> newArgsBuilder = null;
+            for(int i = 0; i < size; i++) {
+                final Pattern arg = args.get(i);
+                final Pattern newArg = patch(arg, patches);
+                if(newArg != null) {
+                    if(newArgsBuilder == null) {
+                        newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                        for(int j = 0; j < i; j++) {
+                            newArgsBuilder.add(args.get(j));
+                        }
+                    }
+                    newArgsBuilder.add(newArg);
+                } else if(newArgsBuilder != null) {
+                    newArgsBuilder.add(arg);
+                }
+            }
+
+            if(newArgsBuilder == null) {
+                return null;
+            }
+
+            return P.newAppl(appl.getOp(), newArgsBuilder.build(), appl.getAttachments());
+        } else if(pattern instanceof ConsPattern) {
+            final ConsPattern cons = (ConsPattern) pattern;
+            Pattern head = patch(cons.getHead(), patches);
+            Pattern tail = patch(cons.getTail(), patches);
+
+            if(head == null && tail == null) {
+                return null;
+            }
+
+            head = head == null ? cons.getHead() : head;
+            tail = tail == null ? cons.getTail() : tail;
+
+            return P.newCons(head, tail, cons.getAttachments());
+        } else if(pattern instanceof PatternAs) {
+            final PatternAs as = (PatternAs) pattern;
+            final Pattern sub = patch(as.getPattern(), patches);
+
+            return sub == null ? null : P.newAs(as.getVar(), sub);
+        } else {
+            return null;
+        }
+
     }
 
     public static ITerm patch(ITerm term, IPatchCollection<Scope> patches) {
-        return T.sometd(Scope.matcher().<ITerm>map(patches::patch)::match).apply(term);
+        return term.match(new ITerm.Cases<ITerm>() {
+
+            @Override public ITerm caseVar(ITermVar var) {
+                return null;
+            }
+
+            @Override public ITerm caseString(IStringTerm string) {
+                return null;
+            }
+
+            @Override public ITerm caseList(IListTerm cons) {
+                return patch(cons, patches);
+            }
+
+            @Override public ITerm caseInt(IIntTerm integer) {
+                return null;
+            }
+
+            @Override public ITerm caseBlob(IBlobTerm integer) {
+                return null;
+            }
+
+            @Override public ITerm caseAppl(IApplTerm appl) {
+                if(appl instanceof Scope) {
+                    final Scope newScope = patches.patch((Scope) appl);
+                    return newScope == appl ? null : newScope;
+                } else if(appl.getOp().equals(SCOPE_OP) && appl.getArity() == 2) {
+                    final ITerm arg1 = appl.getArgs().get(0);
+                    final ITerm arg2 = appl.getArgs().get(1);
+
+                    if(arg1 instanceof IStringTerm && arg2 instanceof IStringTerm) {
+                        final String resource = ((IStringTerm) arg1).getValue();
+                        final String name = ((IStringTerm) arg2).getValue();
+
+                        final Scope oldScope = Scope.of(resource, name);
+                        final Scope newScope = patches.patch(oldScope);
+
+                        return newScope == appl ? null : newScope;
+                    }
+                } else if(appl.getArity() == 0) {
+                    return null;
+                }
+
+                final List<ITerm> args = appl.getArgs();
+                final int size = args.size();
+                ImmutableList.Builder<ITerm> newArgsBuilder = null;
+
+                for(int i = 0; i < size; i++) {
+                    final ITerm arg = args.get(i);
+                    final ITerm newArg = patch(arg, patches);
+                    if(newArg != null) {
+                        if(newArgsBuilder == null) {
+                            newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                            for(int j = 0; j < i; j++) {
+                                newArgsBuilder.add(args.get(j));
+                            }
+                        }
+                        newArgsBuilder.add(newArg);
+                    } else if(newArgsBuilder != null) {
+                        newArgsBuilder.add(arg);
+                    }
+                }
+
+                if(newArgsBuilder == null) {
+                    return null;
+                }
+
+                return B.newAppl(appl.getOp(), newArgsBuilder.build(), appl.getAttachments());
+            }
+
+        });
+    }
+
+    public static IListTerm patch(IListTerm term, IPatchCollection<Scope> patches) {
+        return term.match(new IListTerm.Cases<IListTerm>() {
+
+            @Override public IListTerm caseCons(IConsTerm cons) {
+                ITerm newHead = patch(cons.getHead(), patches);
+                IListTerm newTail = patch(cons.getTail(), patches);
+
+                if(newHead == null && newTail == null) {
+                    return null;
+                }
+
+                newHead = newHead == null ? cons.getHead() : newHead;
+                newTail = newTail == null ? cons.getTail() : newTail;
+
+                return B.newCons(newHead, newTail, cons.getAttachments());
+            }
+
+            @Override public IListTerm caseNil(INilTerm nil) {
+                return null;
+            }
+
+            @Override public IListTerm caseVar(ITermVar var) {
+                return null;
+            }
+
+        });
     }
 
     private static final class LazyScopeSetSupplier {
@@ -433,7 +702,6 @@ public class Patching {
             final Set.Transient<Scope> value = this.value;
             return value == null ? CapsuleUtil.immutableSet() : value.freeze();
         }
-
 
     }
 

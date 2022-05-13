@@ -1141,7 +1141,11 @@ public class StatixSolver {
         }
 
         @Override public DataWf<Scope, ITerm, ITerm> patch(IPatchCollection.Immutable<Scope> patches) {
-            return new ConstraintDataWF(spec, Patching.patch(constraint, patches));
+            final Rule newRule = Patching.patch(constraint, patches);
+            if(newRule == null) {
+                return this;
+            }
+            return new ConstraintDataWF(spec, newRule);
         }
 
         @Override public String toString() {

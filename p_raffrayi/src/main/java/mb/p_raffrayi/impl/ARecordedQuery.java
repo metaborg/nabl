@@ -58,20 +58,24 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
         Optional<RecordedQuery.Builder<S, L, D>> builder = patchSource(patches);
         builder = patchDatumScopes(patches, builder);
-        patchDataWf(patches, builder);
+        builder = patchDataWf(patches, builder);
 
-        return builder.<IRecordedQuery<S, L, D>>map(RecordedQuery.Builder::build).orElse(this);
+        if(builder.isPresent()) {
+            return builder.get().build();
+        }
+
+        return this;
     }
 
     private Optional<RecordedQuery.Builder<S, L, D>> patchDataWf(IPatchCollection.Immutable<S> patches,
             final Optional<RecordedQuery.Builder<S, L, D>> builder) {
         // dataWf().scopes() seems to be expensive, and does the same traversal as dataWf().patch()
-        // Therefore, skip 'optimization' here.
-        if(hasOverlap(dataWf().scopes(), patches.patchDomain())) {
-            return Optional.of(builder.orElseGet(() -> RecordedQuery.<S, L, D>builder().from(this))
-                    .dataWf(dataWf().patch(patches)));
-        }
-        return builder;
+        // Therefore, skip `hasOverlap` 'optimization' here.
+        final DataWf<S, L, D> oldDataWf = dataWf();
+        final DataWf<S, L, D> newDataWf = oldDataWf.patch(patches);
+
+        return oldDataWf == newDataWf ? builder : Optional.of(
+                builder.orElseGet(() -> RecordedQuery.<S, L, D>builder().from(this)).dataWf(newDataWf));
     }
 
     private Optional<RecordedQuery.Builder<S, L, D>> patchDatumScopes(IPatchCollection.Immutable<S> patches,
