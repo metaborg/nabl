@@ -1,0 +1,43 @@
+module statix/runtime/Properties
+
+imports
+
+  statix/API
+
+  statix/runtime/ATerm
+
+context-free sorts
+
+  Stx-Properties
+  Stx-PropertySet
+  Stx-Property
+
+  Stx-PropertyName
+  Stx-Multiplicity
+
+lexical sorts
+
+  STX-PROPNAME
+
+context-free syntax
+
+  Stx-Properties.Properties = <
+    properties
+      <{Stx-PropertySet "\n"}*>
+  >
+
+  Stx-PropertySet = <
+    <Stx-TermIndex> {
+      <{Stx-Property "\n"}*>
+    }
+  >
+
+  Stx-Property.StxProp = <<Stx-PropertyName> := <Stx-ATerm> (<Stx-Multiplicity>)>
+
+  // functional duplicate from statix.lang
+  Stx-Multiplicity.Singleton = <singleton>
+  Stx-Multiplicity.Bag       = <bag>
+
+  Stx-PropertyName.Type      = <type>
+  Stx-PropertyName.Ref       = <ref>
+  Stx-PropertyName.Prop      = <<STX-PROPNAME>>
