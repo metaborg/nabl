@@ -7,6 +7,7 @@ imports
 
   libspoofax/analysis/constraint
 
+  statix/api
   statix/runtime/-
 
 rules
