@@ -18,6 +18,7 @@ import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.ud.PersistentUniDisunifier;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.statix.constraints.CCompiledQuery;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CNew;
 import mb.statix.constraints.CResolveQuery;
@@ -25,6 +26,7 @@ import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
 import mb.statix.constraints.Constraints;
+import mb.statix.constraints.IResolveQuery;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.IConstraint;
@@ -108,7 +110,7 @@ public class CompletenessUtil {
     /**
      * Pre-compute the critical edges that are introduced when scoping constructs such as rules and existantial
      * constraints are unfolded.
-     * 
+     *
      * If critical edges escape from the top-level rule, an IllegalArgumentException is thrown.
      */
     public static Rule precomputeCriticalEdges(Rule rule, SetMultimap<String, Tuple2<Integer, ITerm>> spec) {
@@ -173,13 +175,22 @@ public class CompletenessUtil {
                 }
                 return new CNew(cnew.scopeTerm(), cnew.datumTerm(), cnew.cause().orElse(null), ownCriticalEdges.freeze());
             },
-            cresolveQuery -> {
+            iresolveQuery -> {
                 final QueryFilter newFilter =
-                        new QueryFilter(cresolveQuery.filter().getLabelWF(), precomputeCriticalEdges(cresolveQuery.filter().getDataWF(), spec));
+                        new QueryFilter(iresolveQuery.filter().getLabelWF(), precomputeCriticalEdges(iresolveQuery.filter().getDataWF(), spec));
                 final QueryMin newMin =
-                        new QueryMin(cresolveQuery.min().getLabelOrder(), precomputeCriticalEdges(cresolveQuery.min().getDataEquiv(), spec));
-                return new CResolveQuery(newFilter, newMin, cresolveQuery.scopeTerm(), cresolveQuery.resultTerm(),
-                        cresolveQuery.cause().orElse(null), cresolveQuery.message().orElse(null));
+                        new QueryMin(iresolveQuery.min().getLabelOrder(), precomputeCriticalEdges(iresolveQuery.min().getDataEquiv(), spec));
+                return iresolveQuery.match(new IResolveQuery.Cases<IResolveQuery>() {
+
+                    @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
+                        return new CResolveQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
+                                q.cause().orElse(null), q.message().orElse(null));
+                    }
+
+                    @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
+                        return new CCompiledQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
+                                q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
+                    }});
             },
             ctellEdge -> {
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();

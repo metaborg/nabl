@@ -44,6 +44,7 @@ import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.Env;
 import mb.scopegraph.oopsla20.reference.IncompleteException;
 import mb.scopegraph.oopsla20.reference.ResolutionException;
+import mb.scopegraph.oopsla20.reference.ResolutionInterpreter;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
@@ -53,11 +54,11 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.MessageKind;
 import mb.statix.constraints.messages.MessageUtil;
@@ -461,7 +462,7 @@ class GreedySolver {
                         NO_EXISTENTIALS, fuel);
             }
 
-            @Override public Boolean caseResolveQuery(CResolveQuery c) throws InterruptedException {
+            @Override public Boolean caseResolveQuery(IResolveQuery c) throws InterruptedException {
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
                 final ITerm scopeTerm = c.scopeTerm();
@@ -495,15 +496,26 @@ class GreedySolver {
                 try {
                     final ConstraintQueries cq = new ConstraintQueries(spec, state, params::isComplete);
                     // @formatter:off
-                    final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
-                                .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
-                                .withDataWF(cq.getDataWF(dataWfRule))
-                                .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
-                                .withDataEquiv(cq.getDataEquiv(dataLeqRule))
-                                .withIsComplete((s, l) -> params.isComplete(s, l, state))
-                                .build(state.scopeGraph(), spec.allLabels());
+                    final Env<Scope, ITerm, ITerm> paths = c.matchInResolution(
+                        resolveQuery -> {
+                            final INameResolution<Scope, ITerm, ITerm> nameResolution = Solver.nameResolutionBuilder()
+                                    .withLabelWF(cq.getLabelWF(filter.getLabelWF()))
+                                    .withDataWF(cq.getDataWF(dataWfRule))
+                                    .withLabelOrder(cq.getLabelOrder(min.getLabelOrder()))
+                                    .withDataEquiv(cq.getDataEquiv(dataLeqRule))
+                                    .withIsComplete((s, l) -> params.isComplete(s, l, state))
+                                    .build(state.scopeGraph(), spec.allLabels());
+                            return nameResolution.resolve(scope, cancel);
+                        },
+                        compiledQuery -> {
+                            final ResolutionInterpreter<Scope, ITerm, ITerm> interpreter =
+                                new ResolutionInterpreter<>(state.scopeGraph(), cq.getDataWF(dataWfRule),
+                                cq.getDataEquiv(dataLeqRule), compiledQuery.stateMachine(), (s, l) -> params.isComplete(s, l, state));
+                            return interpreter.resolve(scope, cancel);
+                        }
+                    );
                     // @formatter:on
-                    final Env<Scope, ITerm, ITerm> paths = nameResolution.resolve(scope, cancel);
+
                     final List<ITerm> pathTerms =
                             Streams.stream(paths).map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
                                     .collect(ImmutableList.toImmutableList());
@@ -569,7 +581,7 @@ class GreedySolver {
                     return success(c, state, NO_UPDATED_VARS, ImmutableList.of(eq), NO_NEW_CRITICAL_EDGES,
                             NO_EXISTENTIALS, fuel);
                 } else {
-                    final Optional<TermIndex> maybeIndex = TermIndex.get(unifier.findTerm(term));
+                    final Optional<TermIndex> maybeIndex = TermIndex.find(unifier.findTerm(term));
                     if(maybeIndex.isPresent()) {
                         final ITerm indexTerm = TermOrigin.copy(term, maybeIndex.get());
                         eq = new CEqual(idTerm, indexTerm);

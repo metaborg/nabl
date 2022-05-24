@@ -32,3 +32,9 @@ rules
 
   stx--get-ast-property(|a,prop) =
     prim("STX_get_ast_property", a, prop)
+
+  stx--get-ast-properties(|a) =
+    prim("STX_get_ast_properties", a)
+
+  stx--get-all-properties(|a) =
+    prim("STX_get_all_properties", a)

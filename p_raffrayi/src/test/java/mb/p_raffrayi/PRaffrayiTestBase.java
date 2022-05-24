@@ -13,27 +13,74 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.tuple.Tuple2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
+import mb.p_raffrayi.ITypeChecker.IOutput;
+import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Broker;
+import mb.p_raffrayi.impl.Result;
+import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.diff.BiMap;
 
 public abstract class PRaffrayiTestBase {
 
     private final ScopeImpl scopeImpl = new ScopeImpl();
 
-    protected <L, R> IFuture<IUnitResult<Scope, L, IDatum, R>> run(String id,
-            ITypeChecker<Scope, L, IDatum, R> typeChecker, Iterable<L> edgeLabels) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels,
-                new NullCancel(), 0.3, 50);
+    private final PRaffrayiSettings settings;
+
+    public PRaffrayiTestBase(PRaffrayiSettings settings) {
+        this.settings = settings;
     }
 
-    protected <R> IFuture<IUnitResult<Scope, IDatum, IDatum, R>> run(String id,
-            ITypeChecker<Scope, IDatum, IDatum, R> typeChecker, Iterable<IDatum> edgeLabels, boolean changed,
-            IUnitResult<Scope, IDatum, IDatum, R> previousResult) {
-        return Broker.debug(id, PRaffrayiSettings.of(true, true), typeChecker, scopeImpl, edgeLabels, changed,
+    protected <L, R extends IOutput<Scope, L, IDatum>, T extends IState<Scope, L, IDatum>>
+            IFuture<IUnitResult<Scope, L, IDatum, Result<Scope, L, IDatum, R, T>>>
+            run(String id, ITypeChecker<Scope, L, IDatum, R, T> typeChecker, Iterable<L> edgeLabels) {
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, new NullCancel(), 0.3, 50);
+    }
+
+    protected <R extends IOutput<Scope, Integer, IDatum>>
+            IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, R, EmptyI>>>
+            run(String id, ITypeChecker<Scope, Integer, IDatum, R, EmptyI> typeChecker, Iterable<Integer> edgeLabels,
+                    boolean changed,
+                    IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, R, EmptyI>> previousResult) {
+        return Broker.debug(id, settings, typeChecker, scopeImpl, edgeLabels, changed, previousResult, new NullCancel(),
+                0.3, 50);
+    }
+
+    protected <R>
+            IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, R>, EmptyI>>>
+            run(TestTypeChecker<R> typeChecker, Iterable<Integer> edgeLabels,
+                    IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, R>, EmptyI>> previousResult) {
+        return Broker.debug(typeChecker.getId(), settings, typeChecker, scopeImpl, edgeLabels, typeChecker.isChanged(),
                 previousResult, new NullCancel(), 0.3, 50);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected abstract class TestTypeChecker<R>
+            implements ITypeChecker<Scope, Integer, IDatum, Output<Integer, R>, EmptyI> {
+
+        private final String id;
+        private final boolean changed;
+
+        protected TestTypeChecker(String id, boolean changed) {
+            this.id = id;
+            this.changed = changed;
+        }
+
+        @Override public EmptyI snapshot() {
+            return EmptyI.of();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public boolean isChanged() {
+            return changed;
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -65,6 +112,10 @@ public abstract class PRaffrayiTestBase {
 
         @Override public String toString() {
             return String.format("%s-%d", id, index);
+        }
+
+        @Override public List<Scope> scopes() {
+            return ImmutableList.of(this);
         }
 
     }
@@ -124,5 +175,146 @@ public abstract class PRaffrayiTestBase {
         }
 
     };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    protected static class Output<L, T> implements IOutput<Scope, L, IDatum>, IState<Scope, L, IDatum> {
+
+        private final T value;
+
+        private Output(T value) {
+            this.value = value;
+        }
+
+        public static <L, T> Output<L, T> of(T value) {
+            return new Output<>(value);
+        }
+
+        public T value() {
+            return value;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+        @Override public Optional<IDatum> tryGetExternalDatum(IDatum datum) {
+            return Optional.of(datum);
+        }
+
+    }
+
+    protected static class EmptyO implements IOutput<Scope, Object, IDatum>, IState<Scope, Object, IDatum> {
+
+        private static final PRaffrayiTestBase.EmptyO instance = new PRaffrayiTestBase.EmptyO();
+
+        public static PRaffrayiTestBase.EmptyO of() {
+            return instance;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+        @Override public Optional<IDatum> tryGetExternalDatum(IDatum datum) {
+            return Optional.of(datum);
+        }
+
+    }
+
+    protected static class EmptyI
+            implements IOutput<Scope, Integer, IDatum>, IState<Scope, Integer, IDatum> {
+
+        private static final PRaffrayiTestBase.EmptyI instance = new PRaffrayiTestBase.EmptyI();
+
+        public static PRaffrayiTestBase.EmptyI of() {
+            return instance;
+        }
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+        @Override public Optional<IDatum> tryGetExternalDatum(IDatum datum) {
+            return Optional.of(datum);
+        }
+
+    }
+
+    protected static class EmptyResult implements IOutput<Scope, Integer, IDatum> {
+
+        private static final EmptyResult EMPTY = new EmptyResult();
+
+        @Override public IDatum getExternalRepresentation(IDatum datum) {
+            return datum;
+        }
+
+        public static EmptyResult of() {
+            return EMPTY;
+        }
+
+    }
+
+    // LabelWF implementations
+
+    protected class SingleStepLabelWf implements LabelWf<Integer> {
+
+        private Integer label;
+
+        public SingleStepLabelWf(Integer label) {
+            this.label = label;
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return l.equals(label) ? Optional.of(new EOPLabelWf()) : Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return false;
+        }
+
+        @Override public String toString() {
+            return label.toString();
+        }
+
+    }
+
+    protected class LabelClosureLabelWf implements LabelWf<Integer> {
+
+        private Integer label;
+
+        public LabelClosureLabelWf(Integer label) {
+            this.label = label;
+        }
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return l.equals(label) ? Optional.of(this) : Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return true;
+        }
+
+        @Override public String toString() {
+            return label.toString() + "*";
+        }
+
+    }
+
+    protected class EOPLabelWf implements LabelWf<Integer> {
+
+        @Override public Optional<LabelWf<Integer>> step(Integer l) {
+            return Optional.empty();
+        }
+
+        @Override public boolean accepting() {
+            return true;
+        }
+
+        @Override public String toString() {
+            return "$";
+        }
+
+    }
 
 }

@@ -1,7 +1,6 @@
 package mb.p_raffrayi.impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Function2;
@@ -29,7 +28,7 @@ public interface IUnitContext<S, L, D> {
 
     String scopeId(S scope);
 
-    D substituteScopes(D datum, Map<S, S> substitution);
+    D substituteScopes(D datum, BiMap.Immutable<S> substitution);
 
     Immutable<S> getScopes(D datum);
 

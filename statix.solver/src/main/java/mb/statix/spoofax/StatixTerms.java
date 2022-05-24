@@ -23,6 +23,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.tuple.Tuple3;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
@@ -58,11 +59,22 @@ import mb.scopegraph.relations.IRelation;
 import mb.scopegraph.relations.RelationDescription;
 import mb.scopegraph.relations.RelationException;
 import mb.scopegraph.relations.impl.Relation;
+import mb.scopegraph.resolution.RCExp;
+import mb.scopegraph.resolution.RExp;
+import mb.scopegraph.resolution.RMerge;
+import mb.scopegraph.resolution.RResolve;
+import mb.scopegraph.resolution.RShadow;
+import mb.scopegraph.resolution.RStep;
+import mb.scopegraph.resolution.RSubEnv;
+import mb.scopegraph.resolution.RVar;
+import mb.scopegraph.resolution.State;
+import mb.scopegraph.resolution.StateMachine;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
 import mb.statix.constraints.CAstProperty;
 import mb.statix.constraints.CAstProperty.Op;
+import mb.statix.constraints.CCompiledQuery;
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CEqual;
 import mb.statix.constraints.CExists;
@@ -103,6 +115,18 @@ public class StatixTerms {
     public static final String SCOPEGRAPH_OP = "ScopeGraph";
 
     private static final String EOP_OP = "EOP";
+
+    private static final String STATE_OP = "State";
+
+    private static final String STEP_OP = "Step";
+
+    private static final String RESOLVE_OP = "Resolve";
+    private static final String SUBENV_OP = "SubEnv";
+    private static final String MERGE_OP = "Merge";
+    private static final String SHADOW_OP = "Shadow";
+    private static final String CEXP_OP = "CExp";
+
+    private static final String RVAR_OP = "RVar";
 
     public static IMatcher<Spec> spec() {
         return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
@@ -176,14 +200,15 @@ public class StatixTerms {
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return Constraints.conjoin(ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
                 }),
-                M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
-                        (c, rel, filterTerm, minTerm, scope, result, msg) -> {
-                    final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
-                    final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
-                    return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
-                        return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
-                    });
-                }).flatMap(o -> o),
+                resolveQuery(),
+                M.appl3("CPreCompiledQuery", resolveQuery(), states(), M.stringValue(), (c, query, states, initial) -> {
+                    final State<ITerm> initialState = states.get(initial);
+                    if(initialState == null) {
+                        throw new IllegalStateException("Invalid initial state: " + initial);
+                    }
+                    final StateMachine<ITerm> stateMachine = new StateMachine<>(states, initialState);
+                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), query.message().orElse(null), stateMachine);
+                }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
                 }),
@@ -207,6 +232,55 @@ public class StatixTerms {
             )).match(t, u);
             // @formatter:on
         };
+    }
+
+    public static IMatcher<CResolveQuery> resolveQuery() {
+        // @formatter:off
+        return (t, u) -> M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
+            (c, rel, filterTerm, minTerm, scope, result, msg) -> {
+                final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
+                    return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
+                });
+            }).flatMap(o -> o)
+            .match(t, u);
+        // @formatter:on
+    }
+
+    public static IMatcher<Map<String, State<ITerm>>> states() {
+        return M.listElems(state()).map(states -> {
+            final ImmutableMap.Builder<String, State<ITerm>> mapBuilder = ImmutableMap.builder();
+            for(Tuple2<String, State<ITerm>> state: states) {
+                mapBuilder.put(state._1(), state._2());
+            }
+            return mapBuilder.build();
+        });
+    }
+
+    public static IMatcher<Tuple2<String, State<ITerm>>> state() {
+        return M.appl3(STATE_OP, M.stringValue(), M.listElems(step()), rvar(),
+                (appl, name, steps, var) -> Tuple2.of(name, new State<ITerm>(steps, var)));
+    }
+
+    public static IMatcher<RStep<ITerm>> step() {
+        return M.appl2(STEP_OP, rvar(), rexp(), (appl, var, exp) -> new RStep<>(var, exp));
+    }
+
+    public static IMatcher<RExp<ITerm>> rexp() {
+        // @formatter:off
+        return M.casesFix(m -> Iterables2.from(
+            M.appl0(RESOLVE_OP, appl -> RResolve.of()),
+            M.appl2(SUBENV_OP, StatixTerms.label(), M.stringValue(), (appl, lbl, state) -> new RSubEnv<>(lbl, state)),
+            M.appl1(MERGE_OP, M.listElems(rvar()), (appl, envs) -> new RMerge<>(envs)),
+            M.appl2(SHADOW_OP, rvar(), rvar(), (appl, left, right) -> new RShadow<>(left, right)),
+            M.appl2(CEXP_OP, rvar(), m, (appl, env, exp) -> new RCExp<>(env, exp))
+        ));
+        // @formatter:on
+    }
+
+    public static IMatcher<RVar> rvar() {
+        return M.appl1(RVAR_OP, M.stringValue(), (appl, name) -> new RVar(name));
     }
 
     private static IMatcher<String> constraintName() {

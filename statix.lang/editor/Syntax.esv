@@ -18,23 +18,28 @@ menus
 
   menu: "Syntax" (openeditor)
 
-    action: "Show parsed AST"       = show-parsed-aterm (source)
-    action: "Format parsed AST"     = format-parsed (source)
+    action: "Show parsed AST"           = show-parsed-aterm (source)
+    action: "Format parsed AST"         = format-parsed (source)
 
     separator
 
-    action: "Show desugared AST"    = show-desugared-aterm (source)
-    action: "Format desugared AST"  = format-desugared (source)
+    action: "Show desugared AST"        = show-desugared-aterm (source)
+    action: "Format desugared AST"      = format-desugared (source)
 
     separator
 
-    action: "Show analyzed AST"     = show-analyzed-aterm
-    action: "Format analyzed AST"   = format-analyzed
+    action: "Show analyzed AST"         = show-analyzed-aterm
+    action: "Format analyzed AST"       = format-analyzed
 
     separator
 
-    action: "Show normalized AST"   = show-normalized-aterm
-    action: "Format normalized AST" = format-normalized
+    action: "Show normalized AST"       = show-normalized-aterm
+    action: "Format normalized AST"     = format-normalized
+
+    separator
+
+    action: "Show pre-compiled AST"     = show-precompiled-aterm
+    action: "Format pre-compiled AST"   = format-precompiled
 
     separator
 

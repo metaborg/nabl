@@ -7,8 +7,9 @@ public class InteropRegisterer extends JavaInteropRegisterer {
     public InteropRegisterer() {
         // @formatter:off
         super(new Strategy[] {
+            // permission analysis
             group_by_2_0.instance,
-            set_fixed_point_0_1.instance
+            set_fixed_point_0_1.instance,
         });
         // @formatter:on
     }

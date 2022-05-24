@@ -1,0 +1,10 @@
+module statix/lang/precompile
+
+imports
+
+  statix/lang/precompile/-
+
+rules
+
+  precompile(|a) =
+    precompile-queries(|a)

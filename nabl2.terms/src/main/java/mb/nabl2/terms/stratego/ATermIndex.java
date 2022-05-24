@@ -3,6 +3,7 @@ package mb.nabl2.terms.stratego;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,10 +16,12 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ListTerms;
+import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex, IApplTerm {
 
@@ -30,7 +33,7 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
 
     @Override @Value.Parameter public abstract int getId();
 
-    @SuppressWarnings({ "unchecked" }) 
+    @SuppressWarnings({ "unchecked" })
     public <T extends ITerm> T put(T term) {
         final IAttachments.Builder attachments = term.getAttachments().toBuilder();
         attachments.put(TermIndex.class, (TermIndex) this);
@@ -95,6 +98,34 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
 
     public static Optional<TermIndex> get(IAttachments attachments) {
         return Optional.ofNullable(attachments.get(TermIndex.class));
+    }
+
+    /**
+     * Finds the first indexed subterm term, in pre-order.
+     *
+     * @param term
+     *            The term to find the index of.
+     * @return The {@link TermIndex} of the first eligible term.
+     */
+    public static Optional<TermIndex> find(ITerm term) {
+        // @formatter:off
+        return get(term.getAttachments()).map(Optional::of).orElseGet(() ->
+            term.match(Terms.<Optional<TermIndex>>cases()
+                .appl(appl -> find(appl.getArgs().iterator()))
+                .list(list -> list.match(ListTerms.<Optional<TermIndex>>cases()
+                    .cons(cons -> find(cons.getHead()).map(Optional::of).orElseGet(() -> find(cons.getTail())))
+                    .otherwise(__ -> Optional.empty())))
+                .otherwise(__ -> Optional.empty()))
+        );
+        // @formatter:on
+    }
+
+    private static Optional<TermIndex> find(Iterator<ITerm> termIterator) {
+        if(!termIterator.hasNext()) {
+            return Optional.empty();
+        }
+        final ITerm term = termIterator.next();
+        return find(term).<Optional<TermIndex>>map(Optional::of).orElseGet(() -> find(termIterator));
     }
 
     public static boolean has(ITerm term) {

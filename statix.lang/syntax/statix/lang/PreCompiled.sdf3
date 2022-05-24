@@ -1,0 +1,72 @@
+module statix/lang/PreCompiled
+
+imports
+
+  statix/lang/Common
+  statix/lang/Core
+
+lexical sorts
+
+  ENVID
+
+context-free sorts
+
+  PreCompiledQuery
+
+  State
+  StateId
+  StateRef
+
+  RStep
+  RExp
+  RVar
+  RCond
+
+lexical syntax
+
+  ENVID = [a-zA-Z] [a-zA-Z0-9\$\_\-]*
+
+lexical restrictions
+
+  ENVID -/- [a-zA-Z0-9\$\_\-]
+
+context-free syntax
+
+  Constraint.CPreCompiledQuery = [
+    compiled [CResolveQuery]
+    to
+      states
+        [{State "\n\n"}*]
+
+      initial [StateRef]
+  ]
+
+
+context-free syntax // States
+
+  State.State = <
+    <StateId>:
+      <{RStep "\n"}+>
+      return <RVar>
+  >
+
+  StateId  = LCID
+  StateRef = LCID
+
+context-free syntax // Resolution steps
+
+  RStep.Step     = <<RVar> := <RExp>>
+
+context-free syntax // Resolution expressions
+
+  RExp.Resolve   = <resolve>
+
+  RExp.SubEnv    = <subenv <RelRef> <StateRef>>
+
+  RExp.Merge     = <merge(<{RVar ", "}*>)>
+
+  RExp.Shadow    = <shadow(<RVar>, <RVar>)>
+
+  RExp.CExp      = <if not empty <RVar> else <RExp>>
+
+  RVar.RVar      = ENVID

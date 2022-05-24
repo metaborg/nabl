@@ -16,7 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 abstract class AConsTerm extends AbstractTerm implements IConsTerm {
 
@@ -65,9 +65,15 @@ abstract class AConsTerm extends AbstractTerm implements IConsTerm {
         return cases.caseCons(this);
     }
 
+    private volatile int hashCode;
 
     @Override public int hashCode() {
-        return Objects.hash(getHead(), getTail());
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(getHead(), getTail());
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {

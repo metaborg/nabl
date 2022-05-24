@@ -16,7 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class AScope extends AbstractApplTerm implements IScope, IApplTerm, Comparable<IScope> {
 

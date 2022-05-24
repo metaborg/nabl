@@ -39,7 +39,7 @@ public final class Constraints {
                 Function1<CFalse,R> onFalse,
                 Function1<CInequal,R> onInequal,
                 Function1<CNew,R> onNew,
-                Function1<CResolveQuery,R> onResolveQuery,
+                Function1<IResolveQuery,R> onResolveQuery,
                 Function1<CTellEdge,R> onTellEdge,
                 Function1<CAstId,R> onTermId,
                 Function1<CAstProperty,R> onTermProperty,
@@ -77,7 +77,7 @@ public final class Constraints {
                 return onNew.apply(c);
             }
 
-            @Override public R caseResolveQuery(CResolveQuery c) {
+            @Override public R caseResolveQuery(IResolveQuery c) {
                 return onResolveQuery.apply(c);
             }
 
@@ -122,7 +122,7 @@ public final class Constraints {
         private Function1<CFalse, R> onFalse;
         private Function1<CInequal, R> onInequal;
         private Function1<CNew, R> onNew;
-        private Function1<CResolveQuery, R> onResolveQuery;
+        private Function1<IResolveQuery, R> onResolveQuery;
         private Function1<CTellEdge, R> onTellEdge;
         private Function1<CAstId, R> onTermId;
         private Function1<CAstProperty, R> onTermProperty;
@@ -165,7 +165,7 @@ public final class Constraints {
             return this;
         }
 
-        public CaseBuilder<R> resolveQuery(Function1<CResolveQuery, R> onResolveQuery) {
+        public CaseBuilder<R> resolveQuery(Function1<IResolveQuery, R> onResolveQuery) {
             this.onResolveQuery = onResolveQuery;
             return this;
         }
@@ -231,7 +231,7 @@ public final class Constraints {
                     return onNew != null ? onNew.apply(c) : otherwise.apply(c);
                 }
 
-                @Override public R caseResolveQuery(CResolveQuery c) {
+                @Override public R caseResolveQuery(IResolveQuery c) {
                     return onResolveQuery != null ? onResolveQuery.apply(c) : otherwise.apply(c);
                 }
 
@@ -274,7 +274,7 @@ public final class Constraints {
                 CheckedFunction1<CFalse, R, E> onFalse,
                 CheckedFunction1<CInequal, R, E> onInequal,
                 CheckedFunction1<CNew, R, E> onNew,
-                CheckedFunction1<CResolveQuery, R, E> onResolveQuery,
+                CheckedFunction1<IResolveQuery, R, E> onResolveQuery,
                 CheckedFunction1<CTellEdge, R, E> onTellEdge,
                 CheckedFunction1<CAstId, R, E> onTermId,
                 CheckedFunction1<CAstProperty, R, E> onTermProperty,
@@ -312,7 +312,7 @@ public final class Constraints {
                 return onNew.apply(c);
             }
 
-            @Override public R caseResolveQuery(CResolveQuery c) throws E {
+            @Override public R caseResolveQuery(IResolveQuery c) throws E {
                 return onResolveQuery.apply(c);
             }
 

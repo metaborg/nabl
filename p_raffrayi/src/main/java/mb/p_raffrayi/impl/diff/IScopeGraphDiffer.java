@@ -1,19 +1,33 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
 
+import com.google.common.collect.Multimap;
+
+import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
+import mb.scopegraph.oopsla20.reference.EdgeOrData;
+import mb.scopegraph.patching.IPatchCollection;
 
 public interface IScopeGraphDiffer<S, L, D> {
 
     /**
-     * Main entry point. Returns a future that is completed when there are no scopes/edges to match anymore.
+     * Entry point. Returns a future that is completed when there are no scopes/edges to match anymore.
      */
     IFuture<ScopeGraphDiff<S, L, D>> diff(List<S> currentRootScopes, List<S> previousRootScopes);
+
+    /**
+     * Entry point. Accepts a context-free scope graph, and returns a future that is completed when there are no
+     * scopes/edges to match anymore.
+     */
+    IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph, Collection<S> scopes,
+            Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
+            Multimap<S, EdgeOrData<L>> openEdges);
 
     /**
      * Provides external matches to the differ. This method is used to ensure that shared scopes remain consistent in
@@ -34,8 +48,8 @@ public interface IScopeGraphDiffer<S, L, D> {
     IFuture<Optional<S>> match(S previousScope);
 
     /**
-     * Returns the diff for a particular scope. It may either indicate that a scope is removed, or which edges are
+     * Returns the diff for a particular edge. It may either indicate that a scope is removed, or which edges are
      * added/removed from it.
      */
-    IFuture<IScopeDiff<S, L, D>> scopeDiff(S previousScope);
+    IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label);
 }

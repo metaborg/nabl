@@ -75,12 +75,20 @@ public class Replacement implements IReplacement {
 
     private IListTerm apply(IListTerm list) {
         final IListTerm newList = (IListTerm) replace(list);
-        if(traverseSubTerms) {
+        if(!traverseSubTerms) {
             return newList;
         }
         // @formatter:off
         return newList.<IListTerm>match(ListTerms.cases(
-            cons -> B.newCons(apply(cons.getHead()), apply(cons.getTail()), cons.getAttachments()),
+            cons -> {
+                final ITerm newHead = apply(cons.getHead());
+                final IListTerm newTail = apply(cons.getTail());
+
+                if(newHead != cons.getHead() || newTail != cons.getTail()) {
+                    B.newCons(newHead, newTail, cons.getAttachments());
+                }
+                return cons;
+            },
             nil -> nil,
             var -> var // Cannot happen
         ));

@@ -9,6 +9,7 @@ import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spec.Rule;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.impl.Result;
 
 public interface IStatixProject {
 
@@ -42,6 +43,14 @@ public interface IStatixProject {
     /**
      * Result from previous type-checker run.
      */
-    @Nullable IUnitResult<Scope, ITerm, ITerm, ProjectResult> previousResult();
+    @Nullable IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>> previousResult();
+
+    /**
+     * @return Total number of units (including groups and subunits) in the project.
+     */
+    default int size(int parallellism) {
+        return 1 + groups().values().stream().mapToInt(IStatixGroup::size).sum() + units().size()
+                + libraries().size() * (parallellism + 1);
+    }
 
 }

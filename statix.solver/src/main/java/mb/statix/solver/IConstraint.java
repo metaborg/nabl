@@ -20,11 +20,11 @@ import mb.statix.constraints.CExists;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.CInequal;
 import mb.statix.constraints.CNew;
-import mb.statix.constraints.CResolveQuery;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.constraints.CTrue;
 import mb.statix.constraints.CTry;
 import mb.statix.constraints.CUser;
+import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
@@ -108,7 +108,7 @@ public interface IConstraint {
 
         R caseNew(CNew c);
 
-        R caseResolveQuery(CResolveQuery c);
+        R caseResolveQuery(IResolveQuery c);
 
         R caseTellEdge(CTellEdge c);
 
@@ -144,7 +144,7 @@ public interface IConstraint {
 
         R caseNew(CNew c) throws E;
 
-        R caseResolveQuery(CResolveQuery c) throws E;
+        R caseResolveQuery(IResolveQuery c) throws E;
 
         R caseTellEdge(CTellEdge c) throws E;
 

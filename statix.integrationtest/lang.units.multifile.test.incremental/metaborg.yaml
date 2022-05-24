@@ -8,6 +8,6 @@ dependencies:
 runtime:
   statix:
     modes:
-    - UnitsMultifile: incremental-scopegraph-diff
+    - UnitsMultifile: incremental
 build:
   useBuildSystemSpec: true

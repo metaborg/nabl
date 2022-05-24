@@ -130,7 +130,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
             this.data = data;
         }
 
-        @Override public Set<L> getLabels() {
+        @Override public Set.Transient<L> getLabels() {
             return labels;
         }
 

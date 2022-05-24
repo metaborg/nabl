@@ -13,7 +13,7 @@ import mb.nabl2.terms.INilTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 abstract class ANilTerm extends AbstractTerm implements INilTerm {
 

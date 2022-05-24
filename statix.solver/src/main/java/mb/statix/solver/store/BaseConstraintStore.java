@@ -1,6 +1,7 @@
 package mb.statix.solver.store;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Map;
@@ -119,6 +120,10 @@ public class BaseConstraintStore implements IConstraintStore {
         final Builder<IConstraint, Delay> delayed = ImmutableMap.builder();
         stuck.stream().forEach(c -> delayed.put(c, new Delay(varStuck.get(c), edgeStuck.get(c))));
         return delayed.build();
+    }
+
+    @Override public Iterable<IConstraint> active() {
+        return Collections.unmodifiableCollection(active);
     }
 
     private static class Delayed {

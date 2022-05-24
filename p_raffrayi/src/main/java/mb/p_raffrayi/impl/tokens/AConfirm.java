@@ -1,43 +1,30 @@
 package mb.p_raffrayi.impl.tokens;
 
+
 import org.immutables.value.Value;
 import org.metaborg.util.future.IFuture;
 
 import mb.p_raffrayi.actors.IActorRef;
 import mb.p_raffrayi.impl.IUnit;
-import mb.p_raffrayi.nameresolution.DataLeq;
+import mb.p_raffrayi.impl.confirm.ConfirmResult;
 import mb.p_raffrayi.nameresolution.DataWf;
-import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.path.IScopePath;
-import mb.scopegraph.oopsla20.reference.Env;
 
 @Value.Immutable(prehash = false)
 public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
 
     @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();
 
-    @Value.Parameter public abstract IScopePath<S, L> path();
+    @Value.Parameter public abstract S scope();
 
-    // @Value.Parameter public abstract LabelWF<L> labelWF();
+    @Value.Parameter public abstract LabelWf<L> labelWF();
 
     @Value.Parameter public abstract DataWf<S, L, D> dataWF();
 
-    // @Value.Parameter public abstract LabelOrder<L> labelOrder();
-
-    // @Value.Parameter public abstract DataLeq<D> dataEquiv();
-
-    @Value.Parameter public abstract IFuture<Env<S, L, D>> future();
+    @Value.Parameter public abstract IFuture<ConfirmResult<S, L, D>> future();
 
     @Override public void visit(Cases<S, L, D> cases) {
         cases.on((Confirm<S, L, D>) this);
-    }
-
-    public static <S, L, D> Confirm<S, L, D> of(IActorRef<? extends IUnit<S, L, D, ?>> origin, IScopePath<S, L> path,
-            @SuppressWarnings("unused") LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            @SuppressWarnings("unused") LabelOrder<L> labelOrder,
-            @SuppressWarnings("unused") DataLeq<S, L, D> dataEquiv, IFuture<Env<S, L, D>> future) {
-        return Confirm.of(origin, path, dataWF, future);
     }
 
     /*

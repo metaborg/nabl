@@ -15,7 +15,7 @@ class UnitProcess<S, L, D> implements IProcess<S, L, D> {
         return origin.async(unit);
     }
 
-    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?> origin) {
+    @Override public IDeadlockProtocol<S, L, D> from(Broker<S, L, D, ?, ?> origin) {
         return origin.deadlock(unit);
     }
 
@@ -27,7 +27,7 @@ class UnitProcess<S, L, D> implements IProcess<S, L, D> {
         if(this.getClass() != obj.getClass())
             return false;
         @SuppressWarnings("unchecked") UnitProcess<S, L, D> other = (UnitProcess<S, L, D>) obj;
-        return this.unit == other.unit;
+        return this.unit.equals(other.unit);
     }
 
     @Override public int hashCode() {

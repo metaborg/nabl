@@ -1,13 +1,15 @@
 package mb.p_raffrayi;
 
+import java.util.Optional;
+
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import mb.scopegraph.patching.IPatchCollection;
 
-public interface IIncrementalTypeCheckerContext<S, L, D, R> extends ITypeCheckerContext<S, L, D> {
+public interface IIncrementalTypeCheckerContext<S, L, D, R, T> extends ITypeCheckerContext<S, L, D> {
 
     /**
      * Runs a given local type checker incrementally. When a type-checker uses incrementality, it should be implemented
@@ -28,10 +30,9 @@ public interface IIncrementalTypeCheckerContext<S, L, D, R> extends ITypeChecker
      *            The type of the local type-checker result
      *
      * @param runLocalTypeChecker
-     *            The callback that should start the type checker. The boolean argument indicates whether the type
-     *            checker was restarted (true) or started because there was no earlier result (false). If the result
-     *            could be reused, the callback is not invoked at all. Instead, the {@code patch} callback will be
-     *            invoked to update it.
+     *            The callback that should start the type checker. If present, the argument provides the local snapshot
+     *            of the state taken in a previous incremental run. If the result could be reused, the callback is not
+     *            invoked at all. Instead, the {@code patch} callback will be invoked to update it.
      *
      * @param extractLocal
      *            Callback that should extract the local type-checker result {@link Q} from an aggregated result
@@ -45,13 +46,13 @@ public interface IIncrementalTypeCheckerContext<S, L, D, R> extends ITypeChecker
      *            with the results of its sub-units. The futures of this subunit should be captured in the callback
      *            implementation.
      */
-    <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker, Function1<R, Q> extractLocal,
-            Function2<Q, BiMap.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine);
+    <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker, Function1<R, Q> extractLocal,
+            Function2<Q, IPatchCollection.Immutable<S>, Q> patch, Function2<Q, Throwable, IFuture<R>> combine);
 
     /**
      * Default {@link runIncremental} implementation that applies no scope patching.
      */
-    default <Q> IFuture<R> runIncremental(Function1<Boolean, IFuture<Q>> runLocalTypeChecker,
+    default <Q> IFuture<R> runIncremental(Function1<Optional<T>, IFuture<Q>> runLocalTypeChecker,
             Function1<R, Q> extractLocal, Function2<Q, Throwable, IFuture<R>> combine) {
         return this.runIncremental(runLocalTypeChecker, extractLocal, (x, p) -> x, combine);
     }
@@ -59,7 +60,7 @@ public interface IIncrementalTypeCheckerContext<S, L, D, R> extends ITypeChecker
     /**
      * Default {@link runIncremental} implementation that applies no scope patching nor subunit result aggregation.
      */
-    default IFuture<R> runIncremental(Function1<Boolean, IFuture<R>> runLocalTypeChecker) {
+    default IFuture<R> runIncremental(Function1<Optional<T>, IFuture<R>> runLocalTypeChecker) {
         return this.runIncremental(runLocalTypeChecker, x -> x, CompletableFuture::completed);
     }
 

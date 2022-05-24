@@ -4,9 +4,9 @@ import java.util.Set;
 
 import org.metaborg.util.future.IFuture;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
-
 public interface IDeadlockProtocol<S, L, D> {
+
+    // Deadlock detection
 
     void _deadlockQuery(IProcess<S, L, D> i, int m, IProcess<S, L, D> k);
 
@@ -14,9 +14,13 @@ public interface IDeadlockProtocol<S, L, D> {
 
     void _deadlocked(Set<IProcess<S, L, D>> nodes);
 
-    IFuture<StateSummary<S>> _requireRestart();
+    // Deadlock analysis
 
-    void _release(BiMap.Immutable<S> patches);
+    IFuture<StateSummary<S, L, D>> _state();
+
+    // Deadlock resolution
+
+    void _release();
 
     void _restart();
 

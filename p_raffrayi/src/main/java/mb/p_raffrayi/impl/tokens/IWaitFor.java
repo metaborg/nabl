@@ -21,11 +21,9 @@ public interface IWaitFor<S, L, D> {
 
         void on(Query<S, L, D> query);
 
-        void on(Confirm<S, L, D> query);
+        void on(PQuery<S, L, D> pQuery);
 
-        void on(Complete<S, L, D> complete);
-
-        void on(Datum<S, L, D> datum);
+        void on(Confirm<S, L, D> confirm);
 
         void on(Match<S, L, D> match);
 
@@ -35,7 +33,9 @@ public interface IWaitFor<S, L, D> {
 
         void on(DifferResult<S, L, D> differResult);
 
-        void on(Activate<S, L, D> activate);
+        void on(DifferState<S, L, D> differState);
+
+        void on(EnvDifferState<S, L, D> envDifferState);
 
         void on(UnitAdd<S, L, D> unitAdd);
 
@@ -43,10 +43,10 @@ public interface IWaitFor<S, L, D> {
 
     static <S, L, D> Cases<S, L, D> cases(Action1<InitScope<S, L, D>> onInitScope,
             Action1<CloseScope<S, L, D>> onCloseScope, Action1<CloseLabel<S, L, D>> onCloseLabel,
-            Action1<Query<S, L, D>> onQuery, Action1<Confirm<S, L, D>> onConfirm, Action1<Complete<S, L, D>> onComplete,
-            Action1<Datum<S, L, D>> onDatum, Action1<Match<S, L, D>> onMatch,
-            Action1<TypeCheckerResult<S, L, D>> onResult, Action1<TypeCheckerState<S, L, D>> onTypeCheckerState,
-            Action1<DifferResult<S, L, D>> onDifferResult, Action1<Activate<S, L, D>> onActivate,
+            Action1<Query<S, L, D>> onQuery, Action1<PQuery<S, L, D>> onPQuery, Action1<Confirm<S, L, D>> onConfirm,
+            Action1<Match<S, L, D>> onMatch, Action1<TypeCheckerResult<S, L, D>> onResult,
+            Action1<TypeCheckerState<S, L, D>> onTypeCheckerState, Action1<DifferResult<S, L, D>> onDifferResult,
+            Action1<DifferState<S, L, D>> onDifferState, Action1<EnvDifferState<S, L, D>> onEnvDifferState,
             Action1<UnitAdd<S, L, D>> onUnitAdd) {
         return new Cases<S, L, D>() {
 
@@ -66,16 +66,12 @@ public interface IWaitFor<S, L, D> {
                 onQuery.apply(query);
             }
 
+            @Override public void on(PQuery<S, L, D> pQuery) {
+                onPQuery.apply(pQuery);
+            }
+
             @Override public void on(Confirm<S, L, D> confirm) {
                 onConfirm.apply(confirm);
-            }
-
-            @Override public void on(Complete<S, L, D> complete) {
-                onComplete.apply(complete);
-            }
-
-            @Override public void on(Datum<S, L, D> datum) {
-                onDatum.apply(datum);
             }
 
             @Override public void on(Match<S, L, D> match) {
@@ -94,8 +90,12 @@ public interface IWaitFor<S, L, D> {
                 onDifferResult.apply(differResult);
             }
 
-            @Override public void on(Activate<S, L, D> activate) {
-                onActivate.apply(activate);
+            @Override public void on(DifferState<S, L, D> differState) {
+                onDifferState.apply(differState);
+            }
+
+            @Override public void on(EnvDifferState<S, L, D> envDifferState) {
+                onEnvDifferState.apply(envDifferState);
             }
 
             @Override public void on(UnitAdd<S, L, D> unitAdd) {
