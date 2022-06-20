@@ -89,6 +89,13 @@ rules // ast
    */
   stx-get-ast-ref(|a) = stx--get-ast-property(|a, Ref())
 
+  /**
+   * Gets all properties of a term in the analysis.
+   *
+   * @type Term -> list(StxProp)
+   */
+  stx-get-ast-properties(|a) = stx--get-ast-properties(|a)
+
 rules // scope graph
 
   /**

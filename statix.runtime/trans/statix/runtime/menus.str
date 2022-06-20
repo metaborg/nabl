@@ -7,6 +7,7 @@ imports
 
   libspoofax/analysis/constraint
 
+  statix/api
   statix/runtime/-
 
 rules
@@ -30,6 +31,23 @@ rules
     ; s* := <collect-all(stx--is-scope, conc); imset-from-list; imset-to-list> sg
     ; result := Library([], s*, sg)
 
+  stx--properties:
+      (_, _, _, path, project-path) -> (filename, result)
+    where
+      a := <stx--get-resource-analysis(stx--get-analysis)> path
+    with
+      filename := <guarantee-extension(|"stxprops")> path
+    ; properties := <stx--get-all-properties(|a)>
+    ; result := <pp-Statix-Properties> properties
+
+  stx--ast-properties:
+      (_, _, ast, path, project-path) -> (filename, result)
+    where
+      a := <stx--get-resource-analysis(stx--get-analysis)> path
+    with
+      filename := <guarantee-extension(|"props.aterm")> path
+    ; result := <bottomup(try(stx--add-props-as-annos(|a)))> ast
+
   stx--diagnostics:
       (_, _, _, path, project-path) -> (filename, result)
     where
@@ -38,3 +56,11 @@ rules
       filename := <guarantee-extension(|"diagnostics")> path
     ; diagnostics := <stx--incremental-diagnostics(|a)>
     ; result := <pp-Statix-Diagnostics> diagnostics
+
+rules
+
+  stx--add-props-as-annos(|a): term -> term{a'*}
+    where
+      a*  := <get-annos> term
+    ; p*  := <stx-get-ast-properties(|a)> term
+    ; a'* := [a*, p*]

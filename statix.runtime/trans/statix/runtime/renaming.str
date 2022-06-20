@@ -2,7 +2,6 @@ module statix/runtime/renaming
 
 imports
     libstratego-lib
-  signatures/-
     libspoofax/analysis/constraint
     libspoofax/ui/dialogs
     statix/runtime/analysis
