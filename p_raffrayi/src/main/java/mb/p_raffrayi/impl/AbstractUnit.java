@@ -1347,7 +1347,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             }
         }
         for(ICompletable<?> future : deadlocked) {
-            self.complete(future, null, new DeadlockException("Type checker deadlocked."));
+            self.complete(future, null, new DeadlockException("Type checker " + self.id() + " deadlocked."));
         }
         return !deadlocked.isEmpty();
     }
@@ -1481,9 +1481,24 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return new IDifferContext<S, L, D>() {
 
             @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
-                return isComplete(scope, EdgeOrData.edge(label), self).thenApply(__ -> {
-                    return scopeGraph.get().getEdges(scope, label);
+                final IFuture<Unit> complete = isComplete(scope, EdgeOrData.edge(label), self);
+                if(complete.isDone()) {
+                    return CompletableFuture.completedFuture(scopeGraph.get().getEdges(scope, label));
+                }
+
+                final ICompletableFuture<Iterable<S>> result = new CompletableFuture<>();
+                complete.whenComplete((__, ex) -> {
+                    if(ex != null) {
+                        if(ex instanceof DeadlockException) {
+                            getEdges(scope, label).whenComplete(result::complete);
+                        } else {
+                            result.completeExceptionally(ex);
+                        }
+                    } else {
+                        result.complete(scopeGraph.get().getEdges(scope, label));
+                    }
                 });
+                return result;
             }
 
             @Override public IFuture<Optional<D>> datum(S scope) {

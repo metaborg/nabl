@@ -310,7 +310,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             try {
                 do {
                     while(!edgeMatches.isEmpty()) {
-                        EdgeMatch m = edgeMatches.remove();
+                        final EdgeMatch m = edgeMatches.remove();
                         matchEdge(m.currentEdge, m.previousEdges);
                     }
 
@@ -581,7 +581,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             // When match computation is complete, schedule edge matches for processing.
             K<List<Tuple2<Edge<S, L>, Optional<BiMap<S, S>>>>> k2 = (r, ex2) -> {
                 if(ex2 != null) {
-                    result.completeExceptionally(ex2);
+                    failure(ex2);
                     return Unit.unit;
                 }
                 logger.trace("{}: rec candidates: {}.", currentEdge, r);
@@ -777,8 +777,6 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         logger.debug("{} ~ {}: matched.", currentScope, previousScope);
         matchedScopes.put(currentScope, previousScope);
-        scheduleCurrentData(currentScope);
-        schedulePreviousData(previousScope);
         closeCurrentScope(currentScope);
         closePreviousScope(previousScope);
 
@@ -996,7 +994,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         final ICompletableFuture<Optional<S>> result = new CompletableFuture<>();
         if(!completeIfFailure(result)) {
-            logger.trace("Scope {} not complete. Delaying return.", previousScope);
+            logger.trace("Scope {} not complete. Delaying return of its match.", previousScope);
             previousScopeProcessedDelays.put(previousScope, result);
             // waitFors.add(ScopeProcessed.of(previousScope));
         }
