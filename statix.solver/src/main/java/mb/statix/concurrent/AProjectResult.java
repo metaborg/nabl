@@ -22,6 +22,8 @@ public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract String resource();
 
+    @Value.Parameter public abstract Scope rootScope();
+
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
     @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults();

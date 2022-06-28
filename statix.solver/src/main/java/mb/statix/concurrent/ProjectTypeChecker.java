@@ -53,7 +53,7 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
             this::patch,
             (result, ex) -> {
                 return AggregateFuture.apply(libraryResults, groupResults, unitResults).thenApply(e -> {
-                    return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), result, ex);
+                    return ProjectResult.of(project.resource(), projectScope, e._1(), e._2(), e._3(), result, ex);
                 });
             })
             .whenComplete((r, __) -> {
