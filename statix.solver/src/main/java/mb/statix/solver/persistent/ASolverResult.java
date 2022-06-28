@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.functions.Function2;
@@ -22,15 +24,19 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.Spec;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class ASolverResult {
+public abstract class ASolverResult<TR extends SolverTracer.IResult<TR>> {
 
     @Value.Parameter public abstract Spec spec();
 
     @Value.Parameter public abstract IState.Immutable state();
+
+    @Value.Parameter public abstract @Nullable TR traceResult();
 
     @Value.Parameter public abstract Map<IConstraint, IMessage> messages();
 
@@ -64,13 +70,18 @@ public abstract class ASolverResult {
         return Constraints.conjoin(delays().keySet());
     }
 
-    public static SolverResult of(Spec spec) {
-        return SolverResult.of(spec, State.of(), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
+    public static SolverResult<Empty> of(Spec spec) {
+        return SolverResult.of(spec, State.of(), Empty.of(), ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
                 ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
     }
 
-    public SolverResult combine(SolverResult other) {
-        final SolverResult.Builder combined = SolverResult.builder().from(this);
+    public static <R extends SolverTracer.IResult<R>> SolverResult<R> of(Spec spec, @Nullable R tracerResult) {
+        return SolverResult.of(spec, State.of(), tracerResult, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(),
+                ImmutableSet.of(), ImmutableSet.of(), Completeness.Immutable.of());
+    }
+
+    public SolverResult<TR> combine(SolverResult<TR> other) {
+        final SolverResult.Builder<TR> combined = SolverResult.<TR>builder().from(this);
         combined.state(state().add(other.state()));
         combined.messages(merge(messages(), other.messages()));
         combined.delays(merge(delays(), other.delays(), (d1, d2) -> {
@@ -82,6 +93,7 @@ public abstract class ASolverResult {
         combined.completeness(completeness().addAll(other.completeness(), PersistentUniDisunifier.Immutable.of()));
         combined.totalSolved(totalSolved() + other.totalSolved());
         combined.totalCriticalEdges(totalCriticalEdges() + other.totalCriticalEdges());
+        combined.traceResult(traceResult().combine(other.traceResult()));
         return combined.build();
     }
 

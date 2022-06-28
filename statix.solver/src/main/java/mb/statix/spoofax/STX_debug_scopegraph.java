@@ -41,7 +41,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
             throws InterpreterException {
 
         // @formatter:off
-        final List<SolverResult> analyses = M.cases(
+        @SuppressWarnings("rawtypes") final List<SolverResult> analyses = M.cases(
             M.blobValue(SolverResult.class).map(ImmutableList::of),
             M.listElems(M.blobValue(SolverResult.class))
         ).match(term).orElseThrow(() -> new InterpreterException("Expected solver result."));
@@ -50,7 +50,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = Maps.newHashMap(); // Scope * (Label * Scope)
         final Map<Scope, ListMultimap<ITerm, ITerm>> relationEntries = Maps.newHashMap(); // Scope * (Label * Scope)
         final Set<Scope> dataScopes = Sets.newHashSet();
-        for(SolverResult analysis : analyses) {
+        for(SolverResult<?> analysis : analyses) {
             addScopeEntries(analysis, edgeEntries, relationEntries, dataScopes);
         }
 
@@ -91,7 +91,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
         return Optional.of(B.newAppl(StatixTerms.SCOPEGRAPH_OP, B.newList(scopeEntries)));
     }
 
-    private void addScopeEntries(SolverResult analysis, Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries,
+    private void addScopeEntries(SolverResult<?> analysis, Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries,
             Map<Scope, ListMultimap<ITerm, ITerm>> relationEntries, Set<Scope> dataScopes) {
         final IState.Immutable state = analysis.state();
         final IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph = state.scopeGraph();

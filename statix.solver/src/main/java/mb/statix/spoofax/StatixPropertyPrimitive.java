@@ -34,7 +34,7 @@ public abstract class StatixPropertyPrimitive extends StatixPrimitive {
         return multiplicity == Multiplicity.SINGLETON ? MULT_SINGLETON : MULT_BAG;
     }
 
-    protected ITerm instantiateValue(ITermProperty property, SolverResult analysis) {
+    protected ITerm instantiateValue(ITermProperty property, SolverResult<?> analysis) {
 
         switch(property.multiplicity()) {
             case BAG: {

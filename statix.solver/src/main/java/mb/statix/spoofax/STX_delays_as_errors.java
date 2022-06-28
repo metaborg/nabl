@@ -22,9 +22,9 @@ public class STX_delays_as_errors extends StatixPrimitive {
         throws InterpreterException {
 
         final IStatixProjectConfig config = getConfig(term);
-        final SolverResult result = getResult(term);
+        final SolverResult<?> result = getResult(term);
 
-        final SolverResult newResult = MessageUtil.delaysAsErrors(result, config.suppressCascadingErrors());
+        final SolverResult<?> newResult = MessageUtil.delaysAsErrors(result, config.suppressCascadingErrors());
         return Optional.of(B.newBlob(newResult));
     }
 }

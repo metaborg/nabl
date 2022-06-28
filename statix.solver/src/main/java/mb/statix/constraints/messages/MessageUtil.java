@@ -18,6 +18,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.SolverTracer;
+
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
@@ -62,7 +64,7 @@ public class MessageUtil {
         return message;
     }
 
-    public static SolverResult delaysAsErrors(SolverResult result, boolean suppressCascadingErrors) {
+    public static <TR extends SolverTracer.IResult<TR>> SolverResult<TR> delaysAsErrors(SolverResult<TR> result, boolean suppressCascadingErrors) {
 
         ImmutableMap<IConstraint, Delay> delays = result.delays();
 

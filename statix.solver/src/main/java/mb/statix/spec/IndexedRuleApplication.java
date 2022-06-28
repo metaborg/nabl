@@ -36,12 +36,13 @@ import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.spec.ApplyMode.Safety;
 
 /**
  * A special rule application that supports indexing in its parameters. The index allows grouping based on which
  * arguments match a constraint, and finding matching arguments using lookup.
- * 
+ *
  * The class throws Delay exceptions in the following cases:
  * <ul>
  * <li>If the initial application does not reduce enough, and the remaining constraint has free variables left. The free
@@ -102,7 +103,7 @@ public class IndexedRuleApplication {
         if(constraint != null) {
             final State state = State.of();
             final NullDebugContext debug = new NullDebugContext();
-            final SolverResult solveResult = Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(),
+            final SolverResult<Empty> solveResult = Solver.solve(spec, state, constraint.apply(subst), debug, new NullCancel(),
                     new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
             try {
                 if(!Solver.entailed(state, solveResult, debug)) {
@@ -169,7 +170,7 @@ public class IndexedRuleApplication {
         }
 
         final IConstraint bodyAsConstraint = applyResult.body();
-        final SolverResult solveResult = Solver.solve(spec, newState, bodyAsConstraint, new NullDebugContext(),
+        final SolverResult<Empty> solveResult = Solver.solve(spec, newState, bodyAsConstraint, new NullDebugContext(),
                 new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
         if(solveResult.hasErrors()) {
             return Optional.empty();

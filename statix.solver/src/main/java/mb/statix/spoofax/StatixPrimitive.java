@@ -115,14 +115,14 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
     }
 
-    protected void reportInvalidDataLabel(SolverResult analysis, ITerm label) {
+    protected void reportInvalidDataLabel(SolverResult<?> analysis, ITerm label) {
         if(!analysis.spec().dataLabels().contains(label)) {
             logger.warn("{} is not a valid relation in this specification. Available relations are {}.", label,
                     analysis.spec().dataLabels());
         }
     }
 
-    protected void reportInvalidEdgeLabel(SolverResult analysis, ITerm label) {
+    protected void reportInvalidEdgeLabel(SolverResult<?> analysis, ITerm label) {
         if(!analysis.spec().edgeLabels().contains(label)) {
             logger.warn("{} is not a valid data label in this specification. Available labels are {}.", label,
                     analysis.spec().edgeLabels());
@@ -273,7 +273,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
                 .replace("\n", "<br>").replace("\r", "<br>").replace("\t", "&Tab;");
     }
 
-    protected static SolverResult getResult(ITerm current) throws InterpreterException {
+    protected static SolverResult<?> getResult(ITerm current) throws InterpreterException {
         // @formatter:off
         return M.cases(
             M.appl2(WITH_CONFIG_OP, M.term(), M.blobValue(SolverResult.class), (t, c, r) -> r),
