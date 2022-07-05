@@ -1,5 +1,7 @@
 package mb.statix.solver.tracer;
 
+import java.io.Serializable;
+
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
@@ -56,7 +58,7 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
     }
 
-    public interface IResult<SELF> {
+    public interface IResult<SELF> extends Serializable {
         SELF combine(SELF other);
     }
 
