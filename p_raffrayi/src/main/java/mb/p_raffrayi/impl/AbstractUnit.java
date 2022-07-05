@@ -331,7 +331,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         final IFuture<IUnitResult<S, L, D, U>> ret = internalResult.whenComplete((r, ex) -> {
             logger.debug("{} subunit {} finished", this, subunit);
             granted(token, subunit);
-            resume();
+            // resume(); // FIXME needed?
             if(ex != null) {
                 failures.add(new Exception("No result for sub unit " + id));
             } else if(!ignoreResult) {
@@ -570,9 +570,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             ret = internalResult.whenComplete((rep, ex) -> {
                                 self.assertOnActorThread();
                                 granted(token, self);
-                                resume();
+                                // resume();
                             });
-                            resume();
+                            // resume();
                         }
                         return ret.thenApply(rep -> {
                             logger.debug("got external rep {} for {}", rep, datum.get());
@@ -1019,7 +1019,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     granted(pQuery, owner);
                     future.complete(
                             Tuple2.of(env.env(), ExtQuerySet.of(env.transitiveQueries(), env.predicateQueries())), ex);
-                    resume();
+                    // resume(); // FIXME needed?
                 });
 
                 return future;
