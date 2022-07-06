@@ -1,6 +1,9 @@
 module nabl2/shared/common/messages
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/nabl2/shared/common/-
 

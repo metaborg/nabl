@@ -1,0 +1,43 @@
+module statix/runtime/constraints
+
+imports
+  strategolib
+
+// Constraint duplicates from statix.lang
+
+imports
+
+  statix/runtime/terms
+
+signature
+  sorts
+    Constraint
+    HoConstraint
+    Message
+  constructors
+    CNew    : List(Term) -> Constraint
+    CTrue   : Constraint
+    CConj   : Constraint * Constraint -> Constraint
+    CExists : List(Var) * Constraint -> Constraint
+    C       : string * List(Term) * Message -> Constraint
+  constructors
+    LLam    : List(Term) * Constraint -> HoConstraint
+
+  constructors
+    NoMessage : Message
+
+rules
+
+  stx--conj: []     -> CTrue()
+  stx--conj: [C]    -> C
+  stx--conj: [C|C*] -> CConj(C, <stx--conj> C*)
+
+  stx--conj(|tl): []     -> tl
+  stx--conj(|tl): [C|C*] -> CConj(C, <stx--conj(|tl)> C*)
+
+  stx--exists: ([], c              ) -> c
+  stx--exists: (vs, CExists(vs', c)) -> CExists(vs'', c)
+    where not([] := vs)
+    with vs'' := <union(where(strip-annos;eq))> (vs', vs)
+  stx--exists: (vs, c              ) -> CExists(vs, c)
+    where not([] := vs)

@@ -83,6 +83,14 @@ public class CInequal implements IConstraint, Serializable {
         return cases.caseInequal(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        vars.__insertAll(universals);
+        vars.__insertAll(term1.getVars());
+        vars.__insertAll(term2.getVars());
+        return vars.freeze();
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

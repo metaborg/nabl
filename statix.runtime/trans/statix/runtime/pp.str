@@ -1,6 +1,9 @@
 module statix/runtime/pp
 
 imports
+  libstratego-lib
+
+imports
 
   libstratego-gpp
   libspoofax/sdf/pp
@@ -30,6 +33,12 @@ rules
 
   pp-Statix-ScopeGraph =
     pp-Statix-string(prettyprint-Statix-Stx-ScopeGraph)
+
+  pp-Statix-Properties =
+    pp-Statix-string(prettyprint-Statix-Stx-Properties)
+
+  pp-Statix-Diagnostics =
+    pp-Statix-string(prettyprint-Statix-Stx-Diagnostics)
 
 rules
 

@@ -1,0 +1,12 @@
+module statix/lang/statics/precompiled
+
+imports
+
+  signatures/statix/lang/-
+
+  statix/lang/statics/-
+
+rules
+
+  Constraint [[ CPreCompiledQuery(query, states, initial) ^ (_) ]] :=
+    true. // No type-checking for generated-only code.

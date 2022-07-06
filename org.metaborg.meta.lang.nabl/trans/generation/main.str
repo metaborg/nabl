@@ -41,8 +41,9 @@ rules // modules
     ; i'*   := <map(try(import-to-str))> i*
     with
        <fetch(?ImportWildcard(<string-ends-with(|"/nabl")>))> i*
-     ; lib* := []
-    <+ lib* := [ ImportWildcard("runtime/nabl")
+     ; lib* := [ Import("libstratego-lib") ]
+    <+ lib* := [ Import("libstratego-lib")
+               , ImportWildcard("runtime/nabl")
                , ImportWildcard("runtime/task")
                , ImportWildcard("runtime/properties")
                , ImportWildcard("runtime/types")

@@ -18,7 +18,7 @@ exports:
 language:
   sdf:
     pretty-print: FGJ
-    sdf2table: c
+    sdf2table: java
     placeholder:
       prefix: "$"
   stratego:

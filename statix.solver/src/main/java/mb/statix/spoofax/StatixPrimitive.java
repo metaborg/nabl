@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
@@ -37,6 +39,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.stratego.TermOrigin;
+import mb.nabl2.terms.substitution.ISubstitution;
+import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.Constraints;
@@ -44,13 +48,16 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.log.LoggerDebugContext;
+import mb.statix.solver.log.NullDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 
 public abstract class StatixPrimitive extends AbstractPrimitive {
+
     protected static final ILogger logger = LoggerUtils.logger(StatixPrimitive.class);
+    protected static final String WITH_CONFIG_OP = "WithConfig";
 
     final protected int tvars;
 
@@ -110,21 +117,23 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
 
     protected void reportInvalidDataLabel(SolverResult analysis, ITerm label) {
         if(!analysis.spec().dataLabels().contains(label)) {
-            logger.warn("{} is not a valid relation in this specification. Available relations are {}.", label, analysis.spec().dataLabels());
+            logger.warn("{} is not a valid relation in this specification. Available relations are {}.", label,
+                    analysis.spec().dataLabels());
         }
     }
 
     protected void reportInvalidEdgeLabel(SolverResult analysis, ITerm label) {
         if(!analysis.spec().edgeLabels().contains(label)) {
-            logger.warn("{} is not a valid data label in this specification. Available labels are {}.", label, analysis.spec().edgeLabels());
+            logger.warn("{} is not a valid data label in this specification. Available labels are {}.", label,
+                    analysis.spec().edgeLabels());
         }
     }
 
     protected IDebugContext getDebugContext(ITerm levelTerm) throws InterpreterException {
         final String levelString =
                 M.stringValue().match(levelTerm).orElseThrow(() -> new InterpreterException("Expected log level."));
-        final Level level = levelString.equalsIgnoreCase("None") ? Level.Debug : Level.parse(levelString);
-        final IDebugContext debug = new LoggerDebugContext(logger, level);
+        final @Nullable Level level = levelString.equalsIgnoreCase("None") ? null : Level.parse(levelString);
+        final IDebugContext debug = level != null ? new LoggerDebugContext(getLogger(), level) : new NullDebugContext();
         return debug;
     }
 
@@ -146,6 +155,10 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         // @formatter:on
     }
 
+    protected ILogger getLogger() {
+        return logger;
+    }
+
     ////////////////////////////////////////////////
     // Helper methods for creating error messages //
     ////////////////////////////////////////////////
@@ -156,7 +169,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         Tuple2<Iterable<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
 
         final String messageText = Streams.stream(message_origin._1()).filter(s -> !s.isEmpty())
-                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;"));
+                .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;", "", "<br>\n"));
 
         final ITerm messageTerm = B.newTuple(message_origin._2(), B.newString(messageText));
         switch(message.kind()) {
@@ -200,7 +213,19 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         }
 
         // add constraint message
-        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter)));
+        trace.addFirst(message.toString(formatter, () -> constraint.toString(formatter), completeness -> {
+            final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
+            completeness.vars().forEach(var -> {
+                ITerm sub = unifier.findRecursive(var);
+                if(!sub.equals(var)) {
+                    subst.put(var, sub);
+                }
+            });
+            return completeness.apply(subst.freeze()).entrySet().stream().flatMap(e -> {
+                String scope = e.getKey().toString();
+                return e.getValue().elementSet().stream().map(edge -> scope + "-" + edge.toString());
+            }).collect(Collectors.joining(", "));
+        }));
 
         // use empty origin if none was found
         if(originTerm == null) {
@@ -244,7 +269,22 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     }
 
     private static String cleanupString(String string) {
-        return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return string.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\r\n", "<br>")
+                .replace("\n", "<br>").replace("\r", "<br>").replace("\t", "&Tab;");
+    }
+
+    protected static SolverResult getResult(ITerm current) throws InterpreterException {
+        // @formatter:off
+        return M.cases(
+            M.appl2(WITH_CONFIG_OP, M.term(), M.blobValue(SolverResult.class), (t, c, r) -> r),
+            M.blobValue(SolverResult.class)
+        ).match(current).orElseThrow(() -> new InterpreterException("Expected solver result."));
+        // @formatter:on
+    }
+
+    protected static IStatixProjectConfig getConfig(ITerm current) throws InterpreterException {
+        return M.appl2(WITH_CONFIG_OP, M.blobValue(IStatixProjectConfig.class), M.term(), (t, c, r) -> c).match(current)
+                .orElse(IStatixProjectConfig.NULL);
     }
 
 }

@@ -1,7 +1,10 @@
 package mb.p_raffrayi;
 
-import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+
+import io.usethesource.capsule.Set.Immutable;
+import mb.scopegraph.oopsla20.diff.BiMap;
 
 public interface IScopeImpl<S, D> {
 
@@ -9,8 +12,12 @@ public interface IScopeImpl<S, D> {
 
     String id(S scope);
 
-    Collection<S> getAllScopes(D datum);
-
     D substituteScopes(D datum, Map<S, S> substitution);
+
+    Immutable<S> getScopes(D datum);
+
+    D embed(S scope);
+
+    Optional<BiMap.Immutable<S>> matchDatums(D currentDatum, D previousDatum);
 
 }

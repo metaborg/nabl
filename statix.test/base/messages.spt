@@ -2,6 +2,18 @@ module base/messages
 
 language StatixLang
 
+test newline in template message [[
+  resolve false | error $[hello\nworld!]
+]] parse succeeds
+
+test tab in template message [[
+  resolve false | error $[hello\tworld!]
+]] parse succeeds
+
+test carriage return in template message [[
+  resolve false | error $[hello\rworld!]
+]] parse succeeds
+
 test string error on false [[
   resolve false | error "message"
 ]] analysis succeeds

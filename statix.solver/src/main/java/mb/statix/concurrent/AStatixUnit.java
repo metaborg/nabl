@@ -13,6 +13,8 @@ public abstract class AStatixUnit implements IStatixUnit {
 
     @Value.Parameter @Override public abstract Optional<Rule> rule();
 
+    @Value.Parameter @Override public abstract boolean changed();
+
     @Override public String toString() {
         return "StatixUnit@" + System.identityHashCode(this);
     }

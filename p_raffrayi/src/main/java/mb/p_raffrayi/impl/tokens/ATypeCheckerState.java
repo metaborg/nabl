@@ -28,8 +28,15 @@ public abstract class ATypeCheckerState<S, L, D> implements IWaitFor<S, L, D> {
      * The tokens CloseScope & CloseLabel are created for such checks, and must have structural equality.
      */
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return super.hashCode();
+        int result = hashCode;
+        if(result == 0) {
+            result = super.hashCode();
+            hashCode = result;
+        }
+        return hashCode;
     }
 
     @Override public boolean equals(Object obj) {

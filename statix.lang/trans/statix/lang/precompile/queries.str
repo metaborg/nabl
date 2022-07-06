@@ -1,0 +1,230 @@
+module statix/lang/precompile/queries
+
+imports
+
+  libstratego-aterm
+
+  nabl2/api
+
+  signatures/statix/lang/Core-sig
+  signatures/statix/lang/Sugar-sig
+  signatures/statix/lang/PreCompiled-sig
+
+  pp/statix/lang/Core-pp
+
+  statix/lang/analysis
+
+signature
+
+  sorts
+    StateMachine
+    State
+    Accepting
+
+  constructors
+
+    StateMachine : /* states */List(State) * /* initial */ String -> StateMachine
+    State        : /* id */String * /* accepts*/ Accepting * /* transitions (lbl -> state) */List(Label, String) -> State
+
+    Accept : Accepting
+    Reject : Accepting
+
+rules
+
+  precompile-queries(|a) = bottomup(try(precompile-query(|a)))
+
+  precompile-query(|a):
+    q@CResolveQuery(rel, filter, min, s, pst, msg) -> CPreCompiledQuery(q, cstate*, initial)
+    with {| LblRef: with(
+      rules(LblRef: EOP() -> EOP())
+    ; Filter(lbl-re, _) := filter
+    ; Min(ord*, deq)    := min
+
+    // In this code, we treat labels/label annotations as follows:
+    // - Internally, labels are represented by their _declarations_
+    //   Therefore, label refs are resolved for `rel`, `lbl-re` and `ord*`
+    // - When inserted in a `SubEnv/2` term, an original reference is
+    //   substituted back. This ensures creating qualified names during
+    //   core AST generation works properly.
+    // - The built-in `decl` label is treated similar.
+    // - The end-of-path (EOP) label does not have a declaration.
+    //   Therefore it is used _without_ annotations.
+
+    // Normalize labels by their declarations, to allow comparison.
+    ; rel'  := <resolve-lbl-ref(|a)> rel
+    ; re'   := <resolve-lbl-refs(|a)> lbl-re
+
+    // Label order to relation
+    ; lbl-ord := <resolve-lbl-refs(|a); ords-to-relation(|rel')> ord*
+
+    // Create state machine for RE
+    // FIXME: invalid on negatives. Collect all labels from analysis instead.
+    ; alphabet* := <nabl2-get-all-decls(|a); filter(is-label); map(nabl2-get-occurrence-name); make-set; map(!Label(<id>))>
+    ; alphabet' := <normalize-alphabet> (rel', alphabet*)
+    ; StateMachine(state*, initial) := <labelre-to-states(|rel', alphabet')> re'
+
+    // Compile states
+    ; if <shadow-unconditional> deq then
+        cstate* := <map(compile-state(compile-shadow-unconditional|lbl-ord))> state*
+      else
+        cstate* := <map(compile-state(compile-shadow-conditional|lbl-ord))> state*
+      end
+    )|}
+
+rules // state compilation
+
+  compile-state(compile-shadow|lbl-ord): State(state-id, acc, trans*) -> c-state
+    with
+      scope-local-new({| AvailableExp:
+          head-set := <head-set> (acc, trans*)
+        ; (body, v-final) := <compile-L(compile-shadow|trans*, lbl-ord)> head-set
+        ; c-state := State(state-id, body, v-final)
+      |})
+
+  compile-L(compile-shadow|trans*, lbl-ord): L -> (body, var)
+    with
+      L'   := <max-L(|lbl-ord)> L
+    ; E_v* := <map({l, S, E: \l -> E
+       with S := <smaller(|lbl-ord, l)> L
+          ; E := <compile-lL(compile-shadow|trans*, lbl-ord)> (l, S)
+      \})> L'
+    ; if [_] := E_v* then
+        [(body, var)] := E_v*
+      else
+        var   := <newvar-L> L
+      ; E*    := <map(Fst); concat> E_v*
+      ; v*    := <map(Snd)> E_v*
+      ; exp-m := Merge(v*)
+      ; body  := <extend-body> (E*, var, exp-m)
+      end
+
+  compile-lL(compile-shadow|trans*, lbl-ord): (l, []) -> (body, env-l)
+    with exp           := <compile-l(|trans*)> l
+       ; (body, env-l) := <compile-non-existent(newvar-l(|l))> (exp, [])
+
+  compile-lL(compile-shadow|trans*, lbl-ord): (l, L) -> (body, var)
+    with
+      (body-L*, env-L) := <compile-L(compile-shadow|trans*, lbl-ord)> L
+    ; exp-l := <compile-l(|trans*); resolve-available-exp> l
+    ; (body, var) := <compile-shadow> (l, L, body-L*, env-L, exp-l)
+
+  // When env-l is a var, it is computed before. However, its shadowed
+  // environment must then be computed as well, as those are always combined
+  // in the `compile-lL` rules. Hence enforce resolution of this variable.
+  compile-shadow-unconditional: (_, _, body, env-L, env-l@RVar(_)) -> (body, exp-c)
+    with exp-c@RVar(_) := <resolve-available-exp> CExp(env-L, env-l)
+
+  compile-shadow-unconditional: (l, L, body, env-L, exp-l) -> (body', var)
+    with (body', var) := <compile-non-existent(newvar-lL(|l, L))> (CExp(env-L, exp-l), body)
+
+  // Enforce resolution of this variable, similar to the unconditional case.
+  compile-shadow-conditional: (_, _, body, env-L, env-l@RVar(_)) -> (body, exp-c)
+    with exp-c@RVar(_) := <resolve-available-exp> Shadow(env-L, env-l)
+
+  compile-shadow-conditional: (l, L, body, env-L, exp-l) -> (body'', var)
+    // In constrast to the unconditional case, when `exp-l` is not a var
+    // `Shadow(env-L, exp-l)` cannot yet exist, as it requires a variable
+    // as second argument. Therefore, create it here.
+    with env-l  := <newvar-l> l
+       ; var    := <newvar-lL> (l, L)
+       ; body'  := <extend-body> (body , env-l, exp-l)
+       ; body'' := <extend-body> (body', var,   Shadow(env-L, env-l))
+
+  compile-l(|trans*): EOP() -> Resolve()
+
+  compile-l(|trans*): l -> SubEnv(l', st)
+    with st := <lookup> (l, trans*)
+       ; l' := <restore-lbl-ref> l
+
+rules // compile only if not available
+
+  compile-non-existent(newvar): (exp, body) -> (body', var)
+    with exp' := <resolve-available-exp> exp
+       ; (body', var) := <compile-non-existent'(newvar)> (exp', body)
+
+  compile-non-existent'(newvar): (var@RVar(_), body) -> (body, var)
+  compile-non-existent'(newvar): (exp, body) -> (body', var)
+    with var   := <newvar>
+       ; body' := <extend-body> (body, var, exp)
+
+rules // available expressions
+
+  resolve-available-exp = try(AvailableExp)
+
+  extend-body: (body*, var, exp) -> [body*, Step(var, exp)]
+    with rules(AvailableExp: exp -> var)
+
+rules // unconditional shadow optimization
+
+  shadow-unconditional = ?LLam([v1, v2], CTrue()); where(<non-overlapping-vars> (v1, v2))
+
+  non-overlapping-vars = ?(Var(x), Var(y)); where(not(<strip-annos; equal(|<strip-annos> x)> y))
+  non-overlapping-vars = ?(Wld(), Var(_))
+  non-overlapping-vars = ?(Var(_), Wld())
+  non-overlapping-vars = ?(Wld(), Wld())
+
+rules // name generation
+
+  newvar-L: L -> RVar(<local-newname> $[L__[L']])
+    with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
+
+  newvar-lL: (l, L) -> RVar(<local-newname> $[lL_[l']_[L']])
+    with l' := <lbl-name> l
+    with L' := <map(lbl-name); separate-by(|"_"); concat-strings> L
+  newvar-lL(|l, L) = <newvar-lL> (l, L)
+
+  newvar-l: l -> RVar(<local-newname> $[l__[l']])
+    with l' := <lbl-name> l
+  newvar-l(|l) = <newvar-l> l
+
+  lbl-name: EOP() -> "$"
+  lbl-name: Decl() -> "decl"
+  lbl-name: Label(name) -> name
+
+rules // re & label order
+
+  head-set: (Accept(), trans*) -> head-set
+    with lbl* := <map(Fst)> trans*
+       ; head-set := <insert> (0, EOP(), lbl*)
+  head-set: (Reject(), trans*) -> <map(Fst)> trans*
+
+  max-L(|lbl-ord): L -> max-L
+    with max-L := <filter({l: \l -> l
+      // forall l' in L. l', not l < l'
+      where(<map({l': \ l' -> <not(labelord-lt(|lbl-ord))> (l, l') \})> L)
+    \})> L
+
+  smaller(|lbl-ord, l): L -> S
+    // forall l' in L. l' < l
+    with S := <filter(where(!(<id>, l); labelord-lt(|lbl-ord)))> L
+
+rules // label reference resolution
+
+  is-label = where(nabl2-get-occurrence-ns; ?"Edge")
+
+  resolve-lbl-refs(|a) = bottomup(try(resolve-lbl-ref(|a)))
+
+  resolve-lbl-ref(|a): EOP() -> EOP()
+  resolve-lbl-ref(|a): lbl@Decl() -> <resolve-lbl-ref'(|a)> lbl
+  resolve-lbl-ref(|a): Label(lbl) -> Label(<resolve-lbl-ref'(|a)> lbl)
+
+  resolve-lbl-ref'(|a): lbl-ref -> lbl-decl
+    with decl     := <nabl2-get-ast-property(|a, "decl")> lbl-ref
+       ; lbl-decl := <nabl2-get-occurrence-name> decl
+       // Maybe override when label occurs multiple times in re/lbl-ord
+       // Should not matter, as it only serves to restore reference
+       // resolution for name qualification.
+       ; rules(LblRef: lbl-decl -> lbl-ref)
+
+  restore-lbl-ref = bottomup(try(LblRef))
+
+  normalize-alphabet: (EOP(), alphabet*) -> alphabet*
+  normalize-alphabet: (rel, alphabet*) -> [rel, alphabet*]
+
+rules // external handling of regular expressions and relations
+
+  labelre-to-states(|rel, alphabet) = prim("STX_labelre_to_states", rel, alphabet)/* : LabelRE -> StateMachine */
+
+  ords-to-relation(|rel) = prim("STX_ords_to_relation", rel) /* : List(LabelOrd) -> LabelOrder */
+
+  labelord-lt(|lbl-ord) = prim("STX_labelord_lt", lbl-ord) /* : (Label * Label) -> _ */

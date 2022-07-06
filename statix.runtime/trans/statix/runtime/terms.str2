@@ -1,0 +1,67 @@
+module statix/runtime/terms
+
+imports
+  strategolib
+  libspoofax/term/origin
+
+// Term duplicates from statix.lang
+
+signature
+  sorts
+    Term
+    Var
+  constructors
+    Op    : string * List(Term) -> Term
+    Tuple : List(Term)          -> Term
+    List  : List(Term)          -> Term
+    Str   : string              -> Term
+    Int   : string              -> Term
+    Var   : string              -> Var
+    : Var -> Term
+
+    Scope : string * string -> Term
+
+rules
+
+  stx--is-var = ?Var(_)
+
+  stx--is-scope = ?Scope(_, _)
+
+
+  stx--explode = origin-track-forced(stx---explode)
+
+  stx---explode: t*{a*} -> List(<map(stx--explode)> t*){a*}
+    where is-list
+
+  stx---explode: ""#(t*){a*} -> Tuple(<map(stx--explode)> t*){a*}
+    where is-tuple
+
+  stx---explode: t{a*} -> Str(t){a*}
+    where is-string
+
+  stx---explode: t{a*} -> Int(<int-to-string> t){a*}
+    where is-int
+
+  stx---explode: c#(t*){a*} -> Op(c, <map(stx--explode)> t*){a*}
+    where not(is-list + is-tuple + is-string + is-int)
+
+
+  stx--implode = origin-track-forced(stx---implode)
+
+  stx---implode: List(t*){a*} -> t{a*}
+    with t := <map(stx--implode)> t*
+
+  stx---implode: Tuple(t*){a*} -> t{a*}
+    with t := <map(stx--implode);ListToTuple> t*
+
+  stx---implode: Str(s){a*} -> t{a*}
+    with t := s
+
+  stx---implode: Int(i){a*} -> t{a*}
+    with t := <string-to-int> i
+
+  stx---implode: Op(c, t*){a*} -> t{a*}
+    with t := c#(<map(stx--implode)> t*)
+
+  stx---implode: _ -> <id>
+    with warn(|"Cannot implode internal term representation")

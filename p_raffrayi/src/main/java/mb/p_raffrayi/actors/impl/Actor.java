@@ -1,5 +1,6 @@
 package mb.p_raffrayi.actors.impl;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Deque;
@@ -51,6 +52,8 @@ class Actor<T> implements IActorImpl<T>, Runnable {
     private @Nullable IActorMonitor monitor;
     private @Nullable Throwable stopCause;
 
+    private final int hashCode;
+
     private volatile Thread thread = null;
     private static final ThreadLocal<IActorInternal<?>> current = ThreadLocal.withInitial(() -> {
         final IllegalStateException ex = new IllegalStateException("Cannot get current actor.");
@@ -79,10 +82,16 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         this.state = ActorState.INITIAL;
         this.priority = new AtomicInteger(0);
         this.messages = new ConcurrentLinkedDeque<>();
+
+        this.hashCode = super.hashCode();
     }
 
     @Override public String id() {
         return id;
+    }
+
+    @Override public int hashCode() {
+        return hashCode;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -261,7 +270,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                         final Method method1 = method;
                         final Object[] args1 = args;
                         final Action2<Object, Throwable> _return =
-                                (r, ex) -> sender._return(sender, method, result, r, ex);
+                                (r, ex) -> sender._return(this, method, result, r, ex);
                         ;
                         put(() -> {
                             doInvoke((IActorInternal<?>) sender, method1, args1, _return);
@@ -566,7 +575,9 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         return stats;
     }
 
-    private static class Stats implements IActorStats {
+    private static class Stats implements IActorStats, Serializable {
+
+        private static final long serialVersionUID = 42L;
 
         private int suspended = 0;
         private int preempted = 0;

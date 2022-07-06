@@ -28,6 +28,7 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.nabl2.terms.unification.OccursException;
@@ -565,6 +566,23 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return new PersistentUnifier.Immutable(finite, reps.freeze(), ranks.freeze(), terms.freeze(),
                     repAndTermVarsCache.freeze(), domainSetCache.freeze(), rangeSetCache.freeze(),
                     varSetCache.freeze());
+        }
+
+        ///////////////////////////////////////////
+        // replace(IReplacement)
+        ///////////////////////////////////////////
+
+        @Override public PersistentUnifier.Immutable replace(IReplacement replacement) {
+            if(replacement.isEmpty() || this.isEmpty()) {
+                return this;
+            }
+            final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+            for(Entry<ITermVar, ITerm> e : this.terms.entrySet()) {
+                terms.__put(e.getKey(), replacement.apply(e.getValue()));
+            }
+            return new PersistentUnifier.Immutable(finite, reps.get(), ranks, terms.freeze(),
+                    repAndTermVarsCache.get(), domainSetCache, rangeSetCache,
+                    varSetCache);
         }
 
         ///////////////////////////////////////////

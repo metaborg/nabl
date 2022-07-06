@@ -1,5 +1,8 @@
 module nabl2/runtime/prelude/set
 
+imports
+  libstratego-lib
+
 strategies
   
   nabl2--dups = nabl2--dups(eq)

@@ -1,6 +1,9 @@
 module statix/api
 
 imports
+  libstratego-lib
+
+imports
 
   signatures/statix/-
   injections/statix/-
@@ -9,22 +12,25 @@ imports
 
 rules // analysis
 
-  stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id  ,   id|spec-name, init-constraint)
-  stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre ,   id|spec-name, init-constraint)
-  stx-editor-analyze(pre, post|spec-name, init-constraint) = stx--editor-analyze(pre, post|spec-name, init-constraint)
+  stx-editor-analyze(         |spec-name, init-constraint) = stx-editor-analyze(id , id|spec-name, init-constraint)
+  stx-editor-analyze(pre      |spec-name, init-constraint) = stx-editor-analyze(pre, id|spec-name, init-constraint)
+  stx-editor-analyze(pre, post|spec-name, init-constraint) = stx-editor-analyze(pre, post, stx--no-custom-final-analysis|spec-name, init-constraint)
+  stx-editor-analyze(pre, post, custom-analysis|spec-name, init-constraint) = stx--editor-analyze(pre, post, custom-analysis|spec-name, init-constraint)
 
-  stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id  ,   id|spec-name, init-constraint)
-  stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre ,   id|spec-name, init-constraint)
+  stx-editor-elaborate(         |spec-name, init-constraint) = stx-editor-elaborate(id  , id  |spec-name, init-constraint)
+  stx-editor-elaborate(pre      |spec-name, init-constraint) = stx-editor-elaborate(pre , id  |spec-name, init-constraint)
   stx-editor-elaborate(pre, post|spec-name, init-constraint) = stx--editor-elaborate(pre, post|spec-name, init-constraint)
 
-  stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id ,  id  |spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre,  id  |spec-name, project-constraint, file-constraint)
-  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                               < cstx--editor-analyze(pre, stx--no-grouping, post|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
-                                                                               + stx--editor-analyze(pre, post|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(         |spec-name, project-constraint, file-constraint) = stx-editor-analyze(id , id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre      |spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, id|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, post, stx--no-custom-unit-analysis, stx--no-custom-final-analysis|spec-name, project-constraint, file-constraint)
+  stx-editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                               < cstx--editor-analyze(pre, stx--no-grouping, post, analyze-final|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
+                                                                               + stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint)
 
-  stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                                                        < cstx--editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint)
+  stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx-editor-analyze(pre, group, post, stx--no-custom-final-analysis|spec-name, project-constraint, group-constraint, file-constraint)
+  stx-editor-analyze(pre, group, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                                                        < cstx--editor-analyze(pre, group, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint)
                                                                                                         + fatal-err-msg(|"Grouping is only supported by concurrent Statix solver.")
 
   stx-evaluate(|spec-name, constraint): in* -> out
@@ -83,6 +89,13 @@ rules // ast
    */
   stx-get-ast-ref(|a) = stx--get-ast-property(|a, Ref())
 
+  /**
+   * Gets all properties of a term in the analysis.
+   *
+   * @type Term -> list(StxProp)
+   */
+  stx-get-ast-properties(|a) = stx--get-ast-properties(|a)
+
 rules // scope graph
 
   /**
@@ -104,7 +117,7 @@ rules // scope graph
    * Get the target scopes that are reachable from the input scope via `lbl`-edges.
    *
    * Example: When the specification contains a `s1 -L-> s2` constraint,
-   * then `<stx-get-scopegraph-data(|a, "statics/base!L")> s1` will return `[s2]`.
+   * then `<stx-get-scopegraph-edges(|a, "statics/base!L")> s1` will return `[s2]`.
    *
    * Please note that a fully qualified name for the label must be provided.
    *

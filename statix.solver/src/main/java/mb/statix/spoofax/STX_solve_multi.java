@@ -1,6 +1,7 @@
 package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
@@ -27,14 +29,19 @@ import com.google.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IScopeImpl;
 import mb.p_raffrayi.IUnitResult;
+import mb.p_raffrayi.IUnitResult.TransitionTrace;
+import mb.p_raffrayi.PRaffrayiSettings;
 import mb.p_raffrayi.impl.Broker;
+import mb.p_raffrayi.impl.Result;
 import mb.statix.concurrent.GroupResult;
 import mb.statix.concurrent.IStatixProject;
 import mb.statix.concurrent.IStatixResult;
 import mb.statix.concurrent.ProjectResult;
 import mb.statix.concurrent.ProjectTypeChecker;
+import mb.statix.concurrent.SolverState;
 import mb.statix.concurrent.UnitResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
+import mb.statix.concurrent.InputMatchers;
 import mb.statix.constraints.CFalse;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.constraints.messages.Message;
@@ -50,21 +57,21 @@ public class STX_solve_multi extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi.class);
 
     @Inject public STX_solve_multi() {
-        super(STX_solve_multi.class.getSimpleName(), 4);
+        super(STX_solve_multi.class.getSimpleName(), 5);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
         final Spec spec =
-                StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
+                StatixTerms.spec().match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final IDebugContext debug = getDebugContext(terms.get(1));
-        final IProgress progress = getProgress(terms.get(2));
-        final ICancel cancel = getCancel(terms.get(3));
+        final IDebugContext debug = getDebugContext(terms.get(2));
+        final IProgress progress = getProgress(terms.get(3));
+        final ICancel cancel = getCancel(terms.get(4));
 
         final IStatixProject project =
-                IStatixProject.matcher().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
+                InputMatchers.project().match(term).orElseThrow(() -> new InterpreterException("Expected project."));
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
@@ -72,21 +79,41 @@ public class STX_solve_multi extends StatixPrimitive {
         try {
             logger.info("Analyzing files");
 
-            final double t0 = System.currentTimeMillis();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, ProjectResult>> futureResult = Broker.run(project.resource(),
-                    new ProjectTypeChecker(project, spec, debug), scopeImpl, spec.allLabels(), cancel);
+            final SolverMode solverMode = getSolverMode(terms.get(0));
+            final PRaffrayiSettings settings = solverModeToSettings(solverMode);
 
-            final IUnitResult<Scope, ITerm, ITerm, ProjectResult> result = futureResult.asJavaCompletion().get();
+            int size = project.size(Runtime.getRuntime().availableProcessors());
+            progress.setWorkRemaining(size + 1);
+
+            final double t0 = System.currentTimeMillis();
+
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>> futureResult =
+                    Broker.run(project.resource(), settings, new ProjectTypeChecker(project, spec, debug), scopeImpl,
+                            spec.allLabels(), project.changed(), project.previousResult(), cancel, progress);
+
+            final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>> result =
+                    futureResult.asJavaCompletion().get();
             final double dt = System.currentTimeMillis() - t0;
 
-            final Map<String, SolverResult> resultMap = flattenResult(spec, result);
+            final List<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>> unitResults =
+                    new ArrayList<>();
+            final Map<String, ITerm> resultMap = flattenResult(spec, result, unitResults);
             // PRaffrayiUtil.writeStatsCsvFromResult(result, System.out);
 
             logger.info("Files analyzed in {} s", (dt / 1_000d));
-
-            for(Entry<String, SolverResult> entry : resultMap.entrySet()) {
-                results.add(B.newTuple(B.newString(entry.getKey()), B.newBlob(entry.getValue())));
+            if(settings.isIncremental()) {
+                logger.info("* Initially changed units : {}",
+                        flattenTransitions(unitResults, TransitionTrace.INITIALLY_STARTED));
+                logger.info("* Restarted units         : {}",
+                        flattenTransitions(unitResults, TransitionTrace.RESTARTED));
+                logger.info("* Released units          : {}",
+                        flattenTransitions(unitResults, TransitionTrace.RELEASED));
             }
+
+            for(Entry<String, ITerm> entry : resultMap.entrySet()) {
+                results.add(B.newTuple(B.newString(entry.getKey()), entry.getValue()));
+            }
+            progress.work(1);
         } catch(InterruptedException ie) {
             logger.info("Async solving interrupted");
         } catch(ExecutionException ee) {
@@ -101,68 +128,89 @@ public class STX_solve_multi extends StatixPrimitive {
             logger.error("Async solving failed.", e);
             throw new InterpreterException("Async solving failed."/*, e*/);
         }
-
         return Optional.of(B.newList(results));
     }
 
-    private Map<String, SolverResult> flattenResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ProjectResult> result) {
-        final Map<String, SolverResult> resourceResults = new HashMap<>();
-        final ProjectResult projectResult = result.analysis();
-        if(projectResult != null) {
-            final List<SolverResult> groupResults = new ArrayList<>();
-            projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
-            projectResult.groupResults()
-                    .forEach((k, gr) -> flattenGroupResult(spec, gr, groupResults, resourceResults));
-            projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults));
-            SolverResult solveResult = flatSolverResult(spec, result);
-            for(SolverResult groupResult : groupResults) {
-                solveResult = solveResult.combine(groupResult);
-            }
-            resourceResults.put(projectResult.resource(), solveResult);
-        } else {
+    @SuppressWarnings("unchecked") private Map<String, ITerm> flattenResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>> result,
+            List<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        if(result.result() == null) {
             logger.error("Missing result for project {}", result.id());
+            return new HashMap<>();
         }
+
+        final Map<String, ITerm> resourceResults = new HashMap<>();
+        final ProjectResult projectResult = result.result().analysis();
+        final String resource = projectResult.resource();
+        final List<SolverResult> groupResults = new ArrayList<>();
+        projectResult.libraryResults().forEach((k, ur) -> flattenLibraryResult(spec, ur));
+        projectResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, resource + "/" + k, gr,
+                groupResults, resourceResults, unitResults));
+        projectResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
+
+        SolverResult solveResult = flatSolverResult(spec, result);
+        for(SolverResult groupResult : groupResults) {
+            solveResult = solveResult.combine(groupResult);
+        }
+        resourceResults.put(resource, B.newAppl("ProjectResult", B.newBlob(solveResult), B.newBlob(result)));
+
         return resourceResults;
     }
 
     private void flattenLibraryResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, Unit> result) {
     }
 
-    private void flattenGroupResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, GroupResult> result,
-            List<SolverResult> groupResults, Map<String, SolverResult> resourceResults) {
-        final GroupResult groupResult = result.analysis();
-        if(groupResult != null) {
-            groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, gr, groupResults, resourceResults));
-            groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults));
-            final SolverResult solveResult = flatSolverResult(spec, result);
-            groupResults.add(solveResult);
-        } else {
+    @SuppressWarnings("unchecked") private void flattenGroupResult(Spec spec, String groupId,
+            IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>> result,
+            List<SolverResult> groupResults, Map<String, ITerm> resourceResults,
+            List<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        if(result.result() == null) {
             logger.error("Missing result for group {}", result.id());
+            return;
         }
+
+        final GroupResult groupResult = result.result().analysis();
+        groupResult.groupResults().forEach((k, gr) -> flattenGroupResult(spec, groupResult.resource(),
+                (IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>) gr,
+                groupResults, resourceResults, unitResults));
+        groupResult.unitResults().forEach((k, ur) -> flattenUnitResult(spec, ur, resourceResults, unitResults));
+        final SolverResult solveResult = flatSolverResult(spec, result);
+        groupResults.add(solveResult);
+        resourceResults.put(groupId, B.newAppl("GroupResult", B.newBlob(solveResult), B.newBlob(result)));
     }
 
-    private void flattenUnitResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, UnitResult> result,
-            Map<String, SolverResult> resourceResults) {
-        final UnitResult unitResult = result.analysis();
+    @SuppressWarnings("unchecked") private void flattenUnitResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>> result,
+            Map<String, ITerm> resourceResults,
+            List<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>> unitResults) {
+        unitResults.add(
+                (IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>) (Object) result);
+        final Result<Scope, ITerm, ITerm, UnitResult, SolverState> unitResult = result.result();
         if(unitResult != null) {
             final SolverResult solveResult = flatSolverResult(spec, result);
-            resourceResults.put(unitResult.resource(), solveResult);
+            resourceResults.put(unitResult.analysis().resource(),
+                    B.newAppl("UnitResult", B.newBlob(solveResult), B.newBlob(result)));
         } else {
             logger.error("Missing result for unit {}", result.id());
         }
     }
 
-    private SolverResult flatSolverResult(Spec spec, IUnitResult<Scope, ITerm, ITerm, ? extends IStatixResult> result) {
-        final IStatixResult unitResult = result.analysis();
+    private <T extends IStatixResult> SolverResult flatSolverResult(Spec spec,
+            IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, T, SolverState>> result) {
+        final IStatixResult unitResult = result.result().analysis();
         SolverResult solveResult = Optional.ofNullable(unitResult.solveResult()).orElseGet(() -> SolverResult.of(spec));
 
         solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
 
         final ImmutableMap.Builder<IConstraint, IMessage> messages =
                 ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());
-        if(result.analysis().exception() != null) {
+        if(result.result().analysis().exception() != null) {
             final Message message = new Message(MessageKind.ERROR,
-                    ImmutableList.of(new TextPart("Exception: " + result.analysis().exception().getMessage())),
+                    ImmutableList.of(new TextPart("Exception: " + result.result().analysis().exception().getMessage())),
                     B.newTuple());
             messages.put(new CFalse(message), message);
         }
@@ -174,6 +222,31 @@ public class STX_solve_multi extends StatixPrimitive {
         solveResult = solveResult.withMessages(messages.build());
 
         return solveResult;
+    }
+
+    private String flattenTransitions(
+            List<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ?, SolverState>>> unitResults,
+            TransitionTrace flow) {
+        return unitResults.stream().filter(r -> r.stateTransitionTrace() == flow).map(IUnitResult::id)
+                .collect(Collectors.joining(", "));
+    }
+
+    private SolverMode getSolverMode(ITerm term) throws InterpreterException {
+        return M.blobValue(SolverMode.class).match(term)
+                .orElseThrow(() -> new InterpreterException("Expected project condiguration, got " + term));
+    }
+
+    private PRaffrayiSettings solverModeToSettings(SolverMode mode) throws InterpreterException {
+        switch(mode) {
+            case TRADITIONAL:
+                throw new InterpreterException("Cannot create concurrent settings for TRADITIONAL solver mode.");
+            case CONCURRENT:
+                return PRaffrayiSettings.concurrent();
+            case INCREMENTAL:
+                return PRaffrayiSettings.incremental();
+            default:
+                throw new InterpreterException("Unknown solver mode: " + mode);
+        }
     }
 
 }

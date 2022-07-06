@@ -77,7 +77,7 @@ public class CExists implements IConstraint, Serializable {
         return Optional.ofNullable(bodyCriticalEdges);
     }
 
-    @Override public CExists withBodyCriticalEdges(ICompleteness.Immutable criticalEdges) {
+    @Override public CExists withBodyCriticalEdges(@Nullable ICompleteness.Immutable criticalEdges) {
         return new CExists(vars, constraint, cause, criticalEdges, freeVars);
     }
 
@@ -90,6 +90,12 @@ public class CExists implements IConstraint, Serializable {
         return cases.caseExists(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            vars,
+            constraint.getVars()
+        );
+    }
 
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;

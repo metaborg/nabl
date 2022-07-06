@@ -1,5 +1,8 @@
 module nabl2/runtime/prelude/time
 
+imports
+  libstratego-lib
+
 rules
 
   cputime = prim("SSL_cputime")

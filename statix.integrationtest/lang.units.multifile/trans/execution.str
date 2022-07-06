@@ -51,16 +51,16 @@ rules
     with schange1* := <map(normalize-change(|cache))> change*
        ; schange2* := <filter(\ (x, a) -> (x, Cached(a)) where <not(lookup)> (x, schange1*) \)> cache
        ; schange* := <conc> (schange1*, schange2*)
-  
+
   normalize-change(|cache): Added(x, t)   -> (x, Added(t'))      with t' := <set-origins-file(|x)> t
   normalize-change(|cache): Changed(x, t) -> (x, Changed(t', a)) with t' := <set-origins-file(|x)> t ; a := <lookup> (x, cache)
   normalize-change(|cache): Removed(x)    -> (x, Removed(a))     with a := <lookup> (x, cache)
 
   set-origins-file(|x) = topdown(try(set-origin-file(|x)))
 
-  set-origin-file(|x) = 
+  set-origin-file(|x) =
     origin-location-offset-set(|<origin-location-offset;(!x, id, id, id, id)>)
-    
+
 
   execute-changes(dbg|spec-name, project-constraint, file-constraint): (changeset, (cache, messages*)) -> (result*, [messages|messages*])
     with changeset' := <normalize-changeset(|cache)> changeset
@@ -72,7 +72,7 @@ rules
     with AnalysisResult(mresult*) := <stx-editor-analyze(explicate-injections-Units, implicate-injections-Units|spec-name, project-constraint, file-constraint)> AnalyzeMulti((project-resource, project-change), change*, (), ())
 
     where [] := <filter(?(_, Failed()))> mresult*
-    
+
     with error* := <mapconcat(Snd; (?Full(_, _, <id>, _, _) + ?Update(_, <id>, _, _)))> mresult*
        ; <map(format-message(|"ERROR ");dbg)> error*
        ; warning* := <mapconcat(Snd; (?Full(_, _, _, <id>, _) + ?Update(_, _, <id>, _)))> mresult*

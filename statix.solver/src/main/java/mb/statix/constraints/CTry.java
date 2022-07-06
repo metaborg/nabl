@@ -68,6 +68,10 @@ public class CTry implements IConstraint, Serializable {
         return cases.caseTry(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return constraint.getVars();
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

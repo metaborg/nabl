@@ -59,6 +59,13 @@ public class CAstId implements IConstraint, Serializable {
         return cases.caseTermId(this);
     }
 
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            term.getVars(),
+            idTerm.getVars()
+        );
+    }
+
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Transient<ITermVar> freeVars = CapsuleUtil.transientSet();
         doVisitFreeVars(freeVars::__insert);

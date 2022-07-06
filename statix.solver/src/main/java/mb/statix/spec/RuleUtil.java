@@ -228,6 +228,7 @@ public class RuleUtil {
 
             final List<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImmutableList.toImmutableList());
 
+
             // we initialized FreshVars to make sure these do not capture any free variables,
             // or shadow any pattern variables. We can therefore use the original body without any
             // renaming
@@ -235,7 +236,12 @@ public class RuleUtil {
             final IConstraint body =
                     Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
 
-            final Rule newRule = Rule.builder().from(rule).params(params).body(body).build();
+            final Rule newRule = Rule.builder()
+                .from(rule)
+                .params(params)
+                .body(body)
+                .bodyCriticalEdges(rule.bodyCriticalEdges())
+                .build();
 
             newRules.add(newRule);
         }
@@ -288,11 +294,11 @@ public class RuleUtil {
 
     /**
      * Transform rule such that constraints and have a single top-level existential.
-     * 
+     *
      * Head patterns are preserved.
-     * 
+     *
      * For example:
-     * 
+     *
      * <pre>
      *   { x :- {y} {y} x == Id(y) }  --->  { x :- {y y1} x == Id(y1) }
      * </pre>
@@ -305,7 +311,7 @@ public class RuleUtil {
     /**
      * Transform rule such that head patterns are maximally instantiated based on the body. This implicitly applies
      * hoisting.
-     * 
+     *
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {

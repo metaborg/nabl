@@ -81,7 +81,7 @@ rules
        ; heads-str := <separate-by(|", ");concat-strings> head-str*
 
 
-  get-rule-head(|a) = nabl2-get-property(|a,"head") ; where(nabl2-is-ground)
+  get-rule-head(|a) = nabl2-get-property(|a,"head") ; where(nabl2-is-ground); topdown(try(?Ascribe(<id>, _)))
 
   get-rule-constraint(|a) = nabl2-get-property(|a,"decl") ; where(nabl2-is-ground)
 

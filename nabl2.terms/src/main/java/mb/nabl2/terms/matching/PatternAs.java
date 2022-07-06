@@ -20,17 +20,17 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
-class PatternAs extends Pattern {
+public final class PatternAs extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final PatternVar var;
     private final Pattern pattern;
 
-    public PatternAs(String name, Pattern pattern) {
+    PatternAs(String name, Pattern pattern) {
         this(TermBuild.B.newVar("", name), pattern);
     }
 
-    public PatternAs(ITermVar var, Pattern pattern) {
+    PatternAs(ITermVar var, Pattern pattern) {
         super(Attachments.empty());
         this.var = new PatternVar(var);
         this.pattern = pattern;
@@ -48,7 +48,7 @@ class PatternAs extends Pattern {
         this.pattern = pattern;
     }
 
-    @Nullable ITermVar getVar() {
+    public @Nullable ITermVar getVar() {
         return var.getVar();
     }
 

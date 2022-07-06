@@ -1,15 +1,16 @@
 package mb.scopegraph.oopsla20.reference;
 
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.Iterators;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 
-public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>> {
+public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>>, Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     @SuppressWarnings("rawtypes") private static final Env EMPTY = new Env<>(CapsuleUtil.immutableSet());
 
@@ -28,11 +29,15 @@ public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>> {
     }
 
     @Override public Iterator<ResolutionPath<S, L, D>> iterator() {
-        return Iterators.transform(paths.iterator(), p -> p);
+        return paths.iterator();
     }
 
     @SuppressWarnings("unchecked") public static <S, L, D> Env<S, L, D> empty() {
         return EMPTY;
+    }
+
+    @Override public String toString() {
+        return "Env{paths=" + paths + "}";
     }
 
     public static <S, L, D> Env<S, L, D> of(ResolutionPath<S, L, D> path) {

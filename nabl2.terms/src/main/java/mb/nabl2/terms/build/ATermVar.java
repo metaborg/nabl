@@ -14,7 +14,7 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class ATermVar extends AbstractTerm implements ITermVar {
 
@@ -59,8 +59,16 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
         return cases.caseVar(this);
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-        return Objects.hash(getResource(), getName());
+        int result = hashCode;
+        if(result == 0) {
+            result = getResource().hashCode();
+            result = result * 31 + getName().hashCode();
+            hashCode = result;
+        }
+        return hashCode;
     }
 
     @Override public boolean equals(Object other) {

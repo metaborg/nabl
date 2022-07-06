@@ -22,25 +22,19 @@ signature
   sorts Exp constructors
     Var : ID -> Exp
 
-  namespaces
-    Class : ID
-    Var   : ID
-
   relations
-    class : occurrence -> scope
+    var: string
+    class : string -> scope
 
   name-resolution
     labels P E
-    resolve Class filter P* min $ < P
-    resolve Var filter P*(E|e) min $ < P, $ < E, E < P
 
 rules
 
   programOk : list(Class)
-  
-  programOk(classes) :- {s}
-    new s,
-    classesOk(s, classes).
+
+  programOk(classes) :-
+    classesOk(new, classes).
 
 rules
 
@@ -48,18 +42,21 @@ rules
   classOk : scope * Class
 
   classOk(s, PartialClass(x, members)) :- {s' pcs}
-    new s',
-    s' -P-> s,
-    !class[Class{x@x}, s'] in s,
-    class of Class{x@-} in s |-> pcs,
-    importPartials(pcs, s),
+    new s', s' -P-> s,
+    !class[x, s'] in s,
+    query class
+      filter P*
+        and { x' :- x' == x }
+      min $ < P
+      in s |-> pcs,
+    importPartials(pcs, s'),
     membersOk(s', members).
 
 rules
 
   importPartials maps importPartial(list(*), *)
-  importPartial : (path * (occurrence * scope)) * scope
-  
+  importPartial : (path * (string * scope)) * scope
+
   importPartial((_, (_, s)), s).
 
   importPartial((_, (_, s')), s) :-
@@ -71,12 +68,17 @@ rules
   memberOk : scope * Member
 
   memberOk(s, Field(x,e )) :-
-    s -> Var{x@x},
+    !var[x] in s,
     expOk(s, e).
 
 rules
-    
+
   expOk : scope * Exp
 
   expOk(s, Var(x)) :-
-    Var{"x"@-} in s |-> [_].
+    query var
+      filter P* E?
+        and { x' :- x' == x }
+      min$ < P, $ < E, E < P
+        and true
+      in s |-> [_].

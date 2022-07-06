@@ -2,24 +2,20 @@ package mb.statix.concurrent.util;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 public class VarIndexedCollection<V> {
 
-    private final SetMultimap.Transient<ITermVar, Entry> index;
+    private final HashMultimap<ITermVar, Entry> index;
 
     public VarIndexedCollection() {
-        this.index = SetMultimap.Transient.of();
-    }
-
-    public Set.Immutable<Entry> get(ITermVar indexVar) {
-        return index.get(indexVar);
+        this.index = HashMultimap.create();
     }
 
     public boolean put(V value, Iterable<ITermVar> indexVars, IUnifier unifier) {
@@ -27,7 +23,7 @@ public class VarIndexedCollection<V> {
                 Streams.stream(indexVars).flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
         final Entry entry = new Entry(value);
         for(ITermVar var : vars) {
-            index.__insert(var, entry.inc());
+            index.put(var, entry.inc());
         }
         return !vars.isEmpty();
     }
@@ -48,12 +44,11 @@ public class VarIndexedCollection<V> {
 
     private void update(ITermVar indexVar, IUnifier unifier, Set.Transient<V> done) {
         final Set<ITermVar> vars = unifier.getVars(indexVar);
-        final Set<Entry> entries = index.get(indexVar);
-        index.__remove(indexVar);
+        final Iterable<Entry> entries = index.removeAll(indexVar);
         for(Entry entry : entries) {
             entry.dec();
             for(ITermVar var : vars) {
-                index.__insert(var, entry.inc());
+                index.put(var, entry.inc());
             }
             if(entry.refcount() == 0) {
                 done.__insert(entry.value);

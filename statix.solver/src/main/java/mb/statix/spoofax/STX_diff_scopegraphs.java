@@ -36,7 +36,7 @@ public class STX_diff_scopegraphs extends StatixPrimitive {
         final IState.Immutable current = states._1();
         final IState.Immutable previous = states._2();
 
-        final ScopeGraphDiff<Scope, ITerm, ITerm> diff = ScopeGraphDiffer.diff(s0, current.scopeGraph(),
+        final ScopeGraphDiff<Scope, ITerm, ITerm> diff = ScopeGraphDiffer.fullDiff(s0, s0, current.scopeGraph(),
                 previous.scopeGraph(), new StatixDifferOps(current.unifier(), previous.unifier()));
 
         return Optional.of(StatixDifferOps.toTerm(diff, current.unifier(), previous.unifier()));

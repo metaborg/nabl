@@ -35,7 +35,9 @@ rules // collect extension constraints
   ext-constraints: Rule(_, F(x, inparam*, outparam), _) -> c*
     where r-ref := <ext-get-constraint-ref> x
         ; ps := <conc> (inparam*, [outparam])
-        ; c* := <ext-params-constraints(|r-ref)> ps
+        ; c-param* := <ext-params-constraints(|r-ref)> ps
+        ; c-decl* := <ext-non-unique-decls-constraints> ps
+        ; c* := <conc> (c-param*, c-decl*)
 
   ext-param-constraints(|r-ref): (i, n@NewOp()) -> (n, c*)
     where c* := [ ExtProvides(ExtParam(r-ref, i), ExtAll(), n) ]

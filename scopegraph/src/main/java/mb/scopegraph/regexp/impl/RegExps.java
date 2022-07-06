@@ -98,4 +98,41 @@ public final class RegExps {
         });
     }
 
+    public static <S> boolean isOblivion(IRegExp<S> regexp) {
+        return regexp.match(new IRegExp.ICases<S, Boolean>() {
+
+            @Override public Boolean emptySet() {
+                return true;
+            }
+
+            @Override public Boolean emptyString() {
+                return false;
+            }
+
+            @Override public Boolean symbol(S s) {
+                return false;
+            }
+
+            @Override public Boolean concat(IRegExp<S> left, IRegExp<S> right) {
+                return false;
+            }
+
+            @Override public Boolean closure(IRegExp<S> re) {
+                return false;
+            }
+
+            @Override public Boolean or(IRegExp<S> left, IRegExp<S> right) {
+                return false;
+            }
+
+            @Override public Boolean and(IRegExp<S> left, IRegExp<S> right) {
+                return false;
+            }
+
+            @Override public Boolean complement(IRegExp<S> re) {
+                return false;
+            }
+        });
+    }
+
 }

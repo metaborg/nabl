@@ -39,7 +39,7 @@ public class CEqual implements IConstraint, Serializable {
         this(term1, term2, cause, null);
     }
 
-    private CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause, @Nullable IMessage message) {
+    public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause, @Nullable IMessage message) {
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
@@ -76,6 +76,13 @@ public class CEqual implements IConstraint, Serializable {
 
     @Override public <R, E extends Throwable> R matchOrThrow(CheckedCases<R, E> cases) throws E {
         return cases.caseEqual(this);
+    }
+
+    @Override public Set.Immutable<ITermVar> getVars() {
+        return Set.Immutable.union(
+            term1.getVars(),
+            term2.getVars()
+        );
     }
 
     @Override public Set.Immutable<ITermVar> freeVars() {

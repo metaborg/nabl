@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableList;
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 abstract class AAppl3Term extends AbstractApplTerm implements IApplTerm {
 

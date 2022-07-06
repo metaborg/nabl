@@ -33,7 +33,7 @@ rules
       <+ decl* := []
 
   normalize-functional-query:
-      c@CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg) -> c' 
+      c@CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg) -> c'
     where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
     with ty'   := <fun-to-pred-type> ty;
          rel'  := <norm-set-ast-type(|ty')> rel;
@@ -71,8 +71,11 @@ rules
           end
 
   match-terms(|tys): t -> ts
-    where if [_] := tys then
-            ts := <![<id>]> t
-          else
-            ts := <?Tuple(<id>)> t
+    where if [] := tys then
+            ts := []
+          else if [_] := tys then
+              ts := <![<id>]> t
+            else
+              ts := <?Tuple(<id>)> t
+            end
           end

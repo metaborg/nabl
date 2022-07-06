@@ -14,6 +14,7 @@ imports
   pp/statix/lang/-
   statix/lang/analysis
   statix/lang/normalize
+  statix/lang/precompile
 
   statix/runtime/analysis
 
@@ -35,7 +36,7 @@ rules
 
   generate-aterm'(|a):
       ast@Module(_, _) -> spec
-    with ast' := <normalize(|a)> ast
+    with ast' := <normalize(|a); precompile(|a)> ast
        ; CustomAnalysis(ext) := <nabl2-get-custom-analysis> a
        ; spec     := <core-ast-to-spec-aterm(|a)> (ast', ext)
 
@@ -46,7 +47,7 @@ rules
     with filename := <guarantee-extension(|"mergedspec.aterm")> path
        ; (_, ast) := <generate-aterm> input
        ; spec := <stx--local-spec-from-spec> ast
- 
+
 rules
 
   core-ast-to-spec-aterm(|a): (ast, ext) -> spec

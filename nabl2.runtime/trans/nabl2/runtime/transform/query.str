@@ -1,6 +1,9 @@
 module nabl2/runtime/transform/query 
 
 imports
+  libstratego-lib
+
+imports
 
 
   signatures/nabl2/shared/common/-

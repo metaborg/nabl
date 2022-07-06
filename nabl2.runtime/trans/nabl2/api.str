@@ -1,6 +1,9 @@
 module nabl2/api
 
 imports
+  libstratego-lib
+
+imports
 
   pp/nabl2/API-pp
 

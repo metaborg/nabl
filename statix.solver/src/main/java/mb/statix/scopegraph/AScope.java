@@ -16,7 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.build.AbstractApplTerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 public abstract class AScope extends AbstractApplTerm implements IScope, IApplTerm, Comparable<IScope> {
 
@@ -57,6 +57,7 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
     @Override public int hashCode() {
         // We use the super-class hashcode to ensure that an AScope and an IApplTerm
         // with the same term representation have the same hash code.
+        // super-class caches hashcode
         return super.hashCode();
     }
 

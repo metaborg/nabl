@@ -8,6 +8,7 @@ imports
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/precompile
 
   statix/runtime/-
 
@@ -52,7 +53,7 @@ rules
   build-evaluation-pair: ast@Test(_, _) -> (body', spec')
     with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         ast'   := <normalize(|a)> ast;
+         ast'   := <normalize(|a); precompile(|a)> ast;
          Test(body, _) := ast';
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
          spec'  := <stx--local-spec-from-spec> spec;
@@ -86,15 +87,31 @@ rules
   evaluate(concurrent): ast@Test(_, _) -> result
     with a      := <nabl2-get-ast-analysis> ast;
          CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
-         ast'   := <normalize(|a)> ast;
+         ast'   := <normalize(|a); precompile(|a)> ast;
          Test(body, _) := ast';
          spec   := <core-ast-to-spec-aterm(|a)> (ast', ext);
          spec'  := <stx--local-spec-from-spec> spec;
-         level  := <stx--log-level>;
          config := <stx--project-config>;
+         level  := <stx--test-log-level> config;
          body'  := <qualify-names(|a);eliminate-all;stx--index-ast(|""/*path*/)> body;
          s@Solution(_, a') := <solve(concurrent|spec', level)> body';
-         (error*, warning*, note*) := <stx--delays-as-errors;stx--extract-messages(|config)> a';
+         (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a';
          result := EvalResult(s, error*, warning*, note*)
 
   solve(concurrent|spec', level) = concurrent < cstx--solve-constraint(|spec', level) + stx--solve-constraint(|spec', level)
+
+  stx--test-log-level = prim("STX_test_log_level")
+
+rules
+
+  compile-test-body(|fspecs* /* <= compiled modules */): ast@Test(_, _) -> (constraintTerm, specTerm)
+    with
+      a                   := <nabl2-get-ast-analysis> ast;
+      CustomAnalysis(ext) := <nabl2-get-custom-analysis> a;
+      ast'                := <normalize(|a); precompile(|a)> ast;
+      Test(body, _)       := ast';
+      constraintTerm      := <qualify-names(|a);eliminate-all;stx--index-ast(|"")> body;
+      spec                := <core-ast-to-spec-aterm(|a)> (ast', ext);
+      specTerm            := <stx--merge-spec-aterms> [spec | fspecs*]
+
+  prettyprint-test-result = pp-Statix-string(prettyprint-Statix-TestResult)

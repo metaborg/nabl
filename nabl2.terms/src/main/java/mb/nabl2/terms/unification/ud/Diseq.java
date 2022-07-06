@@ -2,6 +2,7 @@ package mb.nabl2.terms.unification.ud;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -18,6 +19,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.IReplacement;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.RigidException;
@@ -26,7 +28,9 @@ import mb.nabl2.terms.unification.u.IUnifier.Immutable;
 import mb.nabl2.terms.unification.u.IUnifier.Result;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
 
-public class Diseq {
+public class Diseq implements Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     @SuppressWarnings("unused") private static ILogger logger = LoggerUtils.logger(Diseq.class);
 
@@ -41,6 +45,14 @@ public class Diseq {
         this.diseqs = diseqs;
         this.domainSetCache = this.diseqs.domainSet().__removeAll(this.universals);
         this.freeVarSetCache = this.diseqs.varSet().__removeAll(this.universals);
+    }
+
+    private Diseq(Set.Immutable<ITermVar> universals, IUnifier.Immutable diseqs, Set.Immutable<ITermVar> domainSetCache,
+            Set.Immutable<ITermVar> freeVarSetCache) {
+        this.universals = CapsuleUtil.toSet(universals);
+        this.diseqs = diseqs;
+        this.domainSetCache = domainSetCache;
+        this.freeVarSetCache = freeVarSetCache;
     }
 
     /**
@@ -135,6 +147,13 @@ public class Diseq {
                 this.universals.stream().map(renaming::rename).collect(CapsuleCollectors.toSet());
         final IUnifier.Immutable diseqs = this.diseqs.rename(renaming);
         return new Diseq(universals, diseqs);
+    }
+
+    public Diseq replace(IReplacement replacement) {
+        if(replacement.isEmpty()) {
+            return this;
+        }
+        return new Diseq(universals, diseqs.replace(replacement), domainSetCache, freeVarSetCache);
     }
 
     public boolean implies(Diseq other) {

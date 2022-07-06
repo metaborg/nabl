@@ -12,7 +12,7 @@ import mb.nabl2.terms.IStringTerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.Terms;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = false)
 @Serial.Version(value = 42L)
 abstract class AStringTerm extends AbstractTerm implements IStringTerm {
 
@@ -37,9 +37,15 @@ abstract class AStringTerm extends AbstractTerm implements IStringTerm {
         return cases.caseString(this);
     }
 
+    private volatile int hashCode;
 
     @Override public int hashCode() {
-        return Objects.hash(getValue());
+        int result = hashCode;
+        if(result == 0) {
+            result = getValue().hashCode();
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object other) {

@@ -8,6 +8,7 @@ imports
   statix/lang/-
   statix/lang/statics/-
   statix/lang/normalize
+  statix/lang/precompile
   statix/lang/transform/-
 
   pp
@@ -65,6 +66,23 @@ rules // Normalization
   get-normalized-ast: (_, _, ast, path, project-path) -> ast'
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
     with ast' := <normalize(|a)> ast
+
+rules // Precompilation
+
+  show-precompiled-aterm: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-precompiled-ast>
+    with filename := <guarantee-extension(|"precompiled.aterm")> path;
+         result   := <rename-module(|"precompiled");nabl2-simplify-ast-indices> ast
+
+  format-precompiled: (_, _, _, path, project-path) -> (filename, result)
+    where ast := <get-precompiled-ast>
+    with ext      := <get-extension> path;
+         filename := <guarantee-extension(|$[precompiled.[ext]])> path;
+         result   := <rename-module(|"precompiled");pp-Statix-string> ast
+
+  get-precompiled-ast: (_, _, ast, path, project-path) -> ast'
+    where a := <nabl2-get-resource-analysis> $[[project-path]/[path]]
+    with ast' := <normalize(|a); precompile(|a)> ast
 
 rules // Explicit signature rules
 

@@ -46,6 +46,8 @@ context-free syntax
 
   HoConstraint.LC = ConstraintId
 
+  HoConstraint.EQ = <eq(<Term>)>
+
 syntax
 
   Term-CF.COp = ConstraintId-CF "(" LAYOUT?-CF CommaTerms-CF LAYOUT?-CF ")"

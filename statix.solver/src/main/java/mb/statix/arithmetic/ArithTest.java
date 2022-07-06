@@ -1,10 +1,13 @@
 package mb.statix.arithmetic;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import org.metaborg.util.functions.Predicate2;
 
-public class ArithTest {
+public class ArithTest implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     private final String op;
     private final Predicate2<Integer, Integer> f;

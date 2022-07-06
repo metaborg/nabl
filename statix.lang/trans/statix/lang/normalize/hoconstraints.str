@@ -40,6 +40,12 @@ rules
          lam := <mk-LLam>(ps, C(x, ps, NoMessage()))
       <+ lam := <fail-LLam>
 
+  replace-ho-constraint: l@EQ(t) -> lam
+    with PRED([ty]) := <norm-get-ast-type> l;
+         p   := <mk-fresh-Var(|ty)> "t";
+         lam := <mk-LLam>([p], CEqual(p, t, NoMessage()))
+      <+ lam := <fail-LLam>
+
 rules
 
   // Detect most general patterns and replace them with a single wildcard.

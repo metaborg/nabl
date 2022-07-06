@@ -1,6 +1,9 @@
 module nabl2/runtime/editor/services
 
 imports
+  libstratego-lib
+
+imports
 
   libspoofax/term/annotation
   libspoofax/editor/resolution
