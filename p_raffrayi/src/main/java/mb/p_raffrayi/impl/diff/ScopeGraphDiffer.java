@@ -944,19 +944,25 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
             // Clean up pending delays
             previousScopeProcessedDelays.asMap().forEach((s, delays) -> {
-                logger.error("Pending previous scope processed delays for {}.", s);
-                throw new IllegalStateException("Pending previous scope processed delays for " + s + ".");
+                // logger.error("Pending previous scope processed delays for {}.", s);
+                // throw new IllegalStateException("Pending previous scope processed delays for " + s + ".");
+                delays.forEach(c -> c.complete(Optional.empty()));
             });
+            previousScopeProcessedDelays.clear();
 
             previousScopeCompletedDelays.asMap().forEach((s, delays) -> {
-                logger.error("Pending previous scope completed delays for {}.", s);
-                throw new IllegalStateException("Pending previous scope completed delays for " + s + ".");
+                // logger.error("Pending previous scope completed delays for {}.", s);
+                // throw new IllegalStateException("Pending previous scope completed delays for " + s + ".");
+                delays.forEach(c -> c.complete(Unit.unit));
             });
+            previousScopeCompletedDelays.clear();
 
             currentEdgeCompleteDelays.asMap().forEach((edge, delays) -> {
-                logger.error("Pending current edge processed delays for {}.", edge);
-                throw new IllegalStateException("Pending current edge processed delays for " + edge + ".");
+                // logger.error("Pending current edge processed delays for {}.", edge);
+                // throw new IllegalStateException("Pending current edge processed delays for " + edge + ".");
+                delays.forEach(c -> c.complete(Unit.unit));
             });
+            currentEdgeCompleteDelays.clear();
 
             // @formatter:off
             final ScopeGraphDiff<S, L, D> result = new ScopeGraphDiff<S, L, D>(
