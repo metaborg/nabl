@@ -355,13 +355,13 @@ class Actor<T> implements IActorImpl<T>, Runnable {
             }
             if(result != null) {
                 if(returnValue == null) {
-                    result.apply(null, new NullPointerException());
+                    result.apply(null, new NullPointerException(this + " invoke " + method + " from " + sender + " returned null."));
                 } else {
                     ((IFuture<?>) returnValue).whenComplete((r, ex) -> result.apply(r, ex));
                 }
             }
         } catch(Throwable ex) {
-            throw new ActorException("Dispatch failed.", ex);
+            throw new ActorException("Dispatch " + this + " invoke " + method + " from " + sender + " failed.", ex);
         }
     }
 
@@ -381,7 +381,7 @@ class Actor<T> implements IActorImpl<T>, Runnable {
                 Actor.sender.remove();
             }
         } catch(Throwable ex2) {
-            throw new ActorException("Return failed.", ex2);
+            throw new ActorException("Return " + value + "/" + ex + "from " + this + " invoke " + method + " to " + sender + " failed.", ex2);
         }
     }
 

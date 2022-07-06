@@ -1473,6 +1473,10 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         k.from(self, context)._deadlockReply(i, m, R);
     }
 
+    @Override public void assertOnActorThread() {
+        self.assertOnActorThread();
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Scope graph diffing
     ///////////////////////////////////////////////////////////////////////////
