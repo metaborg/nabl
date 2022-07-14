@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:statix.runtime:${metaborgVersion}
 name: StatixRuntime
-metaborgBaselineVersion: 2.5.16
+metaborgBaselineVersion: 2.5.17
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgBaselineVersion}
