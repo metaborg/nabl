@@ -54,7 +54,6 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
     public void startQuery(IResolveQuery c, Scope scope, StateMachine<ITerm> stateMachine,
             DataWf<Scope, ITerm, ITerm> dataWF, DataLeq<Scope, ITerm, ITerm> dataEquiv,
             DataWf<Scope, ITerm, ITerm> dataWFInternal, DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
-        // TODO Auto-generated method stub
 
     }
 
