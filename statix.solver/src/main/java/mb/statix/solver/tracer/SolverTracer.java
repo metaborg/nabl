@@ -57,7 +57,7 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
     }
 
-    public interface IResult<SELF> extends Serializable {
+    public interface IResult<SELF extends IResult<SELF>> extends Serializable {
         SELF combine(SELF other);
     }
 
