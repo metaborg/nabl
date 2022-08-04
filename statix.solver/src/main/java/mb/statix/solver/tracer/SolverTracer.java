@@ -83,6 +83,19 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
             SolverTracer.this.onConstraintFailed(constraint, state);
         }
 
+        @Override public void startQuery(IResolveQuery c, Scope scope, LabelWf<ITerm> labelWF,
+                LabelOrder<ITerm> labelOrder, DataWf<Scope, ITerm, ITerm> dataWF,
+                DataLeq<Scope, ITerm, ITerm> dataEquiv, DataWf<Scope, ITerm, ITerm> dataWFInternal,
+                DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
+            SolverTracer.this.startQuery(c, scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
+        }
+
+        @Override public void startQuery(IResolveQuery c, Scope scope, StateMachine<ITerm> stateMachine,
+                DataWf<Scope, ITerm, ITerm> dataWF, DataLeq<Scope, ITerm, ITerm> dataEquiv,
+                DataWf<Scope, ITerm, ITerm> dataWFInternal, DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
+            SolverTracer.this.startQuery(c, scope, stateMachine, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
+        }
+
     }
 
 }
