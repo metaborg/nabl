@@ -3,6 +3,7 @@ package mb.scopegraph.resolution;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -29,6 +30,10 @@ public class StateMachine<L> implements Serializable {
             throw new IllegalStateException("Unknown state '" + name + "'.");
         }
         return result;
+    }
+
+    public Set<String> stateIds() {
+        return states.keySet();
     }
 
     @Override public String toString() {
