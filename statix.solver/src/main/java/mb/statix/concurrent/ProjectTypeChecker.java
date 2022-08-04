@@ -28,7 +28,11 @@ public class ProjectTypeChecker<TR extends SolverTracer.IResult<TR>> extends Abs
     private final IStatixProject<TR> project;
 
     public ProjectTypeChecker(IStatixProject<TR> project, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory) {
-        super(spec, debug, tracerFactory);
+        this(project, spec, debug, tracerFactory, 0);
+    }
+
+    public ProjectTypeChecker(IStatixProject<TR> project, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory, int solverFlags) {
+        super(spec, debug, tracerFactory, solverFlags);
         this.project = project;
     }
 

@@ -28,8 +28,8 @@ public class GroupTypeChecker<TR extends SolverTracer.IResult<TR>> extends Abstr
 
     private final IStatixGroup group;
 
-    public GroupTypeChecker(IStatixGroup group, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory) {
-        super(spec, debug, tracerFactory);
+    public GroupTypeChecker(IStatixGroup group, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory, int solverFlags) {
+        super(spec, debug, tracerFactory, solverFlags);
         this.group = group;
     }
 

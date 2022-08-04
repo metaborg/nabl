@@ -62,11 +62,14 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
     protected final Spec spec;
     protected final IDebugContext debug;
     private final Supplier<SolverTracer<TR>> tracerFactory;
+    private final int solverFlags;
 
-    protected AbstractTypeChecker(Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory) {
+    protected AbstractTypeChecker(Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory,
+            int solverFlags) {
         this.spec = spec;
         this.debug = debug;
         this.tracerFactory = tracerFactory;
+        this.solverFlags = solverFlags;
     }
 
     private StatixSolver<TR> solver;
@@ -95,7 +98,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>> result =
-                    context.add(key, new GroupTypeChecker<>(entry.getValue(), spec, debug, tracerFactory), parentScopes,
+                    context.add(key, new GroupTypeChecker<>(entry.getValue(), spec, debug, tracerFactory, solverFlags), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
@@ -121,7 +124,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
             final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>> result =
-                    context.add(key, new UnitTypeChecker<>(entry.getValue(), spec, debug, tracerFactory), parentScopes,
+                    context.add(key, new UnitTypeChecker<>(entry.getValue(), spec, debug, tracerFactory, solverFlags), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
@@ -191,7 +194,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         }
 
         solver = new StatixSolver<>(applyResult.body(), spec, unitState, applyResult.criticalEdges(), debug,
-                new NullProgress(), new NullCancel(), context, tracerFactory.get(), 0);
+                new NullProgress(), new NullCancel(), context, tracerFactory.get(), solverFlags);
         solveResult = solver.solve(scopes);
 
         return finish(solveResult, context.id());
@@ -199,7 +202,8 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     protected IFuture<SolverResult<TR>> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context,
             SolverState initialState) {
-        solver = new StatixSolver<>(initialState, spec, debug, new NullProgress(), new NullCancel(), context, tracerFactory.get(), 0);
+        solver = new StatixSolver<>(initialState, spec, debug, new NullProgress(), new NullCancel(), context,
+                tracerFactory.get(), solverFlags);
         solveResult = solver.continueSolve();
         pendingData.forEach((d, future) -> solver.getExternalRepresentation(d).whenComplete(future::complete));
         pendingData.clear();

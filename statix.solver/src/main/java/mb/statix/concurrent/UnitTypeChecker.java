@@ -22,8 +22,8 @@ public class UnitTypeChecker<TR extends SolverTracer.IResult<TR>> extends Abstra
 
     private final IStatixUnit unit;
 
-    public UnitTypeChecker(IStatixUnit unit, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory) {
-        super(spec, debug, tracerFactory);
+    public UnitTypeChecker(IStatixUnit unit, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory, int solverFlags) {
+        super(spec, debug, tracerFactory, solverFlags);
         this.unit = unit;
     }
 

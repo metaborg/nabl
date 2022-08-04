@@ -647,9 +647,9 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                         () -> new IllegalArgumentException("Expected scope, got " + unifier.toString(scopeTerm)));
 
                 final LabelWf<ITerm> labelWF = new RegExpLabelWf<>(filter.getLabelWF());
-                final DataWf<Scope, ITerm, ITerm> dataWF = new ConstraintDataWF<>(spec, dataWfRule, tracer::subTracer);
+                final DataWf<Scope, ITerm, ITerm> dataWF = new ConstraintDataWF<>(spec, dataWfRule, tracer::subTracer, flags);
                 final DataLeq<Scope, ITerm, ITerm> dataEquiv =
-                        new ConstraintDataEquiv<>(spec, dataLeqRule, tracer::subTracer);
+                        new ConstraintDataEquiv<>(spec, dataLeqRule, tracer::subTracer, flags);
                 final DataWf<Scope, ITerm, ITerm> dataWFInternal =
                         LOCAL_INFERENCE ? new ConstraintDataWFInternal(dataWfRule) : null;
                 final DataLeq<Scope, ITerm, ITerm> dataEquivInternal =
@@ -827,7 +827,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = scopeGraph.subContext("try");
                 final IState.Immutable subState = state.subState().withResource(subContext.id());
                 final StatixSolver<TR> subSolver = new StatixSolver<>(c.constraint(), spec, subState, completeness,
-                        subDebug, progress, cancel, subContext, tracer.subTracer(), RETURN_ON_FIRST_ERROR);
+                        subDebug, progress, cancel, subContext, tracer.subTracer(), RETURN_ON_FIRST_ERROR | flags);
                 final IFuture<SolverResult<TR>> subResult = subSolver.entail();
                 final K<SolverResult<TR>> k = (r, ex, fuel) -> {
                     if(ex != null) {
@@ -898,7 +898,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
     private static <R extends SolverTracer.IResult<R>> IFuture<Boolean> entails(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Spec spec, IState.Immutable state, IConstraint constraint,
             ICompleteness.Immutable criticalEdges, IDebugContext debug, SolverTracer<R> tracer, ICancel cancel,
-            IProgress progress) throws Delay {
+            IProgress progress, int flags) throws Delay {
         final IDebugContext subDebug = debug.subContext();
         final ITypeCheckerContext<Scope, ITerm, ITerm> subContext = context.subContext("entails");
         final IState.Immutable subState = state.subState().withResource(subContext.id());
@@ -913,7 +913,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
 
         final StatixSolver<R> subSolver = new StatixSolver<>(Constraints.conjoin(preSolveResult.constraints), spec,
                 preSolveResult.state, preSolveResult.criticalEdges, subDebug, progress, cancel, subContext, tracer,
-                RETURN_ON_FIRST_ERROR);
+                RETURN_ON_FIRST_ERROR | flags);
         return subSolver.entail().thenCompose(r -> {
             final boolean result;
             try {
@@ -957,7 +957,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
 
             final StatixSolver<TR> subSolver = new StatixSolver<>(Constraints.conjoin(preSolveResult.constraints), spec,
                     preSolveResult.state, preSolveResult.criticalEdges, subDebug, progress, cancel, subContext,
-                    tracer.subTracer(), RETURN_ON_FIRST_ERROR);
+                    tracer.subTracer(), RETURN_ON_FIRST_ERROR | flags);
             return subSolver.entail().thenCompose(r -> {
                 final boolean result;
                 // check entailment w.r.t. the initial substate, not the current state: otherwise,
@@ -1121,15 +1121,17 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         private final Spec spec;
         private final Rule constraint;
         private final transient Supplier<SolverTracer<R>> tracerFactory;
+        private final int solverFlags;
 
         private final IState.Immutable state;
 
-        public ConstraintDataWF(Spec spec, Rule constraint, Supplier<SolverTracer<R>> tracerFactory) {
+        public ConstraintDataWF(Spec spec, Rule constraint, Supplier<SolverTracer<R>> tracerFactory, int solverFlags) {
             // assume constraint.freeVars().isEmpty()
             this.spec = spec;
             this.constraint = constraint;
             this.tracerFactory = tracerFactory;
             this.state = State.of(); // outer solver state unnecessary, because only applied to ground terms
+            this.solverFlags = solverFlags;
         }
 
         @Override public IFuture<Boolean> wf(ITerm datum, ITypeCheckerContext<Scope, ITerm, ITerm> context,
@@ -1143,7 +1145,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 }
 
                 return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
-                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress());
+                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1165,7 +1167,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
             if(newRule == null) {
                 return this;
             }
-            return new ConstraintDataWF<>(spec, newRule, tracerFactory);
+            return new ConstraintDataWF<>(spec, newRule, tracerFactory, solverFlags);
         }
 
         @Override public String toString() {
@@ -1251,15 +1253,17 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         private final Spec spec;
         private final Rule constraint;
         private final transient Supplier<SolverTracer<R>> tracerFactory;
+        private final int solverFlags;
 
         private final IState.Immutable state;
 
-        public ConstraintDataEquiv(Spec spec, Rule constraint, Supplier<SolverTracer<R>> tracerFactory) {
+        public ConstraintDataEquiv(Spec spec, Rule constraint, Supplier<SolverTracer<R>> tracerFactory, int solverFlags) {
             // assume constraint.freeVars().isEmpty()
             this.spec = spec;
             this.constraint = constraint;
             this.tracerFactory = tracerFactory;
             this.state = State.of(); // outer solver state unnecessary, because only applied to ground terms
+            this.solverFlags = solverFlags;
         }
 
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2,
@@ -1273,7 +1277,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 }
 
                 return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
-                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress());
+                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
             } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1304,7 +1308,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                                     } else {
                                         alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
                                                 result.criticalEdges(), new NullDebugContext(), tracerFactory.get(),
-                                                cancel, new NullProgress());
+                                                cancel, new NullProgress(), solverFlags);
                                     }
                                 } catch(Delay e) {
                                     throw new IllegalStateException("Unexpected delay.", e);
@@ -1420,7 +1424,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                                             return CompletableFuture.completedFuture(false);
                                         }
                                         return entails(context, spec, state, result.body(), result.criticalEdges(),
-                                                new NullDebugContext(), tracer.subTracer(), cancel, new NullProgress());
+                                                new NullDebugContext(), tracer.subTracer(), cancel, new NullProgress(), flags);
                                     } catch(Delay delay) {
                                         return CompletableFuture.completedExceptionally(delay);
                                     }
