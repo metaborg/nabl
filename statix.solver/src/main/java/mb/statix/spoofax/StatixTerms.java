@@ -114,19 +114,19 @@ public class StatixTerms {
     public static final String NOID_OP = "NoId";
     public static final String SCOPEGRAPH_OP = "ScopeGraph";
 
-    private static final String EOP_OP = "EOP";
+    public static final String EOP_OP = "EOP";
 
-    private static final String STATE_OP = "State";
+    public static final String STATE_OP = "State";
 
-    private static final String STEP_OP = "Step";
+    public static final String STEP_OP = "Step";
 
-    private static final String RESOLVE_OP = "Resolve";
-    private static final String SUBENV_OP = "SubEnv";
-    private static final String MERGE_OP = "Merge";
-    private static final String SHADOW_OP = "Shadow";
-    private static final String CEXP_OP = "CExp";
+    public static final String RESOLVE_OP = "Resolve";
+    public static final String SUBENV_OP = "SubEnv";
+    public static final String MERGE_OP = "Merge";
+    public static final String SHADOW_OP = "Shadow";
+    public static final String CEXP_OP = "CExp";
 
-    private static final String RVAR_OP = "RVar";
+    public static final String RVAR_OP = "RVar";
 
     public static IMatcher<Spec> spec() {
         return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
