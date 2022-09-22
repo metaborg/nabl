@@ -2,18 +2,21 @@ package mb.statix.solver.tracer;
 
 import java.io.Serializable;
 
-import mb.nabl2.terms.ITerm;
-import mb.p_raffrayi.nameresolution.DataLeq;
-import mb.p_raffrayi.nameresolution.DataWf;
-import mb.scopegraph.ecoop21.LabelOrder;
-import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.resolution.StateMachine;
-import mb.statix.constraints.IResolveQuery;
-import mb.statix.scopegraph.Scope;
+import mb.statix.concurrent.StatixSolver;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.IState.Immutable;
+import mb.statix.solver.persistent.SolverResult;
 
+/**
+ * Tracers allow to observe the behavior of a Statix solver externally. When an {@link SolverTracer} instance is passed
+ * to a {@link StatixSolver}, it will invoke its callback at the correct positions. Tracers can aggregate meta-data,
+ * which they return with the {@link SolverTracer#result()} method. This method is called when constraint solving is
+ * finished. Its return value is included in the {@link SolverResult} emitted by the solver.
+ *
+ * @param <R>
+ *            The type of result this tracer emits.
+ */
 public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
     /**
@@ -25,7 +28,7 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
     public abstract R result();
 
-    // Constraint solving iteration
+    // Constraint solving event callbacks
 
     public void onTrySolveConstraint(IConstraint constraint, IState.Immutable state) {
 
@@ -40,20 +43,6 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
     }
 
     public void onConstraintFailed(IConstraint constraint, IState.Immutable state) {
-
-    }
-
-    // Query Resolution
-
-    public void startQuery(IResolveQuery c, Scope scope, LabelWf<ITerm> labelWF, LabelOrder<ITerm> labelOrder,
-            DataWf<Scope, ITerm, ITerm> dataWF, DataLeq<Scope, ITerm, ITerm> dataEquiv,
-            DataWf<Scope, ITerm, ITerm> dataWFInternal, DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
-
-    }
-
-    public void startQuery(IResolveQuery c, Scope scope, StateMachine<ITerm> stateMachine,
-            DataWf<Scope, ITerm, ITerm> dataWF, DataLeq<Scope, ITerm, ITerm> dataEquiv,
-            DataWf<Scope, ITerm, ITerm> dataWFInternal, DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
 
     }
 
@@ -81,19 +70,6 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
         @Override public void onConstraintFailed(IConstraint constraint, Immutable state) {
             SolverTracer.this.onConstraintFailed(constraint, state);
-        }
-
-        @Override public void startQuery(IResolveQuery c, Scope scope, LabelWf<ITerm> labelWF,
-                LabelOrder<ITerm> labelOrder, DataWf<Scope, ITerm, ITerm> dataWF,
-                DataLeq<Scope, ITerm, ITerm> dataEquiv, DataWf<Scope, ITerm, ITerm> dataWFInternal,
-                DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
-            SolverTracer.this.startQuery(c, scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
-        }
-
-        @Override public void startQuery(IResolveQuery c, Scope scope, StateMachine<ITerm> stateMachine,
-                DataWf<Scope, ITerm, ITerm> dataWF, DataLeq<Scope, ITerm, ITerm> dataEquiv,
-                DataWf<Scope, ITerm, ITerm> dataWFInternal, DataLeq<Scope, ITerm, ITerm> dataEquivInternal) {
-            SolverTracer.this.startQuery(c, scope, stateMachine, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
         }
 
     }

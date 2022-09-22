@@ -662,14 +662,12 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
 
                         @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseResolveQuery(CResolveQuery q) {
                             final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
-                            tracer.startQuery(c, scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
                             return scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv,
                                     dataWFInternal, dataEquivInternal);
                         }
 
                         @Override public IFuture<? extends java.util.Set<IResolutionPath<Scope, ITerm, ITerm>>> caseCompiledQuery(CCompiledQuery q) {
                             final StateMachine<ITerm> stateMachine = q.stateMachine();
-                            tracer.startQuery(c, scope, stateMachine, dataWF, dataEquiv, dataWFInternal, dataEquivInternal);
                             return scopeGraph.query(scope, stateMachine, dataWF, dataEquiv,
                                     dataWFInternal, dataEquivInternal);
                         }
@@ -678,8 +676,6 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                     // @formatter:on
                 } else {
                     final LabelOrder<ITerm> labelOrder = new RelationLabelOrder<>(min.getLabelOrder());
-                    tracer.startQuery(c, scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal,
-                            dataEquivInternal);
                     future = scopeGraph.query(scope, labelWF, labelOrder, dataWF, dataEquiv, dataWFInternal,
                             dataEquivInternal);
                 }
