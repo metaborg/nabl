@@ -60,7 +60,8 @@ public class Renaming implements IRenaming {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> rename(var)
+            var -> rename(var),
+            other -> other
         ));
         // @formatter:on
     }

@@ -68,7 +68,8 @@ public class Replacement implements IReplacement {
             string -> replace(string),
             integer -> replace(integer),
             blob -> replace(blob),
-            var -> var // Cannot happen
+            var -> var, // Cannot happen
+            other -> replace(other)
         ));
         // @formatter:on
     }

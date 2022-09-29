@@ -40,6 +40,8 @@ public interface ITerm {
 
         T caseVar(ITermVar var);
 
+        T caseOtherwise(ITerm term);
+
     }
 
     <T, E extends Throwable> T matchOrThrow(CheckedCases<T, E> cases) throws E;
@@ -57,6 +59,8 @@ public interface ITerm {
         T caseBlob(IBlobTerm integer) throws E;
 
         T caseVar(ITermVar var) throws E;
+
+        T caseOtherwise(ITerm term) throws E;
 
         default T caseLock(ITerm term) throws E {
             return term.matchOrThrow(this);

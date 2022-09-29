@@ -113,7 +113,8 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
                 .otherwise(termRight -> {
                     return false;
                 })
-            )
+            ),
+            otherLeft -> { throw new IllegalStateException("Unexpected term type: " + otherLeft.getClass().getName()); }
         ));
         // @formatter:on
     }

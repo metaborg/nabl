@@ -52,7 +52,8 @@ public final class StrategoPlaceholders {
             (m, string) -> false,
             (m, integer) -> false,
             (m, blob) -> false,
-            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments()))
+            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments())),
+            (m, other) -> false
         ));
     }
 
@@ -81,7 +82,8 @@ public final class StrategoPlaceholders {
             (m, string) -> false,
             (m, integer) -> false,
             (m, blob) -> false,
-            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments()))
+            (m, var) -> isLiteralSort(getSortFromAttachments(var.getAttachments())),
+            (m, other) -> false
         ));
     }
 
@@ -206,7 +208,8 @@ public final class StrategoPlaceholders {
             (m, string) -> string,
             (m, integer) -> integer,
             (m, blob) -> blob,
-            (m, var) -> var
+            (m, var) -> var,
+            (m, other) -> other
         ));
     }
 
@@ -231,7 +234,8 @@ public final class StrategoPlaceholders {
             integer -> integer,
             blob -> blob,
             // TODO: Ability to relate placeholders, such that typing in the editor in one placeholder also types in another
-            var -> getPlaceholderForVar(var, placeholderVarMap)
+            var -> getPlaceholderForVar(var, placeholderVarMap),
+            other -> other
         ));
     }
 
@@ -259,7 +263,8 @@ public final class StrategoPlaceholders {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> var
+            var -> var,
+            other -> other
         ));
     }
 
@@ -326,7 +331,8 @@ public final class StrategoPlaceholders {
             string -> false,
             integer -> false,
             blob -> false,
-            var -> true
+            var -> true,
+            other -> false
         ));
     }
 
