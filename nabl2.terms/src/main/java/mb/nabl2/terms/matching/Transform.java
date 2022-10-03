@@ -45,8 +45,7 @@ public class Transform {
                 (string) -> string,
                 (integer) -> integer,
                 (blob) -> blob,
-                (var) -> var,
-                (other) -> other
+                (var) -> var
             )));
             // @formatter:on
         }
@@ -70,8 +69,7 @@ public class Transform {
                     (string) -> string,
                     (integer) -> integer,
                     (blob) -> blob,
-                    (var) -> var,
-                    (other) -> other
+                    (var) -> var
                 ));
                 // @formatter:on
                 return m.apply(next).orElse(next);
@@ -106,8 +104,7 @@ public class Transform {
                         (string) -> Unit.unit,
                         (integer) -> Unit.unit,
                         (blob) -> Unit.unit,
-                        (var) -> Unit.unit,
-                        (other) -> Unit.unit
+                        (var) -> Unit.unit
                     )))
                     // @formatter:on
                 )).match(term);

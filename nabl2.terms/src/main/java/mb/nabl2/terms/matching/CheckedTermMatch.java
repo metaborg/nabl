@@ -50,7 +50,7 @@ public class CheckedTermMatch {
                 appl(CheckedFunction1<? super IApplTerm, R, ? extends E> f) {
             return (term, unifier) -> unifier.findTerm(term)
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(appl -> Optional.of(f.apply(appl)), this::empty,
-                            this::empty, this::empty, this::empty, this::empty, this::empty));
+                            this::empty, this::empty, this::empty, this::empty));
         }
 
         public <R, E extends Throwable> ICheckedMatcher<R, E> appl0(String op,
@@ -61,7 +61,7 @@ public class CheckedTermMatch {
                         return Optional.empty();
                     }
                     return Optional.of(f.apply(appl));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty, this::empty));
+                }, this::empty, this::empty, this::empty, this::empty, this::empty));
             };
         }
 
@@ -79,7 +79,7 @@ public class CheckedTermMatch {
                     }
                     T t = o1.get();
                     return Optional.of(f.apply(appl, t));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty, this::empty));
+                }, this::empty, this::empty, this::empty, this::empty, this::empty));
             };
         }
 
@@ -102,7 +102,7 @@ public class CheckedTermMatch {
                     }
                     T2 t2 = o2.get();
                     return Optional.of(f.apply(appl, t1, t2));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty, this::empty));
+                }, this::empty, this::empty, this::empty, this::empty, this::empty));
             };
         }
 
@@ -131,7 +131,7 @@ public class CheckedTermMatch {
                     }
                     T3 t3 = o3.get();
                     return Optional.of(f.apply(appl, t1, t2, t3));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty, this::empty));
+                }, this::empty, this::empty, this::empty, this::empty, this::empty));
             };
         }
 
@@ -142,7 +142,7 @@ public class CheckedTermMatch {
             final CheckedFunction1<? super IListTerm, Optional<R>, E> g = list -> Optional.of(f.apply(list));
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(
-                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g, this::empty));
+                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g));
             };
         }
 
@@ -150,7 +150,7 @@ public class CheckedTermMatch {
             final CheckedFunction1<? super IListTerm, Optional<R>, E> g = list -> list.matchOrThrow(cases);
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(
-                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g, this::empty));
+                        Terms.<Optional<R>, E>checkedCases(this::empty, g, this::empty, this::empty, this::empty, g));
             };
         }
 
@@ -167,7 +167,7 @@ public class CheckedTermMatch {
                         ts.add(o.get());
                     }
                     return Optional.of(f.apply(list, ts));
-                }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                }, this::empty, this::empty, this::empty, this::empty));
             };
         }
 
@@ -177,7 +177,7 @@ public class CheckedTermMatch {
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
                         return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(
                                 cons -> Optional.of(f.apply(cons)), nil -> Optional.empty(), var -> Optional.empty()));
-                    }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                    }, this::empty, this::empty, this::empty, this::empty));
 
         }
 
@@ -187,7 +187,7 @@ public class CheckedTermMatch {
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
                         return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.empty(),
                                 nil -> Optional.of(f.apply(nil)), var -> Optional.empty()));
-                    }, this::empty, this::empty, this::empty, this::empty, this::empty));
+                    }, this::empty, this::empty, this::empty, this::empty));
 
         }
 
@@ -196,7 +196,7 @@ public class CheckedTermMatch {
         public <R, E extends Throwable> ICheckedMatcher<R, E> integer(CheckedFunction1<IIntTerm, R, ? extends E> f) {
             return (term, unifier) -> unifier.findTerm(term)
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, this::empty, this::empty,
-                            string -> Optional.of(f.apply(string)), this::empty, this::empty, this::empty));
+                            string -> Optional.of(f.apply(string)), this::empty, this::empty));
         }
 
         // string
@@ -204,7 +204,7 @@ public class CheckedTermMatch {
         public <R, E extends Throwable> ICheckedMatcher<R, E> string(CheckedFunction1<IStringTerm, R, ? extends E> f) {
             return (term, unifier) -> unifier.findTerm(term)
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, this::empty,
-                            string -> Optional.of(f.apply(string)), this::empty, this::empty, this::empty, this::empty));
+                            string -> Optional.of(f.apply(string)), this::empty, this::empty, this::empty));
         }
 
         // var
@@ -215,7 +215,7 @@ public class CheckedTermMatch {
                     .matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
                         return list.matchOrThrow(ListTerms.<Optional<R>, E>checkedCases(cons -> Optional.empty(),
                                 nil -> Optional.empty(), var -> Optional.of(f.apply(var))));
-                    }, this::empty, this::empty, this::empty, var -> Optional.of(f.apply(var)), this::empty));
+                    }, this::empty, this::empty, this::empty, var -> Optional.of(f.apply(var))));
         }
 
         // cases

@@ -63,8 +63,7 @@ public class StrategoTerms {
                 } else {
                     return termFactory.makeAppl("nabl2.Var", termFactory.makeString(var.getResource()), termFactory.makeString(var.getName()));
                 }
-            },
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            }
         ));
         // @formatter:on
         switch(strategoTerm.getType()) {

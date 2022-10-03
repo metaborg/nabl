@@ -745,8 +745,7 @@ public class StatixTerms {
             string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
             integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
             blob -> B.newString(blob.toString(), term.getAttachments()),
-            var -> explode(var),
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            var -> explode(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
     }

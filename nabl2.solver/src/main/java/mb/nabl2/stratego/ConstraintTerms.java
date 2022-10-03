@@ -48,8 +48,7 @@ public class ConstraintTerms {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> { throw new IllegalArgumentException("Term is already specialized."); },
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            var -> { throw new IllegalArgumentException("Term is already specialized."); }
         )).withAttachments(term.getAttachments());
         // @formatter:on
         // @formatter:off
@@ -118,8 +117,7 @@ public class ConstraintTerms {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> explicate(var),
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            var -> explicate(var)
         )).withAttachments(term.getAttachments());
         // @formatter:on
     }

@@ -61,8 +61,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> apply(var),
-            other -> other
+            var -> apply(var)
         ));
         // @formatter:on
     }

@@ -115,8 +115,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             string -> string,
             integer -> integer,
             blob -> blob,
-            var -> findVarRecursive(var, stack, visited),
-            other -> other
+            var -> findVarRecursive(var, stack, visited)
             // @formatter:on
         ));
     }
@@ -314,8 +313,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             string -> TermSize.ONE,
             integer -> TermSize.ONE,
             blob -> TermSize.ONE,
-            var -> size(var, stack, visited),
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            var -> size(var, stack, visited)
             // @formatter:on
         ));
     }
@@ -401,8 +399,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             string -> tf.apply(string).orElseGet(() -> string.toString()),
             integer -> tf.apply(integer).orElseGet(() -> integer.toString()),
             blob -> tf.apply(blob).orElseGet(() -> blob.toString()),
-            var -> toString(var, stack, visited, maxDepth, specializedTermFormatter),
-            other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+            var -> toString(var, stack, visited, maxDepth, specializedTermFormatter)
         ));
         // @formatter:on
     }

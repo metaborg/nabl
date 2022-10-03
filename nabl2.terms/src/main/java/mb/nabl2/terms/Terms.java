@@ -19,14 +19,13 @@ public class Terms {
     // SAFE
 
     public static <T> ITerm.Cases<T> cases(
-        // @formatter:off
+    // @formatter:off
         Function1<? super IApplTerm, ? extends T> onAppl,
         Function1<? super IListTerm, ? extends T> onList,
         Function1<? super IStringTerm, ? extends T> onString,
         Function1<? super IIntTerm, ? extends T> onInt,
         Function1<? super IBlobTerm, ? extends T> onBlob,
-        Function1<? super ITermVar, ? extends T> onVar,
-        Function1<? super ITerm, ? extends T> onOtherwise
+        Function1<? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
         return new ITerm.Cases<T>() {
@@ -53,10 +52,6 @@ public class Terms {
 
             @Override public T caseVar(ITermVar var) {
                 return onVar.apply(var);
-            }
-
-            @Override public T caseOtherwise(ITerm term){
-                return onOtherwise.apply(term);
             }
 
         };
@@ -132,10 +127,6 @@ public class Terms {
                     return onVar != null ? onVar.apply(var) : otherwise.apply(var);
                 }
 
-                @Override public T caseOtherwise(ITerm term){
-                    return otherwise.apply(term);
-                }
-
             };
         }
 
@@ -148,8 +139,7 @@ public class Terms {
         Function2<ITerm.Cases<T>, ? super IStringTerm, ? extends T> onString,
         Function2<ITerm.Cases<T>, ? super IIntTerm, ? extends T> onInt,
         Function2<ITerm.Cases<T>, ? super IBlobTerm, ? extends T> onBlob,
-        Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar,
-        Function2<ITerm.Cases<T>, ? super ITerm, ? extends T> onOtherwise
+        Function2<ITerm.Cases<T>, ? super ITermVar, ? extends T> onVar
         // @formatter:on
     ) {
         return new ITerm.Cases<T>() {
@@ -178,24 +168,17 @@ public class Terms {
                 return onVar.apply(this, var);
             }
 
-            @Override public T caseOtherwise(ITerm term){
-                return onOtherwise.apply(this, term);
-            }
         };
     }
 
     // CHECKED
 
     public static <T, E extends Throwable> ITerm.CheckedCases<T, E> checkedCases(
-        // @formatter:off
-        CheckedFunction1<? super IApplTerm, T, E> onAppl,
-        CheckedFunction1<? super IListTerm, T, E> onList,
-        CheckedFunction1<? super IStringTerm, T, E> onString,
-        CheckedFunction1<? super IIntTerm, T, E> onInt,
-        CheckedFunction1<? super IBlobTerm, T, E> onBlob,
-        CheckedFunction1<? super ITermVar, T, E> onVar,
-        CheckedFunction1<? super ITerm, T, E> onOtherwise
-        // @formatter:on
+    // @formatter:off
+            CheckedFunction1<? super IApplTerm, T, E> onAppl, CheckedFunction1<? super IListTerm, T, E> onList,
+            CheckedFunction1<? super IStringTerm, T, E> onString, CheckedFunction1<? super IIntTerm, T, E> onInt,
+            CheckedFunction1<? super IBlobTerm, T, E> onBlob, CheckedFunction1<? super ITermVar, T, E> onVar
+    // @formatter:on
     ) {
         return new ITerm.CheckedCases<T, E>() {
 
@@ -221,10 +204,6 @@ public class Terms {
 
             @Override public T caseVar(ITermVar var) throws E {
                 return onVar.apply(var);
-            }
-
-            @Override public T caseOtherwise(ITerm term) throws E {
-                return onOtherwise.apply(term);
             }
 
         };
@@ -298,10 +277,6 @@ public class Terms {
 
                 @Override public T caseVar(ITermVar var) throws E {
                     return onVar != null ? onVar.apply(var) : otherwise.apply(var);
-                }
-
-                @Override public T caseOtherwise(ITerm term) throws E {
-                    return otherwise.apply(term);
                 }
 
             };

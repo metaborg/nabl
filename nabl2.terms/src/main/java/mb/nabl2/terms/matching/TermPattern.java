@@ -147,9 +147,10 @@ public class TermPattern {
                 )),
                 string -> new StringPattern(string.getValue(), string.getAttachments()),
                 integer -> new IntPattern(integer.getValue(), integer.getAttachments()),
-                blob -> { throw new IllegalArgumentException("Cannot create blob patterns."); },
-                var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var),
-                other -> { throw new IllegalStateException("Unexpected term type: " + other.getClass().getName()); }
+                blob -> {
+                    throw new IllegalArgumentException("Cannot create blob patterns.");
+                },
+                var -> isWildcard.test(var) ? new PatternVar() : new PatternVar(var)
             ));
             // @formatter:on
         }

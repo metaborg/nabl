@@ -267,8 +267,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                         .otherwise(termRight -> {
                             return unifyVarTerm(varLeft, termRight);
                         })
-                    ),
-                    otherLeft -> { throw new IllegalStateException("Unexpected term type: " + otherLeft.getClass().getName()); }
+                    )
                 ));
                 // @formatter:on
             }

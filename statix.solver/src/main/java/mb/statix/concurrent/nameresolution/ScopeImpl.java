@@ -104,8 +104,7 @@ public class ScopeImpl implements IScopeImpl<Scope, ITerm> {
                 .otherwise(termRight -> {
                     return Optional.empty();
                 })
-            ),
-            otherLeft -> { throw new IllegalStateException("Unexpected term type: " + otherLeft.getClass().getName()); }
+            )
         ));
         // @formatter:on
     }
