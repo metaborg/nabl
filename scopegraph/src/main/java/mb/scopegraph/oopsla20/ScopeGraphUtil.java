@@ -18,7 +18,7 @@ public final class ScopeGraphUtil {
 
     public static <S, L, D> String toString(IScopeGraph<S, L, D> scopeGraph, Function1<D, D> instantiateData) {
      // @formatter:off
-        final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = scopeGraph.getEdges().entrySet().stream()
+        final Map<S, java.util.Set<AbstractMap.SimpleImmutableEntry<L, Iterable<S>>>> groupedScopes = scopeGraph.getEdges().entrySet().stream()
                 .collect(Collectors.groupingBy(t -> t.getKey().getKey(), Collectors.mapping(
                         t -> new AbstractMap.SimpleImmutableEntry<L, Iterable<S>>(t.getKey().getValue(), t.getValue()), Collectors.toSet())));
         // @formatter:off
