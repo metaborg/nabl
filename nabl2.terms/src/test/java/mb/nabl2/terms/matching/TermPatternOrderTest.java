@@ -110,6 +110,18 @@ public class TermPatternOrderTest {
         assertFirstPatternMoreSpecificThanSecond(p1, p2);
     }
 
+    @Test public void testNonLinearString() {
+        Pattern p1 = P.newTuple(P.newVar("x"), P.newVar("x"));
+        Pattern p2 = P.newTuple(P.newVar("x"), x);
+        assertFirstPatternMoreGeneralThanSecond(p1, p2);
+    }
+
+    @Test public void testNonLinearAsString() {
+        Pattern p1 = P.newTuple(P.newVar("x"), P.newVar("x"));
+        Pattern p2 = P.newTuple(P.newVar("x"), P.newAs("y", x));
+        assertFirstPatternMoreGeneralThanSecond(p1, p2);
+    }
+
     //----------------------------------------------------------------------
 
     private static void assertEquivalentPatterns(Pattern p1, Pattern p2) {
