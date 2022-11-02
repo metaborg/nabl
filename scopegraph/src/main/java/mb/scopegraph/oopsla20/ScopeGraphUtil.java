@@ -20,7 +20,7 @@ public final class ScopeGraphUtil {
      // @formatter:off
         final Map<S, java.util.Set<AbstractMap.SimpleImmutableEntry<L, Iterable<S>>>> groupedScopes = scopeGraph.getEdges().entrySet().stream()
                 .collect(Collectors.groupingBy(t -> t.getKey().getKey(), Collectors.mapping(
-                        t -> new AbstractMap.SimpleImmutableEntry<L, Iterable<S>>(t.getKey().getValue(), t.getValue()), Collectors.toSet())));
+                        t -> (Map.Entry<L, Iterable<S>>)new AbstractMap.SimpleImmutableEntry<L, Iterable<S>>(t.getKey().getValue(), t.getValue()), Collectors.toSet())));
         // @formatter:off
 
         final SetView<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
