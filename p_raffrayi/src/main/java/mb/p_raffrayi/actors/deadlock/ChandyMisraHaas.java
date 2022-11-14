@@ -114,6 +114,7 @@ public class ChandyMisraHaas<P> {
             }
             num.setCount(i, S.size());
         } else if(wait.containsKey(i) && m == c) {
+            self.assertOnActorThread();
             self/*k*/.reply(j, i, m, wait.put(i, new HashSet<>()));
         }
     }
@@ -140,6 +141,7 @@ public class ChandyMisraHaas<P> {
                 units.add(r);
             }
             if(num.remove(i, 1) == 1) {
+                self.assertOnActorThread();
                 final java.util.Set<P> Q = wait.put(i, new HashSet<>());
                 if(i.equals(k)) {
                     logger.debug("{} deadlocked with {}", self, Q);
@@ -183,6 +185,8 @@ public class ChandyMisraHaas<P> {
          *            Replying hosts R.
          */
         void reply(P k, P i, int m, java.util.Set<P> R);
+
+        void assertOnActorThread();
 
     }
 

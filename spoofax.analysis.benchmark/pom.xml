@@ -5,12 +5,12 @@
 
   <groupId>org.metaborg</groupId>
   <artifactId>org.metaborg.spoofax.analysis.benchmark</artifactId>
-  <version>2.5.17</version>
+  <version>2.6.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
     <jmh.version>1.22</jmh.version>
-    <metaborg-version>2.5.17</metaborg-version>
+    <metaborg-version>2.6.0-SNAPSHOT</metaborg-version>
     <java.target>1.8</java.target>
     <uberjar.name>analysis-benchmark</uberjar.name>
     <uberjar.main>org.metaborg.spoofax.analysis.benchmark.AnalysisBenchmark</uberjar.main>
