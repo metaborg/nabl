@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.nabl2.ext.dynsem:${metaborgVersion}
 name: NaBL2ExtDynSem
-metaborgVersion: 2.6.0-SNAPSHOT
+metaborgVersion: 2.5.18
 
 dependencies:
   compile:
