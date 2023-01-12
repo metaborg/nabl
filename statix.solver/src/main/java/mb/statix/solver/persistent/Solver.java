@@ -50,6 +50,8 @@ public class Solver {
 
     public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
+    public static final int ERROR_TRACE_TERM_DEPTH = 4;
+
     private Solver() {
     }
 

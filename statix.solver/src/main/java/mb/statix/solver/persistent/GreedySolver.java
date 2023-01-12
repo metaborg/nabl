@@ -179,7 +179,7 @@ class GreedySolver {
 
         IConstraint constraint;
         while((constraint = constraints.remove()) != null) {
-            if(!k(constraint, MAX_DEPTH)) {
+            if(!step(constraint, MAX_DEPTH)) {
                 debug.debug("Finished fast.");
                 return finishSolve();
             }
@@ -256,7 +256,7 @@ class GreedySolver {
 
         // continue on new constraints
         for(IConstraint newConstraint : newConstraints) {
-            if(!k(newConstraint, fuel - 1)) {
+            if(!step(newConstraint, fuel - 1)) {
                 return false;
             }
         }
@@ -306,6 +306,17 @@ class GreedySolver {
     ///////////////////////////////////////////////////////////////////////////
     // k
     ///////////////////////////////////////////////////////////////////////////
+
+    private boolean step(IConstraint constraint, int fuel) throws InterruptedException {
+        try {
+            return k(constraint, fuel);
+        } catch(InterruptedException | SolverFatalErrorException e) {
+            throw e;
+        } catch(Throwable e) {
+            throw new SolverFatalErrorException(e, constraint, state.unifier(), state.scopeGraph(),
+                    Solver.ERROR_TRACE_TERM_DEPTH);
+        }
+    }
 
     private boolean k(IConstraint constraint, int fuel) throws InterruptedException {
         cancel.throwIfCancelled();
