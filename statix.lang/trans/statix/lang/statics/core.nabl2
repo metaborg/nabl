@@ -58,7 +58,7 @@ rules
 
     // check duplicates
     distinct/name D(s)/Mod | error $[Duplicate module [NAME]] @NAMES,
-  
+
     // sugar
 
     Rel{Decl()} <- s,
@@ -356,14 +356,15 @@ rules
  * Resolve & Query
  ******************************************************************/
 
-  Constraint[[ CResolveQuery(rel, filter, min, st, pst, msg) ^ (s) ]] :=
+  Constraint[[ CResolveQuery(rel, filter, min, prj, st, pst, msg) ^ (s) ]] :=
     RelRef[[ rel ^ (s) : ty ]],
     inty is `in-type` of ty,
     Filter[[ filter ^ (s, PRED([inty])) ]],
     Min[[ min ^ (s, PRED([inty, inty])) ]],
     Build[[ st ^ (s) : SCOPE() ]],
     inoutty is `inout-type` of ty,
-    Build[[ pst ^ (s) : LIST(TUPLE([PATH(), inoutty])) ]],
+    Project[[ prj ^ (inoutty): qty ]],
+    Build[[ pst ^ (s) : qty ]],
     Message(ErrorKind)[[ msg ^ (s) ]].
 
   Filter[[ Filter(re, lt) ^ (s, lty) ]] :=
@@ -377,6 +378,10 @@ rules
   LabelOrd[[ [] ^ (s) ]].
   LabelOrd[[ prs@[_|_] ^ (s) ]] :=
     Map1(LabelPair)[[ prs ^ (s) ]].
+
+  Project[[ Project(PFull()) ^ (inoutty) : LIST(TUPLE([PATH(), inoutty])) ]].
+  Project[[ Project(PTargetData()) ^ (inoutty) : LIST(TUPLE([SCOPE(), inoutty])) ]].
+  Project[[ Project(PData()) ^ (inoutty) : LIST(inoutty) ]].
 
 /******************************************************************
  * Sorts & Constructors                                           *
