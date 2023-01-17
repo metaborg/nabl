@@ -112,6 +112,7 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
 import mb.statix.spec.ApplyMode;
@@ -627,6 +628,7 @@ public class StatixSolver {
             @Override public Boolean caseResolveQuery(IResolveQuery c) throws InterruptedException {
                 final QueryFilter filter = c.filter();
                 final QueryMin min = c.min();
+                final QueryProject project = c.project();
                 final ITerm scopeTerm = c.scopeTerm();
                 final ITerm resultTerm = c.resultTerm();
 
@@ -704,9 +706,13 @@ public class StatixSolver {
                             return fail(c);
                         }
                     } else {
-                        final List<ITerm> pathTerms =
-                                paths.stream().map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
-                                        .collect(ImmutableList.toImmutableList());
+
+                        // @formatter:off
+                        final Collection<ITerm> pathTerms = paths.stream()
+                                .map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
+                                .map(p -> project.apply(p).orElseThrow(() -> new IllegalStateException("Invalid resolution path: " + p)))
+                                .collect(project.collector());
+                        // @formatter:on
                         final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
                         return success(c, state, NO_UPDATED_VARS, ImmutableList.of(C), NO_NEW_CRITICAL_EDGES,
                                 NO_EXISTENTIALS, fuel);
