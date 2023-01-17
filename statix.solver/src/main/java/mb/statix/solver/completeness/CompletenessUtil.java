@@ -183,12 +183,12 @@ public class CompletenessUtil {
                 return iresolveQuery.match(new IResolveQuery.Cases<IResolveQuery>() {
 
                     @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
-                        return new CResolveQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
+                        return new CResolveQuery(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(),
                                 q.cause().orElse(null), q.message().orElse(null));
                     }
 
                     @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
-                        return new CCompiledQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
+                        return new CCompiledQuery(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(),
                                 q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
                     }});
             },

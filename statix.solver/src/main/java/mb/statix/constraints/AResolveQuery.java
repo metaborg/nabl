@@ -14,21 +14,24 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 
 public abstract class AResolveQuery implements IResolveQuery {
 
     protected final QueryFilter filter;
     protected final QueryMin min;
+    protected final QueryProject project;
     protected final ITerm scopeTerm;
     protected final ITerm resultTerm;
 
     @Nullable protected final IConstraint cause;
     @Nullable protected final IMessage message;
 
-    public AResolveQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public AResolveQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IConstraint cause, @Nullable IMessage message) {
         this.filter = filter;
         this.min = min;
+        this.project = project;
         this.scopeTerm = scopeTerm;
         this.resultTerm = resultTerm;
         this.cause = cause;
@@ -41,6 +44,10 @@ public abstract class AResolveQuery implements IResolveQuery {
 
     public QueryMin min() {
         return min;
+    }
+
+    public QueryProject project() {
+        return project;
     }
 
     public ITerm scopeTerm() {

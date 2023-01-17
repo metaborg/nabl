@@ -51,6 +51,7 @@ import mb.statix.solver.IConstraint.Cases;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 import mb.statix.spec.Rule;
 
 public class Patching {
@@ -406,18 +407,20 @@ public class Patching {
                         newDataWf == null ? c.filter().getDataWF() : newDataWf);
                 final QueryMin newMin = new QueryMin(c.min().getLabelOrder(),
                         newDataEquiv == null ? c.min().getDataEquiv() : newDataEquiv);
+                final QueryProject project = c.project();
 
                 final @Nullable IConstraint cause = c.cause().orElse(null);
                 final @Nullable IMessage message = c.message().orElse(null);
 
                 return c.match(new IResolveQuery.Cases<IResolveQuery>() {
                     @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
-                        return new CResolveQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message);
+                        return new CResolveQuery(newFilter, newMin, project, newScopeTerm, newResultTerm, cause,
+                                message);
                     }
 
                     @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
-                        return new CCompiledQuery(newFilter, newMin, newScopeTerm, newResultTerm, cause, message,
-                                q.stateMachine());
+                        return new CCompiledQuery(newFilter, newMin, project, newScopeTerm, newResultTerm, cause,
+                                message, q.stateMachine());
                     }
                 });
             }

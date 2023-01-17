@@ -97,6 +97,7 @@ import mb.statix.scopegraph.Scope;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
@@ -207,7 +208,7 @@ public class StatixTerms {
                         throw new IllegalStateException("Invalid initial state: " + initial);
                     }
                     final StateMachine<ITerm> stateMachine = new StateMachine<>(states, initialState);
-                    return new CCompiledQuery(query.filter(), query.min(), query.scopeTerm(), query.resultTerm(), query.message().orElse(null), stateMachine);
+                    return new CCompiledQuery(query.filter(), query.min(), query.project(), query.scopeTerm(), query.resultTerm(), query.message().orElse(null), stateMachine);
                 }),
                 M.appl3("CTellEdge", term(), label(), term(), (c, sourceScope, label, targetScope) -> {
                     return new CTellEdge(sourceScope, label, targetScope);
@@ -236,14 +237,41 @@ public class StatixTerms {
 
     public static IMatcher<CResolveQuery> resolveQuery() {
         // @formatter:off
-        return (t, u) -> M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
-            (c, rel, filterTerm, minTerm, scope, result, msg) -> {
-                final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
-                final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
-                return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
-                    return new CResolveQuery(filter, min, scope, result, msg.orElse(null));
-                });
-            }).flatMap(o -> o)
+        return (t, u) -> M.cases(
+                M.appl6("CResolveQuery", M.term(), M.term(), M.term(), term(), term(), message(),
+                    (c, rel, filterTerm, minTerm, scope, result, msg) -> {
+                        // Deprecated!
+                        final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                        final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                        return Optionals.lift(maybeFilter, maybeMin, (filter, min) -> {
+                            return new CResolveQuery(filter, min, QueryProject.FULL, scope, result, msg.orElse(null));
+                        });
+                    }),
+                M.appl("CResolveQuery", (c) -> {
+                        if(c.getArgs().size() != 7) {
+                            return Optional.<CResolveQuery>empty();
+                        }
+
+                        final ITerm rel = c.getArgs().get(0);
+                        final ITerm filterTerm = c.getArgs().get(1);
+                        final ITerm minTerm = c.getArgs().get(2);
+                        final ITerm projectTerm = c.getArgs().get(3);
+
+                        final Optional<ITerm> maybeScope = term().match(c.getArgs().get(4), u);
+                        final Optional<ITerm> maybeResult = term().match(c.getArgs().get(5), u);
+                        final Optional<Optional<IMessage>> maybeMsg = message().match(c.getArgs().get(6), u);
+
+                        final Optional<QueryFilter> maybeFilter = queryFilter(rel).match(filterTerm, u);
+                        final Optional<QueryMin> maybeMin = queryMin(rel).match(minTerm, u);
+                        final Optional<QueryProject> maybeProject = queryProject().match(projectTerm, u);
+
+                        return Optionals.lift(maybeFilter, maybeMin, maybeProject, maybeScope, maybeResult, maybeMsg,
+                            (filter, min, project, scope, result, msg) -> {
+                                return new CResolveQuery(filter, min, project, scope, result, msg.orElse(null));
+                            }
+                        );
+                    })
+            ).flatMap(o -> o)
             .match(t, u);
         // @formatter:on
     }
@@ -342,6 +370,16 @@ public class StatixTerms {
         return M.appl2("Min", ltMatcher, hoconstraint(), (m, ord, dataConstraint) -> {
             return new QueryMin(ord, dataConstraint);
         });
+    }
+
+    private static IMatcher<QueryProject> queryProject() {
+        // @formatter:off
+        return M.cases(
+                M.appl0("PFull", appl -> QueryProject.FULL),
+                M.appl0("PTargetData", appl -> QueryProject.TARGET_DATA),
+                M.appl0("PData", appl -> QueryProject.DATA)
+        );
+        // @formatter:ofn
     }
 
     private static boolean isEOP(ITerm label) {
@@ -858,6 +896,18 @@ public class StatixTerms {
             throw new IllegalArgumentException("Encountered a relation label in the middle of path.");
         }
         return pathTerm;
+    }
+
+    public static Optional<Tuple2<Scope, ITerm>> pathTargetAndData(ITerm pathTerm) {
+        // @formatter:off
+        return M.tuple2(M.cases(
+                M.preserveAttachments(M.appl1(PATH_EMPTY_OP, Scope.matcher(), (appl, scope) -> scope)),
+                M.preserveAttachments(M.appl3(PATH_STEP_OP, M.term(), M.term(), Scope.matcher(), (appl, prefix, lbl, scope) -> scope))
+            ),
+            M.term(),
+            (t, scope, data) -> Tuple2.of(scope, data)
+        ).match(pathTerm);
+        // @formatter:on
     }
 
 }
