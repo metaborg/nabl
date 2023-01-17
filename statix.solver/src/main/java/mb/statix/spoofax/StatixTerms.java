@@ -374,10 +374,13 @@ public class StatixTerms {
 
     private static IMatcher<QueryProject> queryProject() {
         // @formatter:off
-        return M.cases(
-                M.appl0("PFull", appl -> QueryProject.FULL),
-                M.appl0("PTargetData", appl -> QueryProject.TARGET_DATA),
-                M.appl0("PData", appl -> QueryProject.DATA)
+        return M.appl1("Project",
+                M.cases(
+                    M.appl0("PFull", appl -> QueryProject.FULL),
+                    M.appl0("PTargetData", appl -> QueryProject.TARGET_DATA),
+                    M.appl0("PData", appl -> QueryProject.DATA)
+                ),
+            (appl, project) -> project
         );
         // @formatter:ofn
     }

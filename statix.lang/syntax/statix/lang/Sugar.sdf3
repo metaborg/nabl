@@ -135,6 +135,9 @@ context-free syntax
   QueryMin.NoMin =
   QueryMin.Min   = < min <LabelOrd>>
 
+
+  QueryProject.NoProject =
+
 lexical syntax
 
   Keyword = "filter" | "min" | "in" | "of" | "resolveMatch" | "resolveLt" | "occurrenceMatch"

@@ -95,6 +95,8 @@ rules
   desugar-query: NamespaceMin_dep(ord) -> NamespaceMin(ord)
   desugar-query: NoNamespaceMin() -> NamespaceMin([])
 
+  desugar-query: NoProject() -> Project(PFull())
+
 rules
 
   desugar-lambdas = topdown(try(desugar-lambda))
