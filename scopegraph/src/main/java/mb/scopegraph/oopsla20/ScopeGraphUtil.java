@@ -3,8 +3,6 @@ package mb.scopegraph.oopsla20;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
