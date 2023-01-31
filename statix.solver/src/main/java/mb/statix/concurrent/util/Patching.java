@@ -16,7 +16,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.build.TermVar;
 import mb.nabl2.terms.matching.Pattern;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.CArith;
