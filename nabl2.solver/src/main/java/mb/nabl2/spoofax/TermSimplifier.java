@@ -4,7 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;

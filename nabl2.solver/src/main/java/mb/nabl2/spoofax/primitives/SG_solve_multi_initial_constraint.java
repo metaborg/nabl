@@ -30,7 +30,7 @@ import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.MultiInitialResult;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.scopegraph.pepm16.terms.Scope;
 
