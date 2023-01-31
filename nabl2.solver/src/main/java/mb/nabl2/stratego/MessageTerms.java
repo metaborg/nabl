@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.terms.ITerm;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;

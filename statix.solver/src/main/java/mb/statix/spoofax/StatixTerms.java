@@ -43,7 +43,7 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.scopegraph.oopsla20.IScopeGraph;
