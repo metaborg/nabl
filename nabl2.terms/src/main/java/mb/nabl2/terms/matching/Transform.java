@@ -27,7 +27,7 @@ public class Transform {
 
     public static class T {
 
-        public static Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {
+        public Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
@@ -50,7 +50,7 @@ public class Transform {
             // @formatter:on
         }
 
-        public static Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
+        public Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
             return term -> {
                 // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(
@@ -76,7 +76,7 @@ public class Transform {
             };
         }
 
-        public static <R> Function1<ITerm, Collection<R>> collecttd(PartialFunction1<ITerm, ? extends R> m) {
+        public <R> Function1<ITerm, Collection<R>> collecttd(PartialFunction1<ITerm, ? extends R> m) {
             return term -> {
                 List<R> results = Lists.newArrayList();
                 M.<Unit>casesFix(f -> Iterables2.<IMatcher<? extends Unit>>from(
@@ -112,7 +112,7 @@ public class Transform {
             };
         }
 
-        public static Function1<ITerm, ITerm> maybe(PartialFunction1<ITerm, ITerm> m) {
+        public Function1<ITerm, ITerm> maybe(PartialFunction1<ITerm, ITerm> m) {
             return term -> m.apply(term).orElse(term);
         }
 
