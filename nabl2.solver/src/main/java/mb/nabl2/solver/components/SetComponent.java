@@ -37,7 +37,7 @@ import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.scopegraph.pepm16.CriticalEdgeException;
 import mb.scopegraph.pepm16.StuckException;
 
