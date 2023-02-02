@@ -148,7 +148,7 @@ public final class StrategoTermIndices {
         }
 
         private IStrategoTerm[] index(final List<IStrategoTerm> terms) {
-            return terms.stream().map(this::index).toArray(n -> new IStrategoTerm[0]);
+            return terms.stream().map(this::index).toArray(IStrategoTerm[]::new);
         }
 
     }
@@ -209,7 +209,7 @@ public final class StrategoTermIndices {
         }
 
         private IStrategoTerm[] erase(final List<IStrategoTerm> terms) {
-            return terms.stream().map(this::erase).toArray(n -> new IStrategoTerm[0]);
+            return terms.stream().map(this::erase).toArray(IStrategoTerm[]::new);
         }
 
     }
