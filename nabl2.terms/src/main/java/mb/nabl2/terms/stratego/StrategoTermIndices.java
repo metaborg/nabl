@@ -44,8 +44,8 @@ public final class StrategoTermIndices {
             // @formatter:off
             IStrategoTerm result = StrategoTerms.match(term,
                 StrategoTerms.<IStrategoTerm>cases(
-                    appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getAllSubterms()), appl.getAnnotations()),
-                    tuple -> termFactory.makeTuple(index(tuple.getAllSubterms()), tuple.getAnnotations()),
+                    appl -> termFactory.makeAppl(appl.getConstructor(), index(appl.getSubterms()), appl.getAnnotations()),
+                    tuple -> termFactory.makeTuple(index(tuple.getSubterms()), tuple.getAnnotations()),
                     list -> index(list),
                     integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
                     real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
@@ -75,8 +75,8 @@ public final class StrategoTermIndices {
             return result;
         }
 
-        private IStrategoTerm[] index(final IStrategoTerm[] terms) {
-            return Arrays.asList(terms).stream().map(this::index).toArray(n -> new IStrategoTerm[n]);
+        private IStrategoTerm[] index(final List<IStrategoTerm> terms) {
+            return terms.stream().map(this::index).toArray(n -> new IStrategoTerm[0]);
         }
 
     }
@@ -99,9 +99,9 @@ public final class StrategoTermIndices {
         private IStrategoTerm erase(final IStrategoTerm term) {
             IStrategoTerm result = StrategoTerms.match(term, StrategoTerms.<IStrategoTerm>cases(
             // @formatter:off
-                            appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getAllSubterms()),
+                            appl -> termFactory.makeAppl(appl.getConstructor(), erase(appl.getSubterms()),
                                     appl.getAnnotations()),
-                            tuple -> termFactory.makeTuple(erase(tuple.getAllSubterms()), tuple.getAnnotations()),
+                            tuple -> termFactory.makeTuple(erase(tuple.getSubterms()), tuple.getAnnotations()),
                             list -> erase(list),
                             integer -> termFactory.annotateTerm(termFactory.makeInt(integer.intValue()), integer.getAnnotations()),
                             real -> termFactory.annotateTerm(termFactory.makeReal(real.realValue()), real.getAnnotations()),
@@ -129,8 +129,8 @@ public final class StrategoTermIndices {
             return result;
         }
 
-        private IStrategoTerm[] erase(final IStrategoTerm[] terms) {
-            return Arrays.asList(terms).stream().map(this::erase).toArray(n -> new IStrategoTerm[n]);
+        private IStrategoTerm[] erase(final List<IStrategoTerm> terms) {
+            return terms.stream().map(this::erase).toArray(n -> new IStrategoTerm[0]);
         }
 
     }
