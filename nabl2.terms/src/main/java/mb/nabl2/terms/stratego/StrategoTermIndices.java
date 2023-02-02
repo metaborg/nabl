@@ -24,20 +24,36 @@ public final class StrategoTermIndices {
     // index
 
     public static IStrategoTerm index(IStrategoTerm term, String resource, ITermFactory termFactory) {
-        return new Indexer(resource, termFactory).index(term);
+        return new Indexer(resource, termFactory, true, 1).index(term);
     }
 
+    public static IStrategoTerm indexMore(IStrategoTerm term, String resource, ITermFactory termFactory) {
+        int maxId = findMaxId(term);
+        if (maxId >= 0) {
+            return new Indexer(resource, termFactory, false, maxId + 1).index(term);
+        } else {
+            return index(term, resource, termFactory);
+        }
+    }
+    private static int findMaxId(final IStrategoTerm term) {
+        int maxId = get(term).map(TermIndex::getId).orElse(-1);
+        for(IStrategoTerm subterm : term.getSubterms()) {
+            maxId = Math.max(maxId, findMaxId(subterm));
+        }
+        return maxId;
+    }
     private static class Indexer {
 
         private final String resource;
         private final ITermFactory termFactory;
 
-        private int currentId = 0;
-
-        Indexer(String resource, ITermFactory termFactory) {
-            super();
+        private int nextId;
+        private boolean overwrite;
+        public Indexer(String resource, ITermFactory termFactory, boolean overwrite, int initialId) {
             this.resource = resource;
             this.termFactory = termFactory;
+            this.overwrite = overwrite;
+            this.nextId = initialId;
         }
 
         private IStrategoTerm index(final IStrategoTerm term) {
@@ -54,9 +70,12 @@ public final class StrategoTermIndices {
                     plhdr -> termFactory.annotateTerm(termFactory.makePlaceholder(plhdr.getTemplate()), plhdr.getAnnotations())
                 ));
             // @formatter:on
-            final TermIndex index1 = TermIndex.of(resource, ++currentId);
-            final TermIndex index2 = (TermIndex) TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
-            result = put(index2, result, termFactory);
+            if(overwrite || !get(term).isPresent()) {
+                // Associate the term's origin, if any, with the new term index
+                final TermIndex index1 = TermIndex.of(resource, nextId++);
+                final TermIndex index = TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
+                result = put(index, result, termFactory);
+            }
             termFactory.copyAttachments(term, result);
             return result;
         }
@@ -68,10 +87,17 @@ public final class StrategoTermIndices {
             } else {
                 result = termFactory.makeListCons(index(list.head()), index(list.tail()), list.getAnnotations());
             }
+
+            // Set the term index
+            if(overwrite || !get(list).isPresent()) {
+                // Associate the term's origin, if any, with the new term index
+                final TermIndex index1 = TermIndex.of(resource, nextId++);
+                final TermIndex index = TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
+                result = put(index, result, termFactory);
+            }
+
+            // Copy the original term's attachments to the new term
             termFactory.copyAttachments(list, result);
-            final TermIndex index1 = TermIndex.of(resource, ++currentId);
-            final TermIndex index2 = (TermIndex) TermOrigin.get(list).map(o -> o.put(index1)).orElse(index1);
-            result = (IStrategoList) put(index2, result, termFactory);
             return result;
         }
 
