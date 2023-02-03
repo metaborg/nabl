@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 public class Terms {
 
     public static final String TUPLE_OP = "";
+    public static final String VAR_OP = "nabl2.Var";
 
     // SAFE
 
