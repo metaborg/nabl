@@ -1,6 +1,7 @@
 package mb.nabl2.util.collections;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,7 +11,6 @@ import org.metaborg.util.functions.Function1;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
@@ -103,7 +103,7 @@ public class IndexedBag<V, I> {
 
         public Entry(V value) {
             this.value = value;
-            this.indices = Sets.newHashSet();
+            this.indices = new HashSet<I>();
         }
 
     }

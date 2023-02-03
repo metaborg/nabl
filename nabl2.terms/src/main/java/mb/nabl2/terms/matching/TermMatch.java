@@ -2,6 +2,7 @@ package mb.nabl2.terms.matching;
 
 import static mb.nabl2.terms.Terms.TUPLE_OP;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -19,7 +20,6 @@ import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IApplTerm;
@@ -308,7 +308,7 @@ public class TermMatch {
                 Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                    List<Optional<T>> os = Lists.newArrayList();
+                    List<Optional<T>> os = new ArrayList<>();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t, unifier));
                     }

@@ -1,6 +1,7 @@
 package mb.p_raffrayi.impl.diff;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
@@ -14,7 +15,6 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Map;
@@ -42,7 +42,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private final ICompletableFuture<ScopeGraphDiff<S, L, D>> diffResult = new CompletableFuture<>();
 
-    private final Queue<S> worklist = Lists.newLinkedList();
+    private final Queue<S> worklist = new LinkedList<>();
     private final AtomicBoolean typeCheckerFinished = new AtomicBoolean();
     private final AtomicInteger nesting = new AtomicInteger(0);
 

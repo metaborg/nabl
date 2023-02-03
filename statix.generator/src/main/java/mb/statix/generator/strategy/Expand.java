@@ -1,5 +1,6 @@
 package mb.statix.generator.strategy;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +19,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -74,7 +74,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
                 predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE);
 
-        final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
+        final List<Pair<SearchNode<SearchState>, Double>> newNodes = new ArrayList<>();
         results.forEach(result -> {
             final Rule rule = result._1();
             final Optional<SearchState> output = updateSearchState(ctx, predicate, result._2(), input);

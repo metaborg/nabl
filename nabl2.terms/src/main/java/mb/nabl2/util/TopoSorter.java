@@ -1,6 +1,7 @@
 package mb.nabl2.util;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,6 @@ import org.metaborg.util.functions.Predicate1;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
@@ -38,7 +38,7 @@ public class TopoSorter {
         final ImmutableList.Builder<Set.Immutable<E>> components = ImmutableList.builder();
         final AtomicInteger index = new AtomicInteger(0);
         final Deque<Node<E>> stack = new IndexedDeque<>();
-        final Map<E, Node<E>> visited = Maps.newHashMap();
+        final Map<E, Node<E>> visited = new HashMap<>();
         final Predicate1<E> include = n -> implicitAdd || nodeSet.contains(n);
         for(E current : nodeSet) {
             if(!visited.containsKey(current)) {

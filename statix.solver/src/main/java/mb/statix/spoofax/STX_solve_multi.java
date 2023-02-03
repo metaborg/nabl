@@ -23,7 +23,6 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -75,7 +74,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
-        final List<ITerm> results = Lists.newArrayList();
+        final List<ITerm> results = new ArrayList<>();
         try {
             logger.info("Analyzing files");
 

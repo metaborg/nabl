@@ -2,6 +2,7 @@ package mb.nabl2.terms.unification.u;
 
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -18,7 +19,6 @@ import org.metaborg.util.tuple.Tuple2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -145,7 +145,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private final Predicate1<ITermVar> isRigid;
             private final Deque<Map.Entry<ITerm, ITerm>> worklist = new ArrayDeque<>();
-            private final List<ITermVar> result = Lists.newArrayList();
+            private final List<ITermVar> result = new ArrayList<>();
 
             public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, Predicate1<ITermVar> isRigid) {
                 super(unifier);

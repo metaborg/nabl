@@ -2,6 +2,7 @@ package mb.statix.spoofax;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,9 +31,9 @@ public class STX_extract_messages extends StatixPrimitive {
         final SolverResult result = getResult(term);
         final IUniDisunifier unifier = result.state().unifier();
 
-        final List<ITerm> errorList = Lists.newArrayList();
-        final List<ITerm> warningList = Lists.newArrayList();
-        final List<ITerm> noteList = Lists.newArrayList();
+        final List<ITerm> errorList = new ArrayList<>();
+        final List<ITerm> warningList = new ArrayList<>();
+        final List<ITerm> noteList = new ArrayList<>();
         result.messages().forEach((c, m) -> MessageUtil.addMessage(m, c, unifier, config, errorList, warningList, noteList));
 
         final IListTerm errors = B.newList(errorList);

@@ -89,7 +89,7 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
             return scopeGraph.getEdges();
         }
 
-        @Override public Iterable<Scope> getEdges(Scope scope, ITerm label) {
+        @Override public Collection<Scope> getEdges(Scope scope, ITerm label) {
             return scopeGraph.getEdges(scope, label);
         }
 

@@ -23,7 +23,7 @@ public class DeadlockUtilTest {
         // @formatter:on
 
         final HashSet<Integer> scc1 = Sets.newHashSet(1);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -37,7 +37,7 @@ public class DeadlockUtilTest {
         // @formatter:on
 
         final HashSet<Integer> scc1 = Sets.newHashSet(1);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -67,7 +67,7 @@ public class DeadlockUtilTest {
         // @formatter:on
 
         final HashSet<Integer> scc1 = Sets.newHashSet(1, 2);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -85,7 +85,7 @@ public class DeadlockUtilTest {
         // @formatter:on
 
         final HashSet<Integer> scc1 = Sets.newHashSet(1, 2);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -104,7 +104,7 @@ public class DeadlockUtilTest {
         // @formatter:on
 
         final HashSet<Integer> scc1 = Sets.newHashSet(1, 2, 3, 4, 5);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));

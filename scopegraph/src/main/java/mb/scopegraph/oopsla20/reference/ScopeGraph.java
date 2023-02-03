@@ -1,6 +1,7 @@
 package mb.scopegraph.oopsla20.reference;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,7 +20,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     @Override public abstract Map<Tuple2<S, L>, ConsList<S>> getEdges();
 
-    @Override public Iterable<S> getEdges(S scope, L label) {
+    @Override public Collection<S> getEdges(S scope, L label) {
         return getEdges().getOrDefault(Tuple2.of(scope, label), ConsList.nil());
     }
 

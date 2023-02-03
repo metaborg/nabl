@@ -2,6 +2,7 @@ package mb.statix.generator.strategy;
 
 import static mb.statix.generator.util.StreamUtil.flatMap;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -9,7 +10,6 @@ import java.util.stream.Stream;
 import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -25,7 +25,7 @@ public final class Concat<I extends SearchState, O extends SearchState> extends 
     }
 
     @Override protected SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
-        final List<Function0<String>> descs = Lists.newArrayList();
+        final List<Function0<String>> descs = new ArrayList<>();
         final Stream<SearchNode<O>> nodes = flatMap(ss.stream(), s -> {
             final SearchNodes<O> sn = s.apply(ctx, node);
             descs.add(sn::desc);

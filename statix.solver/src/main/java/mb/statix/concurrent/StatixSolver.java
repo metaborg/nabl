@@ -9,8 +9,10 @@ import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,8 +39,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
@@ -152,8 +152,8 @@ public class StatixSolver {
     private IState.Immutable state;
     private ICompleteness.Immutable completeness;
     private Map<ITermVar, ITermVar> existentials = null;
-    private final List<ITermVar> updatedVars = Lists.newArrayList();
-    private final Map<IConstraint, IMessage> failed = Maps.newHashMap();
+    private final List<ITermVar> updatedVars = new ArrayList<>();
+    private final Map<IConstraint, IMessage> failed = new HashMap<>();
 
     private final AtomicBoolean inFixedPoint = new AtomicBoolean(false);
     private final Set.Transient<IConstraint> pendingConstraints = CapsuleUtil.transientSet();

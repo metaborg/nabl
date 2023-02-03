@@ -1,6 +1,7 @@
 package mb.statix.constraints;
 
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -16,7 +17,6 @@ import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
@@ -580,7 +580,7 @@ public final class Constraints {
     }
 
     public static void disjoin(IConstraint constraint, Action1<IConstraint> action) {
-        Deque<IConstraint> worklist = Lists.newLinkedList();
+        Deque<IConstraint> worklist = new LinkedList<>();
         worklist.push(constraint);
         while(!worklist.isEmpty()) {
             worklist.pop().match(Constraints.cases().conj(conj -> {

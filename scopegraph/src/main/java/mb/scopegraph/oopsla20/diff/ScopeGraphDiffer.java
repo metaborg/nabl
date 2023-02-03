@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.diff;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -15,7 +16,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Streams;
 
@@ -120,7 +120,7 @@ public class ScopeGraphDiffer<S, L, D> {
         state.seenPreviousScopes().__insertAll(scopes.valueSet());
         final BiMap<S> newMatches;
         if((newMatches = canScopesMatch(state, scopes).orElse(null)) == null) {
-            return Tuple2.of(false, Lists.newLinkedList());
+            return Tuple2.of(false, new LinkedList<EdgeMatch>());
         }
         state.putAllMatchedScopes(newMatches);
         final Queue<EdgeMatch> newEdgeMatches = new LinkedList<>();
@@ -295,12 +295,12 @@ public class ScopeGraphDiffer<S, L, D> {
     }
 
     private void finishDiff(IScopeGraph<S, L, D> scopeGraph, Function1<D, java.util.Set<S>> getScopes,
-        Iterable<S> seenScopes, Iterable<Edge<S, L>> seenEdges, java.util.Set<S> matchedScopes,
+        Collection<S> seenScopes, Collection<Edge<S, L>> seenEdges, java.util.Set<S> matchedScopes,
         java.util.Set<Edge<S, L>> matchedEdges, Map.Transient<S, D> missedScopes,
         Set.Transient<Edge<S, L>> missedEdges) {
 
-        final Deque<S> scopeList = Lists.newLinkedList(seenScopes);
-        final Deque<Edge<S, L>> edgeList = Lists.newLinkedList(seenEdges);
+        final Deque<S> scopeList = new ArrayDeque<>(seenScopes);
+        final Deque<Edge<S, L>> edgeList = new ArrayDeque<>(seenEdges);
 
         while(!scopeList.isEmpty() || !edgeList.isEmpty()) {
             while(!scopeList.isEmpty()) {

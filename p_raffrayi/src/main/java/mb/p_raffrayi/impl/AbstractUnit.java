@@ -36,7 +36,6 @@ import org.metaborg.util.unit.Unit;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Streams;
@@ -358,7 +357,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     private S doPrepareScope(final S scope, Iterable<L> edgeLabels, boolean data, boolean sharing) {
-        final List<EdgeOrData<L>> labels = Lists.newArrayList();
+        final List<EdgeOrData<L>> labels = new ArrayList<>();
         for(L l : edgeLabels) {
             labels.add(EdgeOrData.edge(l));
             if(!this.edgeLabels.contains(l)) {
@@ -584,7 +583,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 });
             }
 
-            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
                 return isComplete(scope, EdgeOrData.edge(label), sender).thenApply(__ -> {
                     return scopeGraph.get().getEdges(scope, label);
                 });
@@ -1031,7 +1030,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                     .completedFuture(scopeGraph.getData(scope).map(AbstractUnit.this::getPreviousDatum));
         }
 
-        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+        @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
             return CompletableFuture.completedFuture(scopeGraph.getEdges(scope, label));
         }
 

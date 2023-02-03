@@ -3,6 +3,7 @@ package mb.nabl2.terms.unification;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
@@ -13,7 +14,6 @@ import org.metaborg.util.functions.Function0;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -74,7 +74,7 @@ public class PersistentUnifierStressTest {
     }
 
     private IUnifier.Immutable makeRandomUnifier(ImmutableMultimap<ITerm, ITerm> init) {
-        final List<Entry<ITerm, ITerm>> equalities = Lists.newArrayList(init.entries());
+        final List<Entry<ITerm, ITerm>> equalities = new ArrayList<>(init.entries());
         final Random rnd = new Random(System.currentTimeMillis());
         try {
             IUnifier.Transient unifier = Unifiers.Immutable.of().melt();

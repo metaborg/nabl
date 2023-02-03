@@ -3,12 +3,12 @@ package mb.scopegraph.oopsla20;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 
 import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
 
 public final class ScopeGraphUtil {
 
@@ -28,7 +28,7 @@ public final class ScopeGraphUtil {
         );
         // @formatter:off
 
-        final SetView<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
+        final Set<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
 
         final StringBuilder sb = new StringBuilder();
         for(S source : scopes) {

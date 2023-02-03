@@ -119,7 +119,8 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
                 Set<V> successorRoots = counting.getAllReachableTargets(targetRoot);
 
                 // 1. intersection of source and target roots, these will be in the merged SCC
-                Set<V> isectRoots = Sets.intersection(predecessorRoots, successorRoots).copyInto(Sets.newHashSet());
+                Set<V> isectRoots = Sets.intersection(predecessorRoots, successorRoots).copyInto(
+                    new HashSet<V>());
                 isectRoots.add(sourceRoot);
                 isectRoots.add(targetRoot);
 
@@ -415,7 +416,7 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
             return null;
         } else {
             Set<V> sccsInSubGraph = Sets.intersection(counting.getAllReachableTargets(source),
-                    counting.getAllReachableSources(target)).copyInto(Sets.newHashSet());
+                    counting.getAllReachableSources(target)).copyInto(new HashSet<V>());
             sccsInSubGraph.add(sccs.find(source));
             sccsInSubGraph.add(sccs.find(target));
             Set<V> nodesInSubGraph = CollectionsFactory.createSet();

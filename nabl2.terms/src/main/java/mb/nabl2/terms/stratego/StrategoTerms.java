@@ -22,7 +22,6 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.StrategoPlaceholder;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
@@ -79,8 +78,8 @@ public class StrategoTerms {
     }
 
     private IStrategoTerm toStrategoList(IListTerm list, boolean varsToPlhdrs) {
-        final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
-        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
+        final LinkedList<IStrategoTerm> terms = new LinkedList<>();
+        final LinkedList<IAttachments> attachments = new LinkedList<>();
         while(list != null) {
             attachments.push(list.getAttachments());
             // @formatter:off
@@ -183,8 +182,8 @@ public class StrategoTerms {
     }
 
     private IListTerm fromStrategoList(IStrategoList list, @Nullable VarProvider varProvider) {
-        final LinkedList<ITerm> terms = Lists.newLinkedList();
-        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
+        final LinkedList<ITerm> terms = new LinkedList<>();
+        final LinkedList<IAttachments> attachments = new LinkedList<>();
         while(!list.isEmpty()) {
             terms.add(fromStratego(list.head(), varProvider));
             attachments.push(getAttachments(list));

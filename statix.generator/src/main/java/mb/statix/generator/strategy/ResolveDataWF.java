@@ -2,6 +2,7 @@ package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -12,7 +13,6 @@ import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
@@ -107,8 +107,8 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`
-        final List<ITerm> leftTerms = Lists.newArrayList();
-        final List<ITerm> rightTerms = Lists.newArrayList();
+        final List<ITerm> leftTerms = new ArrayList<>();
+        final List<ITerm> rightTerms = new ArrayList<>();
         for(ITermVar var : unifiedVars) {
             final ITerm term = newUnifier.findTerm(var);
             if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {

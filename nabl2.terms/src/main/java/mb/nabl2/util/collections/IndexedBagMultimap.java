@@ -2,6 +2,7 @@ package mb.nabl2.util.collections;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,9 +13,7 @@ import org.metaborg.util.functions.Function1;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
@@ -105,7 +104,7 @@ public class IndexedBagMultimap<K, V, I> {
     }
 
     public Collection<Entry> reindexAll(Function1<I, ? extends Iterable<? extends I>> normalize) {
-        return Lists.newArrayList(entries.keySet()).stream().flatMap(i -> reindex(i, normalize).stream())
+        return entries.keySet().stream().flatMap(i -> reindex(i, normalize).stream())
                 .collect(ImmutableList.toImmutableList());
     }
 
@@ -128,7 +127,7 @@ public class IndexedBagMultimap<K, V, I> {
         public Entry(K key, V value) {
             this.key = key;
             this.value = value;
-            this.indices = Sets.newHashSet();
+            this.indices = new HashSet<I>();
         }
 
         @Override public K getKey() {

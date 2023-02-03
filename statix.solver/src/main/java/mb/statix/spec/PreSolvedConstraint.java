@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,7 +22,6 @@ import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -427,7 +427,7 @@ public class PreSolvedConstraint implements Serializable {
             Collection<IConstraint> constraints, ICompleteness.Transient bodyCriticalEdges,
             Map<ITermVar, ITermVar> existentials, Collection<IConstraint> failures, Map<IConstraint, Delay> delays,
             @Nullable IConstraint cause, boolean returnOnFirstErrorOrDelay) {
-        final Deque<IConstraint> worklist = Lists.newLinkedList();
+        final Deque<IConstraint> worklist = new LinkedList<>();
         worklist.push(constraint);
         AtomicBoolean first = new AtomicBoolean(true);
         while(!worklist.isEmpty()) {

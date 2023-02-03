@@ -1,5 +1,6 @@
 package mb.scopegraph.ecoop21;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +15,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -65,7 +64,7 @@ public class NameResolution<S, L, D, M> {
             return CompletableFuture.completedExceptionally(new InterruptedException());
         }
         final Set<EdgeOrData<L>> max_L = max(L);
-        final List<IFuture<Tuple2<Env<S, L, D>, M>>> envs = Lists.newArrayList();
+        final List<IFuture<Tuple2<Env<S, L, D>, M>>> envs = new ArrayList<>();
         for(EdgeOrData<L> l : max_L) {
             envs.add(env_lL(path, re, l, smaller(L, l), cancel));
         }
@@ -172,7 +171,7 @@ public class NameResolution<S, L, D, M> {
         final IFuture<Iterable<S>> scopes = context.getEdges(path.getTarget(), l);
         logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
         return scopes.thenCompose(ss -> {
-            List<IFuture<Tuple2<Env<S, L, D>, M>>> envs = Lists.newArrayList();
+            List<IFuture<Tuple2<Env<S, L, D>, M>>> envs = new ArrayList<>();
             for(S nextScope : ss) {
                 final Optional<ScopePath<S, L>> p = path.step(l, nextScope);
                 if(p.isPresent()) {

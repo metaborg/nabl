@@ -1,6 +1,7 @@
 package mb.nabl2.terms.matching;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,7 +19,6 @@ import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import mb.nabl2.terms.IAttachments;
@@ -53,7 +53,7 @@ public abstract class Pattern implements Serializable {
 
     public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(ITerm term, IUnifier.Immutable unifier) {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        final List<ITermVar> stuckVars = Lists.newArrayList();
+        final List<ITermVar> stuckVars = new ArrayList<>();
         final Eqs eqs = new Eqs() {
 
             @Override public void add(ITermVar var, ITerm pattern) {
@@ -84,9 +84,9 @@ public abstract class Pattern implements Serializable {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
         // equalities between unifier terms
-        final List<Tuple2<ITermVar, ITerm>> termEqs = Lists.newArrayList();
+        final List<Tuple2<ITermVar, ITerm>> termEqs = new ArrayList<>();
         // equalities between unifier variables and patterns
-        final List<Tuple2<ITermVar, Pattern>> patternEqs = Lists.newArrayList();
+        final List<Tuple2<ITermVar, Pattern>> patternEqs = new ArrayList<>();
 
         // match
         final Eqs eqs = new Eqs() {
@@ -105,7 +105,7 @@ public abstract class Pattern implements Serializable {
         }
 
         // generate fresh unifier variables for unmatched pattern variables
-        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet()).immutableCopy();
+        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet());
         for(ITermVar v : freeVars) {
             _subst.put(v, fresh.freshVar(v));
         }

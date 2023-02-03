@@ -8,14 +8,13 @@
  *******************************************************************************/
 package mb.nabl2.util.graph.alg.misc;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 /**
  * Factory class used as an accessor to Collections implementations.
@@ -30,7 +29,7 @@ public final class CollectionsFactory {
      * @since 1.7
      */
     public static <K, V> Map<K, V> createMap() {
-        return Maps.newHashMap();
+        return new HashMap<>();
     }
 
     /**
@@ -39,7 +38,7 @@ public final class CollectionsFactory {
      * @since 1.7
      */
     public static <E> Set<E> createSet() {
-        return Sets.newHashSet();
+        return new HashSet<E>();
     }
 
     /**
@@ -48,7 +47,7 @@ public final class CollectionsFactory {
      * @since 1.7
      */
     public static <E> Set<E> createSet(Collection<E> initial) {
-        return Sets.newHashSet(initial);
+        return new HashSet<>(initial);
     }
 
     /**
@@ -57,7 +56,7 @@ public final class CollectionsFactory {
      * @since 1.7
      */
     public static <O> List<O> createObserverList() {
-        return Lists.newArrayList();
+        return new ArrayList<>();
     }
 
     /**

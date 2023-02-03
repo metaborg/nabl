@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.reference;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -9,7 +10,6 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -146,7 +146,8 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     // max labels                                                            //
     ///////////////////////////////////////////////////////////////////////////
 
-    private final Map<Set.Immutable<EdgeOrData<L>>, Set.Immutable<EdgeOrData<L>>> maxCache = Maps.newHashMap();
+    private final Map<Set.Immutable<EdgeOrData<L>>, Set.Immutable<EdgeOrData<L>>> maxCache =
+        new HashMap<>();
 
     private Set.Immutable<EdgeOrData<L>> max(Set.Immutable<EdgeOrData<L>> L)
             throws ResolutionException, InterruptedException {
@@ -176,7 +177,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
     ///////////////////////////////////////////////////////////////////////////
 
     private final Map<Tuple2<Set.Immutable<EdgeOrData<L>>, EdgeOrData<L>>, Set.Immutable<EdgeOrData<L>>> smallerCache =
-            Maps.newHashMap();
+        new HashMap<>();
 
     private Set.Immutable<EdgeOrData<L>> smaller(Set.Immutable<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {

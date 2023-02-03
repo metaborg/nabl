@@ -1,5 +1,6 @@
 package mb.statix.generator;
 
+import java.util.HashSet;
 import java.util.Map.Entry;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -80,7 +81,7 @@ public class SearchState {
     public SearchState update(Spec spec, Iterable<IConstraint> add, Iterable<IConstraint> remove) {
         final ICompleteness.Transient completeness = this.completeness.melt();
         final Set.Transient<IConstraint> constraints = this.constraints.asTransient();
-        final java.util.Set<CriticalEdge> removedEdges = Sets.newHashSet();
+        final java.util.Set<CriticalEdge> removedEdges = new HashSet<CriticalEdge>();
         add.forEach(c -> {
             if(constraints.__insert(c)) {
                 completeness.add(c, spec, state.unifier());
