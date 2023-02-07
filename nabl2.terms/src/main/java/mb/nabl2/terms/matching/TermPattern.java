@@ -54,22 +54,22 @@ public class TermPattern {
             }
         }
 
-        public Pattern newList(Iterable<? extends Pattern> args) {
+        public Pattern newList(List<? extends Pattern> args) {
             return newListTail(args, newNil(), Attachments.empty());
         }
 
-        public Pattern newList(Iterable<? extends Pattern> args, IAttachments attachments) {
+        public Pattern newList(List<? extends Pattern> args, IAttachments attachments) {
             return newListTail(args, newNil(attachments), attachments);
         }
 
-        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail) {
+        public Pattern newListTail(List<? extends Pattern> args, Pattern tail) {
             return newListTail(args, tail, Attachments.empty());
         }
 
-        public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail, IAttachments attachments) {
+        public Pattern newListTail(List<? extends Pattern> args, Pattern tail, IAttachments attachments) {
             Pattern list = tail;
             for(ListIterator<? extends Pattern> iter =
-                   ImList.Immutable.copyOf(args).listIterator(); iter.hasPrevious(); ) {
+                   args.listIterator(args.size()); iter.hasPrevious(); ) {
                 Pattern elem = iter.previous();
                 list = newCons(elem, list, attachments);
             }
