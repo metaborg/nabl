@@ -13,7 +13,7 @@ import mb.nabl2.terms.ITerm;
 @Serial.Version(value = 42L)
 abstract class AAppl0Term extends AbstractApplTerm implements IApplTerm {
 
-    private static final List<ITerm> EMPTY_ARGS = ImList.Immutable.of();
+    private static final ImList.Immutable<ITerm> EMPTY_ARGS = ImList.Immutable.of();
 
     @Override @Value.Check protected AAppl0Term check() {
         return this;
@@ -21,7 +21,7 @@ abstract class AAppl0Term extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();
 
-    @Override public List<ITerm> getArgs() {
+    @Override public ImList.Immutable<ITerm> getArgs() {
         return EMPTY_ARGS;
     }
 

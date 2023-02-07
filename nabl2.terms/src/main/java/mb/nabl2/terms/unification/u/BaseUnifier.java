@@ -641,7 +641,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars) {
             final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retainAll(vars);
             unifier = result.unifier();
             return result.result();
@@ -653,7 +653,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars) {
             final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.removeAll(vars);
             unifier = result.unifier();
             return result.result();

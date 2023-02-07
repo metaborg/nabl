@@ -34,7 +34,7 @@ public class TermBuild {
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
-            final List<ITerm> argList = ImList.Immutable.copyOf(args);
+            final ImList.Immutable<ITerm> argList = ImList.Immutable.copyOf(args);
             switch(argList.size()) {
                 case 0: {
                     if((attachments == null || attachments.isEmpty())) {
@@ -77,9 +77,9 @@ public class TermBuild {
                 }
                 default: {
                     if((attachments == null || attachments.isEmpty())) {
-                        return ApplTerm.of(op, args);
+                        return ApplTerm.of(op, argList);
                     } else {
-                        return ApplTerm.builder().op(op).args(args).attachments(attachments).build();
+                        return ApplTerm.builder().op(op).args(argList).attachments(attachments).build();
                     }
                 }
             }

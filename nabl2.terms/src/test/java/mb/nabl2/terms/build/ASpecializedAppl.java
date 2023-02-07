@@ -1,6 +1,5 @@
 package mb.nabl2.terms.build;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.immutables.serial.Serial;
@@ -27,7 +26,7 @@ abstract class ASpecializedAppl extends AbstractApplTerm {
         return OP;
     }
 
-    @Override public List<ITerm> getArgs() {
+    @Override public ImList.Immutable<ITerm> getArgs() {
         return ImList.Immutable.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
     }
 

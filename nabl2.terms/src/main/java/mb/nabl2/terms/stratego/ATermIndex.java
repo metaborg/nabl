@@ -4,7 +4,6 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -45,7 +44,7 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
         return OP;
     }
 
-    @Value.Lazy @Override public List<ITerm> getArgs() {
+    @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
         return ImList.Immutable.of(B.newString(getResource()), B.newInt(getId()));
     }
 

@@ -328,7 +328,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Retain only the given variables in the domain of this unifier. Returns a substitution to eliminate the
          * removed variables from terms.
          */
-        @Override ISubstitution.Immutable retainAll(Iterable<ITermVar> vars);
+        @Override ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Remove the given variable from the domain of this unifier. Returns a substitution to eliminate the variable
@@ -340,7 +340,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Remove the given variables from the domain of this unifier. Returns a substitution to eliminate the variable
          * from terms.
          */
-        @Override ISubstitution.Immutable removeAll(Iterable<ITermVar> vars);
+        @Override ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.

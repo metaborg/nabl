@@ -165,7 +165,7 @@ public class UnifierFiniteTest {
                 PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(a));
         assertTrue(phi.domainSet().contains(b));
-        phi.removeAll(Arrays.asList(a, b));
+        phi.removeAll(Set.Immutable.of(a, b));
         assertFalse(phi.domainSet().contains(a));
         assertFalse(phi.domainSet().contains(b));
         assertTrue(phi.diff(c, B.newAppl(f, d)).orElseThrow(() -> new RuntimeException()).isEmpty());

@@ -206,7 +206,7 @@ public class StrategoTerms {
 
         final IStrategoList annos = term.getAnnotations();
         if(!annos.isEmpty()) {
-            b.put(StrategoAnnotations.class, StrategoAnnotations.of(annos));
+            b.put(StrategoAnnotations.class, StrategoAnnotations.of(ImList.Immutable.copyOf(annos)));
         }
 
         return b.build();

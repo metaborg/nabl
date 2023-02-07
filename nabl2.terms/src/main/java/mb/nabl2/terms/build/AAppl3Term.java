@@ -1,7 +1,5 @@
 package mb.nabl2.terms.build;
 
-import java.util.List;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.ImList;
@@ -25,7 +23,7 @@ abstract class AAppl3Term extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter public abstract ITerm getArg2();
 
-    @Override public List<ITerm> getArgs() {
+    @Override public ImList.Immutable<ITerm> getArgs() {
         return ImList.Immutable.of(getArg0(), getArg1(), getArg2());
     }
 
