@@ -20,7 +20,7 @@ import com.google.common.collect.Multimap;
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;

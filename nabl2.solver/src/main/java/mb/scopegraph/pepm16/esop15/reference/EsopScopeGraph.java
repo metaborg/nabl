@@ -271,7 +271,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         }
 
         @Override public boolean addIncompleteDirectEdge(S scope, L label, V var,
-                Function1<V, ? extends Iterable<? extends V>> norm) {
+                Function1<V, ? extends Set.Immutable<? extends V>> norm) {
             incompleteDirectEdges.put(Tuple2.of(scope, label), var, norm.apply(var));
             return true;
         }
@@ -281,7 +281,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         }
 
         @Override public boolean addIncompleteImportEdge(S scope, L label, V var,
-                Function1<V, ? extends Iterable<? extends V>> norm) {
+                Function1<V, ? extends Set.Immutable<? extends V>> norm) {
             incompleteImportEdges.put(Tuple2.of(scope, label), var, norm.apply(var));
             return true;
         }
@@ -291,7 +291,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         }
 
         @Override public boolean addAll(IEsopScopeGraph<S, L, O, V> other,
-                Function1<V, ? extends Iterable<? extends V>> norm) {
+                Function1<V, ? extends Set.Immutable<? extends V>> norm) {
             boolean change = false;
 
             change |= other.getDecls().stream().filter(e -> addDecl(e._2(), e._1())).count() > 0;
@@ -313,13 +313,13 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         // -------------------------
 
-        @Override public List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm,
+        @Override public List<CriticalEdge> reduceAll(Function1<V, ? extends Set.Immutable<? extends V>> norm,
                 Function1<V, S> fs, Function1<V, O> fo) {
             return reduce(Lists.newArrayList(incompleteVars()), norm, fs, fo);
         }
 
         @Override public List<CriticalEdge> reduce(Iterable<? extends V> vs,
-                Function1<V, ? extends Iterable<? extends V>> norm, Function1<V, S> fs, Function1<V, O> fo) {
+                Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, S> fs, Function1<V, O> fo) {
             final ImmutableList.Builder<CriticalEdge> reduced = ImmutableList.builder();
             this.<S>reduce(incompleteDirectEdges, vs, norm, fs, this::addDirectEdge, reduced);
             this.<O>reduce(incompleteImportEdges, vs, norm, fo, this::addImportEdge, reduced);
@@ -327,7 +327,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
         }
 
         private <X> void reduce(IndexedBagMultimap<Tuple2<S, L>, V, V> index, Iterable<? extends V> vs,
-                Function1<V, ? extends Iterable<? extends V>> norm, Function1<V, X> f, Predicate3<S, L, X> add,
+                Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, X> f, Predicate3<S, L, X> add,
                 ImmutableList.Builder<CriticalEdge> reduced) {
             for(V v : vs) {
                 for(Map.Entry<Tuple2<S, L>, V> slv : index.reindex(v, norm)) {

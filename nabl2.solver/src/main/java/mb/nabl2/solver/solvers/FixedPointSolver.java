@@ -5,6 +5,7 @@ import java.util.Deque;
 import java.util.List;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -65,13 +66,13 @@ public class FixedPointSolver {
 
         final Action1<Iterable<CriticalEdge>> resolveCriticalEdges = es -> {
             es.forEach(e -> {
-                Collection<IConstraint> newConstraints = criticalEdgeDelays.reindex(e, ce -> Iterables2.empty());
+                Collection<IConstraint> newConstraints = criticalEdgeDelays.reindex(e, ce -> CapsuleUtil.immutableSet());
                 newConstraints.forEach(constraints::addFirst);
             });
         };
         final Action1<Iterable<String>> resolveRelation = names -> {
             names.forEach(name -> {
-                Collection<IConstraint> newConstraints = relationDelays.reindex(name, ce -> Iterables2.empty());
+                Collection<IConstraint> newConstraints = relationDelays.reindex(name, ce -> CapsuleUtil.immutableSet());
                 newConstraints.forEach(constraints::addFirst);
             });
         };

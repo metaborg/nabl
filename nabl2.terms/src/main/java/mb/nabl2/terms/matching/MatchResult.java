@@ -18,7 +18,7 @@ public class MatchResult implements Serializable {
     private final Set<ITermVar> constrainedVars;
     private final List<Tuple2<ITerm, ITerm>> equalities;
 
-    MatchResult(Immutable substitution, Set<ITermVar> constrainedVars, List<Tuple2<ITerm, ITerm>> equalities) {
+    MatchResult(ISubstitution.Immutable substitution, Set<ITermVar> constrainedVars, List<Tuple2<ITerm, ITerm>> equalities) {
         this.substitution = substitution;
         this.constrainedVars = constrainedVars;
         this.equalities = equalities;

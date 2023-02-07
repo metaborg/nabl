@@ -24,7 +24,7 @@ import mb.p_raffrayi.impl.envdiff.IEnvDiffer;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 public class EnvDiffTest extends BaseDifferTest {

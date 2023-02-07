@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.diff;
 
+import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.tuple.Tuple2;
 

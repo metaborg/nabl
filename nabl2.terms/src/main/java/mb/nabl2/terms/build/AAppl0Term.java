@@ -4,8 +4,7 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -14,7 +13,7 @@ import mb.nabl2.terms.ITerm;
 @Serial.Version(value = 42L)
 abstract class AAppl0Term extends AbstractApplTerm implements IApplTerm {
 
-    private static final List<ITerm> EMPTY_ARGS = ImmutableList.of();
+    private static final List<ITerm> EMPTY_ARGS = ImList.Immutable.of();
 
     @Override @Value.Check protected AAppl0Term check() {
         return this;

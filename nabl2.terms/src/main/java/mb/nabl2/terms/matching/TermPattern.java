@@ -1,14 +1,13 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Predicate1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
@@ -18,6 +17,8 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class TermPattern {
 
@@ -45,7 +46,7 @@ public class TermPattern {
         }
 
         public Pattern newTuple(Iterable<? extends Pattern> args, IAttachments attachments) {
-            final List<Pattern> argList = ImmutableList.copyOf(args);
+            final List<Pattern> argList = ImList.Immutable.copyOf(args);
             if(argList.size() == 1) {
                 return argList.get(0);
             } else {
@@ -67,7 +68,9 @@ public class TermPattern {
 
         public Pattern newListTail(Iterable<? extends Pattern> args, Pattern tail, IAttachments attachments) {
             Pattern list = tail;
-            for(Pattern elem : ImmutableList.copyOf(args).reverse()) {
+            for(ListIterator<? extends Pattern> iter =
+                   ImList.Immutable.copyOf(args).listIterator(); iter.hasPrevious(); ) {
+                Pattern elem = iter.previous();
                 list = newCons(elem, list, attachments);
             }
             return list;
@@ -134,11 +137,11 @@ public class TermPattern {
             return term.match(Terms.cases(
                 appl -> {
                     final List<ITerm> args = appl.getArgs();
-                    final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                    final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
                     for(ITerm arg : args) {
                         newArgs.add(fromTerm(arg, isWildcard));
                     }
-                    return new ApplPattern(appl.getOp(), newArgs.build(), appl.getAttachments());
+                    return new ApplPattern(appl.getOp(), newArgs.freeze(), appl.getAttachments());
                 },
                 list -> list.match(ListTerms.cases(
                     cons -> new ConsPattern(fromTerm(cons.getHead(), isWildcard), fromTerm(cons.getTail(), isWildcard), cons.getAttachments()),
@@ -155,17 +158,17 @@ public class TermPattern {
             // @formatter:on
         }
 
-        public Optional<ISubstitution.Immutable> match(final Iterable<Pattern> patterns, final Iterable<ITerm> terms) {
+        public Optional<ISubstitution.Immutable> match(final Iterable<Pattern> patterns, final Collection<ITerm> terms) {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms));
         }
 
         public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(final Iterable<Pattern> patterns,
-                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier) {
+                final Collection<? extends ITerm> terms, IUnifier.Immutable unifier) {
             return TermPattern.P.newTuple(patterns).match(B.newTuple(terms), unifier);
         }
 
         public Optional<MatchResult> matchWithEqs(final Iterable<Pattern> patterns,
-                final Iterable<? extends ITerm> terms, IUnifier.Immutable unifier, VarProvider fresh) {
+                final Collection<? extends ITerm> terms, IUnifier.Immutable unifier, VarProvider fresh) {
             return TermPattern.P.newTuple(patterns).matchWithEqs(B.newTuple(terms), unifier, fresh);
         }
 

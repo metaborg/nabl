@@ -22,7 +22,7 @@ import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public abstract class PRaffrayiTestBase {
 

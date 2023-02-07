@@ -10,8 +10,7 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
@@ -47,7 +46,7 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
     }
 
     @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getResource()), B.newInt(getId()));
+        return ImList.Immutable.of(B.newString(getResource()), B.newInt(getId()));
     }
 
     public static IMatcher<TermIndex> matcher() {

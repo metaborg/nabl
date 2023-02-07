@@ -1,7 +1,5 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.Terms.TUPLE_OP;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +7,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Function3;
@@ -18,8 +17,6 @@ import org.metaborg.util.functions.Function6;
 import org.metaborg.util.functions.Function7;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IApplTerm;
@@ -35,6 +32,8 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
+
+import static mb.nabl2.terms.Terms.TUPLE_OP;
 
 public class TermMatch {
 
@@ -305,14 +304,14 @@ public class TermMatch {
         }
 
         public <T, R> IMatcher<R> listElems(IMatcher<T> m,
-                Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
+                Function2<? super IListTerm, ? super ImList.Immutable<T>, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
                     List<Optional<T>> os = new ArrayList<>();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t, unifier));
                     }
-                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
+                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImList.Immutable.copyOf(ts)));
                 }, this::empty, this::empty, this::empty, this::empty));
             };
         }

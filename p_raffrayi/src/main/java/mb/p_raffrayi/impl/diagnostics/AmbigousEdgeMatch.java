@@ -17,7 +17,7 @@ import com.google.common.collect.Lists;
 
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public class AmbigousEdgeMatch<S, L, D> {
 

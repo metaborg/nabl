@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
@@ -23,11 +23,11 @@ public interface IRenaming {
     ITermVar rename(ITermVar term);
 
     default List<ITermVar> rename(List<ITermVar> terms) {
-        final ImmutableList.Builder<ITermVar> vars = ImmutableList.builderWithExpectedSize(terms.size());
+        final ImList.Transient<ITermVar> vars = new ImList.Transient<>(terms.size());
         for(ITermVar term : terms) {
             vars.add(rename(term));
         }
-        return vars.build();
+        return vars.freeze();
     }
 
     default Set<ITermVar> rename(Set<ITermVar> terms) {
@@ -37,11 +37,11 @@ public interface IRenaming {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        final ImmutableList.Builder<ITerm> newTerms = ImmutableList.builderWithExpectedSize(terms.size());
+        final ImList.Transient<ITerm> newTerms = new ImList.Transient<>(terms.size());
         for(ITerm term : terms) {
             newTerms.add(apply(term));
         }
-        return newTerms.build();
+        return newTerms.freeze();
     }
 
     ISubstitution.Immutable asSubstitution();

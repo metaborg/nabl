@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
 import mb.nabl2.util.graph.alg.counting.CountingAlg;
 import mb.nabl2.util.graph.alg.dred.DRedTcRelation;
@@ -119,8 +119,7 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
                 Set<V> successorRoots = counting.getAllReachableTargets(targetRoot);
 
                 // 1. intersection of source and target roots, these will be in the merged SCC
-                Set<V> isectRoots = Sets.intersection(predecessorRoots, successorRoots).copyInto(
-                    new HashSet<V>());
+                Set<V> isectRoots = new HashSet<>(Sets.intersection(predecessorRoots, successorRoots));
                 isectRoots.add(sourceRoot);
                 isectRoots.add(targetRoot);
 
@@ -135,8 +134,8 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
                     for (V sourceSCC : sourceSCCs) {
                         targetLoop: for (V targetSCC : targetSCCs) {
                             if (counting.isReachable(sourceSCC, targetSCC)) continue targetLoop;
-                            
-                            boolean needsNotification = 
+
+                            boolean needsNotification =
                                 // Case 1. sourceSCC and targetSCC are the same and it is a one sized scc.
                                 // Issue notifications only if there is no self-loop present at the moment
                                 (sourceSCC.equals(targetSCC) && sccs.getPartition(sourceSCC).size() == 1 && GraphHelper
@@ -415,8 +414,8 @@ public class IncSCCAlg<V> implements IGraphObserver<V>, ITcDataSource<V> {
         if (!isReachable(source, target)) {
             return null;
         } else {
-            Set<V> sccsInSubGraph = Sets.intersection(counting.getAllReachableTargets(source),
-                    counting.getAllReachableSources(target)).copyInto(new HashSet<V>());
+            Set<V> sccsInSubGraph = new HashSet<>(Sets.intersection(counting.getAllReachableTargets(source),
+                    counting.getAllReachableSources(target)));
             sccsInSubGraph.add(sccs.find(source));
             sccsInSubGraph.add(sccs.find(target));
             Set<V> nodesInSubGraph = CollectionsFactory.createSet();

@@ -4,7 +4,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
@@ -34,7 +34,7 @@ public class TermBuild {
 
         @Override public IApplTerm newAppl(String op, Iterable<? extends ITerm> args,
                 @Nullable IAttachments attachments) {
-            final List<ITerm> argList = ImmutableList.copyOf(args);
+            final List<ITerm> argList = ImList.Immutable.copyOf(args);
             switch(argList.size()) {
                 case 0: {
                     if((attachments == null || attachments.isEmpty())) {

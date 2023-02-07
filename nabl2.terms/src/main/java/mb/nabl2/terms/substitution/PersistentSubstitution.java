@@ -1,15 +1,12 @@
 package mb.nabl2.terms.substitution;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.io.Serializable;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSet;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
@@ -17,6 +14,8 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public abstract class PersistentSubstitution implements ISubstitution {
 
@@ -51,7 +50,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final ImmutableList<ITerm> newArgs;
+                final ImList.Immutable<ITerm> newArgs;
                 if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
                     return appl;
                 }

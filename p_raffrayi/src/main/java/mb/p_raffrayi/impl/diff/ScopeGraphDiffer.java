@@ -59,10 +59,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     // Intermediate match results
 
-    private final mb.scopegraph.oopsla20.diff.BiMap.Transient<S> matchedScopes =
-            mb.scopegraph.oopsla20.diff.BiMap.Transient.of();
-    private final mb.scopegraph.oopsla20.diff.BiMap.Transient<Edge<S, L>> matchedEdges =
-            mb.scopegraph.oopsla20.diff.BiMap.Transient.of();
+    private final org.metaborg.util.collection.BiMap.Transient<S> matchedScopes =
+            org.metaborg.util.collection.BiMap.Transient.of();
+    private final org.metaborg.util.collection.BiMap.Transient<Edge<S, L>> matchedEdges =
+            org.metaborg.util.collection.BiMap.Transient.of();
 
     private final Multimap<Tuple2<S, L>, Edge<S, L>> addedEdges = HashMultimap.create();
     private final Multimap<Tuple2<S, L>, Edge<S, L>> matchedOutgoingEdges = HashMultimap.create();
@@ -263,7 +263,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return result;
     }
 
-    @Override public boolean matchScopes(mb.scopegraph.oopsla20.diff.BiMap.Immutable<S> scopes) {
+    @Override public boolean matchScopes(org.metaborg.util.collection.BiMap.Immutable<S> scopes) {
         return matchScopes(scopes.asMap());
     }
 

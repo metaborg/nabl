@@ -8,7 +8,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import mb.nabl2.terms.matching.TermMatch;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -21,8 +21,6 @@ import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.StrategoPlaceholder;
 
-import com.google.common.collect.ImmutableList;
-
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -30,6 +28,8 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.VarProvider;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class StrategoTerms {
 
@@ -149,20 +149,20 @@ public class StrategoTerms {
                     return B.newVar(resource, name, attachments);
                 } else {
                     final IStrategoTerm[] subTerms = appl.getAllSubterms();
-                    final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                    final ImList.Transient<ITerm> args = new ImList.Transient<>(subTerms.length);
                     for(IStrategoTerm subTerm : subTerms) {
                         args.add(fromStratego(subTerm, varProvider));
                     }
-                    return B.newAppl(appl.getConstructor().getName(), args.build(), attachments);
+                    return B.newAppl(appl.getConstructor().getName(), args.freeze(), attachments);
                 }
             },
             tuple -> {
                 final IStrategoTerm[] subTerms = tuple.getAllSubterms();
-                final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                final ImList.Transient<ITerm> args = new ImList.Transient<>(subTerms.length);
                 for(IStrategoTerm subTerm : subTerms) {
                     args.add(fromStratego(subTerm, varProvider));
                 }
-                return B.newTuple(args.build(), attachments);
+                return B.newTuple(args.freeze(), attachments);
             },
             list -> fromStrategoList(list, varProvider),
             integer -> B.newInt(integer.intValue(), attachments),

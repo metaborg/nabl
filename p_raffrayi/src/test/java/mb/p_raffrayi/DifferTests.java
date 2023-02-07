@@ -18,7 +18,7 @@ import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.impl.Result;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;

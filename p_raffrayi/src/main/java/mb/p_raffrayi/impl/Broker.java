@@ -48,7 +48,7 @@ import mb.p_raffrayi.actors.impl.ActorSystem;
 import mb.p_raffrayi.actors.impl.IActorScheduler;
 import mb.p_raffrayi.actors.impl.WonkyScheduler;
 import mb.p_raffrayi.actors.impl.WorkStealingScheduler;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, D>>
         implements ChandyMisraHaas.Host<IProcess<S, L, D>>, IDeadlockProtocol<S, L, D> {

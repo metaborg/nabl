@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;

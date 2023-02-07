@@ -11,14 +11,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.BagMap;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -188,13 +185,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             }
 
             private void occursCheck(final PersistentUnifier.Immutable unifier) throws OccursException {
-                final ImmutableSet.Builder<ITermVar> _cyclicVars = ImmutableSet.builderWithExpectedSize(0);
+                final Set.Transient<ITermVar> _cyclicVars = Set.Transient.of();
                 for(ITermVar var : result) {
                     if(unifier.isCyclic(var)) {
-                        _cyclicVars.add(var);
+                        _cyclicVars.__insert(var);
                     }
                 }
-                final ImmutableSet<ITermVar> cyclicVars = _cyclicVars.build();
+                final Set.Immutable<ITermVar> cyclicVars = _cyclicVars.freeze();
                 if(!cyclicVars.isEmpty()) {
                     throw new OccursException(cyclicVars);
                 }
@@ -445,7 +442,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return retainAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars) {
             return removeAll(Set.Immutable.subtract(domainSet(), CapsuleUtil.toSet(vars)));
         }
 
@@ -457,7 +454,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return removeAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Set.Immutable<ITermVar> vars) {
             return new RemoveAll(this, vars).apply();
         }
 
@@ -465,9 +462,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private final Set.Immutable<ITermVar> vars;
 
-            public RemoveAll(PersistentUnifier.Immutable unifier, Iterable<ITermVar> vars) {
+            public RemoveAll(PersistentUnifier.Immutable unifier, Set.Immutable<ITermVar> vars) {
                 super(unifier);
-                this.vars = CapsuleUtil.toSet(vars);
+                this.vars = vars;
             }
 
             public ImmutableResult<ISubstitution.Immutable> apply() {
@@ -482,7 +479,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(vars.isEmpty()) {
                     return subst.freeze();
                 }
-                final ListMultimap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
+                final BagMap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
@@ -700,8 +697,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return reps.get(var);
         }
 
-        protected ListMultimap<ITermVar, ITermVar> getInvReps() {
-            final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
+        protected BagMap<ITermVar, ITermVar> getInvReps() {
+            final BagMap<ITermVar, ITermVar> invReps = new BagMap<>();
             for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
                 invReps.put(e.getValue(), e.getKey());
             }

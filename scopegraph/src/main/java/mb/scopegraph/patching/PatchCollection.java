@@ -13,7 +13,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 
 import io.usethesource.capsule.Set;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public abstract class PatchCollection<S> implements IPatchCollection<S> {
 

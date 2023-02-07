@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -24,11 +24,11 @@ public interface ISubstitution {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        final ImmutableList.Builder<ITerm> newTerms = ImmutableList.builderWithExpectedSize(terms.size());
+        final ImList.Transient<ITerm> newTerms = new ImList.Transient<>(terms.size());
         for(ITerm term : terms) {
             newTerms.add(apply(term));
         }
-        return newTerms.build();
+        return newTerms.freeze();
     }
 
     interface Immutable extends ISubstitution {

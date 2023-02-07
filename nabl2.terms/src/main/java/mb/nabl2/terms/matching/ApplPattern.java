@@ -1,18 +1,15 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IAttachments;
@@ -23,6 +20,8 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 public final class ApplPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
@@ -32,7 +31,7 @@ public final class ApplPattern extends Pattern {
     ApplPattern(String op, Iterable<? extends Pattern> args, IAttachments attachments) {
         super(attachments);
         this.op = op;
-        this.args = ImmutableList.copyOf(args);
+        this.args = ImList.Immutable.copyOf(args);
     }
 
     public String getOp() {
@@ -76,28 +75,28 @@ public final class ApplPattern extends Pattern {
     }
 
     @Override public Pattern apply(IRenaming subst) {
-        final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.apply(subst));
         }
-        return new ApplPattern(op, newArgs.build(), getAttachments());
+        return new ApplPattern(op, newArgs.freeze(), getAttachments());
     }
 
     @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {
-        final ImmutableList.Builder<Pattern> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.eliminateWld(fresh));
         }
-        return new ApplPattern(op, newArgs.build(), getAttachments());
+        return new ApplPattern(op, newArgs.freeze(), getAttachments());
     }
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
-        final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+        final ImList.Transient<ITerm> newArgs = new ImList.Transient<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.asTerm(equalities, fresh));
         }
-        return B.newAppl(op, newArgs.build(), getAttachments());
+        return B.newAppl(op, newArgs.freeze(), getAttachments());
     }
 
     @Override public String toString() {

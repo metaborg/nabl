@@ -9,6 +9,7 @@ import org.metaborg.util.tuple.Tuple2;
 
 import com.google.common.annotations.Beta;
 
+import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.ILabel;
 import mb.scopegraph.pepm16.IOccurrence;
 import mb.scopegraph.pepm16.IScope;
@@ -57,22 +58,22 @@ public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends I
 
         boolean addDirectEdge(S sourceScope, L label, S targetScope);
 
-        boolean addIncompleteDirectEdge(S scope, L label, V var, Function1<V, ? extends Iterable<? extends V>> norm);
+        boolean addIncompleteDirectEdge(S scope, L label, V var, Function1<V, ? extends Set.Immutable<? extends V>> norm);
 
         boolean addExportEdge(O decl, L label, S scope);
 
         boolean addImportEdge(S scope, L label, O ref);
 
-        boolean addIncompleteImportEdge(S scope, L label, V var, Function1<V, ? extends Iterable<? extends V>> norm);
+        boolean addIncompleteImportEdge(S scope, L label, V var, Function1<V, ? extends Set.Immutable<? extends V>> norm);
 
         Iterable<V> incompleteVars();
 
-        boolean addAll(IEsopScopeGraph<S, L, O, V> other, Function1<V, ? extends Iterable<? extends V>> norm);
+        boolean addAll(IEsopScopeGraph<S, L, O, V> other, Function1<V, ? extends Set.Immutable<? extends V>> norm);
 
-        List<CriticalEdge> reduceAll(Function1<V, ? extends Iterable<? extends V>> norm, Function1<V, S> fs,
+        List<CriticalEdge> reduceAll(Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, S> fs,
                 Function1<V, O> fo);
 
-        List<CriticalEdge> reduce(Iterable<? extends V> vs, Function1<V, ? extends Iterable<? extends V>> norm,
+        List<CriticalEdge> reduce(Iterable<? extends V> vs, Function1<V, ? extends Set.Immutable<? extends V>> norm,
                 Function1<V, S> fs, Function1<V, O> fo);
 
         // -----------------------

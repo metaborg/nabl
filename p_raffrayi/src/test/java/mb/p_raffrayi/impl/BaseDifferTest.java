@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 import mb.p_raffrayi.impl.diff.IDifferDataOps;
 import mb.p_raffrayi.impl.diff.IDifferOps;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public abstract class BaseDifferTest {
 

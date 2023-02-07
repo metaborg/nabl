@@ -9,7 +9,7 @@ import org.metaborg.util.future.IFuture;
 import com.google.common.collect.Multimap;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.patching.IPatchCollection;

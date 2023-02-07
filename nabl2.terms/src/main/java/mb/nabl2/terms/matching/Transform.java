@@ -1,25 +1,24 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
 
 public class Transform {
 
@@ -31,7 +30,7 @@ public class Transform {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
-                    final ImmutableList<ITerm> newArgs;
+                    final ImList.Immutable<ITerm> newArgs;
                     if((newArgs = Terms.applyLazy(appl.getArgs(), sometd(m)::apply)) == null) {
                         return appl;
                     }
@@ -55,7 +54,7 @@ public class Transform {
                 // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(
                     (appl) -> {
-                        final ImmutableList<ITerm> newArgs;
+                        final ImList.Immutable<ITerm> newArgs;
                         if((newArgs = Terms.applyLazy(appl.getArgs(), somebu(m)::apply)) == null) {
                             return appl;
                         }
