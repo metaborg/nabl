@@ -21,6 +21,9 @@ rules
   stx--index-ast(|source) =
     prim("SG_index_ast", source)
 
+  stx--index-more-ast(|source) =
+    prim("SG_index_more_ast", source)
+
   stx--get-ast-index =
     prim("SG_get_ast_index")
 
