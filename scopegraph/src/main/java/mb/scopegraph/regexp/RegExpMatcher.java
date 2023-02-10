@@ -1,6 +1,7 @@
 package mb.scopegraph.regexp;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
@@ -11,9 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
+import org.metaborg.util.collection.Sets;
 
 import mb.scopegraph.regexp.impl.RegExpNormalizingBuilder;
 import mb.scopegraph.regexp.impl.RegExps;
@@ -74,12 +73,12 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions = new HashMap<>();
         final Map<IRegExp<S>, IRegExp<S>> defaultTransitions = new HashMap<>();
         final Map<IRegExp<S>, Set<IRegExp<S>>> reverseTransitions = new HashMap<>();
-        final Deque<IRegExp<S>> worklist = Queues.newArrayDeque();
+        final Deque<IRegExp<S>> worklist = new ArrayDeque<>();
         worklist.push(initial);
         worklist.push(empty);
         while(!worklist.isEmpty()) {
             final IRegExp<S> state = worklist.pop();
-            final Map<S, IRegExp<S>> transitions = Maps.newHashMapWithExpectedSize(derivers.size());
+            final Map<S, IRegExp<S>> transitions = new HashMap<>(Sets.hashCapacity(derivers.size()));
             if(!stateTransitions.containsKey(state)) {
                 for(Deriver<S> deriver : derivers) {
                     final IRegExp<S> nextState = builder.apply(deriver.apply(state));
@@ -128,10 +127,10 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
             }
         }
         final Set<IRegExp<S>> isNullable =
-                stateTransitions.keySet().stream().filter(RegExps::isNullable).collect(ImmutableSet.toImmutableSet());
+                stateTransitions.keySet().stream().filter(RegExps::isNullable).collect(Collectors.toSet());
 
         // convert maps to object graph
-        Map<IRegExp<S>, State<S>> states = Maps.newHashMapWithExpectedSize(stateTransitions.size());
+        Map<IRegExp<S>, State<S>> states = new HashMap<>(Sets.hashCapacity(stateTransitions.size()));
         for(IRegExp<S> state : stateTransitions.keySet()) {
             final State<S> _state;
             states.put(state, _state = new State<>(state));

@@ -9,16 +9,13 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.BagMap;
 import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -69,7 +66,7 @@ public class ScopeGraphDiffer<S, L, D> {
      * @return Updated differ state. Will always be an extension of {@code initialState}.
      */
     public DifferState.Immutable<S, L, D> doDiff(IScopeGraph.Immutable<S, L, D> current,
-        DifferState.Immutable<S, L, D> initialState, Multimap<S, EdgeOrData<L>> activations) {
+        DifferState.Immutable<S, L, D> initialState, BagMap<S, EdgeOrData<L>> activations) {
         DifferState.Transient<S, L, D> state = initialState.melt();
 
         final Queue<EdgeMatch> worklist = new LinkedList<>();
@@ -183,7 +180,7 @@ public class ScopeGraphDiffer<S, L, D> {
     private Queue<EdgeMatch> scheduleEdgeMatches(IScopeGraph.Immutable<S, L, D> current,
         DifferState.Transient<S, L, D> state, S currentSource, S previousSource, L label) {
 
-        final Set.Immutable<Edge<S, L>> currentEdges = Streams.stream(current.getEdges(currentSource, label))
+        final Set.Immutable<Edge<S, L>> currentEdges = current.getEdges(currentSource, label).stream()
             .map(currentTarget -> new Edge<>(currentSource, label, currentTarget)).collect(CapsuleCollectors.toSet());
         state.seenCurrentEdges().__insertAll(currentEdges);
 
@@ -197,7 +194,7 @@ public class ScopeGraphDiffer<S, L, D> {
             return new LinkedList<>();
         }
 
-        final Set.Immutable<Edge<S, L>> previousEdges = Streams.stream(previous.getEdges(previousSource, label))
+        final Set.Immutable<Edge<S, L>> previousEdges = previous.getEdges(previousSource, label).stream()
             .map(previousTarget -> new Edge<>(previousSource, label, previousTarget))
             .collect(CapsuleCollectors.toSet());
         state.seenPreviousEdges().__insertAll(previousEdges);
@@ -347,7 +344,7 @@ public class ScopeGraphDiffer<S, L, D> {
         final ScopeGraphDiffer<S, L, D> differ = new ScopeGraphDiffer<>(previous, diffOps, statusOps);
         final DifferState.Immutable<S, L, D> initialState = differ.initDiff(s0current, s0previous);
 
-        final Multimap<S, EdgeOrData<L>> initialActivations = ArrayListMultimap.create();
+        final BagMap.Transient<S, EdgeOrData<L>> initialActivations = BagMap.Transient.of();
         initialState.edgeDelays().forEach((s, l) -> initialActivations.put(s, EdgeOrData.edge(l)));
 
         final DifferState.Immutable<S, L, D> state = differ.doDiff(current, initialState, initialActivations);

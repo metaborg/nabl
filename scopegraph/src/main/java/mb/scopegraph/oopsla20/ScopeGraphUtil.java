@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
 public final class ScopeGraphUtil {
 

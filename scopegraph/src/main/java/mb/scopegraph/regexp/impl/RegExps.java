@@ -1,19 +1,18 @@
 package mb.scopegraph.regexp.impl;
 
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.scopegraph.regexp.IAlphabet;
 import mb.scopegraph.regexp.IRegExp;
 
 public final class RegExps {
 
     public static <S> IAlphabet<S> alphabet(IRegExp<S> re) {
-        final ImmutableSet.Builder<S> alphabet = ImmutableSet.builder();
+        final Set.Transient<S> alphabet = Set.Transient.of();
         alphabet(re, alphabet);
-        return new FiniteAlphabet<>(alphabet.build());
+        return new FiniteAlphabet<>(alphabet.freeze());
     }
 
-    private static <S> void alphabet(IRegExp<S> re, ImmutableSet.Builder<S> alphabet) {
+    private static <S> void alphabet(IRegExp<S> re, Set.Transient<S> alphabet) {
         new IRegExp.ICases<S, S>() {
 
             @Override public S emptySet() {

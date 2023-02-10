@@ -1,12 +1,9 @@
 package mb.scopegraph.oopsla20.diff;
 
+import org.metaborg.util.collection.BagMap;
 import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Set;
 
@@ -23,7 +20,7 @@ public abstract class DifferState<S, L, D> {
         private final Set.Transient<S> seenPreviousScopes;
         private final Set.Transient<Edge<S, L>> seenPreviousEdges;
 
-        private final Multimap<S, L> edgeDelays;
+        private final BagMap.Transient<S, L> edgeDelays;
 
         /**
          * Matches that need to wait for their target scope (the key) to be activated.
@@ -32,7 +29,7 @@ public abstract class DifferState<S, L, D> {
 
         private Transient(BiMap.Transient<S> matchedScopes, BiMap.Transient<Edge<S, L>> matchedEdges,
             Set.Transient<S> seenCurrentScopes, Set.Transient<Edge<S, L>> seenCurrentEdges,
-            Set.Transient<S> seenPreviousScopes, Set.Transient<Edge<S, L>> seenPreviousEdges, Multimap<S, L> edgeDelays,
+            Set.Transient<S> seenPreviousScopes, Set.Transient<Edge<S, L>> seenPreviousEdges, BagMap.Transient<S, L> edgeDelays,
             BiMultimap.Transient<S, Tuple2<S, L>> dataDelays) {
             this.matchedScopes = matchedScopes;
             this.matchedEdges = matchedEdges;
@@ -84,7 +81,7 @@ public abstract class DifferState<S, L, D> {
             return seenPreviousEdges;
         }
 
-        public Multimap<S, L> edgeDelays() {
+        public BagMap.Transient<S, L> edgeDelays() {
             return edgeDelays;
         }
 
@@ -100,13 +97,13 @@ public abstract class DifferState<S, L, D> {
         public Immutable<S, L, D> freeze() {
             return new Immutable<>(matchedScopes.freeze(), matchedEdges.freeze(), seenCurrentScopes.freeze(),
                 seenCurrentEdges.freeze(), seenPreviousScopes.freeze(), seenPreviousEdges.freeze(),
-                ImmutableMultimap.copyOf(edgeDelays), dataDelays.freeze());
+                edgeDelays.freeze(), dataDelays.freeze());
         }
 
         public static <S, L, D> Transient<S, L, D> of() {
             return new Transient<>(BiMap.Transient.of(), BiMap.Transient.of(), CapsuleUtil.transientSet(),
                 CapsuleUtil.transientSet(), CapsuleUtil.transientSet(), CapsuleUtil.transientSet(),
-                ArrayListMultimap.create(), BiMultimap.Transient.of());
+                BagMap.Transient.of(), BiMultimap.Transient.of());
         }
     }
 
@@ -121,13 +118,13 @@ public abstract class DifferState<S, L, D> {
         private final Set.Immutable<S> seenPreviousScopes;
         private final Set.Immutable<Edge<S, L>> seenPreviousEdges;
 
-        private final ImmutableMultimap<S, L> edgeDelays;
+        private final BagMap.Immutable<S, L> edgeDelays;
         private final BiMultimap.Immutable<S, Tuple2<S, L>> dataDelays;
 
         private Immutable(BiMap.Immutable<S> matchedScopes, BiMap.Immutable<Edge<S, L>> matchedEdges,
             Set.Immutable<S> seenCurrentScopes, Set.Immutable<Edge<S, L>> seenCurrentEdges,
             Set.Immutable<S> seenPreviousScopes, Set.Immutable<Edge<S, L>> seenPreviousEdges,
-            ImmutableMultimap<S, L> edgeDelays, BiMultimap.Immutable<S, Tuple2<S, L>> dataDelays) {
+            BagMap.Immutable<S, L> edgeDelays, BiMultimap.Immutable<S, Tuple2<S, L>> dataDelays) {
             this.matchedScopes = matchedScopes;
             this.matchedEdges = matchedEdges;
             this.seenCurrentScopes = seenCurrentScopes;
@@ -166,7 +163,7 @@ public abstract class DifferState<S, L, D> {
             return seenPreviousEdges;
         }
 
-        public ImmutableMultimap<S, L> edgeDelays() {
+        public BagMap.Immutable<S, L> edgeDelays() {
             return edgeDelays;
         }
 
@@ -177,13 +174,13 @@ public abstract class DifferState<S, L, D> {
         public Transient<S, L, D> melt() {
             return new Transient<>(matchedScopes.melt(), matchedEdges.melt(), seenCurrentScopes.asTransient(),
                 seenCurrentEdges.asTransient(), seenPreviousScopes.asTransient(), seenPreviousEdges.asTransient(),
-                ArrayListMultimap.create(edgeDelays), dataDelays.melt());
+                edgeDelays.asTransient(), dataDelays.melt());
         }
 
         public static <S, L, D> Immutable<S, L, D> of() {
             return new Immutable<>(BiMap.Immutable.of(), BiMap.Immutable.of(), CapsuleUtil.immutableSet(),
                 CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
-                ImmutableMultimap.of(), BiMultimap.Immutable.of());
+                BagMap.Immutable.of(), BiMultimap.Immutable.of());
         }
 
     }

@@ -1,16 +1,12 @@
 package mb.scopegraph.oopsla20.reference;
 
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.task.ICancel;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
-
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.scopegraph.oopsla20.INameResolution;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
@@ -21,7 +17,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     private final IScopeGraph<S, L, D> scopeGraph;
 
     private final EdgeOrData<L> dataLabel;
-    private final Set<EdgeOrData<L>> allLabels;
+    private final java.util.Set<EdgeOrData<L>> allLabels;
 
     private final LabelWF<L> labelWF; // default: true
     private final LabelOrder<L> labelOrder; // default: false
@@ -31,12 +27,13 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private final Predicate2<S, EdgeOrData<L>> isComplete; // default: true
 
-    public NameResolution(IScopeGraph<S, L, D> scopeGraph, Set<L> edgeLabels, LabelWF<L> labelWF,
+    public NameResolution(IScopeGraph<S, L, D> scopeGraph, java.util.Set<L> edgeLabels, LabelWF<L> labelWF,
             LabelOrder<L> labelOrder, DataWF<D> dataWF, DataLeq<D> dataEquiv, Predicate2<S, EdgeOrData<L>> isComplete) {
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data();
-        this.allLabels = Streams.concat(Stream.of(dataLabel), edgeLabels.stream().map(EdgeOrData::edge))
-                .collect(Collectors.toSet());
+        this.allLabels =
+            edgeLabels.stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet())
+                .__insert(dataLabel);
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
         this.dataWF = dataWF;
@@ -55,11 +52,11 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
     // the graph
-    private Env<S, L, D> env_L(Set<EdgeOrData<L>> L, LabelWF<L> re, ScopePath<S, L> path, ICancel cancel)
+    private Env<S, L, D> env_L(java.util.Set<EdgeOrData<L>> L, LabelWF<L> re, ScopePath<S, L> path, ICancel cancel)
             throws ResolutionException, InterruptedException {
         cancel.throwIfCancelled();
         final Env.Builder<S, L, D> env = Env.builder();
-        final Set<EdgeOrData<L>> max_L = max(L);
+        final java.util.Set<EdgeOrData<L>> max_L = max(L);
         for(EdgeOrData<L> l : max_L) {
             final Env<S, L, D> env1 = env_L(smaller(L, l), re, path, cancel);
             env.addAll(env1);
@@ -71,8 +68,8 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         return env.build();
     }
 
-    private Set<EdgeOrData<L>> max(Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> max = ImmutableSet.builder();
+    private java.util.Set<EdgeOrData<L>> max(java.util.Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
+        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
@@ -81,18 +78,18 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
             }
             max.add(l1);
         }
-        return max.build();
+        return max.freeze();
     }
 
-    private Set<EdgeOrData<L>> smaller(Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
+    private java.util.Set<EdgeOrData<L>> smaller(java.util.Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> smaller = ImmutableSet.builder();
+        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.add(l2);
             }
         }
-        return smaller.build();
+        return smaller.freeze();
     }
 
     private Env<S, L, D> minus(Env<S, L, D> env1, Env<S, L, D> env2) throws ResolutionException, InterruptedException {
@@ -201,7 +198,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
             return this;
         }
 
-        @Override public NameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, Set<L> edgeLabels) {
+        @Override public NameResolution<S, L, D> build(IScopeGraph<S, L, D> scopeGraph, java.util.Set<L> edgeLabels) {
             return new NameResolution<>(scopeGraph, edgeLabels, labelWF, labelOrder, dataWF, dataEquiv, isComplete);
         }
 

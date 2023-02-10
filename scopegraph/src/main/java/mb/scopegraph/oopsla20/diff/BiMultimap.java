@@ -3,9 +3,7 @@ package mb.scopegraph.oopsla20.diff;
 import java.util.Collection;
 import java.util.Collections;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import org.metaborg.util.collection.BagMap;
 
 public abstract class BiMultimap<K, V> {
 
@@ -17,10 +15,10 @@ public abstract class BiMultimap<K, V> {
 
     public static class Transient<K, V> extends BiMultimap<K, V> {
 
-        private Multimap<K, V> fwd;
-        private Multimap<V, K> bwd;
+        private BagMap.Transient<K, V> fwd;
+        private BagMap.Transient<V, K> bwd;
 
-        private Transient(Multimap<K, V> fwd, Multimap<V, K> bwd) {
+        private Transient(BagMap.Transient<K, V> fwd, BagMap.Transient<V, K> bwd) {
             this.fwd = fwd;
             this.bwd = bwd;
         }
@@ -39,13 +37,15 @@ public abstract class BiMultimap<K, V> {
         }
 
         protected Collection<K> removeKeys(V value) {
-            fwd.values().removeAll(Collections.singleton(value));
-            return bwd.removeAll(value);
+            final Collection<K> ks = bwd.removeAll(value);
+            fwd.removeAll(ks, value);
+            return ks;
         }
 
         public Collection<V> removeValues(K key) {
-            bwd.values().removeAll(Collections.singleton(key));
-            return fwd.removeAll(key);
+            final Collection<V> vs = fwd.removeAll(key);
+            bwd.removeAll(vs, key);
+            return vs;
         }
 
         @Override public boolean containsValue(V value) {
@@ -53,20 +53,20 @@ public abstract class BiMultimap<K, V> {
         }
 
         public Immutable<K, V> freeze() {
-            return new Immutable<>(ImmutableMultimap.copyOf(fwd), ImmutableMultimap.copyOf(bwd));
+            return new Immutable<>(fwd.freeze(), bwd.freeze());
         }
 
         public static <K, V> Transient<K, V> of() {
-            return new Transient<>(ArrayListMultimap.create(), ArrayListMultimap.create());
+            return new Transient<>(BagMap.Transient.of(), BagMap.Transient.of());
         }
     }
 
     public static class Immutable<K, V> extends BiMultimap<K, V> {
 
-        private ImmutableMultimap<K, V> fwd;
-        private ImmutableMultimap<V, K> bwd;
+        private BagMap.Immutable<K, V> fwd;
+        private BagMap.Immutable<V, K> bwd;
 
-        private Immutable(ImmutableMultimap<K, V> fwd, ImmutableMultimap<V, K> bwd) {
+        private Immutable(BagMap.Immutable<K, V> fwd, BagMap.Immutable<V, K> bwd) {
             this.fwd = fwd;
             this.bwd = bwd;
         }
@@ -84,11 +84,11 @@ public abstract class BiMultimap<K, V> {
         }
 
         public Transient<K, V> melt() {
-            return new Transient<>(ArrayListMultimap.create(fwd), ArrayListMultimap.create(bwd));
+            return new Transient<>(fwd.asTransient(), bwd.asTransient());
         }
 
         public static <K, V> Immutable<K, V> of() {
-            return new Immutable<>(ImmutableMultimap.of(), ImmutableMultimap.of());
+            return new Immutable<>(BagMap.Immutable.of(), BagMap.Immutable.of());
         }
 
     }

@@ -6,10 +6,9 @@ import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.Iterables;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -68,7 +67,7 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
             final Env<S, L, D> env1 = env_L(smaller, re, path, specifics, cancel);
             env.addAll(env1);
             if(env1.isEmpty() || !dataEquiv.alwaysTrue()) {
-                final Env<S, L, D> env2 = env_l(l, re, path, Iterables.concat(specifics, env1), cancel);
+                final Env<S, L, D> env2 = env_l(l, re, path, Iterables2.fromConcat(specifics, env1), cancel);
                 env.addAll(env2);
             }
         }

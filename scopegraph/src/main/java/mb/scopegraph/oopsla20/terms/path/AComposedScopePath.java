@@ -1,15 +1,15 @@
 package mb.scopegraph.oopsla20.terms.path;
 
+import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.ConsList;
-
-import com.google.common.collect.Iterators;
-import com.google.common.math.IntMath;
+import org.metaborg.util.iterators.Iterators2;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.path.IScopePath;
@@ -60,11 +60,11 @@ abstract class AComposedScopePath<S, L> implements IScopePath<S, L> {
     }
 
     @Override public Iterator<IStep<S, L>> iterator() {
-        return Iterators.concat(getLeft().iterator(), getRight().iterator());
+        return Iterators2.fromConcat(getLeft().iterator(), getRight().iterator());
     }
 
     @Override public int hashCode() {
-        return getLeft().hashCode() + (IntMath.pow(31, getLeft().size()) * getRight().hashCode());
+        return getLeft().hashCode() + (BigInteger.valueOf(31).pow(getLeft().size()).intValue() * getRight().hashCode());
     }
 
     @Override public boolean equals(Object obj) {
@@ -77,7 +77,19 @@ abstract class AComposedScopePath<S, L> implements IScopePath<S, L> {
             return false;
         if(!getTarget().equals(other.getTarget()))
             return false;
-        return Iterators.elementsEqual(this.iterator(), other.iterator());
+        Iterator<?> iterator1 = this.iterator();
+        Iterator<?> iterator2 = other.iterator();
+        while(iterator1.hasNext()) {
+            if(!iterator2.hasNext()) {
+                return false;
+            }
+            Object o1 = iterator1.next();
+            Object o2 = iterator2.next();
+            if(!Objects.equals(o1, o2)) {
+                return false;
+            }
+        }
+        return !iterator2.hasNext();
     }
 
     @Override public String toString(boolean includeSource, boolean includeTarget) {

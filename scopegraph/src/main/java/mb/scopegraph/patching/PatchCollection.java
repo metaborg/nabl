@@ -9,8 +9,7 @@ import org.metaborg.util.RefBool;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.metaborg.util.collection.Sets;
 
 import io.usethesource.capsule.Set;
 import org.metaborg.util.collection.BiMap;
@@ -372,7 +371,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     private static <S> void checkInvalidIdentities(java.util.Set<S> identities, java.util.Set<S> nonIdentities)
             throws InvalidPatchCompositionException {
-        final SetView<S> conflicts = Sets.intersection(nonIdentities, identities);
+        final java.util.Set<S> conflicts = Sets.intersection(nonIdentities, identities);
         if(!conflicts.isEmpty()) {
             throw new InvalidPatchCompositionException("Match conflict for " + conflicts + ".");
         }
