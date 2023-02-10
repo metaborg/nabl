@@ -479,7 +479,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(vars.isEmpty()) {
                     return subst.freeze();
                 }
-                final BagMap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
+                final BagMap.Transient<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
@@ -697,8 +697,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return reps.get(var);
         }
 
-        protected BagMap<ITermVar, ITermVar> getInvReps() {
-            final BagMap<ITermVar, ITermVar> invReps = new BagMap<>();
+        protected BagMap.Transient<ITermVar, ITermVar> getInvReps() {
+            final BagMap.Transient<ITermVar, ITermVar> invReps = BagMap.Transient.withSizeEstimate(reps.size());
             for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
                 invReps.put(e.getValue(), e.getKey());
             }
