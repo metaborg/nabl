@@ -17,7 +17,7 @@ dependencies {
 
   api("com.google.guava:guava")
   // Required for Guava >= 27.0:
-  // api("com.google.guava:failureaccess")
+  api("com.google.guava:failureaccess")
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 
