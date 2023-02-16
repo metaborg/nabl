@@ -9,19 +9,19 @@ import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.terms.util.TermUtils;
 
 /**
- * Assigns unique AST indices to the terms of the given subtree that have no index assigned already.
- * <p>
- * The first argument is the resource name, which can be an empty string.
+ * Finds the maximum AST index used in the given subtree;
+ * or fails if no AST index was found.
  */
-public final class SG_index_more_ast extends AbstractPrimitive {
+public final class SG_get_max_ast_index extends AbstractPrimitive {
 
-    public SG_index_more_ast() {
-        super(SG_index_more_ast.class.getSimpleName(), 0, 1);
+    public SG_get_max_ast_index() {
+        super(SG_get_max_ast_index.class.getSimpleName(), 0, 0);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        env.setCurrent(StrategoTermIndices.indexMore(env.current(), TermUtils.toJavaString(tvars[0]), env.getFactory()));
-        return true;
+        final int maxIndex = StrategoTermIndices.findMaxIndex(env.current());
+        env.setCurrent(env.getFactory().makeInt(maxIndex));
+        return maxIndex >= 0;       // Fail if no maxIndex was found
     }
 
 }

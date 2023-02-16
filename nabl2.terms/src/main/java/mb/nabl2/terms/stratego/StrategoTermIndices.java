@@ -1,7 +1,6 @@
 package mb.nabl2.terms.stratego;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,7 +48,7 @@ public final class StrategoTermIndices {
      * @return the AST with term indices
      */
     public static IStrategoTerm indexMore(IStrategoTerm term, String resource, ITermFactory termFactory) {
-        int maxId = findMaxId(term);
+        int maxId = findMaxIndex(term);
         if (maxId >= 0) {
             return new Indexer(resource, termFactory, false, maxId + 1).index(term);
         } else {
@@ -63,10 +62,10 @@ public final class StrategoTermIndices {
      * @param term the subtree to check
      * @return the maximum term index; or -1 if none were found
      */
-    private static int findMaxId(final IStrategoTerm term) {
+    public static int findMaxIndex(final IStrategoTerm term) {
         int maxId = get(term).map(TermIndex::getId).orElse(-1);
         for(IStrategoTerm subterm : term.getSubterms()) {
-            maxId = Math.max(maxId, findMaxId(subterm));
+            maxId = Math.max(maxId, findMaxIndex(subterm));
         }
         return maxId;
     }
