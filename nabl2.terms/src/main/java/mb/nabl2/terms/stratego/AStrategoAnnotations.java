@@ -1,5 +1,7 @@
 package mb.nabl2.terms.stratego;
 
+import java.util.stream.Collectors;
+
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.ImList;
@@ -15,4 +17,11 @@ public abstract class AStrategoAnnotations {
         return getAnnotationList().isEmpty();
     }
 
+    @Override public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("StrategoAnnotations");
+        sb.append("(").append(getAnnotationList().stream().map(Object::toString)
+            .collect(Collectors.joining(",", "[", "]"))).append(")");
+        return sb.toString();
+    }
 }
