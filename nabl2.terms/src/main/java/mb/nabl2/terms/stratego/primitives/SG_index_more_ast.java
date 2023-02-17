@@ -16,11 +16,13 @@ import org.spoofax.terms.util.TermUtils;
 public final class SG_index_more_ast extends AbstractPrimitive {
 
     public SG_index_more_ast() {
-        super(SG_index_more_ast.class.getSimpleName(), 0, 1);
+        super(SG_index_more_ast.class.getSimpleName(), 0, 2);
     }
 
     @Override public boolean call(IContext env, Strategy[] svars, IStrategoTerm[] tvars) throws InterpreterException {
-        env.setCurrent(StrategoTermIndices.indexMore(env.current(), TermUtils.toJavaString(tvars[0]), env.getFactory()));
+        final String resource = TermUtils.toJavaString(tvars[0]);
+        final int startIndex = TermUtils.toJavaInt(tvars[1]);
+        env.setCurrent(StrategoTermIndices.indexMore(env.current(), resource, startIndex, env.getFactory()));
         return true;
     }
 

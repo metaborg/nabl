@@ -19,8 +19,11 @@ rules
   stx--index-ast(|source) =
     prim("SG_index_ast", source)
 
-  stx--index-more-ast(|source) =
-    prim("SG_index_more_ast", source)
+  stx--index-more-ast(|source, startIndex) =
+    prim("SG_index_more_ast", source, startIndex)
+
+  stx--reindex-ast(|source, startIndex) =
+    prim("SG_reindex_ast", source, startIndex)
 
   stx--get-max-ast-index =
     prim("SG_get_max_ast_index")
