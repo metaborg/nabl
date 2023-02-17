@@ -3,13 +3,19 @@ package mb.nabl2.terms.stratego;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
+import io.usethesource.capsule.Map;
+import org.metaborg.util.tuple.Tuple2;
+import org.spoofax.interpreter.core.Pair;
 import org.spoofax.interpreter.terms.IStrategoConstructor;
 import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.TermFactory;
 import org.spoofax.terms.util.TermUtils;
+
+import javax.annotation.Nullable;
 
 /**
  * Works with term indices.
@@ -35,7 +41,7 @@ public final class StrategoTermIndices {
      * @return the AST with term indices
      */
     public static IStrategoTerm index(IStrategoTerm term, String resource, ITermFactory termFactory) {
-        return new Indexer(resource, termFactory, true, 1).index(term);
+        return new Indexer(resource, termFactory, true, 1, null).index(term);
     }
 
     /**
@@ -44,16 +50,12 @@ public final class StrategoTermIndices {
      *
      * @param term the AST to annotate with term indices
      * @param resource the resource identifier, used for the new term indices
+     * @param startIndex the start index for the new term indices; or -1 to start at 1
      * @param termFactory the Stratego term factory to use
      * @return the AST with term indices
      */
-    public static IStrategoTerm indexMore(IStrategoTerm term, String resource, ITermFactory termFactory) {
-        int maxId = findMaxIndex(term);
-        if (maxId >= 0) {
-            return new Indexer(resource, termFactory, false, maxId + 1).index(term);
-        } else {
-            return index(term, resource, termFactory);
-        }
+    public static IStrategoTerm indexMore(IStrategoTerm term, String resource, int startIndex, ITermFactory termFactory) {
+        return new Indexer(resource, termFactory, false, (startIndex >= 1 ? startIndex : 1), null).index(term);
     }
 
     /**
@@ -70,6 +72,39 @@ public final class StrategoTermIndices {
         return maxId;
     }
 
+    /**
+     * Sets indices on the given subtree. Terms that already have a term index will have their term index replaced.
+     * This method returns a map with the mappings from the old term indices to the new term indices.
+     *
+     * @param term the AST to annotate with term indices
+     * @param resource the resource name for the new term indices
+     * @param startIndex the start index for the new term indices; or -1 to start at 1
+     * @param termFactory the Stratego term factory to use
+     * @return a tuple with the new term and the mapping from the old term indices to the new term indices
+     */
+    public static Tuple2<IStrategoTerm, Map.Immutable<TermIndex, TermIndex>> reindex(IStrategoTerm term, String resource, int startIndex, ITermFactory termFactory) {
+        final Map.Transient<TermIndex, TermIndex> mapping = Map.Transient.of();
+        final IndexerCallback callback = (_term, oldIndex, newIndex) -> {
+            if(oldIndex != null) mapping.__put(oldIndex, newIndex);
+        };
+        final IStrategoTerm newTerm = new Indexer(resource, termFactory, true, (startIndex >= 1 ? startIndex : 1), callback).index(term);
+        return Tuple2.of(newTerm, mapping.freeze());
+    }
+
+    /**
+     * Callback for the indexer.
+     */
+    private interface IndexerCallback {
+        /**
+         * Called when a term is given an index.
+         *
+         * @param term the term that was given an index
+         * @param oldIndex the old index of the term, if any; or {@code null} if it had none
+         * @param newIndex the new index of the term
+         */
+        void onIndex(IStrategoTerm term, @Nullable TermIndex oldIndex, TermIndex newIndex);
+    }
+
     /** Adds term indices. */
     private static class Indexer {
 
@@ -79,6 +114,8 @@ public final class StrategoTermIndices {
         private int nextId;
         private boolean overwrite;
 
+        private @Nullable IndexerCallback callback;
+
         /**
          * Initializes the {@code Indexer} class.
          *
@@ -86,12 +123,14 @@ public final class StrategoTermIndices {
          * @param termFactory the Stratego term factory to use
          * @param overwrite whether to overwrite/discard any existing term indices
          * @param initialId the term index to start with
+         * @param callback callback function; or {@code null}
          */
-        public Indexer(String resource, ITermFactory termFactory, boolean overwrite, int initialId) {
+        public Indexer(String resource, ITermFactory termFactory, boolean overwrite, int initialId, @Nullable IndexerCallback callback) {
             this.resource = resource;
             this.termFactory = termFactory;
             this.overwrite = overwrite;
             this.nextId = initialId;
+            this.callback = callback;
         }
 
         public IStrategoTerm index(final IStrategoTerm term) {
@@ -111,11 +150,13 @@ public final class StrategoTermIndices {
             // @formatter:on
 
             // Set the term index
-            if(overwrite || !get(term).isPresent()) {
+            final @Nullable TermIndex oldIndex = get(term).orElse(null);
+            if (overwrite || oldIndex == null) {
                 // Associate the term's origin, if any, with the new term index
-                final TermIndex index1 = TermIndex.of(resource, nextId++);
-                final TermIndex index = TermOrigin.get(term).map(o -> o.put(index1)).orElse(index1);
-                result = put(index, result, termFactory);
+                final TermIndex newIndex = TermIndex.of(resource, nextId++);
+                final TermIndex newNewIndex = TermOrigin.get(term).map(o -> o.put(newIndex)).orElse(newIndex);
+                result = put(newNewIndex, result, termFactory);
+                if (callback != null) callback.onIndex(term, oldIndex, newNewIndex);
             }
 
             // Copy the original term's attachments to the new term
@@ -157,7 +198,7 @@ public final class StrategoTermIndices {
     /**
      * Removes term indices from the terms in the given tree.
      *
-     * @param term the AST to clear of term indices
+     * @param term        the AST to clear of term indices
      * @param termFactory the Stratego term factory to use
      * @return the AST without term indices
      */
