@@ -968,18 +968,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         final T snapshot = typeChecker.snapshot();
         final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
         final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
-        /*
-        StateCapture.&lt;S, L, D, T&gt;builder()
-        .scopes(io.usethesource.capsule.Set.Immutable&lt;S&gt;) // required scopes
-        .scopeGraph(mb.scopegraph.oopsla20.IScopeGraph.Immutable&lt;S, L, D&gt;) // required scopeGraph
-        .unInitializedScopes(org.metaborg.util.collection.MultiSet.Immutable&lt;S&gt;) // required unInitializedScopes
-        .openScopes(org.metaborg.util.collection.MultiSet.Immutable&lt;S&gt;) // required openScopes
-        .openEdges(org.metaborg.util.collection.MultiSetMap.Immutable&lt;S, mb.scopegraph.oopsla20.reference.EdgeOrData&lt;L&gt;&gt;) // required openEdges
-        .scopeNameCounters(org.metaborg.util.collection.MultiSet.Immutable&lt;String&gt;) // required scopeNameCounters
-        .usedStableScopes(io.usethesource.capsule.Set.Immutable&lt;String&gt;) // required usedStableScopes
-        .typeCheckerState(T) // required typeCheckerState
-        .build();
-        * */
         builder.scopes(scopes);
         builder.scopeGraph(localScopeGraph.get());
         localScopeGraph.set(ScopeGraph.Immutable.of());

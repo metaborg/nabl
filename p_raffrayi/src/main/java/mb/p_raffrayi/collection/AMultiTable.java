@@ -1,11 +1,10 @@
 package mb.p_raffrayi.collection;
 
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -30,7 +29,7 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
 
 
     @Override public boolean contains(R rowKey, C columnKey) {
-        return table.getOrDefault(rowKey, Collections.emptyMap()).containsValue(columnKey);
+        return table.getOrDefault(rowKey, Collections.emptyMap()).containsKey(columnKey);
     }
 
     @Override public boolean containsRow(R rowKey) {
@@ -38,7 +37,7 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public boolean containsColumn(C columnKey) {
-        return table.values().stream().flatMap(m -> m.keySet().stream()).anyMatch(c -> Objects.equals(c, columnKey));
+        return table.values().stream().anyMatch(m -> m.containsKey(columnKey));
     }
 
     @Override public Collection<V> get(R rowKey, C columnKey) {
@@ -73,8 +72,8 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public Map<R, Collection<V>> column(C columnKey) {
-        return table.keySet().stream().map(k -> new AbstractMap.SimpleImmutableEntry<>(k, get(k, columnKey))).collect(
-            Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return table.keySet().stream()
+            .collect(Collectors.toMap(Function.identity(), k -> get(k, columnKey)));
     }
 
     @Override public Iterable<V> columnValues(C columnKey) {
@@ -82,8 +81,9 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public Set<Tuple3<R, C, Collection<V>>> cellSet() {
-        return table.entrySet().stream().flatMap(row -> row.getValue().entrySet().stream().map(col -> Tuple3.of(row.getKey(), col.getKey(), col.getValue()))).collect(
-            Collectors.toSet());
+        return table.entrySet().stream().flatMap(row -> row.getValue().entrySet().stream()
+                .map(col -> Tuple3.of(row.getKey(), col.getKey(), col.getValue())))
+            .collect(Collectors.toSet());
     }
 
     @Override public Set<R> rowKeySet() {
@@ -95,7 +95,7 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public Iterable<V> values() {
-        return table.values().stream().flatMap(m -> m.values().stream().flatMap(c -> c.stream())).collect(Collectors.toSet());
+        return table.values().stream().flatMap(m -> m.values().stream().flatMap(Collection::stream)).collect(Collectors.toSet());
     }
 
     @Override public Map<R, Map<C, Collection<V>>> rowMap() {

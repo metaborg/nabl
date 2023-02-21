@@ -168,7 +168,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                         future.completeExceptionally(new TypeCheckingFailedException(
                                 "Root match inconsistent: " + current + " ~ " + previous));
                     }
-                    matchesOpt.get().entrySet().forEach(entry -> match(entry.getKey(), entry.getValue()));
+                    matchesOpt.get().asMap().forEach(this::match);
                     future.complete(Unit.unit);
                 });
                 futures.add(future);

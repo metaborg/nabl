@@ -59,9 +59,7 @@ public class DeadlockUtils {
 
         // Create a map of all transitively reachable vertices.
         for(V vertex: vertices) {
-            for(V reachableVertex : reachableVertices(vertex, graph)) {
-                reachables.__insert(vertex, reachableVertex);
-            }
+            reachables.__insert(vertex, reachableVertices(vertex, graph));
         }
 
         // For each vertex, see of all reachable vertices have the same reachable set.
@@ -98,24 +96,24 @@ public class DeadlockUtils {
         return sccs;
     }
 
-    public static <V> Set<V> reachableVertices(V vertex, IGraph<V> graph) {
+    public static <V> io.usethesource.capsule.Set.Immutable<V> reachableVertices(V vertex, IGraph<V> graph) {
         final Queue<V> queue = new LinkedList<>();
-        final Set<V> reachable = new HashSet<>();
+        final io.usethesource.capsule.Set.Transient<V> reachable = CapsuleUtil.transientSet();
 
         queue.add(vertex);
-        reachable.add(vertex);
+        reachable.__insert(vertex);
 
         while(!queue.isEmpty()) {
             final V head = queue.remove();
             for(V target : graph.targets(head)) {
                 if(!reachable.contains(target)) {
                     queue.add(target);
-                    reachable.add(target);
+                    reachable.__insert(target);
                 }
             }
         }
 
-        return reachable;
+        return reachable.freeze();
     }
 
 
