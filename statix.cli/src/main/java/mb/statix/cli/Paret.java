@@ -11,11 +11,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
 
 import mb.nabl2.terms.ITermVar;
@@ -97,7 +97,7 @@ public class Paret {
 
     // @formatter:off
     private int defaultRuleWeight = 1;
-    private Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
+    private Map<String, Double> ruleWeights = new CapsuleUtil.MapBuilder()
         // TWEAK Disable operations until better inference in the solver
         .put("G-UnOp", 1.0)
         .put("G-BinOp", 1.0)
@@ -163,7 +163,7 @@ public class Paret {
     }
 
     // @formatter:off
-    private Map<String, Double> idWeights = ImmutableMap.<String, Double>builder()
+    private io.usethesource.capsule.Map.Immutable<String, Double> idWeights = new CapsuleUtil.MapBuilder()
         // TWEAK Increase likelihood of duplicate choices, while still providing many identifiers
         .put("[ID-A]", 16.0)
         .put("[ID-B]", 8.0)
