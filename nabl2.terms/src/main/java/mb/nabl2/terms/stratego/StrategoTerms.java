@@ -1,6 +1,7 @@
 package mb.nabl2.terms.stratego;
 
 import static mb.nabl2.terms.build.TermBuild.B;
+import static org.spoofax.interpreter.terms.TermType.BLOB;
 
 import java.util.LinkedList;
 import java.util.Optional;
@@ -57,7 +58,7 @@ public class StrategoTerms {
             list ->  toStrategoList(list, varsToPlhdrs),
             string -> termFactory.makeString(string.getValue()),
             integer -> termFactory.makeInt(integer.getValue()),
-            blob -> new StrategoBlob(blob.getValue()),
+            blob -> (blob.getValue() instanceof IStrategoTerm && ((IStrategoTerm)blob.getValue()).getType() == BLOB) ? ((IStrategoTerm)blob.getValue()) : new StrategoBlob(blob.getValue()),
             var -> {
                 if (varsToPlhdrs) {
                     return termFactory.makePlaceholder(termFactory.makeTuple(termFactory.makeString(var.getResource()), termFactory.makeString(var.getName())));
@@ -238,12 +239,8 @@ public class StrategoTerms {
             case STRING:
                 return cases.caseString((IStrategoString) term);
             case BLOB:
-                if(term instanceof StrategoBlob) {
-                    StrategoBlob blob = (StrategoBlob) term;
-                    return cases.caseBlob(blob);
-                } else {
-                    throw new IllegalArgumentException("Unsupported Stratego blob type " + term.getClass());
-                }
+                final StrategoBlob blob = (term instanceof StrategoBlob) ? (StrategoBlob) term : new StrategoBlob(term);
+                return cases.caseBlob(blob);
             case PLACEHOLDER:
                 return cases.casePlhdr((StrategoPlaceholder) term);
             default:
