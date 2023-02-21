@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
-import org.metaborg.util.collection.BagMap;
 import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -66,7 +66,7 @@ public class ScopeGraphDiffer<S, L, D> {
      * @return Updated differ state. Will always be an extension of {@code initialState}.
      */
     public DifferState.Immutable<S, L, D> doDiff(IScopeGraph.Immutable<S, L, D> current,
-        DifferState.Immutable<S, L, D> initialState, BagMap<S, EdgeOrData<L>> activations) {
+        DifferState.Immutable<S, L, D> initialState, MultiSetMap<S, EdgeOrData<L>> activations) {
         DifferState.Transient<S, L, D> state = initialState.melt();
 
         final Queue<EdgeMatch> worklist = new LinkedList<>();
@@ -344,7 +344,7 @@ public class ScopeGraphDiffer<S, L, D> {
         final ScopeGraphDiffer<S, L, D> differ = new ScopeGraphDiffer<>(previous, diffOps, statusOps);
         final DifferState.Immutable<S, L, D> initialState = differ.initDiff(s0current, s0previous);
 
-        final BagMap.Transient<S, EdgeOrData<L>> initialActivations = BagMap.Transient.of();
+        final MultiSetMap.Transient<S, EdgeOrData<L>> initialActivations = MultiSetMap.Transient.of();
         initialState.edgeDelays().forEach((s, l) -> initialActivations.put(s, EdgeOrData.edge(l)));
 
         final DifferState.Immutable<S, L, D> state = differ.doDiff(current, initialState, initialActivations);

@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.RefBool;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.future.AggregateFuture;
@@ -30,14 +31,9 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Streams;
+import org.metaborg.util.collection.BiMap;
 
+import io.usethesource.capsule.SetMultimap;
 import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.Edge;
@@ -59,14 +55,12 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     // Intermediate match results
 
-    private final org.metaborg.util.collection.BiMap.Transient<S> matchedScopes =
-            org.metaborg.util.collection.BiMap.Transient.of();
-    private final org.metaborg.util.collection.BiMap.Transient<Edge<S, L>> matchedEdges =
-            org.metaborg.util.collection.BiMap.Transient.of();
+    private final BiMap.Transient<S> matchedScopes = BiMap.Transient.of();
+    private final BiMap.Transient<Edge<S, L>> matchedEdges = BiMap.Transient.of();
 
-    private final Multimap<Tuple2<S, L>, Edge<S, L>> addedEdges = HashMultimap.create();
-    private final Multimap<Tuple2<S, L>, Edge<S, L>> matchedOutgoingEdges = HashMultimap.create();
-    private final Multimap<Tuple2<S, L>, Edge<S, L>> removedEdges = HashMultimap.create();
+    private final SetMultimap.Transient<Tuple2<S, L>, Edge<S, L>> addedEdges = SetMultimap.Transient.of();
+    private final SetMultimap.Transient<Tuple2<S, L>, Edge<S, L>> matchedOutgoingEdges = SetMultimap.Transient.of();
+    private final SetMultimap.Transient<Tuple2<S, L>, Edge<S, L>> removedEdges = SetMultimap.Transient.of();
 
     private final Map<S, Optional<D>> currentScopeData = new HashMap<>();
     private final Map<S, Optional<D>> previousScopeData = new HashMap<>();
@@ -84,24 +78,24 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private final Set<S> seenPreviousScopes = new HashSet<>();
     private final Set<S> openPreviousScopes = new HashSet<>();
 
-    private final Multimap<S, L> completedPreviousEdges = HashMultimap.create();
+    private final SetMultimap.Transient<S, L> completedPreviousEdges = SetMultimap.Transient.of();
 
     // Delays
 
     /**
      * Delays to be fired when the previous scope key is matched (or marked as removed).
      */
-    private final Multimap<S, ICompletable<Optional<S>>> previousScopeProcessedDelays = HashMultimap.create();
+    private SetMultimap.Transient<S, ICompletable<Optional<S>>> previousScopeProcessedDelays = SetMultimap.Transient.of();
 
     /**
      * Delays to be fired when the previous scope key is completed (i.e. all outgoing edges are matched or removed).
      */
-    private final Multimap<Tuple2<S, L>, ICompletable<Unit>> previousScopeCompletedDelays = HashMultimap.create();
+    private SetMultimap.Transient<Tuple2<S, L>, ICompletable<Unit>> previousScopeCompletedDelays = SetMultimap.Transient.of();
 
     /**
      * Delays to be fired when edge in current scope graph is matched/added.
      */
-    private final Multimap<Edge<S, L>, ICompletable<Unit>> currentEdgeCompleteDelays = HashMultimap.create();
+    private SetMultimap.Transient<Edge<S, L>, ICompletable<Unit>> currentEdgeCompleteDelays = SetMultimap.Transient.of();
 
     // private final Set<IToken<S, L>> waitFors = new HashSet<>();
 
@@ -135,14 +129,14 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                         new IllegalStateException("Current and previous root scope number differ."));
             }
 
-            final BiMap<S, S> rootMatches = HashBiMap.create();
+            final BiMap.Transient<S> rootMatches = BiMap.Transient.of();
             for(int i = 0; i < currentRootScopes.size(); i++) {
                 rootMatches.put(currentRootScopes.get(i), previousRootScopes.get(i));
             }
 
             // Calculate matches caused by root scope matches
-            BiMap<S, S> initialMatches;
-            if((initialMatches = consistent(rootMatches).orElse(null)) == null) {
+            BiMap.Immutable<S> initialMatches;
+            if((initialMatches = consistent(rootMatches.freeze().asMap()).orElse(null)) == null) {
                 logger.error("Current and previous root scope number differ.");
                 return CompletableFuture
                         .completedExceptionally(new IllegalStateException("Provided root scopes cannot be matched."));
@@ -168,13 +162,13 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                                 "Root match internally inconsistent: " + current + " ~ " + previous));
                         return;
                     }
-                    Optional<BiMap<S, S>> matchesOpt = consistent(cOpt.get());
+                    Optional<BiMap.Immutable<S>> matchesOpt = consistent(cOpt.get().asMap());
                     if(!matchesOpt.isPresent()) {
                         logger.error("Root match inconsistent: {} ~ {}.", current, previous);
                         future.completeExceptionally(new TypeCheckingFailedException(
                                 "Root match inconsistent: " + current + " ~ " + previous));
                     }
-                    matchesOpt.get().forEach(this::match);
+                    matchesOpt.get().entrySet().forEach(entry -> match(entry.getKey(), entry.getValue()));
                     future.complete(Unit.unit);
                 });
                 futures.add(future);
@@ -197,7 +191,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> scopeGraph,
             Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches,
-            Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
+            Collection<S> openScopes, MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges) {
         logger.debug("Initializing differ from initial graph.");
         logger.trace("* scopes:      {}.", scopes);
         logger.trace("* scopeGraph:  {}.", scopeGraph);
@@ -220,7 +214,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     final S newScope = patches.patch(oldScope);
 
                     for(L lbl : edgeLabels) {
-                        final Set<S> oldTargets = ImmutableSet.copyOf(scopeGraph.getEdges(oldScope, lbl));
+                        final Set<S> oldTargets = new HashSet<>(scopeGraph.getEdges(oldScope, lbl));
                         final Set<S> newTargets = oldTargets.stream().map(patches::patch).collect(Collectors.toSet());
 
                         for(S oldTarget : oldTargets) {
@@ -228,19 +222,19 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                             final Edge<S, L> oldEdge = new Edge<>(oldScope, lbl, oldTarget);
                             final Edge<S, L> newEdge = new Edge<>(newScope, lbl, newTarget);
                             matchedEdges.put(newEdge, oldEdge);
-                            matchedOutgoingEdges.put(Tuple2.of(oldScope, lbl), oldEdge);
+                            matchedOutgoingEdges.__insert(Tuple2.of(oldScope, lbl), oldEdge);
                             logger.trace("Initial edge match: {} ~ {}.", newEdge, oldEdge);
                         }
 
-                        if(openScopes.contains(oldScope) || openEdges.containsEntry(oldScope, EdgeOrData.edge(lbl))
+                        if(openScopes.contains(oldScope) || openEdges.contains(oldScope, EdgeOrData.edge(lbl))
                                 || sharedScopes.contains(oldScope)) {
                             logger.trace("Edge {}/{} open, scheduling residual matches.", oldScope, lbl);
-                            IFuture<Iterable<S>> currentResidualTargetsFuture =
+                            IFuture<Collection<S>> currentResidualTargetsFuture =
                                     currentContext.getEdges(newScope, lbl).thenApply(targets -> {
                                         return CapsuleUtil.toSet(targets).__removeAll(newTargets);
                                     });
 
-                            IFuture<Iterable<S>> previousResidualTargetsFuture =
+                            IFuture<Collection<S>> previousResidualTargetsFuture =
                                     previousContext.getEdges(oldScope, lbl).thenApply(targets -> {
                                         return CapsuleUtil.toSet(targets).__removeAll(oldTargets);
                                     });
@@ -249,7 +243,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                                     previousResidualTargetsFuture));
                         } else {
                             logger.trace("Edge {}/{} not open, mark as completed.", oldScope, lbl);
-                            completedPreviousEdges.put(oldScope, lbl);
+                            completedPreviousEdges.__insert(oldScope, lbl);
                         }
                     }
                 }
@@ -263,7 +257,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         return result;
     }
 
-    @Override public boolean matchScopes(org.metaborg.util.collection.BiMap.Immutable<S> scopes) {
+    @Override public boolean matchScopes(BiMap.Immutable<S> scopes) {
         return matchScopes(scopes.asMap());
     }
 
@@ -275,7 +269,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         scopes.keySet().forEach(this::scheduleCurrentData);
         scopes.values().forEach(this::schedulePreviousData);
 
-        final BiMap<S, S> newMatches;
+        final BiMap.Immutable<S> newMatches;
         if((newMatches = consistent(scopes).orElse(null)) == null) {
             logger.trace("Scopes cannot match.");
             return false;
@@ -343,10 +337,10 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     // * State-sensitive, synchronous part of the algorithm
     ///////////////////////////////////////////////////////////////////////////
 
-    private Unit matchEdge(Edge<S, L> currentEdge, ImmutableMap<Edge<S, L>, BiMap<S, S>> previousEdges) {
+    private Unit matchEdge(Edge<S, L> currentEdge, Map<Edge<S, L>, BiMap.Immutable<S>> previousEdges) {
         logger.debug("{}: matching with candidates {}", currentEdge, previousEdges);
 
-        for(Map.Entry<Edge<S, L>, BiMap<S, S>> previousEdge : previousEdges.entrySet()) {
+        for(Map.Entry<Edge<S, L>, BiMap.Immutable<S>> previousEdge : previousEdges.entrySet()) {
             if(matchScopes(previousEdge.getValue())) {
                 logger.trace("{}: matched with {}.", currentEdge, previousEdge);
                 return match(currentEdge, previousEdge.getKey());
@@ -363,8 +357,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
      *
      * Used when scheduling edge matches, and providing external matches.
      */
-    private Optional<BiMap<S, S>> consistent(Map<S, S> scopes) {
-        final BiMap<S, S> newMatches = HashBiMap.create();
+    private Optional<BiMap.Immutable<S>> consistent(Map<S, S> scopes) {
+        final BiMap.Transient<S> newMatches = BiMap.Transient.of();
 
         for(Map.Entry<S, S> entry : scopes.entrySet()) {
             final S currentScope = entry.getKey();
@@ -383,7 +377,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             }
         }
         logger.trace("Scopes {} match.", scopes);
-        return Optional.of(newMatches);
+        return Optional.of(newMatches.freeze());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -394,21 +388,21 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     /**
      * Compute the patch required to match two scopes and their data.
      */
-    private IFuture<Optional<BiMap<S, S>>> consequences(S currentScope, S previousScope) {
-        final BiMap<S, S> matches = HashBiMap.create();
+    private IFuture<Optional<BiMap.Immutable<S>>> consequences(S currentScope, S previousScope) {
+        final BiMap.Transient<S> matches = BiMap.Transient.of();
         return consequences(currentScope, previousScope, matches)
-                .thenApply(b -> b ? Optional.of(matches) : Optional.empty());
+                .thenApply(b -> b ? Optional.of(matches.freeze()) : Optional.empty());
     }
 
     /**
      * Computes matchability of two scopes, without taking the current state into account. Additional implied matches
      * are collected in the {@code req} argument.
      */
-    private IFuture<Boolean> consequences(S currentScope, S previousScope, BiMap<S, S> req) {
+    private IFuture<Boolean> consequences(S currentScope, S previousScope, BiMap.Transient<S> req) {
         if(!differOps.isMatchAllowed(currentScope, previousScope)) {
             return CompletableFuture.completedFuture(false);
         }
-        if(previousScope.equals(req.get(currentScope))) {
+        if(previousScope.equals(req.getKey(currentScope))) {
             return CompletableFuture.completedFuture(true);
         }
         if(req.containsKey(currentScope) || req.containsValue(previousScope)) {
@@ -441,7 +435,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         }
     }
 
-    private IFuture<Boolean> requiredScopeMatches(S currentScope, S previousScope, final BiMap<S, S> req) {
+    private IFuture<Boolean> requiredScopeMatches(S currentScope, S previousScope, final BiMap.Transient<S> req) {
         // Match data of own scope
         final IFuture<Optional<D>> currentDatumFuture =
                 waitFor(currentContext.datum(currentScope)).whenComplete((d, ex) -> {
@@ -462,13 +456,13 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             } else if(currentData.isPresent() && previousData.isPresent()) {
                 // Scopes with data can only match if data match
                 // Calculate immediate consequences of data match
-                final BiMap<S, S> newMatches = HashBiMap.create();
+                final BiMap.Transient<S> newMatches = BiMap.Transient.of();
                 final boolean dataMatch =
                         differOps.matchDatums(currentData.get(), previousData.get()).map(scopeMatches -> {
                             for(Map.Entry<S, S> match : scopeMatches.asMap().entrySet()) {
                                 final S current = match.getKey();
                                 final S previous = match.getValue();
-                                if(previous.equals(req.get(current))) {
+                                if(previous.equals(req.getKey(current))) {
                                     continue;
                                 }
                                 if(req.containsKey(current) || req.containsValue(previous)) {
@@ -515,19 +509,19 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     }
 
     private IFuture<Unit> finishEdgeMatches(S currentSource, S previousSource, L label,
-            final IFuture<Iterable<S>> currentTargetsFuture, final IFuture<Iterable<S>> previousTargetsFuture) {
+            final IFuture<Collection<S>> currentTargetsFuture, final IFuture<Collection<S>> previousTargetsFuture) {
         final ICompletableFuture<Unit> result = new CompletableFuture<>();
 
         // Get current edges for label
         final IFuture<Set<Edge<S, L>>> currentEdgesFuture = currentTargetsFuture.whenComplete((tgts, ex) -> {
             logger.trace("{}/{} (C): rec targets: {}.", currentSource, label, tgts);
-        }).thenApply(currentTargetScopes -> Streams.stream(currentTargetScopes)
+        }).thenApply(currentTargetScopes -> currentTargetScopes.stream()
                 .map(currentTarget -> new Edge<>(currentSource, label, currentTarget)).collect(Collectors.toSet()));
 
         // Get previous edges for label
         final IFuture<Set<Edge<S, L>>> previousEdgesFuture = previousTargetsFuture.whenComplete((tgts, ex) -> {
             logger.trace("{}/{} (P): rec targets: {}.", previousSource, label, tgts);
-        }).thenApply(previousTargetScopes -> Streams.stream(previousTargetScopes)
+        }).thenApply(previousTargetScopes -> previousTargetScopes.stream()
                 .map(previousTarget -> new Edge<>(previousSource, label, previousTarget)).collect(Collectors.toSet()));
 
         // Combine results
@@ -561,9 +555,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             final Edge<S, L> currentEdge = edge; // FIXME indirection needed for capture?
             // For each candidate edge, compute which scopes must be matched in order to make the edge match
             // This involves the target scopes, but also the scopes in the data of these target scopes.
-            IFuture<List<Tuple2<Edge<S, L>, Optional<BiMap<S, S>>>>> matchesFuture =
+            IFuture<List<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>>> matchesFuture =
                     aggregateAll(previousEdges, previousEdge -> {
-                        ICompletableFuture<Tuple2<Edge<S, L>, Optional<BiMap<S, S>>>> result =
+                        ICompletableFuture<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>> result =
                                 new CompletableFuture<>();
                         consequences(currentEdge.target, previousEdge.target).whenComplete((matchedScopes, ex) -> {
                             if(ex != null) {
@@ -579,26 +573,27 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                     });
 
             // When match computation is complete, schedule edge matches for processing.
-            K<List<Tuple2<Edge<S, L>, Optional<BiMap<S, S>>>>> k2 = (r, ex2) -> {
+            K<List<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>>> k2 = (r, ex2) -> {
                 if(ex2 != null) {
                     failure(ex2);
                     return Unit.unit;
                 }
                 logger.trace("{}: rec candidates: {}.", currentEdge, r);
-                final ImmutableMap.Builder<Edge<S, L>, BiMap<S, S>> _matchingPreviousEdges = ImmutableMap.builder();
+                final io.usethesource.capsule.Map.Transient<Edge<S, L>, BiMap.Immutable<S>> _matchingPreviousEdges = CapsuleUtil.transientMap();
                 // @formatter:off
                 // filter out all previous edges that cannot be matched (indicated by empty optional)
                 r.stream().filter(x -> x._2().isPresent())
                     // unwrap required matches
                     .map(x -> Tuple2.of(x._1(), x._2().get()))
                     // Check if required matches are consistent with current state and each other
-                    .map(x -> Tuple2.of(x._1(), consistent(x._2())))
+                    .map(x -> Tuple2.of(x._1(), consistent(x._2().asMap())))
                     // Filter for consistent matches
                     .filter(x -> x._2().isPresent())
                     // Add all remaining candidates to set.
-                    .forEach(x -> _matchingPreviousEdges.put(x._1(), x._2().get()));
+                    .forEach(x -> _matchingPreviousEdges.__put(x._1(), x._2().get()));
                 // @formatter:on
-                final ImmutableMap<Edge<S, L>, BiMap<S, S>> matchingPreviousEdges = _matchingPreviousEdges.build();
+                final io.usethesource.capsule.Map.Immutable<Edge<S, L>, BiMap.Immutable<S>>
+                    matchingPreviousEdges = _matchingPreviousEdges.freeze();
 
                 if(logger.traceEnabled()) {
                     logger.trace("{}: possible candidates: {}.", currentEdge, matchingPreviousEdges);
@@ -606,7 +601,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
                 return queue(new EdgeMatch(currentEdge, matchingPreviousEdges));
             };
 
-            final ICompletableFuture<List<Tuple2<Edge<S, L>, Optional<BiMap<S, S>>>>> matchesResult =
+            final ICompletableFuture<List<Tuple2<Edge<S, L>, Optional<BiMap.Immutable<S>>>>> matchesResult =
                     new CompletableFuture<>();
             matchesFuture.whenComplete((u, ex2) -> {
                 if(ex2 != null) {
@@ -636,7 +631,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             ICompletableFuture<Unit> future = new CompletableFuture<>();
             if(!completeIfFailure(future)) {
                 // waitFors.add(EdgeCompleted.of(edge));
-                currentEdgeCompleteDelays.put(edge, future);
+                currentEdgeCompleteDelays.__insert(edge, future);
             }
             return future;
         });
@@ -704,8 +699,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private IFuture<Unit> visitAllEdges(IDifferContext<S, L, D> context, S scope, Action1<Edge<S, L>> visit) {
         final IFuture<Unit> future = aggregateAll(edgeLabels, label -> {
-            final IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, label);
-            K<Iterable<S>> addEdges = (targets, ex) -> {
+            final IFuture<Collection<S>> edgesFuture = context.getEdges(scope, label);
+            K<Collection<S>> addEdges = (targets, ex) -> {
                 targets.forEach(target -> {
                     visit.apply(new Edge<>(scope, label, target));
                 });
@@ -806,7 +801,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
         logger.debug("{} ~ {}: matched.", current, previous);
         matchedEdges.put(current, previous);
-        matchedOutgoingEdges.put(Tuple2.of(previous.source, previous.label), previous);
+        matchedOutgoingEdges.__insert(Tuple2.of(previous.source, previous.label), previous);
 
         scheduleCurrentData(current.target);
         schedulePreviousData(previous.target);
@@ -820,7 +815,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         assertCurrentEdgeOpen(edge);
 
         logger.trace("{}: added.", edge);
-        addedEdges.put(Tuple2.of(edge.source, edge.label), edge);
+        addedEdges.__insert(Tuple2.of(edge.source, edge.label), edge);
 
         currentEdgeComplete(edge);
         scheduleCurrentData(edge.target);
@@ -832,7 +827,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         assertPreviousEdgeOpen(edge);
 
         logger.trace("{}: removed.", edge);
-        removedEdges.put(Tuple2.of(edge.source, edge.label), edge);
+        removedEdges.__insert(Tuple2.of(edge.source, edge.label), edge);
 
         schedulePreviousData(edge.target);
 
@@ -916,8 +911,8 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             if(pendingResults.get() != 0 || !typeCheckerFinished.get()) {
                 return;
             }
-            ImmutableSet.copyOf(openCurrentScopes).forEach(this::added);
-            ImmutableSet.copyOf(openPreviousScopes).forEach(this::removed);
+            new HashSet<>(openCurrentScopes).forEach(this::added);
+            new HashSet<>(openPreviousScopes).forEach(this::removed);
         } while(edgeMatches.isEmpty() && (!openCurrentScopes.isEmpty() || !openPreviousScopes.isEmpty()));
         logger.debug("Marked all open scopes as added/removed.");
 
@@ -937,32 +932,20 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
             previousScopeData.forEach((s, d) -> removedScopes.__put(s, d.orElse(differOps.embed(s))));
 
             io.usethesource.capsule.Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
-            this.addedEdges.asMap().values().forEach(x -> x.forEach(addedEdges::__insert));
+            this.addedEdges.values().forEach(addedEdges::__insert);
 
             io.usethesource.capsule.Set.Transient<Edge<S, L>> removedEdges = CapsuleUtil.transientSet();
-            this.removedEdges.asMap().values().forEach(x -> x.forEach(removedEdges::__insert));
+            this.removedEdges.values().forEach(removedEdges::__insert);
 
             // Clean up pending delays
-            previousScopeProcessedDelays.asMap().forEach((s, delays) -> {
-                // logger.error("Pending previous scope processed delays for {}.", s);
-                // throw new IllegalStateException("Pending previous scope processed delays for " + s + ".");
-                delays.forEach(c -> c.complete(Optional.empty()));
-            });
-            previousScopeProcessedDelays.clear();
+            previousScopeProcessedDelays.values().forEach(c -> c.complete(Optional.empty()));
+            previousScopeProcessedDelays = SetMultimap.Transient.of();
 
-            previousScopeCompletedDelays.asMap().forEach((s, delays) -> {
-                // logger.error("Pending previous scope completed delays for {}.", s);
-                // throw new IllegalStateException("Pending previous scope completed delays for " + s + ".");
-                delays.forEach(c -> c.complete(Unit.unit));
-            });
-            previousScopeCompletedDelays.clear();
+            previousScopeCompletedDelays.values().forEach(c -> c.complete(Unit.unit));
+            previousScopeCompletedDelays = SetMultimap.Transient.of();
 
-            currentEdgeCompleteDelays.asMap().forEach((edge, delays) -> {
-                // logger.error("Pending current edge processed delays for {}.", edge);
-                // throw new IllegalStateException("Pending current edge processed delays for " + edge + ".");
-                delays.forEach(c -> c.complete(Unit.unit));
-            });
-            currentEdgeCompleteDelays.clear();
+            currentEdgeCompleteDelays.values().forEach(c -> c.complete(Unit.unit));
+            currentEdgeCompleteDelays = SetMultimap.Transient.of();
 
             // @formatter:off
             final ScopeGraphDiff<S, L, D> result = new ScopeGraphDiff<S, L, D>(
@@ -1001,7 +984,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         final ICompletableFuture<Optional<S>> result = new CompletableFuture<>();
         if(!completeIfFailure(result)) {
             logger.trace("Scope {} not complete. Delaying return of its match.", previousScope);
-            previousScopeProcessedDelays.put(previousScope, result);
+            previousScopeProcessedDelays.__insert(previousScope, result);
             // waitFors.add(ScopeProcessed.of(previousScope));
         }
         return result;
@@ -1023,7 +1006,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         if(!completeIfFailure(result)) {
             logger.debug("{}/{} not complete, wait before returning scope diff.", previousScope, label);
             // waitFors.add(ScopeCompleted.of(previousScope, label));
-            previousScopeCompletedDelays.put(Tuple2.of(previousScope, label), result);
+            previousScopeCompletedDelays.__insert(Tuple2.of(previousScope, label), result);
         }
 
         return result.thenApply(__ -> buildScopeDiff(previousScope, label));
@@ -1051,37 +1034,41 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private void previousScopeProcessed(S previousScope, Optional<S> match) {
         logger.trace("{}: PS complete.", previousScope);
         // waitFors.remove(ScopeProcessed.of(previousScope));
-        previousScopeProcessedDelays.removeAll(previousScope).forEach(c -> c.complete(match));
+        final io.usethesource.capsule.Set.Immutable<ICompletable<Optional<S>>> previousScopeProcessedDelay =
+            previousScopeProcessedDelays.get(previousScope);
+        previousScopeProcessedDelays.__remove(previousScope);
+        previousScopeProcessedDelay.forEach(c -> c.complete(match));
         logger.trace("{}: PS completion finished.", previousScope);
     }
 
     private void previousScopeComplete(S previousScope, L label) {
         logger.trace("{}: PSC complete.", previousScope);
-        completedPreviousEdges.put(previousScope, label);
+        completedPreviousEdges.__insert(previousScope, label);
         // waitFors.remove(ScopeCompleted.of(previousScope, label));
-        previousScopeCompletedDelays.removeAll(Tuple2.of(previousScope, label)).forEach(c -> c.complete(Unit.unit));
+        final Tuple2<S, L> previousScopeAndLabel = Tuple2.of(previousScope, label);
+        final io.usethesource.capsule.Set.Immutable<ICompletable<Unit>> previousScopeCompletedDelay =
+            previousScopeCompletedDelays.get(previousScopeAndLabel);
+        previousScopeCompletedDelays.__remove(previousScopeAndLabel);
+        previousScopeCompletedDelay.forEach(c -> c.complete(Unit.unit));
         logger.trace("{}: PSC completion finished.", previousScope);
     }
 
     private void currentEdgeComplete(Edge<S, L> current) {
         logger.trace("{}: CE complete.", current);
         // waitFors.remove(EdgeCompleted.of(current));
-        currentEdgeCompleteDelays.removeAll(current).forEach(c -> c.complete(Unit.unit));
+        final io.usethesource.capsule.Set.Immutable<ICompletable<Unit>> currentEdgeCompleteDelay =
+            currentEdgeCompleteDelays.get(current);
+        currentEdgeCompleteDelays.__remove(current);
+        currentEdgeCompleteDelay.forEach(c -> c.complete(Unit.unit));
         logger.trace("{}: CE completion finished.", current);
     }
 
     private void failure(Throwable ex) {
         failure = ex;
         result.completeExceptionally(ex);
-        previousScopeProcessedDelays.asMap().forEach((s, delays) -> delays.forEach(d -> {
-            d.completeExceptionally(ex);
-        }));
-        previousScopeCompletedDelays.asMap().forEach((s, delays) -> delays.forEach(d -> {
-            d.completeExceptionally(ex);
-        }));
-        currentEdgeCompleteDelays.asMap().forEach((s, delays) -> delays.forEach(d -> {
-            d.completeExceptionally(ex);
-        }));
+        previousScopeProcessedDelays.values().forEach(d -> d.completeExceptionally(ex));
+        previousScopeCompletedDelays.values().forEach(d -> d.completeExceptionally(ex));
+        currentEdgeCompleteDelays.values().forEach(d -> d.completeExceptionally(ex));
     }
 
     private boolean completeIfFailure(ICompletableFuture<?> future) {
@@ -1159,9 +1146,9 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
     private class EdgeMatch implements Comparable<EdgeMatch> {
 
         public final Edge<S, L> currentEdge;
-        public final ImmutableMap<Edge<S, L>, BiMap<S, S>> previousEdges;
+        public final io.usethesource.capsule.Map.Immutable<Edge<S, L>, BiMap.Immutable<S>> previousEdges;
 
-        public EdgeMatch(Edge<S, L> currentEdge, ImmutableMap<Edge<S, L>, BiMap<S, S>> previousEdges) {
+        public EdgeMatch(Edge<S, L> currentEdge, io.usethesource.capsule.Map.Immutable<Edge<S, L>, BiMap.Immutable<S>> previousEdges) {
             this.currentEdge = currentEdge;
             this.previousEdges = previousEdges;
         }

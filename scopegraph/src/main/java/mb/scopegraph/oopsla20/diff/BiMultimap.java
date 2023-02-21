@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.metaborg.util.collection.BagMap;
+import org.metaborg.util.collection.MultiSetMap;
 
 public abstract class BiMultimap<K, V> {
 
@@ -15,10 +16,10 @@ public abstract class BiMultimap<K, V> {
 
     public static class Transient<K, V> extends BiMultimap<K, V> {
 
-        private BagMap.Transient<K, V> fwd;
-        private BagMap.Transient<V, K> bwd;
+        private MultiSetMap.Transient<K, V> fwd;
+        private MultiSetMap.Transient<V, K> bwd;
 
-        private Transient(BagMap.Transient<K, V> fwd, BagMap.Transient<V, K> bwd) {
+        private Transient(MultiSetMap.Transient<K, V> fwd, MultiSetMap.Transient<V, K> bwd) {
             this.fwd = fwd;
             this.bwd = bwd;
         }
@@ -29,11 +30,11 @@ public abstract class BiMultimap<K, V> {
         }
 
         @Override public Collection<V> getValues(K key) {
-            return fwd.get(key);
+            return fwd.get(key).toCollection();
         }
 
         @Override public Collection<K> getKeys(V value) {
-            return bwd.get(value);
+            return bwd.get(value).toCollection();
         }
 
         protected Collection<K> removeKeys(V value) {
@@ -57,26 +58,26 @@ public abstract class BiMultimap<K, V> {
         }
 
         public static <K, V> Transient<K, V> of() {
-            return new Transient<>(BagMap.Transient.of(), BagMap.Transient.of());
+            return new Transient<>(MultiSetMap.Transient.of(), MultiSetMap.Transient.of());
         }
     }
 
     public static class Immutable<K, V> extends BiMultimap<K, V> {
 
-        private BagMap.Immutable<K, V> fwd;
-        private BagMap.Immutable<V, K> bwd;
+        private MultiSetMap.Immutable<K, V> fwd;
+        private MultiSetMap.Immutable<V, K> bwd;
 
-        private Immutable(BagMap.Immutable<K, V> fwd, BagMap.Immutable<V, K> bwd) {
+        private Immutable(MultiSetMap.Immutable<K, V> fwd, MultiSetMap.Immutable<V, K> bwd) {
             this.fwd = fwd;
             this.bwd = bwd;
         }
 
         @Override public Collection<V> getValues(K key) {
-            return fwd.get(key);
+            return fwd.get(key).toCollection();
         }
 
         @Override public Collection<K> getKeys(V value) {
-            return bwd.get(value);
+            return bwd.get(value).toCollection();
         }
 
         @Override public boolean containsValue(V value) {
@@ -84,11 +85,11 @@ public abstract class BiMultimap<K, V> {
         }
 
         public Transient<K, V> melt() {
-            return new Transient<>(fwd.asTransient(), bwd.asTransient());
+            return new Transient<>(fwd.melt(), bwd.melt());
         }
 
         public static <K, V> Immutable<K, V> of() {
-            return new Immutable<>(BagMap.Immutable.of(), BagMap.Immutable.of());
+            return new Immutable<>(MultiSetMap.Immutable.of(), MultiSetMap.Immutable.of());
         }
 
     }

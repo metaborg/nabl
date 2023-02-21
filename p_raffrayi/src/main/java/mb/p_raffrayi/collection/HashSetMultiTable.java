@@ -1,12 +1,13 @@
 package mb.p_raffrayi.collection;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-
-import com.google.common.collect.HashBasedTable;
+import java.util.Set;
+import java.util.Map;
 
 /**
- * Multitable implementation that does not hold duplicate (row/column)-value. Uses {@link HashBasedTable} as backing
+ * Multitable implementation that does not hold duplicate (row/column)-value. Uses a nested {@link HashMap} as backing
  * table, and {@link HashSet} as backing value collection.
  */
 public class HashSetMultiTable<R, C, V> extends AMultiTable<R, C, V> {
@@ -16,7 +17,7 @@ public class HashSetMultiTable<R, C, V> extends AMultiTable<R, C, V> {
 
 
     public HashSetMultiTable() {
-        super(HashBasedTable.<R, C, Collection<V>>create());
+        super(new HashMap<R, Map<C, Collection<V>>>());
     }
 
 
@@ -26,5 +27,9 @@ public class HashSetMultiTable<R, C, V> extends AMultiTable<R, C, V> {
 
     @Override protected HashSet<V> createCollection(Collection<V> values) {
         return new HashSet<>(values);
+    }
+
+    @Override protected Map<C, Collection<V>> createMap() {
+        return new HashMap<>();
     }
 }

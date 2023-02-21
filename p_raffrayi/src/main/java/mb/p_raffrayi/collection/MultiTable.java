@@ -6,11 +6,11 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
+import org.metaborg.util.tuple.Tuple3;
 
 /**
- * Interface for tables that support multiple values. Based on {@link Table} interface.
+ * Interface for tables that support multiple values. Based on guava's Table interface.
+ * Some methods are commented to minimize the interface to current usage while reimplementing it.
  */
 public interface MultiTable<R, C, V> {
     boolean contains(@Nullable R rowKey, @Nullable C columnKey);
@@ -37,7 +37,7 @@ public interface MultiTable<R, C, V> {
     
     Iterable<V> columnValues(C columnKey);
 
-    Set<Cell<R, C, Collection<V>>> cellSet();
+    Set<Tuple3<R, C, Collection<V>>> cellSet();
 
     Set<R> rowKeySet();
 
@@ -47,5 +47,5 @@ public interface MultiTable<R, C, V> {
 
     Map<R, Map<C, Collection<V>>> rowMap();
 
-    Map<C, Map<R, Collection<V>>> columnMap();
+//    Map<C, Map<R, Collection<V>>> columnMap();
 }

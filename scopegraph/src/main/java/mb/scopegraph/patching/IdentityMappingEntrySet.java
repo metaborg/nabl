@@ -37,7 +37,7 @@ class IdentityMappingEntrySet<E> extends AbstractSet<Map.Entry<E, E>> {
     }
 
     @Override public Iterator<Entry<E, E>> iterator() {
-        return new MappedIterator(backingSet.iterator(), elem -> new AbstractMap.SimpleImmutableEntry<E, E>(elem, elem));
+        return new MappedIterator<>(backingSet.iterator(), elem -> new AbstractMap.SimpleImmutableEntry<E, E>(elem, elem));
     }
 
     @Override public boolean add(Entry<E, E> entry) {

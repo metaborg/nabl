@@ -1,7 +1,5 @@
 package mb.p_raffrayi.impl;
 
-import static com.google.common.collect.Streams.stream;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,6 +17,7 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
@@ -32,13 +31,8 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.IScopeGraphLibrary;
@@ -416,10 +410,10 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         return ifActive(whenContextActive(result));
     }
 
-    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+    @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
         assertActive();
 
-        final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+        final List<EdgeOrData<L>> edges = labels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
 
         doInitShare(self, root, edges, sharing);
     }
@@ -654,7 +648,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
             }
             initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
-                    previousResult.result().sharedScopes(), localPatches, openScopes, ImmutableMultimap.of());
+                    previousResult.result().sharedScopes(), localPatches, openScopes, MultiSetMap.Immutable.of());
 
             logger.debug("Rebuilding scope graph.");
             // @formatter:off
@@ -683,13 +677,13 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             // these should be set by the now reused scopegraph.
             logger.debug("Close pending tokens.");
             final HashSet<S> initScopes = new HashSet<>();
-            final Multimap<S, EdgeOrData<L>> closeEdges = HashMultimap.create();
+            final SetMultimap.Transient<S, EdgeOrData<L>> closeEdges = SetMultimap.Transient.of();
 
             // @formatter:off
             final IWaitFor.Cases<S, L, D> cases = IWaitFor.cases(
                 initScope -> initScopes.add(initScope.scope()),
                 closeScope -> {},
-                closeLabel -> closeEdges.put(closeLabel.scope(), closeLabel.label()),
+                closeLabel -> closeEdges.__insert(closeLabel.scope(), closeLabel.label()),
                 query -> {},
                 pQuery -> {},
                 confirm -> {},
@@ -708,7 +702,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             for(S scope : initScopes) {
                 doInitShare(self, scope, Collections.emptySet(), false);
             }
-            for(Map.Entry<S, EdgeOrData<L>> entry : closeEdges.entries()) {
+            for(Map.Entry<S, EdgeOrData<L>> entry : closeEdges.entrySet()) {
                 doCloseLabel(self, entry.getKey(), entry.getValue());
             }
 
@@ -974,6 +968,18 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         final T snapshot = typeChecker.snapshot();
         final StateCapture.Builder<S, L, D, T> builder = StateCapture.builder();
         final Set.Immutable<S> scopes = CapsuleUtil.toSet(this.scopes);
+        /*
+        StateCapture.&lt;S, L, D, T&gt;builder()
+        .scopes(io.usethesource.capsule.Set.Immutable&lt;S&gt;) // required scopes
+        .scopeGraph(mb.scopegraph.oopsla20.IScopeGraph.Immutable&lt;S, L, D&gt;) // required scopeGraph
+        .unInitializedScopes(org.metaborg.util.collection.MultiSet.Immutable&lt;S&gt;) // required unInitializedScopes
+        .openScopes(org.metaborg.util.collection.MultiSet.Immutable&lt;S&gt;) // required openScopes
+        .openEdges(org.metaborg.util.collection.MultiSetMap.Immutable&lt;S, mb.scopegraph.oopsla20.reference.EdgeOrData&lt;L&gt;&gt;) // required openEdges
+        .scopeNameCounters(org.metaborg.util.collection.MultiSet.Immutable&lt;String&gt;) // required scopeNameCounters
+        .usedStableScopes(io.usethesource.capsule.Set.Immutable&lt;String&gt;) // required usedStableScopes
+        .typeCheckerState(T) // required typeCheckerState
+        .build();
+        * */
         builder.scopes(scopes);
         builder.scopeGraph(localScopeGraph.get());
         localScopeGraph.set(ScopeGraph.Immutable.of());
@@ -982,24 +988,32 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         this.edgeLabels.forEach(lbl -> _edgeLabels.__insert(EdgeOrData.edge(lbl)));
         final Set.Immutable<EdgeOrData<L>> edgeLabels = _edgeLabels.freeze();
 
+        final MultiSet.Transient<S> unInitializedScopes = MultiSet.Transient.of();
+        final MultiSet.Transient<S> openScopes = MultiSet.Transient.of();
+        final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges = MultiSetMap.Transient.of();
+
         for(S scope : scopes) {
             final int initCount = countWaitingFor(InitScope.of(self, scope), self);
             for(int i = 0; i < initCount; i++) {
-                builder.addUnInitializedScopes(scope);
+                unInitializedScopes.add(scope);
             }
 
             final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
             for(int i = 0; i < closeCount; i++) {
-                builder.addOpenScopes(scope);
+                openScopes.add(scope);
             }
 
             for(EdgeOrData<L> label : edgeLabels) {
                 final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
                 for(int i = 0; i < closeLabelCount; i++) {
-                    builder.putOpenEdges(scope, label);
+                    openEdges.put(scope, label);
                 }
             }
         }
+
+        builder.unInitializedScopes(unInitializedScopes.freeze());
+        builder.openScopes(openScopes.freeze());
+        builder.openEdges(openEdges.freeze());
 
         final MultiSet.Transient<String> counters = MultiSet.Transient.of();
         counters.addAll(this.scopeNameCounters);
@@ -1058,7 +1072,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             final boolean ownedScope = context.scopeId(currentScope).equals(self.id());
             // @formatter:off
             final java.util.Set<EdgeOrData<L>> edges = edgeLabels.stream()
-                .filter(label -> !Iterables.isEmpty(snapshot.scopeGraph().getEdges(previousScope, label)))
+                .filter(label -> !snapshot.scopeGraph().getEdges(previousScope, label).isEmpty())
                 .map(EdgeOrData::edge)
                 .collect(Collectors.toCollection(HashSet::new));
             // @formatter:on

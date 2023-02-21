@@ -9,8 +9,6 @@ import org.junit.Test;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.ImmutableList;
-
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IScopeGraphDiffer;
 import mb.p_raffrayi.impl.diff.ScopeGraphDiffer;
@@ -25,6 +23,8 @@ import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.ImList;
+
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 public class EnvDiffTest extends BaseDifferTest {
@@ -54,7 +54,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
                 new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
                 TestDifferOps.instance, edgeLabels);
-        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+        differ.diff(ImList.Immutable.of(s1n), ImList.Immutable.of(s1o));
 
         final IEnvDiffer<String, Integer, List<String>> envDiffer =
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
@@ -89,7 +89,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
                 new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o, s3o), TestDifferDataOps.instance),
                 TestDifferOps.instance, edgeLabels);
-        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+        differ.diff(ImList.Immutable.of(s1n), ImList.Immutable.of(s1o));
 
         final IEnvDiffer<String, Integer, List<String>> envDiffer =
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
@@ -123,7 +123,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n), TestDifferDataOps.instance),
                 new StaticDifferContext<>(sc1, CapsuleUtil.immutableSet(s1o), TestDifferDataOps.instance),
                 TestDifferOps.instance, edgeLabels);
-        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+        differ.diff(ImList.Immutable.of(s1n), ImList.Immutable.of(s1o));
 
         final IEnvDiffer<String, Integer, List<String>> envDiffer =
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);
@@ -158,7 +158,7 @@ public class EnvDiffTest extends BaseDifferTest {
                 new StaticDifferContext<>(sc2, CapsuleUtil.toSet(s1n, s2n, s3n), TestDifferDataOps.instance),
                 new StaticDifferContext<>(sc1, CapsuleUtil.toSet(s1o, s2o), TestDifferDataOps.instance),
                 TestDifferOps.instance, edgeLabels);
-        differ.diff(ImmutableList.of(s1n), ImmutableList.of(s1o));
+        differ.diff(ImList.Immutable.of(s1n), ImList.Immutable.of(s1o));
 
         final IEnvDiffer<String, Integer, List<String>> envDiffer =
                 new EnvDiffer<>(new DifferBasedContext<>(differ, edgeLabels), TestDifferOps.instance);

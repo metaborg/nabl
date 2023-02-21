@@ -1,9 +1,11 @@
 package mb.p_raffrayi;
 
+import java.util.Collection;
+
 public interface IUnitStats {
 
-    Iterable<String> csvHeaders();
+    Collection<String> csvHeaders();
 
-    Iterable<String> csvRow();
+    Collection<String> csvRow();
 
 }

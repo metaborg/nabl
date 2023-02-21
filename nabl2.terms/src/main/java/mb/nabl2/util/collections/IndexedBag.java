@@ -18,7 +18,7 @@ public class IndexedBag<V, I> {
 
     public enum RemovalPolicy {
         ANY, // remove value from the collection when any of its indices are removed
-        ALL // remove value from the collection when all of its indices are removed
+        ALL // remove value from the collection when all of its indices are remonved
     }
 
     private final MultiSet.Transient<V> values;

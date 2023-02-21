@@ -76,7 +76,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
                     continue outer;
                 }
             }
-            max.add(l1);
+            max.__insert(l1);
         }
         return max.freeze();
     }
@@ -86,7 +86,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
         final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
-                smaller.add(l2);
+                smaller.__insert(l2);
             }
         }
         return smaller.freeze();

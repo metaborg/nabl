@@ -17,6 +17,7 @@ public abstract class AStrategoAnnotations {
         return getAnnotationList().isEmpty();
     }
 
+    // Overriding here avoids Immutables generating code dependent on guava... might be removed once guava is fully off the classpath
     @Override public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("StrategoAnnotations");

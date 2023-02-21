@@ -1,19 +1,23 @@
 package mb.p_raffrayi.collection;
 
+import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
+import org.metaborg.util.tuple.Tuple3;
 
 public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
-    private final Table<R, C, Collection<V>> table;
+    private final Map<R, Map<C, Collection<V>>> table;
 
 
-    public AMultiTable(Table<R, C, Collection<V>> table) {
+    public AMultiTable(Map<R, Map<C, Collection<V>>> table) {
         this.table = table;
     }
 
@@ -22,21 +26,23 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
 
     protected abstract Collection<V> createCollection(Collection<V> values);
 
+    protected abstract <K> Map<K, Collection<V>> createMap();
+
 
     @Override public boolean contains(R rowKey, C columnKey) {
-        return table.contains(rowKey, columnKey);
+        return table.getOrDefault(rowKey, Collections.emptyMap()).containsValue(columnKey);
     }
 
     @Override public boolean containsRow(R rowKey) {
-        return table.containsRow(rowKey);
+        return table.containsKey(rowKey);
     }
 
     @Override public boolean containsColumn(C columnKey) {
-        return table.containsColumn(columnKey);
+        return table.values().stream().flatMap(m -> m.keySet().stream()).anyMatch(c -> Objects.equals(c, columnKey));
     }
 
     @Override public Collection<V> get(R rowKey, C columnKey) {
-        return table.get(rowKey, columnKey);
+        return table.getOrDefault(rowKey, Collections.emptyMap()).get(columnKey);
     }
 
     @Override public void clear() {
@@ -44,27 +50,22 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public V put(R rowKey, C columnKey, V value) {
-        Collection<V> values = table.get(rowKey, columnKey);
-        if(values == null) {
-            values = createCollection();
-            table.put(rowKey, columnKey, values);
-        }
+        final Map<C, Collection<V>> column = table.computeIfAbsent(rowKey, rk -> createMap());
+        final Collection<V> values = column.computeIfAbsent(columnKey, ck -> createCollection());
         values.add(value);
         return value;
     }
 
     @Override public Collection<V> removeAll(R rowKey, C columnKey) {
-        final Collection<V> values = table.get(rowKey, columnKey);
-        if(values == null) {
+        final @Nullable Map<C, Collection<V>> column = table.get(rowKey);
+        if(column == null) {
             return null;
         }
-        final Collection<V> removedValues = createCollection(values);
-        values.clear();
-        return removedValues;
+        return column.remove(columnKey);
     }
 
     @Override public Map<C, Collection<V>> row(R rowKey) {
-        return table.row(rowKey);
+        return table.get(rowKey);
     }
 
     @Override public Iterable<V> rowValues(R rowKey) {
@@ -72,34 +73,32 @@ public abstract class AMultiTable<R, C, V> implements MultiTable<R, C, V> {
     }
 
     @Override public Map<R, Collection<V>> column(C columnKey) {
-        return table.column(columnKey);
+        return table.keySet().stream().map(k -> new AbstractMap.SimpleImmutableEntry<>(k, get(k, columnKey))).collect(
+            Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override public Iterable<V> columnValues(C columnKey) {
         return Iterables2.fromConcat(column(columnKey).values());
     }
 
-    @Override public Set<Cell<R, C, Collection<V>>> cellSet() {
-        return table.cellSet();
+    @Override public Set<Tuple3<R, C, Collection<V>>> cellSet() {
+        return table.entrySet().stream().flatMap(row -> row.getValue().entrySet().stream().map(col -> Tuple3.of(row.getKey(), col.getKey(), col.getValue()))).collect(
+            Collectors.toSet());
     }
 
     @Override public Set<R> rowKeySet() {
-        return table.rowKeySet();
+        return table.keySet();
     }
 
     @Override public Set<C> columnKeySet() {
-        return table.columnKeySet();
+        return table.values().stream().flatMap(m -> m.keySet().stream()).collect(Collectors.toSet());
     }
 
     @Override public Iterable<V> values() {
-        return Iterables2.fromConcat(table.values());
+        return table.values().stream().flatMap(m -> m.values().stream().flatMap(c -> c.stream())).collect(Collectors.toSet());
     }
 
     @Override public Map<R, Map<C, Collection<V>>> rowMap() {
-        return table.rowMap();
-    }
-
-    @Override public Map<C, Map<R, Collection<V>>> columnMap() {
-        return table.columnMap();
+        return table;
     }
 }

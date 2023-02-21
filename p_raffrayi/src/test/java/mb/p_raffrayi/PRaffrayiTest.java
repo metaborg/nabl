@@ -17,12 +17,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
@@ -1074,7 +1073,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public ResolveBeforeCloseEdgeDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1110,7 +1109,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public CloseEdgeBeforeResolveDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1146,7 +1145,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public ResolveBeforeSetDatumDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1182,7 +1181,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public SetDatumBeforeResolveDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1218,7 +1217,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public CloseBeforeResolveNoExternalRepDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1258,7 +1257,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public CloseBeforeResolveFailingExternalRepDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1298,7 +1297,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public CloseBeforeResolveExceptionalExternalRepDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(
@@ -1338,7 +1337,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
 
         public CloseBeforeResolveNoDatumDatum(Integer ownLabel, Integer... queryLabels) {
             this.ownLabel = ownLabel;
-            this.queryLabels = ImmutableList.copyOf(queryLabels);
+            this.queryLabels = ImList.Immutable.copyOf(queryLabels);
         }
 
         @Override public IFuture<EmptyI> run(

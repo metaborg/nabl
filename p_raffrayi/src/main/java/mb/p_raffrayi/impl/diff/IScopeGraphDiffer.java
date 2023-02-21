@@ -4,9 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.future.IFuture;
-
-import com.google.common.collect.Multimap;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
 import org.metaborg.util.collection.BiMap;
@@ -27,7 +26,7 @@ public interface IScopeGraphDiffer<S, L, D> {
      */
     IFuture<ScopeGraphDiff<S, L, D>> diff(IScopeGraph.Immutable<S, L, D> initiallyMatchedGraph, Collection<S> scopes,
             Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
-            Multimap<S, EdgeOrData<L>> openEdges);
+            MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges);
 
     /**
      * Provides external matches to the differ. This method is used to ensure that shared scopes remain consistent in

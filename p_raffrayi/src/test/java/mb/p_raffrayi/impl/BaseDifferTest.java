@@ -5,9 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.p_raffrayi.impl.diff.IDifferDataOps;
 import mb.p_raffrayi.impl.diff.IDifferOps;
@@ -44,7 +43,7 @@ public abstract class BaseDifferTest {
         }
 
         @Override public List<String> embed(String scope) {
-            return ImmutableList.of(scope);
+            return ImList.Immutable.of(scope);
         }
 
         @Override public boolean ownScope(String scope) {

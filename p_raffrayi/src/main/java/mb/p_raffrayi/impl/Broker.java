@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action0;
 import org.metaborg.util.functions.Function0;
@@ -29,8 +30,6 @@ import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableSet;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.DeadlockException;
@@ -108,7 +107,7 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
             this.previousResult = null;
         }
         this.scopeImpl = scopeImpl;
-        this.edgeLabels = ImmutableSet.copyOf(edgeLabels);
+        this.edgeLabels = CapsuleUtil.toSet(edgeLabels);
         this.cancel = cancel;
         this.progress = progress;
 
@@ -307,11 +306,11 @@ public class Broker<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L, 
             return getActorRef(segments).thenCompose(parent -> {
                 return executeCritial(() -> {
                     final UnitProcess<S, L, D> origin = new UnitProcess<>(parent);
-                    dependentSet.getAndUpdate(ds -> ds.add(origin));
+                    dependentSet.getAndUpdate(ds -> ds.add(origin, 1));
                     final ICompletableFuture<IActorRef<? extends IUnit<S, L, D, ?>>> future =
                             delays.computeIfAbsent(unitId, key -> new CompletableFuture<>());
                     return future.whenComplete((ref, ex) -> {
-                        executeCritial(() -> dependentSet.getAndUpdate(ds -> ds.remove(origin)));
+                        executeCritial(() -> dependentSet.getAndUpdate(ds -> ds.remove(origin, 1)));
                     });
                 });
             });

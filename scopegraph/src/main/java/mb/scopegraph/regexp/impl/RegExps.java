@@ -24,7 +24,7 @@ public final class RegExps {
             }
 
             @Override public S symbol(S s) {
-                alphabet.add(s);
+                alphabet.__insert(s);
                 return null;
             }
 

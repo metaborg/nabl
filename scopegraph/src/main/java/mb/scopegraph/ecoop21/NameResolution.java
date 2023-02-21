@@ -1,6 +1,7 @@
 package mb.scopegraph.ecoop21;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -168,7 +169,7 @@ public class NameResolution<S, L, D, M> {
     private IFuture<Tuple2<Env<S, L, D>, M>> env_edges(ScopePath<S, L> path, LabelWf<L> re, L l, ICancel cancel) {
         logger.trace("env_edges {} {} {}", path, re, l);
         final LabelWf<L> newRe = re.step(l).get();
-        final IFuture<Iterable<S>> scopes = context.getEdges(path.getTarget(), l);
+        final IFuture<Collection<S>> scopes = context.getEdges(path.getTarget(), l);
         logger.trace("env_edges {} {} {}: edge scopes {}", path, re, l, scopes);
         return scopes.thenCompose(ss -> {
             List<IFuture<Tuple2<Env<S, L, D>, M>>> envs = new ArrayList<>();

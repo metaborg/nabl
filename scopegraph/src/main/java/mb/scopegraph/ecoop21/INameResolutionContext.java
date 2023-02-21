@@ -1,5 +1,6 @@
 package mb.scopegraph.ecoop21;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
@@ -16,7 +17,7 @@ public interface INameResolutionContext<S, L, D, M> {
 
     IFuture<Optional<D>> getDatum(S scope);
 
-    IFuture<Iterable<S>> getEdges(S scope, L label);
+    IFuture<Collection<S>> getEdges(S scope, L label);
 
     IFuture<Tuple2<Boolean, M>> dataWf(D datum, ICancel cancel) throws InterruptedException;
 

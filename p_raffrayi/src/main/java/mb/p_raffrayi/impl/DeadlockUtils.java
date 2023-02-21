@@ -7,11 +7,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.Sets;
+
+import io.usethesource.capsule.BinaryRelation;
+import io.usethesource.capsule.Set.Immutable;
+import io.usethesource.capsule.Set.Transient;
+import io.usethesource.capsule.SetMultimap;
 
 public class DeadlockUtils {
 
@@ -51,12 +54,14 @@ public class DeadlockUtils {
      * @return A set of strongly connected components, where each component is represented by the set of vertices it includes.
      */
     public static <V> Set<Set<V>> sccs(IGraph<V> graph) {
-        final SetMultimap<V, V> reachables = HashMultimap.create();
+        final SetMultimap.Transient<V, V> reachables = SetMultimap.Transient.of();
         final Set<V> vertices = new HashSet<>(graph.vertices());
 
         // Create a map of all transitively reachable vertices.
         for(V vertex: vertices) {
-            reachables.putAll(vertex, reachableVertices(vertex, graph));
+            for(V reachableVertex : reachableVertices(vertex, graph)) {
+                reachables.__insert(vertex, reachableVertex);
+            }
         }
 
         // For each vertex, see of all reachable vertices have the same reachable set.
@@ -125,11 +130,11 @@ public class DeadlockUtils {
 
     private static class Graph<V> implements IGraph<V> {
 
-        private final ImmutableSet<V> vertices;
+        private final Immutable<V> vertices;
 
-        private final ImmutableMultimap<V, V> edges;
+        private final MultiSetMap.Immutable<V, V> edges;
 
-        public Graph(ImmutableSet<V> vertices, ImmutableMultimap<V, V> edges) {
+        public Graph(Immutable<V> vertices, MultiSetMap.Immutable<V, V> edges) {
             this.edges = edges;
             this.vertices = vertices;
         }
@@ -139,7 +144,7 @@ public class DeadlockUtils {
         }
 
         @Override public Collection<V> targets(V vertex) {
-            return edges.get(vertex);
+            return edges.get(vertex).toCollection();
         }
 
         @Override public IGraph<V> invert() {
@@ -166,9 +171,9 @@ public class DeadlockUtils {
 
     public static class GraphBuilder<V> {
 
-        private ImmutableSet.Builder<V> vertices = ImmutableSet.builder();
+        private Transient<V> vertices = CapsuleUtil.transientSet();
 
-        private ImmutableMultimap.Builder<V, V> edges = ImmutableMultimap.builder();
+        private MultiSetMap.Transient<V, V> edges = MultiSetMap.Transient.of();
 
         private GraphBuilder() {
 
@@ -179,7 +184,7 @@ public class DeadlockUtils {
         }
 
         public GraphBuilder<V> addVertex(V vertex) {
-            vertices.add(vertex);
+            vertices.__insert(vertex);
             return this;
         }
 
@@ -191,7 +196,7 @@ public class DeadlockUtils {
         }
 
         public IGraph<V> build() {
-            return new Graph<>(vertices.build(), edges.build());
+            return new Graph<>(vertices.freeze(), edges.freeze());
         }
 
     }

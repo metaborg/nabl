@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -19,7 +20,9 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation3;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
@@ -27,18 +30,12 @@ import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletable;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.DeadlockException;
@@ -77,6 +74,7 @@ import mb.p_raffrayi.nameresolution.IResolutionContext;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.p_raffrayi.nameresolution.NameResolutionQuery;
 import mb.p_raffrayi.nameresolution.StateMachineQuery;
+import mb.p_raffrayi.nameresolution.tracing.AExtQuerySet;
 import mb.p_raffrayi.nameresolution.tracing.ExtQuerySet;
 import mb.p_raffrayi.nameresolution.tracing.ExtQuerySets;
 import mb.scopegraph.ecoop21.LabelOrder;
@@ -247,7 +245,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 analysis.set(r);
             }
             granted(token, self);
-            final Multiset<IWaitFor<S, L, D>> selfTokens = getTokens(process);
+            final MultiSet<IWaitFor<S, L, D>> selfTokens = getTokens(process);
             if(!selfTokens.isEmpty()) {
                 logger.debug("{} returned while waiting on {}", self, selfTokens);
             }
@@ -271,7 +269,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     protected void initDiffer(IScopeGraphDiffer<S, L, D> differ, IScopeGraph.Immutable<S, L, D> scopeGraph,
             Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
-            Multimap<S, EdgeOrData<L>> openEdges) {
+            MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges) {
         assertDifferEnabled();
         logger.debug("Initializing differ: {} with initial scope graph: {}.", differ, scopeGraph);
         this.differ = differ;
@@ -530,8 +528,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                             stats.outgoingQueries += 1;
                         }
                         return result.thenApply(ans -> {
-                            ExtQuerySet.Builder<S, L, D> extQueriesBuilder =
-                                    ExtQuerySet.<S, L, D>builder().from(ExtQuerySets.empty());
+                            AExtQuerySet.Builder<S, L, D> extQueriesBuilder =
+                                    AExtQuerySet.<S, L, D>builder().from(ExtQuerySets.empty());
                             if(isQueryRecordingEnabled()) {
                                 extQueriesBuilder.addAllTransitiveQueries(ans.transitiveQueries());
                                 extQueriesBuilder.addAllPredicateQueries(ans.predicateQueries());
@@ -563,7 +561,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                         } else {
                             final ICompletableFuture<D> internalResult = new CompletableFuture<>();
                             final IWaitFor<S, L, D> token =
-                                    TypeCheckerState.of(sender, ImmutableList.of(datum.get()), internalResult);
+                                    TypeCheckerState.of(sender, ImList.Immutable.of(datum.get()), internalResult);
                             waitFor(token, self);
                             result.whenComplete(internalResult::complete); // must come after waitFor
                             ret = internalResult.whenComplete((rep, ex) -> {
@@ -606,7 +604,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 } else {
                     final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
                     final TypeCheckerState<S, L, D> token =
-                            TypeCheckerState.of(sender, ImmutableList.of(d), internalResult);
+                            TypeCheckerState.of(sender, ImList.Immutable.of(d), internalResult);
                     waitFor(token, self);
                     result.whenComplete(internalResult::complete); // must come after waitFor
                     internalResult.whenComplete((r, ex) -> {
@@ -617,7 +615,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 }
                 return future.thenApply(wf -> {
                     return Tuple2.of(wf,
-                            ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                            AExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
                 });
             }
 
@@ -638,7 +636,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 } else {
                     final ICompletableFuture<Boolean> internalResult = new CompletableFuture<>();
                     final TypeCheckerState<S, L, D> token =
-                            TypeCheckerState.of(sender, ImmutableList.of(d1, d2), internalResult);
+                            TypeCheckerState.of(sender, ImList.Immutable.of(d1, d2), internalResult);
                     waitFor(token, self);
                     result.whenComplete(internalResult::complete); // must come after waitFor
                     internalResult.whenComplete((r, ex) -> {
@@ -650,7 +648,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
                 return future.thenApply(wf -> {
                     return Tuple2.of(wf,
-                            ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                            AExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
                 });
             }
 
@@ -690,7 +688,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private class RecordingTypeCheckerContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
 
-        private final ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries = ImmutableSet.builder();
+        private final Set.Transient<IRecordedQuery<S, L, D>> queries = Set.Transient.of();
         private boolean disposed = false;
 
         private final IActorRef<? extends IUnit<S, L, D, ?>> origin;
@@ -760,18 +758,18 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
         private void recordQuery(IRecordedQuery<S, L, D> query) {
             assertUndisposed();
-            this.queries.add(query);
+            this.queries.__insert(query);
         }
 
-        private void recordQueries(Iterable<IRecordedQuery<S, L, D>> queries) {
+        private void recordQueries(java.util.Set<IRecordedQuery<S, L, D>> queries) {
             assertUndisposed();
-            this.queries.addAll(queries);
+            this.queries.__insertAll(queries);
         }
 
         public java.util.Set<IRecordedQuery<S, L, D>> dispose() {
             assertUndisposed();
             disposed = true;
-            return queries.build();
+            return queries.freeze();
         }
 
     }
@@ -817,7 +815,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     }
 
     private Set<S> datumScopes(Env<S, L, D> env) {
-        return Streams.stream(env).map(ResolutionPath::getDatum).map(context::getScopes)
+        return Iterables2.stream(env).map(ResolutionPath::getDatum).map(context::getScopes)
                 .reduce(CapsuleUtil.immutableSet(), Set.Immutable::__insertAll);
     }
 
@@ -843,11 +841,11 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         return wfg.countWaitingFor(new UnitProcess<>(from), token);
     }
 
-    private Multiset<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
+    private MultiSet<IWaitFor<S, L, D>> getTokens(IProcess<S, L, D> unit) {
         return wfg.getTokens(unit);
     }
 
-    protected Multiset<IWaitFor<S, L, D>> ownTokens() {
+    protected MultiSet<IWaitFor<S, L, D>> ownTokens() {
         return getTokens(process);
     }
 
@@ -1038,7 +1036,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 throws InterruptedException {
             final StaticQueryContext queryContext = new StaticQueryContext(sender, scopeGraph);
             return dataWf.wf(datum, queryContext, cancel).thenApply(wf -> {
-                return Tuple2.of(wf, ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                return Tuple2.of(wf, AExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
             });
         }
 
@@ -1046,7 +1044,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 throws InterruptedException {
             final StaticQueryContext queryContext = new StaticQueryContext(sender, scopeGraph);
             return dataLeq.leq(d1, d2, queryContext, cancel).thenApply(wf -> {
-                return Tuple2.of(wf, ExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
+                return Tuple2.of(wf, AExtQuerySet.<S, L, D>builder().addAllPredicateQueries(queryContext.dispose()).build());
             });
         }
 
@@ -1075,7 +1073,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
 
-        private final ImmutableSet.Builder<IRecordedQuery<S, L, D>> queries = ImmutableSet.builder();
+        private final Set.Transient<IRecordedQuery<S, L, D>> queries = Set.Transient.of();
         private boolean disposed = false;
 
         public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,
@@ -1127,20 +1125,20 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             }
         }
 
-        private void recordQueries(Iterable<IRecordedQuery<S, L, D>> queries) {
+        private void recordQueries(java.util.Set<IRecordedQuery<S, L, D>> queries) {
             assertUnDisposed();
-            this.queries.addAll(queries);
+            this.queries.__insertAll(queries);
         }
 
         private void recordQuery(IRecordedQuery<S, L, D> query) {
             assertUnDisposed();
-            this.queries.add(query);
+            this.queries.__insert(query);
         }
 
         public java.util.Set<IRecordedQuery<S, L, D>> dispose() {
             assertUnDisposed();
             disposed = true;
-            return queries.build();
+            return queries.freeze();
         }
 
     }
@@ -1483,13 +1481,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
     protected IDifferContext<S, L, D> differContext(Function1<D, D> instantiateData) {
         return new IDifferContext<S, L, D>() {
 
-            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
                 final IFuture<Unit> complete = isComplete(scope, EdgeOrData.edge(label), self);
                 if(complete.isDone()) {
                     return CompletableFuture.completedFuture(scopeGraph.get().getEdges(scope, label));
                 }
 
-                final ICompletableFuture<Iterable<S>> result = new CompletableFuture<>();
+                final ICompletableFuture<Collection<S>> result = new CompletableFuture<>();
                 complete.whenComplete((__, ex) -> {
                     if(ex != null) {
                         if(ex instanceof DeadlockException) {
@@ -1634,9 +1632,8 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
             this.actorStats = actorStats;
         }
 
-        @Override public Iterable<String> csvHeaders() {
-            // @formatter:off
-            return Iterables.concat(ImmutableList.of(
+        @Override public Collection<String> csvHeaders() {
+            final ImList.Transient<String> builder = ImList.Transient.of(
                 "runtimeMillis",
                 "localQueries",
                 "incomingQueries",
@@ -1645,13 +1642,13 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 "incomingConfirmations",
                 "dataWfChecks",
                 "dataLeqChecks"
-            ), actorStats.csvHeaders());
-            // @formatter:on
+            );
+            builder.addAll(actorStats.csvHeaders());
+            return builder.freeze();
         }
 
-        @Override public Iterable<String> csvRow() {
-            // @formatter:off
-            return Iterables.concat(ImmutableList.of(
+        @Override public Collection<String> csvRow() {
+            final ImList.Transient<String> builder = ImList.Transient.of(
                 Long.toString(TimeUnit.MILLISECONDS.convert(runtimeNanos, TimeUnit.NANOSECONDS)),
                 Integer.toString(localQueries),
                 Integer.toString(incomingQueries),
@@ -1660,8 +1657,9 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
                 Integer.toString(incomingConfirmations),
                 Integer.toString(dataWfChecks),
                 Integer.toString(dataLeqChecks)
-            ), actorStats.csvRow());
-            // @formatter:on
+            );
+            builder.addAll(actorStats.csvRow());
+            return builder.freeze();
         }
 
         @Override public String toString() {

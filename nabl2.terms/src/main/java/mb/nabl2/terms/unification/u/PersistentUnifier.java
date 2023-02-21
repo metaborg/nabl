@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.BagMap;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate1;
@@ -479,7 +480,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(vars.isEmpty()) {
                     return subst.freeze();
                 }
-                final BagMap.Transient<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
+                final MultiSetMap.Transient<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
@@ -697,8 +698,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return reps.get(var);
         }
 
-        protected BagMap.Transient<ITermVar, ITermVar> getInvReps() {
-            final BagMap.Transient<ITermVar, ITermVar> invReps = BagMap.Transient.withSizeEstimate(reps.size());
+        protected MultiSetMap.Transient<ITermVar, ITermVar> getInvReps() {
+            final MultiSetMap.Transient<ITermVar, ITermVar> invReps = MultiSetMap.Transient.of();
             for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
                 invReps.put(e.getValue(), e.getKey());
             }
