@@ -8,14 +8,11 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 import org.spoofax.interpreter.library.AbstractPrimitive;
-//import strategolib.terms.StrategoImmutableMap;
 import org.spoofax.interpreter.library.ssl.StrategoImmutableMap;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.TermUtils;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Assigns unique AST indices to the terms of the given subtree, even if they already have AST indices.
