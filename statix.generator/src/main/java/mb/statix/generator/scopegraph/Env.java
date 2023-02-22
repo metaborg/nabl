@@ -3,6 +3,8 @@ package mb.statix.generator.scopegraph;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
+
 import com.google.common.collect.ImmutableList;
 
 import mb.scopegraph.oopsla20.path.IResolutionPath;
@@ -28,7 +30,7 @@ public class Env<S, L, D, X> {
      * @param matches a list of matches in the environment
      * @param rejects a list of rejections in the environment
      */
-    private Env(ImmutableList<Match<S, L, D, X>> matches, ImmutableList<Match<S, L, D, X>> rejects) {
+    private Env(ImList.Immutable<Match<S, L, D, X>> matches, ImList.Immutable<Match<S, L, D, X>> rejects) {
         this.matches = matches;
         this.rejects = rejects;
     }
@@ -64,7 +66,7 @@ public class Env<S, L, D, X> {
      * @return the empty environment
      */
     public static <S, L, D, X> Env<S, L, D, X> empty() {
-        return new Env<>(ImmutableList.of(), ImmutableList.of());
+        return new Env<>(ImList.Immutable.of(), ImList.Immutable.of());
     }
 
     /**
@@ -79,7 +81,7 @@ public class Env<S, L, D, X> {
      * @return the new environment
      */
     public static <S, L, D, X> Env<S, L, D, X> match(IResolutionPath<S, L, D> path, Optional<X> x) {
-        return new Env<>(ImmutableList.of(new Match<>(path, x)), ImmutableList.of());
+        return new Env<>(ImList.Immutable.of(new Match<>(path, x)), ImList.Immutable.of());
     }
 
     /**
@@ -105,15 +107,15 @@ public class Env<S, L, D, X> {
      */
     public static class Builder<S, L, D, X> {
 
-        private final ImmutableList.Builder<Match<S, L, D, X>> matches;
-        private final ImmutableList.Builder<Match<S, L, D, X>> rejects;
+        private final ImList.Transient<Match<S, L, D, X>> matches;
+        private final ImList.Transient<Match<S, L, D, X>> rejects;
 
         /**
          * Initializes a new instance of the {@link Builder} class.
          */
         public Builder() {
-            this.matches = ImmutableList.builder();
-            this.rejects = ImmutableList.builder();
+            this.matches = ImList.Transient.of();
+            this.rejects = ImList.Transient.of();
         }
 
         /**
@@ -176,7 +178,7 @@ public class Env<S, L, D, X> {
          * @return the build environment
          */
         public Env<S, L, D, X> build() {
-            return new Env<>(matches.build(), rejects.build());
+            return new Env<>(matches.freeze(), rejects.freeze());
         }
 
     }

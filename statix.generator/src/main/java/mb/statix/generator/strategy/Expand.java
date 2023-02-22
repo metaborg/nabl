@@ -12,14 +12,9 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -31,6 +26,7 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
+import mb.statix.generator.util.Cache;
 import mb.statix.generator.util.RandomGenerator;
 import mb.statix.generator.util.StreamUtil;
 import mb.statix.solver.CriticalEdge;
@@ -62,7 +58,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         this.rules = rules;
     }
 
-    final Cache<String, java.util.Map<Rule, Double>> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
+    final Cache<String, java.util.Map<Rule, Double>> cache = new Cache<>(1000);
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CUser>> node) {
@@ -117,24 +113,20 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
      * Return a map with ordered keys mapping rules to their weights.
      */
     private java.util.Map<Rule, Double> getWeightedRules(SearchContext ctx, String name) {
-        try {
-            return cache.get(name, () -> {
-                RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
-                final ImmutableSet<Rule> rs = rules.getOrderIndependentRules(name);
-                final java.util.Map<String, Long> rcs =
-                        rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
-                // ImmutableMap iterates over keys in insertion-order
-                final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();
-                rs.forEach(r -> {
-                    long count = rcs.getOrDefault(r.label(), 1L);
-                    double weight = ruleWeight.apply(r, count);
-                    ruleWeights.put(r, weight);
-                });
-                return ruleWeights.build();
+        return cache.computeIfAbsent(name, k -> {
+            RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
+            final Set.Immutable<Rule> rs = rules.getOrderIndependentRules(name);
+            final java.util.Map<String, Long> rcs =
+                    rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
+            // ImmutableMap iterates over keys in insertion-order
+            final Map.Transient<Rule, Double> ruleWeights = Map.Transient.of();
+            rs.forEach(r -> {
+                long count = rcs.getOrDefault(r.label(), 1L);
+                double weight = ruleWeight.apply(r, count);
+                ruleWeights.__put(r, weight);
             });
-        } catch(ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+            return ruleWeights.freeze();
+        });
     }
 
     private Optional<SearchState> updateSearchState(SearchContext ctx, IConstraint predicate, ApplyResult result,

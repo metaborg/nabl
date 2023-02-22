@@ -1,6 +1,6 @@
 package mb.statix.generator.util;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,9 +12,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 
@@ -24,7 +23,7 @@ public class Subsets<E> {
     private final Set.Immutable<E> elementSet;
 
     private Subsets(Iterable<? extends E> elements) {
-        this.elementList = ImmutableList.copyOf(elements);
+        this.elementList = ImList.Immutable.copyOf(elements);
         this.elementSet = CapsuleUtil.toSet(elements);
     }
 
@@ -43,7 +42,7 @@ public class Subsets<E> {
         final List<Integer> indices =
                 IntStream.range(start, end + 1).boxed().collect(Collectors.toCollection(ArrayList::new));
         Collections.shuffle(indices, rnd);
-        return flatMap(indices.stream(), index -> {
+        return lazyFlatMap(indices.stream(), index -> {
             return enumerate(n - 1, index, end + 1, rnd).map(subset -> subset.__insert(elementList.get(index)));
         });
     }

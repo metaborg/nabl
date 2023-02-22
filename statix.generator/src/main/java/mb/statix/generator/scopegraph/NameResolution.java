@@ -1,18 +1,14 @@
 package mb.statix.generator.scopegraph;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import javax.annotation.Nullable;
 
 import org.metaborg.util.functions.Predicate0;
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
-
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.path.IScopePath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -22,8 +18,6 @@ import mb.scopegraph.oopsla20.reference.LabelWF;
 import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.scopegraph.oopsla20.terms.path.Paths;
 import mb.statix.spec.Spec;
-
-import javax.annotation.Nullable;
 
 public class NameResolution<S extends D, L, D, X> {
 
@@ -49,8 +43,9 @@ public class NameResolution<S extends D, L, D, X> {
         this.spec = spec;
         this.scopeGraph = scopeGraph;
         this.dataLabel = EdgeOrData.data();
-        this.allLabels = Streams.concat(Stream.of(dataLabel), edgeLabels.stream().map(EdgeOrData::edge))
-                .collect(Collectors.toSet());
+        this.allLabels =
+            edgeLabels.stream().map(EdgeOrData::edge).collect(CapsuleCollectors.toSet())
+                .__insert(dataLabel);
         this.labelWF = labelWF;
         this.labelOrder = labelOrder;
         this.dataWF = dataWF;
@@ -141,16 +136,16 @@ public class NameResolution<S extends D, L, D, X> {
      * @return the maximal elements of the set of labels
      */
     private Set<EdgeOrData<L>> max(Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> max = ImmutableSet.builder();
+        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> max = io.usethesource.capsule.Set.Transient.of();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
                     continue outer;
                 }
             }
-            max.add(l1);
+            max.__insert(l1);
         }
-        return max.build();
+        return max.freeze();
     }
 
     /**
@@ -162,13 +157,13 @@ public class NameResolution<S extends D, L, D, X> {
      */
     private Set<EdgeOrData<L>> smaller(Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final ImmutableSet.Builder<EdgeOrData<L>> smaller = ImmutableSet.builder();
+        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> smaller = io.usethesource.capsule.Set.Transient.of();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
-                smaller.add(l2);
+                smaller.__insert(l2);
             }
         }
-        return smaller.build();
+        return smaller.freeze();
     }
 
     /**

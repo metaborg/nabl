@@ -1,16 +1,15 @@
 package mb.statix.generator.strategy;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function0;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Queues;
 
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -29,9 +28,9 @@ public final class Seq<I extends SearchState, O extends SearchState> extends Sea
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Override public SearchNodes<O> doApply(SearchContext ctx,
             SearchNode<I> node) {
         Stream<SearchNode> nodes = Stream.of(node);
-        Deque<Function0<String>> descs = Queues.newArrayDeque();
+        Deque<Function0<String>> descs = new ArrayDeque<>();
         for(SearchStrategy s : ss) {
-            nodes = flatMap(nodes, n -> {
+            nodes = lazyFlatMap(nodes, n -> {
                 final SearchNodes<?> sn = s.apply(ctx, n);
                 descs.push(sn::desc);
                 return sn.nodes();
@@ -48,7 +47,7 @@ public final class Seq<I extends SearchState, O extends SearchState> extends Sea
 
     public static class Builder<I extends SearchState, O extends SearchState> {
 
-        private final ImmutableList.Builder<SearchStrategy<?, ?>> ss = ImmutableList.builder();
+        private final ImList.Transient<SearchStrategy<?, ?>> ss = ImList.Transient.of();
 
         public Builder(SearchStrategy<I, O> s) {
             ss.add(s);
@@ -60,7 +59,7 @@ public final class Seq<I extends SearchState, O extends SearchState> extends Sea
         }
 
         public Seq<I, O> $() {
-            return new Seq<>(ss.build());
+            return new Seq<>(ss.freeze());
         }
 
     }

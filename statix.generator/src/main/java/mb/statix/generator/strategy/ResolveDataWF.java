@@ -8,12 +8,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.ImList;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
@@ -56,7 +55,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final ApplyResult applyResult;
         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
         if((applyResult =
-                RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
+                RuleUtil.apply(state.unifier(), dataWf, ImList.Immutable.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
                         .orElse(null)) == null) {
             return Optional.empty();
         }
