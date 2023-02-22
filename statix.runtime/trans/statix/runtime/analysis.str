@@ -568,7 +568,7 @@ rules
 rules
 
   // solve-constraint-with-initial-state(|Analysis, LogLevel) : Constraint -> Solution
-  stx--solve-constraint-with-initial-state(|spec, a, level) = stx--solve-constraint-with-initial-state(|a, level, (), ())
+  stx--solve-constraint-with-initial-state(|a, level) = stx--solve-constraint-with-initial-state(|a, level, (), ())
 
   // solve-constraint-with-initial-state(|Analysis, LogLevel, Progress, Cancel) : Constraint -> Solution
   stx--solve-constraint-with-initial-state(|a, level, progress, cancel) = prim("STX_solve_constraint_with_initial_state", a, level, progress, cancel)
