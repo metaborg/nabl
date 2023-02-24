@@ -754,8 +754,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
                     if(external) {
                         final StateCapture<S, L, D, T> capture = previousResult.result().localState();
-                        final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
-                                capture.unInitializedScopes().elementSet());
+                        final java.util.Set<S> openScopes = CapsuleUtil.toSet(Sets.union(capture.openScopes().elementSet(),
+                                capture.unInitializedScopes().elementSet()));
 
                         initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
                                 capture.scopeGraph(), capture.scopes(), previousResult.result().sharedScopes(),

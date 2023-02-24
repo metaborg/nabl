@@ -104,9 +104,8 @@ public abstract class Pattern implements Serializable {
         }
 
         // generate fresh unifier variables for unmatched pattern variables
-        final java.util.Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet());
-        for(ITermVar v : freeVars) {
-            _subst.put(v, fresh.freshVar(v));
+        for(ITermVar freeVar : Sets.difference(getVars(), _subst.domainSet())) {
+            _subst.put(freeVar, fresh.freshVar(freeVar));
         }
         final ISubstitution.Immutable subst = _subst.freeze();
 

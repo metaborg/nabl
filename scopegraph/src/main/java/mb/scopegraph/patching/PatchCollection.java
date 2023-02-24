@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import org.metaborg.util.RefBool;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -371,7 +372,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     private static <S> void checkInvalidIdentities(java.util.Set<S> identities, java.util.Set<S> nonIdentities)
             throws InvalidPatchCompositionException {
-        final java.util.Set<S> conflicts = Sets.intersection(nonIdentities, identities);
+        final java.util.Set<S> conflicts = CapsuleUtil.toSet(Sets.intersection(nonIdentities, identities));
         if(!conflicts.isEmpty()) {
             throw new InvalidPatchCompositionException("Match conflict for " + conflicts + ".");
         }

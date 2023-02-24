@@ -1,6 +1,5 @@
 package mb.nabl2.terms.substitution;
 
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -8,6 +7,7 @@ import java.util.stream.Collectors;
 import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.collection.ImList;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -73,8 +73,8 @@ public class Renaming implements IRenaming {
         // @formatter:on
     }
 
-    @Override public Map<ITermVar, ITermVar> asMap() {
-        return new BiMap.AsJavaMap<>(renaming);
+    @Override public Map.Immutable<ITermVar, ITermVar> asMap() {
+        return renaming.asMap();
     }
 
     @Override public ISubstitution.Immutable asSubstitution() {

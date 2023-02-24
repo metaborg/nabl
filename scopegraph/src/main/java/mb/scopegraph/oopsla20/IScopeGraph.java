@@ -28,7 +28,7 @@ public interface IScopeGraph<S, L, D> {
      *
      * @return the map of pairs of scopes and labels and the scopes each scope-label pair point to
      */
-    Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
+    Map<? extends Entry<S, L>, ? extends Collection<S>> getEdges();
 
     /**
      * Gets all scopes from the given scope that have the specified label.

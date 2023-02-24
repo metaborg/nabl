@@ -2,10 +2,10 @@ package mb.nabl2.terms.matching;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Set;
 
 import org.metaborg.util.tuple.Tuple2;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -15,10 +15,10 @@ public class MatchResult implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ISubstitution.Immutable substitution;
-    private final Set<ITermVar> constrainedVars;
+    private final Set.Immutable<ITermVar> constrainedVars;
     private final List<Tuple2<ITerm, ITerm>> equalities;
 
-    MatchResult(ISubstitution.Immutable substitution, Set<ITermVar> constrainedVars, List<Tuple2<ITerm, ITerm>> equalities) {
+    MatchResult(ISubstitution.Immutable substitution, Set.Immutable<ITermVar> constrainedVars, List<Tuple2<ITerm, ITerm>> equalities) {
         this.substitution = substitution;
         this.constrainedVars = constrainedVars;
         this.equalities = equalities;
@@ -28,7 +28,7 @@ public class MatchResult implements Serializable {
         return substitution;
     }
 
-    public Set<ITermVar> constrainedVars() {
+    public Set.Immutable<ITermVar> constrainedVars() {
         return constrainedVars;
     }
 

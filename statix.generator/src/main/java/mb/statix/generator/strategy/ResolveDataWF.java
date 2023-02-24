@@ -102,13 +102,12 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.domainSet(), unifier.domainSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`
         final List<ITerm> leftTerms = new ArrayList<>();
         final List<ITerm> rightTerms = new ArrayList<>();
-        for(ITermVar var : unifiedVars) {
+        for(ITermVar var : Sets.difference(newUnifier.domainSet(), unifier.domainSet())) {
             final ITerm term = newUnifier.findTerm(var);
             if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
                 leftTerms.add(var);

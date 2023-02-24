@@ -28,10 +28,8 @@ public final class ScopeGraphUtil {
         );
         // @formatter:off
 
-        final Set<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
-
         final StringBuilder sb = new StringBuilder();
-        for(S source : scopes) {
+        for(S source : Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet())) {
             sb.append(source);
             if(scopeGraph.getData(source).isPresent()) {
                 sb.append(" : ");

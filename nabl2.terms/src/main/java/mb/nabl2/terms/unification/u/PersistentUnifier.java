@@ -444,7 +444,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         }
 
         @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars) {
-            return removeAll(Set.Immutable.subtract(domainSet(), CapsuleUtil.toSet(vars)));
+            return removeAll(Set.Immutable.subtract(domainSet(), vars));
         }
 
         ///////////////////////////////////////////
