@@ -1,5 +1,6 @@
 package mb.statix.solver;
 
+import java.util.Collection;
 import java.util.Map.Entry;
 
 import io.usethesource.capsule.Map;
@@ -28,7 +29,7 @@ public interface IConstraintStore {
         delays.forEach(e -> delay(e.getKey(), e.getValue()));
     }
 
-    Iterable<IConstraint> active();
+    Collection<IConstraint> active();
 
     Map.Immutable<IConstraint, Delay> delayed();
 

@@ -72,7 +72,7 @@ public class CompletenessUtil {
             onTrue -> Unit.unit,
             onTry -> Unit.unit,
             onUser -> {
-                spec.scopeExtensions().get(onUser.name()).stream()
+                spec.scopeExtensions().get(onUser.name()).toCollection().stream()
                         .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
                 return Unit.unit;
             }

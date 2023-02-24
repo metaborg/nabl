@@ -1,7 +1,6 @@
 package mb.statix.concurrent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -12,6 +11,7 @@ import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
@@ -36,9 +36,11 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
             List<Scope> rootScopes) {
 
         final List<Scope> thisGroupScopes = group.scopeNames().stream().map(name -> makeSharedScope(context, name)).collect(Collectors.toList());
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
+            groupResults =
             runGroups(context, group.groups(), thisGroupScopes);
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =
+        final IFuture<Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
+            unitResults =
             runUnits(context, group.units(), thisGroupScopes);
         thisGroupScopes.forEach(context::closeScope);
 

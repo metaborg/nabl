@@ -546,7 +546,7 @@ class GreedySolver {
                     // @formatter:off
                     final Collection<ITerm> pathTerms = paths.stream()
                             .map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
-                            .map(p -> project.apply(p).orElseThrow(() -> new IllegalStateException("Invalid resolution path: " + p)))
+                            .map(p -> project.apply(p).<IllegalStateException>orElseThrow(() -> new IllegalStateException("Invalid resolution path: " + p)))
                             .collect(project.collector());
                     // @formatter:on
                     final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);

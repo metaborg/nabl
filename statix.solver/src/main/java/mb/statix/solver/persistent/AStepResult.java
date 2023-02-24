@@ -29,7 +29,7 @@ abstract class AStepResult {
         return StepResult.of(newState, ImList.Immutable.of(), ImList.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
     }
 
-    public static StepResult ofNew(IState.Immutable newState, Collection<IConstraint> newConstraints) {
+    public static StepResult ofNew(IState.Immutable newState, ImList.Immutable<IConstraint> newConstraints) {
         return StepResult.of(newState, ImList.Immutable.of(), newConstraints, Map.Immutable.of(), Map.Immutable.of());
     }
 

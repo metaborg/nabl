@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.Sets;
 
 import mb.nabl2.terms.ITerm;
@@ -160,8 +161,8 @@ public class SubsitutionTest {
         return B.newAppl("h", args);
     }
 
-    private <X> List<X> list(X... xs) {
-        return Arrays.asList(xs);
+    private <X> ImList.Immutable<X> list(X... xs) {
+        return ImList.Immutable.of(xs);
     }
 
     ////////////////////////////////////////////////////////////////////////////

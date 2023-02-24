@@ -119,7 +119,7 @@ public class BaseConstraintStore implements IConstraintStore {
         return delayed.freeze();
     }
 
-    @Override public Iterable<IConstraint> active() {
+    @Override public Collection<IConstraint> active() {
         return Collections.unmodifiableCollection(active);
     }
 

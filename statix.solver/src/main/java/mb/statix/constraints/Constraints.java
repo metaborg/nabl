@@ -17,6 +17,8 @@ import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
+import com.google.common.collect.ImmutableList;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
@@ -572,10 +574,10 @@ public final class Constraints {
     /**
      * Split a conjunction constraint into constraints.
      */
-    public static List<IConstraint> disjoin(IConstraint constraint) {
-        ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+    public static ImList.Immutable<IConstraint> disjoin(IConstraint constraint) {
+        ImList.Transient<IConstraint> constraints = ImList.Transient.of();
         disjoin(constraint, constraints::add);
-        return constraints.build();
+        return constraints.freeze();
     }
 
     public static void disjoin(IConstraint constraint, Action1<IConstraint> action) {

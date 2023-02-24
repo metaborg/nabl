@@ -223,7 +223,7 @@ public class RuleUtil {
                     Tuple3.of(paramVars, paramsTerm, paramsUnifier);
             guards.add(guard);
 
-            final List<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImList.Immutable.toImmutableList());
+            final ImList.Immutable<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImList.Immutable.toImmutableList());
 
 
             // we initialized FreshVars to make sure these do not capture any free variables,
@@ -347,7 +347,7 @@ public class RuleUtil {
             newParamTerm.visitVars(newParamVars::add);
         }
 
-        final List<Pattern> params = newParamTerms.stream()
+        final ImList.Immutable<Pattern> params = newParamTerms.stream()
                 .map(t -> P.fromTerm(t, v -> !finalBody.freeVars().contains(v) && newParamVars.count(v) <= 1))
                 .collect(ImList.Immutable.toImmutableList());
 

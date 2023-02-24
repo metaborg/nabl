@@ -696,7 +696,7 @@ public class StatixSolver {
                         // @formatter:off
                         final Collection<ITerm> pathTerms = paths.stream()
                                 .map(p -> StatixTerms.pathToTerm(p, spec.dataLabels()))
-                                .map(p -> project.apply(p).orElseThrow(() -> new IllegalStateException("Invalid resolution path: " + p)))
+                                .map(p -> project.apply(p).<IllegalStateException>orElseThrow(() -> new IllegalStateException("Invalid resolution path: " + p)))
                                 .collect(project.collector());
                         // @formatter:on
                         final IConstraint C = new CEqual(resultTerm, B.newList(pathTerms), c);
@@ -1436,12 +1436,15 @@ public class StatixSolver {
     ///////////////////////////////////////////////////////////////////////////
 
     public SolverState snapshot() {
+        final Set.Transient<IConstraint> allContraints = CapsuleUtil.transientSet();
+        CapsuleUtil.addAll(allContraints, constraints.active());
+        allContraints.__insertAll(pendingConstraints);
+        allContraints.__insertAll(constraints.delayed().keySet());
+
         final SolverState.Builder builder = SolverState.builder();
         builder.state(state);
         builder.completeness(completeness);
-        builder.addAllConstraints(constraints.active());
-        builder.addAllConstraints(pendingConstraints);
-        builder.addAllConstraints(constraints.delayed().keySet());
+        builder.constraints(allContraints.freeze());
         builder.existentials(existentials);
         builder.updatedVars(updatedVars());
         builder.failed(failed());

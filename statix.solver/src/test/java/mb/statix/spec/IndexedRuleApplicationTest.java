@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import org.junit.Test;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSetMap;
 
 import mb.nabl2.terms.ITerm;
@@ -34,33 +35,33 @@ public class IndexedRuleApplicationTest {
 
     // @formatter:off
     final RuleSet ruleSet = RuleSet.of(Arrays.asList(
-        Rule.of("p", Arrays.asList(P.newVar(x), P.newVar(x)), new CTrue()),
-        Rule.of("p", Arrays.asList(P.newWld(), P.newWld()), new CFalse()),
-        Rule.of("q", Arrays.asList(P.newInt(1)), new CFalse()),
-        Rule.of("q", Arrays.asList(P.newWld()), new CTrue())
+        Rule.of("p", ImList.Immutable.of(P.newVar(x), P.newVar(x)), new CTrue()),
+        Rule.of("p", ImList.Immutable.of(P.newWld(), P.newWld()), new CFalse()),
+        Rule.of("q", ImList.Immutable.of(P.newInt(1)), new CFalse()),
+        Rule.of("q", ImList.Immutable.of(P.newWld()), new CTrue())
     ));
     final Spec spec = Spec.of(ruleSet, CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), MultiSetMap.Immutable.of());
     // @formatter:on
 
     @Test public void testTrue() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CTrue());
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CTrue());
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertEquals(assertPresent(ira.applyIndex(foo)), assertPresent(ira.applyIndex(bar)));
     }
 
     @Test public void testFalse() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CFalse());
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CFalse());
         assertAbsent(IndexedRuleApplication.of(spec, rule));
     }
 
     @Test public void testIdentity() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, y));
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(x, y));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertNotEquals(assertPresent(ira.applyIndex(foo)), assertPresent(ira.applyIndex(baz)));
     }
 
     @Test public void testPartialInPattern() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newWld())), new CEqual(x, y));
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newTuple(P.newVar(x), P.newWld())), new CEqual(x, y));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertEquals(assertPresent(ira.applyIndex(foo, bar)), assertPresent(ira.applyIndex(foo, baz)));
         assertNotEquals(assertPresent(ira.applyIndex(bar, foo)), assertPresent(ira.applyIndex(baz, foo)));
@@ -68,28 +69,28 @@ public class IndexedRuleApplicationTest {
 
     @Test public void testPartialInBody() throws Delay, InterruptedException {
         final Rule rule =
-                Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(x, B.newTuple(y, z))));
+                Rule.of("", ImList.Immutable.of(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(x, B.newTuple(y, z))));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertEquals(assertPresent(ira.applyIndex(foo, bar)), assertPresent(ira.applyIndex(foo, baz)));
         assertNotEquals(assertPresent(ira.applyIndex(bar, foo)), assertPresent(ira.applyIndex(baz, foo)));
     }
 
     @Test public void testEquals() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(x))), new CTrue());
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newTuple(P.newVar(x), P.newVar(x))), new CTrue());
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertAbsent(ira.applyIndex(bar, baz));
         assertEquals(assertPresent(ira.applyIndex(foo, foo)), assertPresent(ira.applyIndex(baz, baz)));
     }
 
     @Test public void testPred() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CUser("q", Arrays.asList(x)));
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CUser("q", Arrays.asList(x)));
         IndexedRuleApplication ira = assertPresent(IndexedRuleApplication.of(spec, rule));
         assertAbsent(ira.applyIndex(B.newInt(1)));
         assertEquals(assertPresent(ira.applyIndex(B.newInt(0))), assertPresent(ira.applyIndex(B.newInt(2))));
     }
 
     @Test(expected = Delay.class) public void testPredWithFreeArgument() throws Delay, InterruptedException {
-        final Rule rule = Rule.of("", Arrays.asList(P.newVar(x)), new CUser("p", Arrays.asList(x, y)));
+        final Rule rule = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CUser("p", Arrays.asList(x, y)));
         IndexedRuleApplication.of(spec, rule);
     }
 

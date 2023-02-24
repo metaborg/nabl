@@ -25,6 +25,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.TermIndex;
 import mb.nabl2.terms.substitution.IReplacement;
@@ -79,11 +80,11 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
     }
 
     protected
-            IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
+            IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
             runGroups(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups,
                     List<Scope> parentScopes) {
         if(groups.isEmpty()) {
-            return CompletableFuture.completedFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(CapsuleUtil.immutableMap());
         }
 
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>> results =
@@ -98,18 +99,18 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .thenApply(es -> CapsuleUtil.toMap(es))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all groups returned.", context.id());
                 });
     }
 
     protected
-            IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
+            IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
             runUnits(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units,
                     List<Scope> parentScopes) {
         if(units.isEmpty()) {
-            return CompletableFuture.completedFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(CapsuleUtil.immutableMap());
         }
 
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>> results =
@@ -124,17 +125,17 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                .thenApply(es -> CapsuleUtil.toMap(es))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all units returned.", context.id());
                 });
     }
 
-    protected IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
+    protected IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> runLibraries(
             ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixLibrary> libraries,
             Scope parentScope) {
         if(libraries.isEmpty()) {
-            return CompletableFuture.completedFuture(Collections.emptyMap());
+            return CompletableFuture.completedFuture(CapsuleUtil.immutableMap());
         }
 
         final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Unit>>>> results = new ArrayList<>();
@@ -148,7 +149,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }));
         }
         return AggregateFuture.of(results)
-                .thenApply(es -> es.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+            .thenApply(es -> CapsuleUtil.toMap(es))
                 .whenComplete((r, ex) -> {
                     logger.debug("checker {}: all libraries returned.", context.id());
                 });
@@ -291,8 +292,8 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
     @Override public SolverState snapshot() {
         if(solver == null) {
             return SolverState.of(State.of(), Completeness.Immutable.of(),
-                new HashSet<IConstraint>(), null, Arrays.asList(),
-                new HashMap<IConstraint, IMessage>(), CapsuleUtil.immutableSet());
+                CapsuleUtil.immutableSet(), null, CapsuleUtil.immutableSet(),
+                CapsuleUtil.immutableMap(), CapsuleUtil.immutableSet());
         }
         final SolverState snapshot = solver.snapshot();
         snapshotTaken = true;

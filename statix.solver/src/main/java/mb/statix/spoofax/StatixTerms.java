@@ -160,7 +160,7 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<Tuple2<String, List<Pattern>>> head() {
+    public static IMatcher<Tuple2<String, ImList.Immutable<Pattern>>> head() {
         return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
             return Tuple2.of(name, patterns);
         });
@@ -713,12 +713,12 @@ public class StatixTerms {
     public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraphEntries() {
         return M.listElems(scopeEntry(), (t, scopeEntries) -> {
             final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
-            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
+            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, ImList.Immutable<Scope>>> se : scopeEntries) {
                 Scope s = se._1();
                 if(se._2().isPresent()) {
                     scopeGraph.setDatum(s, se._2().get());
                 }
-                for(Entry<ITerm, List<Scope>> ee : se._3().entrySet()) {
+                for(Entry<ITerm, ImList.Immutable<Scope>> ee : se._3().entrySet()) {
                     final ITerm lbl = ee.getKey();
                     for(Scope tgt : ee.getValue()) {
                         scopeGraph.addEdge(s, lbl, tgt);
@@ -729,7 +729,7 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
+    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, ImList.Immutable<Scope>>>> scopeEntry() {
         return M.tuple3(Scope.matcher(), M.option(M.term()), M.map(label(), M.listElems(Scope.matcher())),
                 (t, scope, maybeDatum, edges) -> {
                     return Tuple3.of(scope, maybeDatum, edges);

@@ -126,7 +126,7 @@ public abstract class ARule {
             return (Rule) this;
         }
 
-        List<Pattern> params = this.params();
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
         Set.Immutable<ITermVar> freeVars = this.freeVars;
@@ -162,7 +162,7 @@ public abstract class ARule {
             return (Rule) this;
         }
 
-        List<Pattern> params = this.params();
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
@@ -179,7 +179,7 @@ public abstract class ARule {
      * Apply variable renaming.
      */
     public Rule apply(IRenaming subst) {
-        List<Pattern> params = this.params();
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
