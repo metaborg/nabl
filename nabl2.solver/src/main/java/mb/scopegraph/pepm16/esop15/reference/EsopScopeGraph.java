@@ -1,6 +1,7 @@
 package mb.scopegraph.pepm16.esop15.reference;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
@@ -10,14 +11,11 @@ import org.metaborg.util.collection.HashTrieFunction;
 import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IFunction;
 import org.metaborg.util.collection.IRelation3;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate3;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -252,8 +250,11 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
             return incompleteImportEdges.entries();
         }
 
-        @Override public Iterable<V> incompleteVars() {
-            return Iterables.concat(incompleteDirectEdges.indices(), incompleteImportEdges.indices());
+        @Override public Collection<V> incompleteVars() {
+            final Collection<V> result = new ArrayList<>();
+            result.addAll(incompleteDirectEdges.indices());
+            result.addAll(incompleteImportEdges.indices());
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -315,20 +316,20 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         @Override public List<CriticalEdge> reduceAll(Function1<V, ? extends Set.Immutable<? extends V>> norm,
                 Function1<V, S> fs, Function1<V, O> fo) {
-            return reduce(Lists.newArrayList(incompleteVars()), norm, fs, fo);
+            return reduce(incompleteVars(), norm, fs, fo);
         }
 
         @Override public List<CriticalEdge> reduce(Iterable<? extends V> vs,
                 Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, S> fs, Function1<V, O> fo) {
-            final ImmutableList.Builder<CriticalEdge> reduced = ImmutableList.builder();
+            final ImList.Transient<CriticalEdge> reduced = ImList.Transient.of();
             this.<S>reduce(incompleteDirectEdges, vs, norm, fs, this::addDirectEdge, reduced);
             this.<O>reduce(incompleteImportEdges, vs, norm, fo, this::addImportEdge, reduced);
-            return reduced.build();
+            return reduced.freeze();
         }
 
         private <X> void reduce(IndexedBagMultimap<Tuple2<S, L>, V, V> index, Iterable<? extends V> vs,
                 Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, X> f, Predicate3<S, L, X> add,
-                ImmutableList.Builder<CriticalEdge> reduced) {
+            ImList.Transient<CriticalEdge> reduced) {
             for(V v : vs) {
                 for(Map.Entry<Tuple2<S, L>, V> slv : index.reindex(v, norm)) {
                     X x = f.apply(slv.getValue());

@@ -2,7 +2,7 @@ package mb.scopegraph.pepm16;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.scopegraph.pepm16.esop15.CriticalEdge;
 
@@ -14,14 +14,14 @@ public class CriticalEdgeException extends Throwable {
 
     public CriticalEdgeException(Iterable<CriticalEdge> criticalEdges) {
         super("incomplete", null, false, false);
-        this.criticalEdges = ImmutableList.copyOf(criticalEdges);
+        this.criticalEdges = ImList.Immutable.copyOf(criticalEdges);
         if(this.criticalEdges.isEmpty()) {
             throw new IllegalArgumentException("Critical edges cannot be empty.");
         }
     }
 
     public CriticalEdgeException(IScope scope, ILabel label) {
-        this(ImmutableList.of(CriticalEdge.of(scope, label)));
+        this(ImList.Immutable.of(CriticalEdge.of(scope, label)));
     }
 
     public List<CriticalEdge> criticalEdges() {
@@ -29,9 +29,9 @@ public class CriticalEdgeException extends Throwable {
     }
 
     public static CriticalEdgeException of(Iterable<CriticalEdgeException> exceptions) {
-        ImmutableList.Builder<CriticalEdge> incompletes = ImmutableList.builder();
+        ImList.Transient<CriticalEdge> incompletes = ImList.Transient.of();
         exceptions.forEach(e -> incompletes.addAll(e.criticalEdges()));
-        return new CriticalEdgeException(incompletes.build());
+        return new CriticalEdgeException(incompletes.freeze());
     }
 
     @Override public String getMessage() {

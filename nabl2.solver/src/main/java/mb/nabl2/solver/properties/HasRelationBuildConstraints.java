@@ -1,7 +1,6 @@
 package mb.nabl2.solver.properties;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
+import org.metaborg.util.collection.MultiSet;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
@@ -11,10 +10,10 @@ import mb.scopegraph.relations.IRelationName;
 
 public class HasRelationBuildConstraints {
 
-    private final Multiset<String> relations;
+    private final MultiSet.Transient<String> relations;
 
     public HasRelationBuildConstraints() {
-        this.relations = HashMultiset.create();
+        this.relations = MultiSet.Transient.of();
     }
 
     public void add(IConstraint constraint) {
@@ -82,7 +81,7 @@ public class HasRelationBuildConstraints {
             c -> c.match(IRelationConstraint.Cases.of(
                 br -> br.getRelation().match(IRelationName.Cases.of(
                     name -> {
-                        if(relations.remove(name) && relations.count(name) == 0) {
+                        if(relations.remove(name) > 0 && relations.count(name) == 0) {
                             return Set.Immutable.of(name);
                         } else {
                             return Set.Immutable.of();

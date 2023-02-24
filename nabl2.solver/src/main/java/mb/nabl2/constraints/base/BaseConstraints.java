@@ -3,9 +3,8 @@ package mb.nabl2.constraints.base;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
@@ -76,7 +75,7 @@ public final class BaseConstraints {
                         e.getMessageInfo().apply(restrictedSubst::apply));
             },
             n -> {
-                return CNew.of(n.getNVars().stream().map(subst::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(subst::apply).collect(ImList.Immutable.toImmutableList()),
                         n.getMessageInfo().apply(subst::apply));
             }
         ));
@@ -100,7 +99,7 @@ public final class BaseConstraints {
                         e.getMessageInfo().apply(map::apply));
             },
             n -> {
-                return CNew.of(n.getNVars().stream().map(map::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(map::apply).collect(ImList.Immutable.toImmutableList()),
                         n.getMessageInfo().apply(map::apply));
             }
         ));

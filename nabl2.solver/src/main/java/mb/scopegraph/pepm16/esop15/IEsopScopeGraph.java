@@ -7,8 +7,6 @@ import java.util.Map;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.annotations.Beta;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.ILabel;
 import mb.scopegraph.pepm16.IOccurrence;
@@ -16,7 +14,6 @@ import mb.scopegraph.pepm16.IScope;
 import mb.scopegraph.pepm16.IScopeGraph;
 import mb.scopegraph.pepm16.esop15.reference.EsopScopeGraph;
 
-@Beta
 public interface IEsopScopeGraph<S extends IScope, L extends ILabel, O extends IOccurrence, V>
         extends IScopeGraph<S, L, O> {
 

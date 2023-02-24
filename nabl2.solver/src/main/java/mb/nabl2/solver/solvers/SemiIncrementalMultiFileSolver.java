@@ -1,5 +1,6 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -8,8 +9,6 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
@@ -117,7 +116,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         try {
             // seed unit solutions
-            final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
+            final java.util.Set<IConstraint> constraints = new HashSet<>(initial.constraints());
             final IMessages.Transient messages = initial.messages().melt();
             for(ISolution unitSolution : unitSolutions) {
                 seed(astSolver.seed(unitSolution.astProperties(), message), messages, constraints);

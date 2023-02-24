@@ -1,30 +1,26 @@
 package mb.scopegraph.pepm16.bottomup;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.metaborg.util.collection.HashTrieRelation2;
 import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.collection.IRelation3;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.stream.StreamUtil;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.tuple.Tuple3;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -62,11 +58,11 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final L dataLabel;
     private final Iterable<L> edgeLabels;
     private final IRegExpMatcher<L> wf;
-    private final ImmutableMap<BUEnvKind, BULabelOrder<L>> orders;
+    private final Map.Immutable<BUEnvKind, BULabelOrder<L>> orders;
     private final Predicate2<S, L> isClosed;
 
-    private final Cache<S, Collection<O>> visibles = CacheBuilder.newBuilder().build();
-    private final Cache<S, Collection<O>> reachables = CacheBuilder.newBuilder().build();
+    private final HashMap<S, Collection<O>> visibles = new HashMap<>();
+    private final HashMap<S, Collection<O>> reachables = new HashMap<>();
 
     public BUNameResolution(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph,
             Predicate2<S, L> isClosed) {
@@ -77,7 +73,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         this.wf = RegExpMatcher.create(params.getPathWf());
         final IRelation<L> noOrder = Relation.Immutable.of(RelationDescription.STRICT_PARTIAL_ORDER);
         // @formatter:off
-        this.orders = ImmutableMap.of(
+        this.orders = Map.Immutable.of(
             BUEnvKind.VISIBLE,   new BULabelOrder<>(params.getSpecificityOrder()),
             BUEnvKind.REACHABLE, new BULabelOrder<>(noOrder)
         );
@@ -133,7 +129,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @Override public Collection<O> visible(S scope, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        Collection<O> decls = visibles.getIfPresent(scope);
+        Collection<O> decls = visibles.get(scope);
         if(decls == null) {
             decls = Paths.declPathsToDecls(visibleEnv(scope, cancel));
             visibles.put(scope, decls);
@@ -143,7 +139,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
     @Override public Collection<O> reachable(S scope, ICancel cancel, IProgress progress)
             throws InterruptedException, CriticalEdgeException, StuckException {
-        Collection<O> decls = reachables.getIfPresent(scope);
+        Collection<O> decls = reachables.get(scope);
         if(decls == null) {
             decls = Paths.declPathsToDecls(reachableEnv(scope, cancel));
             reachables.put(scope, decls);
@@ -181,7 +177,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     private final IRelation3.Transient<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports =
             HashTrieRelation3.Transient.of();
 
-    private final Deque<InterruptibleRunnable> worklist = Queues.newArrayDeque();
+    private final Deque<InterruptibleRunnable> worklist = new ArrayDeque<>();
     private final MultiSet.Transient<BUEnvKey<S, L>> pendingChanges = MultiSet.Transient.of();
     private final Graph<BUEnvKey<S, L>> depGraph = new Graph<>();
     private final IncSCCAlg<BUEnvKey<S, L>> sccGraph = new IncSCCAlg<>(depGraph);
@@ -194,8 +190,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         }
         final BUEnvKey<S, L> key = envKey(BUEnvKind.VISIBLE, scope, wf);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> env = getOrCompute(key, cancel);
-        return env.pathSet().paths(ref.getSpacedName()).stream().flatMap(p -> ofOpt(Paths.resolve(ref, p)))
-                .collect(CapsuleCollectors.toSet());
+        return StreamUtil.filterMap(env.pathSet().paths(ref.getSpacedName()).stream(),
+            p -> Paths.resolve(ref, p)).collect(CapsuleCollectors.toSet());
     }
 
     private Collection<IDeclPath<S, L, O>> visibleEnv(S scope, ICancel cancel)
@@ -332,12 +328,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap((k, ps) -> {
-                    final ImmutableList.Builder<IDeclPath<S, L, O>> newPs =
-                            ImmutableList.builderWithExpectedSize(ps.size());
+                    final ImList.Transient<IDeclPath<S, L, O>> newPs =
+                            new ImList.Transient<>(ps.size());
                     for(IDeclPath<S, L, O> p : ps) {
                         (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
                     }
-                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.build());
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.freeze());
                 });
                 logger.trace("queued fwd changes {} to {} added {} removed {}", env, dstEnv,
                         envChanges.addedPaths().paths(), envChanges.removedPaths().paths());
@@ -394,12 +390,12 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
         final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
                 BUChanges.ofPaths(srcEnv, _env.pathSet()).flatMap((k, ps) -> {
-                    final ImmutableList.Builder<IDeclPath<S, L, O>> newPs =
-                            ImmutableList.builderWithExpectedSize(ps.size());
+                    final ImList.Transient<IDeclPath<S, L, O>> newPs =
+                            new ImList.Transient<>(ps.size());
                     for(IDeclPath<S, L, O> p : ps) {
                         (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
                     }
-                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.build());
+                    return Tuple2.of(pathKey(k.name(), step.getLabel()), newPs.freeze());
                 });
         logger.trace("queued back changes {} to {} added {} removed {}", srcEnv, dstEnv, changes.addedPaths().paths(),
                 changes.removedPaths().paths());
@@ -440,9 +436,9 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final IRegExpMatcher<L> wf = _st._3();
         final Collection<IDeclPath<S, L, O>> declPaths = envs.get(refEnv).pathSet().paths(ref.getSpacedName());
         logger.trace("import back edges {} decl paths {}", dstEnv, declPaths);
-        final Set.Immutable<IResolutionPath<S, L, O>> resPaths = declPaths.stream().flatMap(p -> {
-            return ofOpt(Paths.resolve(ref, p));
-        }).collect(CapsuleCollectors.toSet());
+        final Set.Immutable<IResolutionPath<S, L, O>> resPaths =
+            StreamUtil.filterMap(declPaths.stream(), p -> Paths.resolve(ref, p))
+                .collect(CapsuleCollectors.toSet());
         logger.trace("import back edges {} res paths {}", dstEnv, declPaths);
         logger.trace(" * paths {}", resPaths);
         for(IResolutionPath<S, L, O> p : resPaths) {
@@ -466,7 +462,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final Tuple3<BUEnvKind, S, IRegExp<L>> key = Tuple3.of(kind, scope, wf.regexp());
         BUEnvKey<S, L> result;
         if((result = envKeys.get(key)) == null) {
-            envKeys.put(key, result = new BUEnvKey<>(kind, scope, wf));
+            envKeys.__put(key, result = new BUEnvKey<>(kind, scope, wf));
         }
         return result;
     }
@@ -475,7 +471,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final Tuple2<SpacedName, L> key = Tuple2.of(name, label);
         BUPathKey<L> result;
         if((result = pathKeys.get(key)) == null) {
-            pathKeys.put(key, result = new BUPathKey<>(name, label));
+            pathKeys.__put(key, result = new BUPathKey<>(name, label));
         }
         return result;
     }
@@ -536,11 +532,6 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                             .collect(CapsuleCollectors.toSet());
             throw new BUStuckException(scc, edges, imports);
         }
-    }
-
-
-    private static <X> Stream<X> ofOpt(Optional<X> xOrNull) {
-        return Streams.stream(xOrNull);
     }
 
 }

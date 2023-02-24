@@ -2,6 +2,7 @@ package mb.nabl2.solver.components;
 
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -9,10 +10,8 @@ import java.util.Optional;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.equality.CEqual;
@@ -54,7 +53,7 @@ public class RelationComponent extends ASolver {
         super(core);
         this.isComplete = isComplete;
         this.relations = relations;
-        this.functions = Maps.newHashMap();
+        this.functions = new HashMap<>();
         functions.forEach((name, f) -> this.functions.put(name, f::apply));
         addRelationFunctions();
     }
@@ -111,7 +110,7 @@ public class RelationComponent extends ASolver {
     public SolveResult solve(CBuildRelation c) throws DelayException {
         if(!(unifier().isGround(c.getLeft()) && unifier().isGround(c.getRight()))) {
             throw new VariableDelayException(
-                    Iterables.concat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight())));
+                    Iterables2.fromConcat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight())));
         }
         final ITerm left = unifier().findRecursive(c.getLeft());
         final ITerm right = unifier().findRecursive(c.getRight());
@@ -136,7 +135,7 @@ public class RelationComponent extends ASolver {
     public SolveResult solve(CCheckRelation c) throws DelayException {
         if(!(unifier().isGround(c.getLeft()) && unifier().isGround(c.getRight()))) {
             throw new VariableDelayException(
-                    Iterables.concat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight())));
+                Iterables2.fromConcat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight())));
         }
         final ITerm left = unifier().findRecursive(c.getLeft());
         final ITerm right = unifier().findRecursive(c.getRight());

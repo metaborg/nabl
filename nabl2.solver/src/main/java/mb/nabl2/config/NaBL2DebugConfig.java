@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Sets;
-
 public class NaBL2DebugConfig implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -21,7 +19,7 @@ public class NaBL2DebugConfig implements Serializable {
 
         public static EnumSet<Flag> valuesOf(Collection<String> names) {
             Set<Flag> flags = names.stream().map(String::toUpperCase).map(Flag::valueOf).collect(Collectors.toSet());
-            return Sets.newEnumSet(flags, Flag.class);
+            return EnumSet.copyOf(flags);
         }
 
         public static List<String> namesOf(Collection<Flag> flags) {
@@ -37,7 +35,7 @@ public class NaBL2DebugConfig implements Serializable {
     }
 
     public NaBL2DebugConfig(Collection<Flag> flags) {
-        this.flags = Sets.newEnumSet(flags, Flag.class);
+        this.flags = EnumSet.copyOf(flags);
     }
 
     public boolean collection() {

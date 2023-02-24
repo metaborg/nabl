@@ -30,17 +30,4 @@ public abstract class APRaffrayiSettings {
     public static PRaffrayiSettings incremental() {
         return PRaffrayiSettings.of(true, true, true, true);
     }
-
-    // Overriding here avoids Immutables generating code dependent on guava... might be removed once guava is fully off the classpath
-    @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("StrategoAnnotations");
-        sb.append("(");
-        sb.append("recording=" + recording());
-        sb.append("incrementalDeadlock=" + incrementalDeadlock());
-        sb.append("scopeGraphDiff=" + scopeGraphDiff());
-        sb.append("confirmation=" + confirmation());
-        sb.append(")");
-        return sb.toString();
-    }
 }

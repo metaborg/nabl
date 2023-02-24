@@ -7,8 +7,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.base.Preconditions;
-
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.scopegraph.pepm16.IResolutionParameters;
 import mb.scopegraph.regexp.IAlphabet;
@@ -40,7 +38,9 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
     @Value.Parameter @Override public abstract boolean getPathRelevance();
 
     @Value.Check protected void check() {
-        Preconditions.checkArgument(getLabels().contains(getLabelD()));
+        if (!getLabels().contains(getLabelD())) {
+          throw new IllegalArgumentException("Labels do not contain LabelD");
+        }
     }
 
     public static IMatcher<ResolutionParameters> matcher() {

@@ -5,8 +5,6 @@ import java.util.Optional;
 
 import org.metaborg.util.collection.ImList;
 
-import com.google.common.collect.ImmutableList;
-
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 
 /**

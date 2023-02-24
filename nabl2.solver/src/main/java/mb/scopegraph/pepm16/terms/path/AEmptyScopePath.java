@@ -5,8 +5,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Iterators;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.ILabel;
 import mb.scopegraph.pepm16.IOccurrence;
@@ -63,7 +61,7 @@ abstract class AEmptyScopePath<S extends IScope, L extends ILabel, O extends IOc
             return false;
         if(!getScope().equals(other.getTarget()))
             return false;
-        return Iterators.size(other.iterator()) == 0;
+        return other.size() == 0;
     }
 
     @Override public String toString(boolean includeSource, boolean includeTarget) {

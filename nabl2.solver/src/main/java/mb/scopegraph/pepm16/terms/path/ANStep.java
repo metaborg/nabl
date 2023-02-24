@@ -5,8 +5,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Iterables;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.ILabel;
 import mb.scopegraph.pepm16.IOccurrence;
@@ -35,7 +33,7 @@ abstract class ANStep<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
-        return Iterables.concat(Iterables2.singleton(getImportPath()), getImportPath().getImportPaths());
+        return Iterables2.fromConcat(Iterables2.singleton(getImportPath()), getImportPath().getImportPaths());
     }
 
     @Value.Lazy @Override public Set.Immutable<S> getScopes() {

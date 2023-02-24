@@ -1,5 +1,7 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
@@ -13,8 +15,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.RateLimitedCancel;
-
-import com.google.common.collect.Lists;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -54,15 +54,15 @@ public class FixedPointSolver {
         this.stepSubject = PublishSubject.create();
     }
 
-    public SolveResult solve(Iterable<? extends IConstraint> initialConstraints, Ref<IUnifier.Immutable> unifier)
+    public SolveResult solve(Collection<? extends IConstraint> initialConstraints, Ref<IUnifier.Immutable> unifier)
             throws InterruptedException {
         final IMessages.Transient messages = Messages.Transient.of();
 
-        final Deque<IConstraint> constraints = Lists.newLinkedList(initialConstraints);
+        final Deque<IConstraint> constraints = new ArrayDeque<>(initialConstraints);
         final IndexedBag<IConstraint, CriticalEdge> criticalEdgeDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, String> relationDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, ITermVar> variableDelays = new IndexedBag<>(RemovalPolicy.ANY);
-        final List<IConstraint> unsolved = Lists.newArrayList();
+        final List<IConstraint> unsolved = new ArrayList<>();
 
         final Action1<Iterable<CriticalEdge>> resolveCriticalEdges = es -> {
             es.forEach(e -> {

@@ -1,16 +1,14 @@
 package mb.nabl2.solver.components;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.equality.CEqual;
@@ -60,7 +58,7 @@ public class NameResolutionComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
-        final java.util.Set<IConstraint> constraints = Sets.newHashSet();
+        final java.util.Set<IConstraint> constraints = new HashSet<>();
         scopeGraph.addAll(solution.scopeGraph(), unifier()::getVars);
         nameResolution.addCached(solution.resolutionCache());
         constraints.addAll(seed(solution.declProperties(), message).constraints());
@@ -69,7 +67,7 @@ public class NameResolutionComponent extends ASolver {
 
     public SeedResult seed(IProperties<Occurrence, ITerm, ITerm> solution, IMessageInfo message)
             throws InterruptedException {
-        final java.util.Set<IConstraint> constraints = Sets.newHashSet();
+        final java.util.Set<IConstraint> constraints = new HashSet<>();
         solution.stream().forEach(entry -> {
             putProperty(entry._1(), entry._2(), entry._3(), message).ifPresent(constraints::add);
         });
@@ -110,7 +108,7 @@ public class NameResolutionComponent extends ASolver {
                     MessageContent.builder().append("Resolution of ").append(ref).append(" is stuck.").build());
             return SolveResult.messages(message);
         }
-        final Set<Occurrence> declarations = Sets.newHashSet(Paths.resolutionPathsToDecls(paths));
+        final Set<Occurrence> declarations = new HashSet<>(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
         switch(declarations.size()) {
             case 0: {
@@ -120,7 +118,7 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
             case 1: {
-                final Occurrence decl = Iterables.getOnlyElement(declarations);
+                final Occurrence decl = declarations.iterator().next();
                 result = SolveResult.constraints(CEqual.of(r.getDeclaration(), decl, r.getMessageInfo()));
                 break;
             }
@@ -142,7 +140,7 @@ public class NameResolutionComponent extends ASolver {
         final Occurrence decl = Occurrence.matcher().match(declTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + a));
         final Label label = a.getLabel();
-        final List<Scope> scopes = Lists.newArrayList(scopeGraph.getExportEdges().get(decl, label));
+        final List<Scope> scopes = new ArrayList<>(scopeGraph.getExportEdges().get(decl, label));
         final SolveResult result;
         switch(scopes.size()) {
             case 0: {

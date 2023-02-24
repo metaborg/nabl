@@ -6,14 +6,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
@@ -45,7 +44,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
                 }).match(currentTerm)
                         .orElseThrow(() -> new InterpreterException("Current term is not (InitialResult, C)."));
         final MultiInitialResult initialResult = input._1();
-        final List<IConstraint> constraints = ImmutableList.of(input._2());
+        final List<IConstraint> constraints = ImList.Immutable.of(input._2());
 
         final Fresh.Transient unitFresh = Fresh.Transient.of();
 

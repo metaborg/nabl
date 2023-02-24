@@ -16,13 +16,4 @@ public abstract class AStrategoAnnotations {
     public boolean isEmpty() {
         return getAnnotationList().isEmpty();
     }
-
-    // Overriding here avoids Immutables generating code dependent on guava... might be removed once guava is fully off the classpath
-    @Override public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("StrategoAnnotations");
-        sb.append("(").append(getAnnotationList().stream().map(Object::toString)
-            .collect(Collectors.joining(",", "[", "]"))).append(")");
-        return sb.toString();
-    }
 }

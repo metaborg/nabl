@@ -2,7 +2,9 @@ package mb.nabl2.interpreter;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,12 +13,7 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.IListTerm;
@@ -48,7 +45,7 @@ public class InterpreterTerms {
     }
 
     private static ITerm scopeEntries(IScopeGraph<Scope, Label, Occurrence> scopeGraph) {
-        Map<ITerm, ITerm> entries = Maps.newHashMap();
+        Map<ITerm, ITerm> entries = new HashMap<>();
         for(Scope scope : scopeGraph.getAllScopes()) {
             IListTerm decls = B.newList(scopeGraph.getDecls().inverse().get(scope));
             IListTerm refs = B.newList(scopeGraph.getRefs().inverse().get(scope));
@@ -61,7 +58,7 @@ public class InterpreterTerms {
     }
 
     private static ITerm declEntries(IScopeGraph<Scope, Label, Occurrence> scopeGraph) {
-        Map<ITerm, ITerm> entries = Maps.newHashMap();
+        Map<ITerm, ITerm> entries = new HashMap<>();
         for(Occurrence decl : scopeGraph.getAllDecls()) {
             ITerm scope = scopeGraph.getDecls().get(decl).map(s -> B.newList(s)).orElse(B.newNil());
             ITerm assocs = multimap(scopeGraph.getExportEdges().get(decl));
@@ -72,7 +69,7 @@ public class InterpreterTerms {
     }
 
     private static ITerm refEntries(IScopeGraph<Scope, Label, Occurrence> scopeGraph) {
-        Map<ITerm, ITerm> entries = Maps.newHashMap();
+        Map<ITerm, ITerm> entries = new HashMap<>();
         for(Occurrence ref : scopeGraph.getAllRefs()) {
             ITerm scope = scopeGraph.getRefs().get(ref).map(s -> B.newList(s)).orElse(B.newNil());
             ITerm entry = B.newAppl("RE", scope);
@@ -83,13 +80,13 @@ public class InterpreterTerms {
 
     private static ITerm nameresolution(Iterable<Occurrence> refs,
             IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
-        final Map<ITerm, ITerm> entries = Maps.newHashMap();
+        final Map<ITerm, ITerm> entries = new HashMap<>();
         try {
             for(Occurrence ref : refs) {
                 try {
                     Collection<IResolutionPath<Scope, Label, Occurrence>> paths = nameResolution.resolve(ref, new NullCancel(), new NullProgress());
                     if(paths.size() == 1) {
-                        IResolutionPath<Scope, Label, Occurrence> path = Iterables.getOnlyElement(paths);
+                        IResolutionPath<Scope, Label, Occurrence> path = paths.iterator().next();
                         ITerm value = B.newTuple(path.getDeclaration(), Paths.toTerm(path));
                         entries.put(ref, value);
                     } else {
@@ -106,7 +103,7 @@ public class InterpreterTerms {
     }
 
     private static ITerm declTypes(IProperties<Occurrence, ITerm, ITerm> declProperties, IUnifier unifier) {
-        Map<ITerm, ITerm> entries = Maps.newHashMap();
+        Map<ITerm, ITerm> entries = new HashMap<>();
         for(Occurrence decl : declProperties.getIndices()) {
             declProperties.getValue(decl, DeclProperties.TYPE_KEY).map(unifier::findRecursive).ifPresent(type -> {
                 entries.put(decl, unifier.findRecursive(type));
@@ -118,7 +115,7 @@ public class InterpreterTerms {
     // ---------------
 
     private static IListTerm map(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
-        List<ITerm> entryTerms = Lists.newArrayList();
+        List<ITerm> entryTerms = new ArrayList<>();
         for(Map.Entry<? extends ITerm, ? extends ITerm> entry : entries) {
             entryTerms.add(B.newTuple(entry.getKey(), entry.getValue()));
         }
@@ -126,11 +123,11 @@ public class InterpreterTerms {
     }
 
     private static IListTerm multimap(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
-        Multimap<ITerm, ITerm> grouped = HashMultimap.create();
+        SetMultimap.Transient<ITerm, ITerm> grouped = SetMultimap.Transient.of();
         for(Map.Entry<? extends ITerm, ? extends ITerm> entry : entries) {
-            grouped.put(entry.getKey(), entry.getValue());
+            grouped.__put(entry.getKey(), entry.getValue());
         }
-        List<ITerm> entryterms = Lists.newArrayList();
+        List<ITerm> entryterms = new ArrayList<>();
         for(ITerm key : grouped.keySet()) {
             entryterms.add(B.newTuple(key, B.newList(grouped.get(key))));
         }

@@ -1,19 +1,20 @@
 package mb.scopegraph.pepm16.esop15.lazy;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.NullCancel;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.CriticalEdgeException;
@@ -130,8 +131,8 @@ public class EsopEnvs {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private final Deque<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(Arrays.asList(envs));
-            private final Collection<Object> _shadowed = Sets.newHashSet();
+            private final Deque<IEsopEnv<S, L, O, P>> _envs = new ArrayDeque<>(Arrays.asList(envs));
+            private final Collection<Object> _shadowed = new HashSet<>();
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Collection<P> paths = null;
 
@@ -184,11 +185,11 @@ public class EsopEnvs {
     }
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence, P extends IPath<S, L, O>>
-            IEsopEnv<S, L, O, P> union(Iterable<IEsopEnv<S, L, O, P>> envs) {
+            IEsopEnv<S, L, O, P> union(Collection<IEsopEnv<S, L, O, P>> envs) {
         return new IEsopEnv<S, L, O, P>() {
             private static final long serialVersionUID = 42L;
 
-            private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = Lists.newLinkedList(envs);
+            private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = new LinkedList<>(envs);
             private final Set.Transient<P> _paths = Set.Transient.of();
             private Collection<P> paths = null;
 
@@ -196,7 +197,7 @@ public class EsopEnvs {
                 if(paths != null) {
                     return paths;
                 }
-                List<CriticalEdgeException> es = Lists.newArrayList();
+                List<CriticalEdgeException> es = new ArrayList<>();
                 Iterator<IEsopEnv<S, L, O, P>> it = _envs.iterator();
                 while(it.hasNext()) {
                     final IEsopEnv<S, L, O, P> env = it.next();

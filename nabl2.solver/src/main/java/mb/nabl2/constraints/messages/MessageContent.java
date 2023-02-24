@@ -8,10 +8,9 @@ import java.util.function.Function;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -85,17 +84,17 @@ public abstract class MessageContent implements IMessageContent {
 
         @Override public ACompoundMessage apply(Function1<ITerm, ITerm> f) {
             return CompoundMessage
-                    .of(getParts().stream().map(p -> p.apply(f)).collect(ImmutableList.toImmutableList()));
+                    .of(getParts().stream().map(p -> p.apply(f)).collect(ImList.Immutable.toImmutableList()));
         }
 
         @Override public IMessageContent withDefault(IMessageContent defaultContent) {
             return CompoundMessage.of(getParts().stream().map(p -> p.withDefault(defaultContent))
-                    .collect(ImmutableList.toImmutableList()));
+                    .collect(ImList.Immutable.toImmutableList()));
         }
 
         @Override public ITerm build() {
             List<ITerm> parts =
-                    getParts().stream().map(IMessageContent::build).collect(ImmutableList.toImmutableList());
+                    getParts().stream().map(IMessageContent::build).collect(ImList.Immutable.toImmutableList());
             return B.newAppl(FORMATTED, (ITerm) B.newList(parts));
         }
 
@@ -173,10 +172,10 @@ public abstract class MessageContent implements IMessageContent {
 
     public static class Builder {
 
-        private final ImmutableList.Builder<IMessageContent> parts;
+        private final ImList.Transient<IMessageContent> parts;
 
         private Builder() {
-            this.parts = ImmutableList.builder();
+            this.parts = ImList.Transient.of();
         }
 
         public Builder append(String text) {
@@ -195,7 +194,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         public MessageContent build() {
-            return CompoundMessage.of(parts.build());
+            return CompoundMessage.of(parts.freeze());
         }
 
     }
