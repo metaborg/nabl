@@ -4,13 +4,13 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermPattern.P;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.ImmutableCollection;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -53,9 +53,9 @@ public class RuleUtilTest {
         final IConstraint body = new CTrue();
         // @formatter:off
         final List<Rule> rules = Arrays.asList(
-          Rule.of("c", Arrays.asList(P.newAppl("f", P.newInt(1))), body)
-        , Rule.of("c", Arrays.asList(P.newAppl("f", P.newWld())), body)
-        , Rule.of("c", Arrays.asList(P.newWld()), body)
+          Rule.of("c", ImList.Immutable.of(P.newAppl("f", P.newInt(1))), body)
+        , Rule.of("c", ImList.Immutable.of(P.newAppl("f", P.newWld())), body)
+        , Rule.of("c", ImList.Immutable.of(P.newWld()), body)
         );
         testUnorderedRules(rules);
     }
@@ -67,10 +67,10 @@ public class RuleUtilTest {
         final IConstraint body = Constraints.exists(Arrays.asList(v1), new CEqual(v1, v2));
         // @formatter:off
         final List<Rule> rules = Arrays.asList(
-          Rule.of("c", Arrays.asList(P.newInt(1), P.newWld()), body)
-        , Rule.of("c", Arrays.asList(p1, P.newAs(v2, P.newListTail(Arrays.asList(P.newWld()), P.newWld()))), body)
-        , Rule.of("c", Arrays.asList(p1, P.newAs(v2, P.newInt(1))), body)
-        , Rule.of("c", Arrays.asList(p1, P.newAs(v2, P.newWld())), body)
+          Rule.of("c", ImList.Immutable.of(P.newInt(1), P.newWld()), body)
+        , Rule.of("c", ImList.Immutable.of(p1, P.newAs(v2, P.newListTail(Arrays.asList(P.newWld()), P.newWld()))), body)
+        , Rule.of("c", ImList.Immutable.of(p1, P.newAs(v2, P.newInt(1))), body)
+        , Rule.of("c", ImList.Immutable.of(p1, P.newAs(v2, P.newWld())), body)
         );
         testUnorderedRules(rules);
     }
@@ -83,8 +83,8 @@ public class RuleUtilTest {
         final IConstraint body = new CTrue();
         // @formatter:off
         final List<Rule> rules = Arrays.asList(
-          Rule.of("c", Arrays.asList(p1, P.newAs(v1, P.newInt(1))), body)
-        , Rule.of("c", Arrays.asList(p1, p2), body)
+          Rule.of("c", ImList.Immutable.of(p1, P.newAs(v1, P.newInt(1))), body)
+        , Rule.of("c", ImList.Immutable.of(p1, p2), body)
         );
         // @formatter:on
         testUnorderedRules(rules);
@@ -106,9 +106,9 @@ public class RuleUtilTest {
 
         // @formatter:off
         final List<Rule> rules = Arrays.asList(
-          Rule.of("c", Arrays.asList(ps, P.newAppl("Add", p1, p2)), body).withBodyCriticalEdges(completeness)
-        , Rule.of("c", Arrays.asList(ps, P.newAppl("Var", p1)), body).withBodyCriticalEdges(completeness)
-        , Rule.of("c", Arrays.asList(ps, P.newWld()), body).withBodyCriticalEdges(completeness)
+          Rule.of("c", ImList.Immutable.of(ps, P.newAppl("Add", p1, p2)), body).withBodyCriticalEdges(completeness)
+        , Rule.of("c", ImList.Immutable.of(ps, P.newAppl("Var", p1)), body).withBodyCriticalEdges(completeness)
+        , Rule.of("c", ImList.Immutable.of(ps, P.newWld()), body).withBodyCriticalEdges(completeness)
         );
         // @formatter:on
         testUnorderedRules(rules);
@@ -118,7 +118,7 @@ public class RuleUtilTest {
         logger.info("Ordered rules:");
         rules.forEach(r -> logger.info(" * {}", r));
 
-        ImmutableCollection<Rule> newRules = RuleSet.of(rules).getAllOrderIndependentRules().values();
+        Collection<java.util.Set<Rule>> newRules = RuleSet.of(rules).getAllOrderIndependentRules().values();
         logger.info("Unordered rules:");
         newRules.forEach(r -> logger.info(" * {}", r));
     }
@@ -129,9 +129,9 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+        final Rule into = Rule.of("c", ImList.Immutable.of(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, v2)))));
-        final Rule rule = Rule.of("c", Arrays.asList(p1, p2), new CEqual(v1, v2));
+        final Rule rule = Rule.of("c", ImList.Immutable.of(p1, p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
 
@@ -140,9 +140,9 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+        final Rule into = Rule.of("c", ImList.Immutable.of(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(B.newList(), v2)))));
-        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
+        final Rule rule = Rule.of("c", ImList.Immutable.of(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
 
@@ -151,9 +151,9 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+        final Rule into = Rule.of("c", ImList.Immutable.of(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
-        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CEqual(v1, v2));
+        final Rule rule = Rule.of("c", ImList.Immutable.of(P.newInt(42), p2), new CEqual(v1, v2));
         testInlineRules(rule, 0, into);
     }
 
@@ -162,9 +162,9 @@ public class RuleUtilTest {
         final Pattern p2 = P.newVar("p2");
         final ITermVar v1 = B.newVar("", "p1");
         final ITermVar v2 = B.newVar("", "p2");
-        final Rule into = Rule.of("c", Arrays.asList(p1, P.newWld()),
+        final Rule into = Rule.of("c", ImList.Immutable.of(p1, P.newWld()),
                 new CConj(new CTrue(), new CExists(Arrays.asList(v2), new CUser("c", Arrays.asList(v1, B.newList())))));
-        final Rule rule = Rule.of("c", Arrays.asList(P.newInt(42), p2), new CTrue());
+        final Rule rule = Rule.of("c", ImList.Immutable.of(P.newInt(42), p2), new CTrue());
         testInlineRules(rule, 0, into);
     }
 
@@ -197,30 +197,30 @@ public class RuleUtilTest {
 
         // @formatter:off
         final List<Rule> rules = Arrays.asList(
-          Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, A))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, y))
+          Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(x, A))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(x, y))
 
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(A, wld))))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(y, wld))))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(A, wld))))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CExists(Arrays.asList(wld), new CEqual(x, B.newTuple(y, wld))))
 
-        , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, A))
-        , Rule.of("", Arrays.asList(P.newAppl("Id", P.newVar(x))), new CEqual(x, y))
-        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, y))
+        , Rule.of("", ImList.Immutable.of(P.newAppl("Id", P.newVar(x))), new CEqual(x, A))
+        , Rule.of("", ImList.Immutable.of(P.newAppl("Id", P.newVar(x))), new CEqual(x, y))
+        , Rule.of("", ImList.Immutable.of(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, y))
 
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, B.newAppl("Id", A)))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(x, B.newAppl("Id", y)))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(x, B.newAppl("Id", A)))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(x, B.newAppl("Id", y)))
 
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", A)))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)))
-        , Rule.of("", Arrays.asList(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(y, B.newAppl("Id", z))))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(y, B.newAppl("Id", A)))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x)), new CExists(Arrays.asList(z), new CEqual(y, B.newAppl("Id", z))))
 
-        , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, A), new CUser("p", Arrays.asList(Us, Ts))))
-        , Rule.of("", Arrays.asList(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))
+        , Rule.of("", ImList.Immutable.of(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, A), new CUser("p", Arrays.asList(Us, Ts))))
+        , Rule.of("", ImList.Immutable.of(P.newTuple(P.newVar(x), P.newVar(Ts))), new CConj(new CEqual(x, y), new CUser("p", Arrays.asList(Us, Ts))))
 
-        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, B.newAppl("ID", y)))
-        , Rule.of("", Arrays.asList(P.newVar(x), P.newVar(x)), new CTrue())
+        , Rule.of("", ImList.Immutable.of(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CEqual(z, B.newAppl("ID", y)))
+        , Rule.of("", ImList.Immutable.of(P.newVar(x), P.newVar(x)), new CTrue())
 
-        , Rule.of("", Arrays.asList(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CExists(Arrays.asList(y),
+        , Rule.of("", ImList.Immutable.of(P.newAs(z, P.newAppl("Id", P.newVar(x)))), new CExists(Arrays.asList(y),
                 new CConj(new CUser("p", Arrays.asList(z, y)), new CExists(Arrays.asList(z),
                         new CEqual(y, B.newAppl("f", x, z))))))
         );
@@ -250,7 +250,7 @@ public class RuleUtilTest {
         ITermVar y = B.newVar("", "y");
         IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
                 Map.Immutable.of(y, B.newAppl("Id", x)));
-        Rule r = Rule.of("", Arrays.asList(), new CExists(Arrays.asList(x), new CEqual(y, B.newAppl("Id", x))));
+        Rule r = Rule.of("", ImList.Immutable.of(), new CExists(Arrays.asList(x), new CEqual(y, B.newAppl("Id", x))));
         Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);
         logger.info("Close {} in {}", r, u);
         logger.info("  to {}", s);
@@ -261,7 +261,7 @@ public class RuleUtilTest {
         ITermVar y = B.newVar("", "y");
         IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
                 Map.Immutable.of(y, B.newAppl("Id", x)));
-        Rule r = Rule.of("", Arrays.asList(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)));
+        Rule r = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)));
         Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);
         logger.info("Close {} in {}", r, u);
         logger.info("  to {}", s);

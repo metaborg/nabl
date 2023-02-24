@@ -4,12 +4,11 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 
+import org.metaborg.util.collection.ImList;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SetMultimap;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -85,22 +84,22 @@ public class CompletenessUtil {
      * Return critical edges for this constraint.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Transient<CriticalEdge> criticalEdges = ImList.Transient.of();
         criticalEdges(constraint, spec, (s, l) -> criticalEdges.add(CriticalEdge.of(s, l)));
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     /**
      * Return critical edges for this constraint, normalized against the given unifier.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Transient<CriticalEdge> criticalEdges = ImList.Transient.of();
         criticalEdges(constraint, spec, (s, l) -> {
             scopeOrVar().match(s, unifier).ifPresent(scopeOrVar -> {
                 criticalEdges.add(CriticalEdge.of(scopeOrVar, l));
             });
         });
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     public static IMatcher<ITerm> scopeOrVar() {
@@ -113,14 +112,14 @@ public class CompletenessUtil {
      *
      * If critical edges escape from the top-level rule, an IllegalArgumentException is thrown.
      */
-    public static Rule precomputeCriticalEdges(Rule rule, SetMultimap<String, Tuple2<Integer, ITerm>> spec) {
+    public static Rule precomputeCriticalEdges(Rule rule, MultiSetMap<String, Tuple2<Integer, ITerm>> spec) {
         return precomputeCriticalEdges(rule, spec, (s, l) -> {
             throw new IllegalArgumentException("Rule cannot have escaping critical edges.");
         });
     }
 
     public static Tuple2<IConstraint, ICompleteness.Immutable> precomputeCriticalEdges(IConstraint constraint,
-            SetMultimap<String, Tuple2<Integer, ITerm>> spec) {
+            MultiSetMap<String, Tuple2<Integer, ITerm>> spec) {
         final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
         IConstraint newConstraint = precomputeCriticalEdges(constraint, spec, (s, l) -> {
             criticalEdges.add(s, l, PersistentUniDisunifier.Immutable.of());
@@ -128,7 +127,7 @@ public class CompletenessUtil {
         return Tuple2.of(newConstraint, criticalEdges.freeze());
     }
 
-    static Rule precomputeCriticalEdges(Rule rule, SetMultimap<String, Tuple2<Integer, ITerm>> spec,
+    static Rule precomputeCriticalEdges(Rule rule, MultiSetMap<String, Tuple2<Integer, ITerm>> spec,
             Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         final Set.Immutable<ITermVar> paramVars = rule.paramVars();
         final ICompleteness.Transient criticalEdges = Completeness.Transient.of();
@@ -142,7 +141,7 @@ public class CompletenessUtil {
         return rule.withBody(newBody).withBodyCriticalEdges(criticalEdges.freeze());
     }
 
-    static IConstraint precomputeCriticalEdges(IConstraint constraint, SetMultimap<String, Tuple2<Integer, ITerm>> spec,
+    static IConstraint precomputeCriticalEdges(IConstraint constraint, MultiSetMap<String, Tuple2<Integer, ITerm>> spec,
             Action2<ITerm, EdgeOrData<ITerm>> criticalEdge) {
         // @formatter:off
         return constraint.match(Constraints.cases(
@@ -211,7 +210,7 @@ public class CompletenessUtil {
             },
             cuser -> {
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
-                spec.get(cuser.name()).stream().forEach(il -> {
+                spec.get(cuser.name()).toCollection().stream().forEach(il -> {
                     final ITerm scopeOrVar;
                     if((scopeOrVar = scopeOrVar().match(cuser.args().get(il._1())).orElse(null)) != null) {
                         final EdgeOrData<ITerm> label = EdgeOrData.edge(il._2());

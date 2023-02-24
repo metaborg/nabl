@@ -10,8 +10,8 @@ import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.Test;
-
-import com.google.common.collect.HashMultimap;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -39,7 +39,7 @@ public class IndexedRuleApplicationTest {
         Rule.of("q", Arrays.asList(P.newInt(1)), new CFalse()),
         Rule.of("q", Arrays.asList(P.newWld()), new CTrue())
     ));
-    final Spec spec = Spec.of(ruleSet, Collections.emptySet(), Collections.emptySet(), HashMultimap.create());
+    final Spec spec = Spec.of(ruleSet, CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), MultiSetMap.Immutable.of());
     // @formatter:on
 
     @Test public void testTrue() throws Delay, InterruptedException {

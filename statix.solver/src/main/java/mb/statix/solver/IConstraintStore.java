@@ -1,8 +1,8 @@
 package mb.statix.solver;
 
-import java.util.Map;
 import java.util.Map.Entry;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.log.IDebugContext;
 
@@ -30,7 +30,7 @@ public interface IConstraintStore {
 
     Iterable<IConstraint> active();
 
-    Map<IConstraint, Delay> delayed();
+    Map.Immutable<IConstraint, Delay> delayed();
 
     void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug);
 

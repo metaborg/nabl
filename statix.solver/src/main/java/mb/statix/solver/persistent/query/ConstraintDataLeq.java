@@ -2,10 +2,9 @@ package mb.statix.solver.persistent.query;
 
 import java.util.Collections;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.scopegraph.oopsla20.reference.DataLeq;
@@ -43,7 +42,7 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
         try {
             final ApplyResult applyResult;
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImmutableList.of(datum1, datum2), null,
+            if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum1, datum2), null,
                     ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
                 return false;
             }

@@ -14,9 +14,8 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -44,7 +43,7 @@ public abstract class ARule {
 
     @Value.Parameter public abstract String name();
 
-    @Value.Parameter public abstract List<Pattern> params();
+    @Value.Parameter public abstract ImList.Immutable<Pattern> params();
 
     @Value.Lazy public Set.Immutable<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
@@ -64,7 +63,8 @@ public abstract class ARule {
      * otherwise, none
      */
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
-        final List<ITermVar> args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
+        final List<ITermVar>
+            args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
                 .collect(Collectors.toList());
         final ApplyResult applyResult;
         try {
@@ -141,7 +141,7 @@ public abstract class ARule {
         fresh.fix();
 
         if(!ren.isEmpty()) {
-            params = params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList());
+            params = params().stream().map(p -> p.apply(ren)).collect(ImList.Immutable.toImmutableList());
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
@@ -183,7 +183,7 @@ public abstract class ARule {
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
-        params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+        params = params().stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
         body = body.apply(subst);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);

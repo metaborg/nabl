@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletableFuture;
@@ -22,9 +23,6 @@ import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -69,7 +67,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     private StatixSolver solver;
     private IFuture<SolverResult> solveResult;
-    private final Multimap<ITerm, ICompletableFuture<ITerm>> pendingData = ArrayListMultimap.create();
+    private final MultiSetMap.Transient<ITerm, ICompletableFuture<ITerm>> pendingData = MultiSetMap.Transient.of();
 
     private boolean snapshotTaken = false;
 

@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
-
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;

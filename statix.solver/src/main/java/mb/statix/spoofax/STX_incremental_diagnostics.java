@@ -85,7 +85,7 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
             this.unifier = unifier;
         }
 
-        @Override public Map<? extends Entry<Scope, ITerm>, ? extends Iterable<Scope>> getEdges() {
+        @Override public Map<? extends Entry<Scope, ITerm>, ? extends Collection<Scope>> getEdges() {
             return scopeGraph.getEdges();
         }
 

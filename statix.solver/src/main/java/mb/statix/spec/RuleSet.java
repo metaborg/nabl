@@ -2,18 +2,21 @@ package mb.statix.spec;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.SetMultimap;
-
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.completeness.CompletenessUtil;
 
@@ -25,13 +28,13 @@ public final class RuleSet implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** The rules, ordered from most specific o least specific guard. */
-    private final ImmutableListMultimap<String, Rule> rules;
+    /** The rules, ordered from most specific to least specific guard. */
+    private final Map.Immutable<String, SortedSet<Rule>> rules;
     /**
      * The independent rules. If a rule name is not in this map, an independent version of its rules has not yet been
      * created.
      */
-    private final Map<String, ImmutableSet<Rule>> independentRules = new HashMap<>();
+    private final HashMap<String, Set.Immutable<Rule>> independentRules = new HashMap<>();
 
     /**
      * Makes a new ruleset from the specified collection of rules.
@@ -43,10 +46,7 @@ public final class RuleSet implements Serializable {
      * @return the resulting ruleset
      */
     public static RuleSet of(Collection<Rule> rules) {
-        final ImmutableListMultimap.Builder<String, Rule> builder = ImmutableListMultimap.<String, Rule>builder()
-                .orderValuesBy(Rule.leftRightPatternOrdering.asComparator());
-        rules.forEach(rule -> builder.put(rule.name(), rule));
-        return new RuleSet(builder.build());
+        return new RuleSet(buildRuleSet(rules.stream()));
     }
 
     /**
@@ -55,8 +55,8 @@ public final class RuleSet implements Serializable {
      * @param rules
      *            the multimap of rule names to rules, ordered from most specific to least specific guard
      */
-    public RuleSet(ListMultimap<String, Rule> rules) {
-        this.rules = ImmutableListMultimap.copyOf(rules);
+    public RuleSet(Map.Immutable<String, SortedSet<Rule>> rules) {
+        this.rules = rules;
     }
 
     /**
@@ -66,7 +66,7 @@ public final class RuleSet implements Serializable {
      *
      * @return the map of rules
      */
-    public ImmutableListMultimap<String, Rule> getRuleMap() {
+    public Map.Immutable<String, SortedSet<Rule>> getRuleMap() {
         return this.rules;
     }
 
@@ -75,7 +75,7 @@ public final class RuleSet implements Serializable {
      *
      * @return the set of rule names
      */
-    public ImmutableSet<String> getRuleNames() {
+    public java.util.Set<String> getRuleNames() {
         return this.rules.keySet();
     }
 
@@ -86,8 +86,8 @@ public final class RuleSet implements Serializable {
      *
      * @return all rules
      */
-    public ImmutableCollection<Rule> getAllRules() {
-        return this.rules.values();
+    public List<Rule> getAllRules() {
+        return this.rules.values().stream().flatMap(SortedSet::stream).collect(Collectors.toList());
     }
 
     /**
@@ -99,7 +99,7 @@ public final class RuleSet implements Serializable {
      *            the name of the rules to find
      * @return the rules with the specified name
      */
-    public ImmutableList<Rule> getRules(String name) {
+    public SortedSet<Rule> getRules(String name) {
         return this.rules.get(name);
     }
 
@@ -112,10 +112,13 @@ public final class RuleSet implements Serializable {
      *
      * @return a map of a list of rules that are mutually independent
      */
-    public ImmutableListMultimap<String, Rule> getAllOrderIndependentRules() {
-        final ImmutableListMultimap.Builder<String, Rule> independentRules = ImmutableListMultimap.builder();
-        this.rules.keySet().forEach(name -> independentRules.putAll(name, getOrderIndependentRules(name)));
-        return independentRules.build();
+    public java.util.Map<String, java.util.Set<Rule>> getAllOrderIndependentRules() {
+        final HashMap<String, java.util.Set<Rule>> independentRules = new HashMap<>();
+        this.rules.keySet().forEach(name -> {
+            independentRules.computeIfAbsent(name, k -> new HashSet<>())
+                .addAll(getOrderIndependentRules(name));
+        });
+        return independentRules;
     }
 
     /**
@@ -129,7 +132,7 @@ public final class RuleSet implements Serializable {
      *            the name of the rules to find
      * @return a list of rules that are order independent
      */
-    public ImmutableSet<Rule> getOrderIndependentRules(String name) {
+    public Set.Immutable<Rule> getOrderIndependentRules(String name) {
         return this.independentRules.computeIfAbsent(name, n -> RuleUtil.computeOrderIndependentRules(getRules(name)));
     }
 
@@ -138,10 +141,13 @@ public final class RuleSet implements Serializable {
      *
      * @return the map from names to equivalent rules
      */
-    public ListMultimap<String, Rule> getAllEquivalentRules() {
-        final ImmutableListMultimap.Builder<String, Rule> overlappingRules = ImmutableListMultimap.builder();
-        this.rules.keySet().forEach(name -> overlappingRules.putAll(name, getEquivalentRules(name)));
-        return overlappingRules.build();
+    public java.util.Map<String, java.util.Set<Rule>> getAllEquivalentRules() {
+        final HashMap<String, java.util.Set<Rule>> overlappingRules = new HashMap<>();
+        this.rules.keySet().forEach(name -> {
+            overlappingRules.computeIfAbsent(name, k -> new HashSet<>())
+                .addAll(getEquivalentRules(name));
+        });
+        return overlappingRules;
     }
 
     /**
@@ -151,22 +157,28 @@ public final class RuleSet implements Serializable {
      *            the name of the rules to find
      * @return a set of rules with equivalent patterns
      */
-    public ImmutableSet<Rule> getEquivalentRules(String name) {
-        ImmutableList<Rule> rules = getRules(name);
+    public java.util.Set<Rule> getEquivalentRules(String name) {
+        SortedSet<Rule> rules = getRules(name);
         return rules.stream().filter(a -> rules.stream().anyMatch(
                 b -> !a.equals(b) && ARule.leftRightPatternOrdering.compare(a, b).map(c -> c == 0).orElse(false)))
-                .collect(ImmutableSet.toImmutableSet());
+                .collect(Collectors.toSet());
     }
 
-    public RuleSet precomputeCriticalEdges(SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions) {
-        final ImmutableListMultimap.Builder<String, Rule> newRules = ImmutableListMultimap.builder();
-        for(String name : rules.keySet()) {
-            for(Rule rule : rules.get(name)) {
-                final Rule newRule = CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions);
-                newRules.put(name, newRule);
-            }
-        }
-        return new RuleSet(newRules.build());
+    public RuleSet precomputeCriticalEdges(MultiSetMap.Immutable<String, Tuple2<Integer, ITerm>> scopeExtensions) {
+        return new RuleSet(buildRuleSet(
+            rules.keySet().stream().flatMap(name -> rules.get(name).stream()).map(
+                (Rule rule) -> CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions))));
+    }
+
+    private static Map.Immutable<String, SortedSet<Rule>> buildRuleSet(Stream<Rule> rules) {
+        final HashMap<String, SortedSet<Rule>> builder = new HashMap<>();
+        rules.forEach(rule -> {
+            final SortedSet<Rule> value = builder.computeIfAbsent(rule.name(),
+                k -> new TreeSet<>(Rule.leftRightPatternOrdering.asComparator()));
+            value.add(rule);
+        });
+        builder.replaceAll((key, value) -> Collections.unmodifiableSortedSet(value));
+        return CapsuleUtil.toMap(builder);
     }
 
 }

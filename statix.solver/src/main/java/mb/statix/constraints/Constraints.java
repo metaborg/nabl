@@ -9,14 +9,13 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
@@ -494,14 +493,14 @@ public final class Constraints {
     public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f,
             boolean recurseInLogicalScopes) {
         return c -> {
-            final ImmutableList.Builder<T> ts = ImmutableList.builder();
+            final ImList.Transient<T> ts = ImList.Transient.of();
             collectBase(c, f, ts, recurseInLogicalScopes);
-            return ts.build();
+            return ts.freeze();
         };
     }
 
     private static <T> void collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
-            ImmutableList.Builder<T> ts, boolean recurseInLogicalScopes) {
+        ImList.Transient<T> ts, boolean recurseInLogicalScopes) {
         // @formatter:off
         constraint.match(cases(
             c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
@@ -528,7 +527,7 @@ public final class Constraints {
 
     public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst,
             @Nullable IConstraint cause) {
-        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImmutableList.toImmutableList());
+        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImList.toImmutableList());
     }
 
     public static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {

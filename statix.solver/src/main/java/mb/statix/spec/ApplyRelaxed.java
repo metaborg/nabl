@@ -5,8 +5,7 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.List;
 import java.util.Optional;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.metaborg.util.collection.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -47,7 +46,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         final Set.Immutable<ITermVar> generatedVars = fresh.reset();
 
         // non-generated variables that are constrained by the match
-        final SetView<ITermVar> constrainedVars = Sets.difference(matchResult.constrainedVars(), generatedVars);
+        final Set.Immutable<ITermVar> constrainedVars = Set.Immutable.subtract(matchResult.constrainedVars(), generatedVars);
 
         final IConstraint appliedBody;
         if(safety.equals(Safety.UNSAFE)) {

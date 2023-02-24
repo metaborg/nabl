@@ -8,9 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Predicate2;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -173,7 +172,7 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
     public static ITerm toTerm(ScopeGraphDiff<Scope, ITerm, ITerm> diff, IUnifier.Immutable current,
             IUnifier.Immutable previous) {
         final List<ITerm> matchedScopes = diff.matchedScopes().entrySet().stream()
-                .map(e -> B.newAppl(MATCH_OP, e.getKey(), e.getValue())).collect(ImmutableList.toImmutableList());
+                .map(e -> B.newAppl(MATCH_OP, e.getKey(), e.getValue())).collect(ImList.Immutable.toImmutableList());
         final ITerm added = toTerm(diff.added(), current);
         final ITerm removed = toTerm(diff.removed(), previous);
         return B.newAppl(DIFF_OP, B.newList(matchedScopes), added, removed);
@@ -182,9 +181,9 @@ public class StatixDifferOps implements ScopeGraphDifferOps<Scope, ITerm> {
     public static ITerm toTerm(ScopeGraphDiff.Changes<Scope, ITerm, ITerm> changes, IUnifier.Immutable unifier) {
         final List<ITerm> scopes = changes.scopes().entrySet().stream()
                 .map(e -> B.newAppl(SCOPE_OP, e.getKey(), unifier.findRecursive(e.getValue())))
-                .collect(ImmutableList.toImmutableList());
+                .collect(ImList.Immutable.toImmutableList());
         final List<ITerm> edges = changes.edges().stream().map(e -> B.newAppl(EDGE_OP, e.source, e.label, e.target))
-                .collect(ImmutableList.toImmutableList());
+                .collect(ImList.Immutable.toImmutableList());
         return B.newAppl(CHANGES_OP, B.newList(scopes), B.newList(edges));
     }
 

@@ -1,9 +1,23 @@
 package mb.statix.constraints.messages;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
+import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
+import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -29,33 +43,15 @@ import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.spoofax.IStatixProjectConfig;
 
-import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.collection.MultiSet;
-import org.metaborg.util.functions.Action1;
-import org.metaborg.util.functions.Function0;
-import org.metaborg.util.functions.Function1;
-import org.metaborg.util.tuple.Tuple2;
-
-import javax.annotation.Nullable;
-
 import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class MessageUtil {
 
     // @formatter:off
     private static final Map<Class<? extends IConstraint>, MessageKind> KINDS =
-        ImmutableMap.<Class<? extends IConstraint>, MessageKind>builder()
-            .put(CAstId.class, MessageKind.IGNORE)
-            .put(CAstProperty.class, MessageKind.IGNORE)
-            .build();
+        io.usethesource.capsule.Map.Immutable.of(
+            CAstId.class, MessageKind.IGNORE,
+            CAstProperty.class, MessageKind.IGNORE);
     // @formatter:on
 
     public static IMessage findClosestMessage(IConstraint c) {
@@ -88,7 +84,7 @@ public class MessageUtil {
 
     public static SolverResult delaysAsErrors(SolverResult result, boolean suppressCascadingErrors) {
 
-        ImmutableMap<IConstraint, Delay> delays = result.delays();
+        io.usethesource.capsule.Map.Immutable<IConstraint, Delay> delays = result.delays();
 
         if(suppressCascadingErrors) {
             // Collect all delays that involve variables that do not occur on free variables.
@@ -111,7 +107,7 @@ public class MessageUtil {
             while(!newErrorVars.isEmpty() || !newCriticalEdges.isEmpty()) {
                 final Set.Transient<ITermVar> _newVars = CapsuleUtil.transientSet();
                 final Set.Transient<CriticalEdge> _newCriticalEdges = CapsuleUtil.transientSet();
-                final ImmutableMap.Builder<IConstraint, Delay> retainedDelays = ImmutableMap.builder();
+                final io.usethesource.capsule.Map.Transient<IConstraint, Delay> retainedDelays = CapsuleUtil.transientMap();
 
                 for(Map.Entry<IConstraint, Delay> e : delays.entrySet()) {
                     Delay d = e.getValue();
@@ -128,11 +124,11 @@ public class MessageUtil {
                             _newCriticalEdges.__insertAll(edges.__removeAll(allCriticalEdges));
                         }
                     } else {
-                        retainedDelays.put(e);
+                        retainedDelays.__put(e.getKey(), e.getValue());
                     }
                 }
 
-                delays = retainedDelays.build();
+                delays = retainedDelays.freeze();
                 newErrorVars = _newVars.freeze();
                 allErrorVars = allErrorVars.__insertAll(newErrorVars);
 
@@ -141,13 +137,13 @@ public class MessageUtil {
             }
         }
 
-        final ImmutableMap.Builder<IConstraint, IMessage> messages = ImmutableMap.builder();
-        messages.putAll(result.messages());
+        final io.usethesource.capsule.Map.Transient<IConstraint, IMessage> messages = CapsuleUtil.transientMap();
+        messages.__putAll(result.messages());
 
-        delays.forEach((c, d) -> messages.put(c,
+        delays.forEach((c, d) -> messages.__put(c,
                 new Unsolved(MessageUtil.findClosestMessage(c), d, c.ownCriticalEdges().orElse(null))));
 
-        return result.withMessages(messages.build()).withDelays(ImmutableMap.of());
+        return result.withMessages(messages.freeze()).withDelays(CapsuleUtil.immutableMap());
     }
 
     private static class Unsolved implements IMessage, Serializable {
@@ -232,9 +228,9 @@ public class MessageUtil {
     public static void addMessage(final IMessage message, final IConstraint constraint, final IUniDisunifier unifier,
             IStatixProjectConfig config, final Collection<ITerm> errors, final Collection<ITerm> warnings,
             final Collection<ITerm> notes) {
-        Tuple2<Iterable<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
+        Tuple2<Collection<String>, ITerm> message_origin = formatMessage(message, constraint, unifier, config);
 
-        final String messageText = Streams.stream(message_origin._1()).filter(s -> !s.isEmpty())
+        final String messageText = message_origin._1().stream().filter(s -> !s.isEmpty())
                 .map(s -> cleanupString(s)).collect(Collectors.joining("<br>\n&gt;&nbsp;", "", "<br>\n"));
 
         final ITerm messageTerm = B.newTuple(message_origin._2(), B.newString(messageText));
@@ -254,7 +250,7 @@ public class MessageUtil {
 
     }
 
-    public static Tuple2<Iterable<String>, ITerm> formatMessage(final IMessage message, final IConstraint constraint,
+    public static Tuple2<Collection<String>, ITerm> formatMessage(final IMessage message, final IConstraint constraint,
             final IUniDisunifier unifier, IStatixProjectConfig config) {
         final TermFormatter formatter = Solver.shallowTermFormatter(unifier,
                 config.messageTermDepth(config.messageTermDepth(IStatixProjectConfig.DEFAULT_MESSAGE_TERM_DEPTH)));
@@ -301,7 +297,7 @@ public class MessageUtil {
 
     public static Deque<String> formatTrace(final IConstraint constraint, final IUniDisunifier unifier,
             final TermFormatter formatter, final int maxTraceLength) {
-        final Deque<String> trace = Lists.newLinkedList();
+        final Deque<String> trace = new ArrayDeque<>();
         IConstraint current = constraint;
         int traceCount = 0;
         while(current != null) {
@@ -318,26 +314,26 @@ public class MessageUtil {
 
     private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
-        final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
-            onArith -> Stream.empty(),
-            onConj -> Stream.empty(),
-            onEqual -> Stream.empty(),
-            onExists -> Stream.empty(),
-            onFalse -> Stream.empty(),
-            onInequal -> Stream.empty(),
-            onNew -> Stream.empty(),
-            onResolveQuery -> Stream.empty(),
-            onTellEdge -> Stream.empty(),
-            onTermId -> Stream.empty(),
-            onTermProperty -> Stream.empty(),
-            onTrue -> Stream.empty(),
-            onTry -> Stream.empty(),
-            onUser -> onUser.args().stream()
-        );
-        return terms.apply(constraint)
-                .flatMap(t -> Streams.stream(getOriginTerm(t, unifier)))
-                .findFirst();
-        // @formatter:on
+        return Constraints.<Optional<List<ITerm>>>cases(
+            onArith -> Optional.empty(),
+            onConj -> Optional.empty(),
+            onEqual -> Optional.empty(),
+            onExists -> Optional.empty(),
+            onFalse -> Optional.empty(),
+            onInequal -> Optional.empty(),
+            onNew -> Optional.empty(),
+            onResolveQuery -> Optional.empty(),
+            onTellEdge -> Optional.empty(),
+            onTermId -> Optional.empty(),
+            onTermProperty -> Optional.empty(),
+            onTrue -> Optional.empty(),
+            onTry -> Optional.empty(),
+            onUser -> Optional.of(onUser.args())
+        )
+            // @formatter:on
+            .apply(constraint)
+            .<ITerm>flatMap(l -> l.stream().map(t -> getOriginTerm(t, unifier)).findFirst()
+                    .orElse(Optional.empty()));
     }
 
     private static Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
@@ -345,7 +341,7 @@ public class MessageUtil {
         return Optional.of(unifier.findTerm(term))
             .filter(t -> TermIndex.get(t).isPresent())
             .filter(t -> TermOrigin.get(t).isPresent()) // HACK Ignore terms without origin, such as empty lists
-            .map(t -> B.newTuple(ImmutableList.of(), t.getAttachments()));
+            .map(t -> B.newTuple(ImList.Immutable.of(), t.getAttachments()));
         // @formatter:on
     }
 

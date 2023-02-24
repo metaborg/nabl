@@ -1,29 +1,29 @@
 package mb.statix.concurrent.util;
 
+import java.util.Collection;
+
 import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Streams;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 
 public class VarIndexedCollection<V> {
 
-    private final HashMultimap<ITermVar, Entry> index;
+    private final SetMultimap.Transient<ITermVar, Entry> index;
 
     public VarIndexedCollection() {
-        this.index = HashMultimap.create();
+        this.index = SetMultimap.Transient.of();
     }
 
-    public boolean put(V value, Iterable<ITermVar> indexVars, IUnifier unifier) {
+    public boolean put(V value, Collection<ITermVar> indexVars, IUnifier unifier) {
         final Set<ITermVar> vars =
-                Streams.stream(indexVars).flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
+                indexVars.stream().flatMap(v -> unifier.getVars(v).stream()).collect(CapsuleCollectors.toSet());
         final Entry entry = new Entry(value);
         for(ITermVar var : vars) {
-            index.put(var, entry.inc());
+            index.__insert(var, entry.inc());
         }
         return !vars.isEmpty();
     }
@@ -44,11 +44,12 @@ public class VarIndexedCollection<V> {
 
     private void update(ITermVar indexVar, IUnifier unifier, Set.Transient<V> done) {
         final Set<ITermVar> vars = unifier.getVars(indexVar);
-        final Iterable<Entry> entries = index.removeAll(indexVar);
+        final Iterable<Entry> entries = index.get(indexVar);
+        index.__remove(indexVar);
         for(Entry entry : entries) {
             entry.dec();
             for(ITermVar var : vars) {
-                index.put(var, entry.inc());
+                index.__insert(var, entry.inc());
             }
             if(entry.refcount() == 0) {
                 done.__insert(entry.value);
