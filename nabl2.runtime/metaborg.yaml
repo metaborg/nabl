@@ -77,7 +77,7 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    format: ctree
+    format: ctree # source library
     args:
     - -la
     - stratego-lib

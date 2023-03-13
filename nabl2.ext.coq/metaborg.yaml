@@ -25,7 +25,7 @@ language:
   sdf:
     enabled: false
   stratego:
-    format: ctree
+    format: jar
     args:
     - -la
     - stratego-lib
