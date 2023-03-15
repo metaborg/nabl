@@ -236,7 +236,6 @@ public class ScopeGraphDiffTest {
 
     // Growing current scope graph
 
-    @Ignore
     @Test public void testGraphAdditions_TargetEarlier() {
         // @formatter:off
         previous = previous.addEdge(s0, P, s2)
