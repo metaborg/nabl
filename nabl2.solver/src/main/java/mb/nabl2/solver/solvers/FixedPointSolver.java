@@ -18,6 +18,7 @@ import org.metaborg.util.task.RateLimitedCancel;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SolveResult;
@@ -62,7 +63,7 @@ public class FixedPointSolver {
         final IndexedBag<IConstraint, CriticalEdge> criticalEdgeDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, String> relationDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, ITermVar> variableDelays = new IndexedBag<>(RemovalPolicy.ANY);
-        final List<IConstraint> unsolved = new ArrayList<>();
+        final Set.Transient<IConstraint> unsolved = Set.Transient.of();
 
         final Action1<Iterable<CriticalEdge>> resolveCriticalEdges = es -> {
             es.forEach(e -> {
@@ -96,7 +97,7 @@ public class FixedPointSolver {
                 } catch(InterruptedDelayException e) {
                     throw e.getCause();
                 } catch(UnconditionalDelayExpection e) {
-                    unsolved.add(constraint);
+                    unsolved.__insert(constraint);
                     unconditionalDelayCount++;
                     continue;
                 } catch(CriticalEdgeDelayException e) {
@@ -134,15 +135,15 @@ public class FixedPointSolver {
         //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
         //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
 
-        unsolved.addAll(constraints);
-        unsolved.addAll(variableDelays.values());
-        unsolved.addAll(criticalEdgeDelays.values());
-        unsolved.addAll(relationDelays.values());
+        constraints.forEach(unsolved::__insert);
+        variableDelays.values().forEach(unsolved::__insert);
+        criticalEdgeDelays.values().forEach(unsolved::__insert);
+        relationDelays.values().forEach(unsolved::__insert);
 
         return SolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
-                .constraints(unsolved)
+                .constraints(unsolved.freeze())
                 // @formatter:on
                 .build();
     }

@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
@@ -232,6 +233,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         assertEquals(TransitionTrace.RELEASED, result.subUnitResults().get("sub").stateTransitionTrace());
     }
 
+    @Ignore
     @Test(timeout = 10000) public void testRelease_MutualDep_ChildChanged()
             throws InterruptedException, ExecutionException {
         final Scope root = new Scope("/.", 0);

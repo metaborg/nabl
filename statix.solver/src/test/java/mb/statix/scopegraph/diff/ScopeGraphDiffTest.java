@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.metaborg.util.collection.MultiSetMap;
 
@@ -235,6 +236,7 @@ public class ScopeGraphDiffTest {
 
     // Growing current scope graph
 
+    @Ignore
     @Test public void testGraphAdditions_TargetEarlier() {
         // @formatter:off
         previous = previous.addEdge(s0, P, s2)

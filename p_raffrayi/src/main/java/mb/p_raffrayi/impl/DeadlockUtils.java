@@ -148,9 +148,7 @@ public class DeadlockUtils {
         @Override public IGraph<V> invert() {
             final GraphBuilder<V> builder = GraphBuilder.of();
             vertices.forEach(builder::addVertex);
-            for(Map.Entry<V, V> edge : edges.entries()) {
-                builder.addEdge(edge.getValue(), edge.getKey());
-            }
+            edges.forEach((from, to) -> builder.addEdge(to, from));
             return builder.build();
         }
 

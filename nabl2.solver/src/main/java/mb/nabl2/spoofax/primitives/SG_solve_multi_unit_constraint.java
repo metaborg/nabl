@@ -14,6 +14,7 @@ import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.solver.Fresh;
@@ -44,7 +45,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
                 }).match(currentTerm)
                         .orElseThrow(() -> new InterpreterException("Current term is not (InitialResult, C)."));
         final MultiInitialResult initialResult = input._1();
-        final List<IConstraint> constraints = ImList.Immutable.of(input._2());
+        final Set.Immutable<IConstraint> constraints = Set.Immutable.of(input._2());
 
         final Fresh.Transient unitFresh = Fresh.Transient.of();
 

@@ -71,9 +71,7 @@ public class ScopeGraphDiffer<S, L, D> {
 
         final Queue<EdgeMatch> worklist = new LinkedList<>();
 
-        activations.entries().forEach(activation -> {
-            S scope = activation.getKey();
-            EdgeOrData<L> label = activation.getValue();
+        activations.forEach((scope, label) -> {
             assertClosed(scope, label);
             label.match(() -> {
                 state.dataDelays().removeValues(scope).forEach(removedDelay -> {

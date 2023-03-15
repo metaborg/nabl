@@ -3,12 +3,13 @@ package mb.nabl2.solver;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.CheckedFunction1;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.solver.exceptions.DelayException;
@@ -30,8 +31,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
     @Serial.Version(42l)
     public static abstract class ASeedResult {
 
-        @Value.Default public Set<IConstraint> constraints() {
-            return Collections.emptySet();
+        @Value.Default public Set.Immutable<IConstraint> constraints() {
+            return CapsuleUtil.immutableSet();
         }
 
         @Value.Default public IMessages.Immutable messages() {
@@ -66,8 +67,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
     @Serial.Version(42l)
     public static abstract class ASolveResult {
 
-        @Value.Default public Set<IConstraint> constraints() {
-            return Collections.emptySet();
+        @Value.Default public Set.Immutable<IConstraint> constraints() {
+            return CapsuleUtil.immutableSet();
         }
 
         @Value.Default public IMessages.Immutable messages() {
@@ -96,8 +97,8 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
             return constraints(Arrays.asList(constraints));
         }
 
-        public static SolveResult constraints(Iterable<? extends IConstraint> constraints) {
-            return SolveResult.builder().constraints(constraints).build();
+        public static SolveResult constraints(Collection<? extends IConstraint> constraints) {
+            return SolveResult.builder().constraints(CapsuleUtil.toSet(constraints)).build();
         }
 
     }
