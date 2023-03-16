@@ -14,7 +14,7 @@ public class WaitForGraph<P, T> {
     private static final ILogger logger = LoggerUtils.logger(WaitForGraph.class);
 
     private MultiSet.Transient<T> waitFors = MultiSet.Transient.of();
-    private Map<P, MultiSet<T>> waitForsByProcess = new HashMap<>();
+    private Map<P, MultiSet.Transient<T>> waitForsByProcess = new HashMap<>();
 
     private MultiSet.Transient<P> waits = MultiSet.Transient.of();
 
@@ -27,15 +27,15 @@ public class WaitForGraph<P, T> {
     }
 
     public boolean isWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, MultiSet.Immutable.of()).contains(token);
+        return waitForsByProcess.getOrDefault(from, MultiSet.Transient.of()).contains(token);
     }
 
     public int countWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, MultiSet.Immutable.of()).count(token);
+        return waitForsByProcess.getOrDefault(from, MultiSet.Transient.of()).count(token);
     }
 
     public MultiSet.Immutable<T> getTokens(P unit) {
-        return MultiSet.Immutable.copyOf(waitForsByProcess.getOrDefault(unit, MultiSet.Immutable.of()));
+        return MultiSet.Immutable.copyOf(waitForsByProcess.getOrDefault(unit, MultiSet.Transient.of()));
     }
 
     public MultiSet<T> getTokens() {
@@ -50,12 +50,12 @@ public class WaitForGraph<P, T> {
         boolean newDependency = !waitForsByProcess.containsKey(process) && !waits.contains(process);
         logger.debug("wait for {}/{}", process, token);
         waitFors.add(token);
-        ((MultiSet.Transient<T>) waitForsByProcess.computeIfAbsent(process, __ -> MultiSet.Transient.of())).add(token);
+        waitForsByProcess.computeIfAbsent(process, __ -> MultiSet.Transient.of()).add(token);
         return newDependency;
     }
 
     protected boolean granted(P process, T token) {
-        final MultiSet.Transient<T> tokens = (MultiSet.Transient<T>) waitForsByProcess.get(process);
+        final MultiSet.Transient<T> tokens = waitForsByProcess.get(process);
         if(tokens == null || !tokens.contains(token)) {
             logger.error("not waiting for granted {}/{}", process, token);
             throw new IllegalStateException("not waiting for granted " + process + "/" + token);
