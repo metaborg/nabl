@@ -1003,9 +1003,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         builder.openScopes(openScopes.freeze());
         builder.openEdges(openEdges.freeze());
 
-        final MultiSet.Transient<String> counters = MultiSet.Transient.of();
-        counters.addAll(this.scopeNameCounters);
-        builder.scopeNameCounters(counters.freeze());
+        builder.scopeNameCounters(MultiSet.Immutable.copyOf(this.scopeNameCounters));
 
         final Set.Transient<String> stableIdentities = CapsuleUtil.transientSet();
         stableIdentities.__insertAll(usedStableScopes);
