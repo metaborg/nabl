@@ -125,7 +125,7 @@ public class InterpreterTerms {
     private static IListTerm multimap(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
         SetMultimap.Transient<ITerm, ITerm> grouped = SetMultimap.Transient.of();
         for(Map.Entry<? extends ITerm, ? extends ITerm> entry : entries) {
-            grouped.__put(entry.getKey(), entry.getValue());
+            grouped.__insert(entry.getKey(), entry.getValue());
         }
         List<ITerm> entryterms = new ArrayList<>();
         for(ITerm key : grouped.keySet()) {

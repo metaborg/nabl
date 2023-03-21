@@ -39,7 +39,7 @@ public abstract class ASolution implements ISolution {
     @Value.Lazy @Override public SetMultimap.Immutable<OccurrenceIndex, Occurrence> astDecls() {
         final SetMultimap.Transient<OccurrenceIndex, Occurrence> astDecls = SetMultimap.Transient.of();
         scopeGraph().getAllDecls().forEach(o -> {
-            astDecls.__put(o.getIndex(), o);
+            astDecls.__insert(o.getIndex(), o);
         });
         return astDecls.freeze();
     }
@@ -47,7 +47,7 @@ public abstract class ASolution implements ISolution {
     @Value.Lazy @Override public SetMultimap.Immutable<OccurrenceIndex, Occurrence> astRefs() {
         final SetMultimap.Transient<OccurrenceIndex, Occurrence> astRefs = SetMultimap.Transient.of();
         scopeGraph().getAllRefs().forEach(o -> {
-            astRefs.__put(o.getIndex(), o);
+            astRefs.__insert(o.getIndex(), o);
         });
         return astRefs.freeze();
     }

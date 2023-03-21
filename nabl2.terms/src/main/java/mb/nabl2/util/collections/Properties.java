@@ -124,7 +124,7 @@ public abstract class Properties<I, K, V> implements IProperties<I, K, V> {
         @Override public Optional<V> putValue(I index, K key, V value) {
             V prev = values.__put(Tuple2.of(index, key), value);
             if(!value.equals(prev)) {
-                keys.__put(index, key);
+                keys.__insert(index, key);
                 return Optional.ofNullable(prev);
             }
             return Optional.empty();
