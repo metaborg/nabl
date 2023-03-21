@@ -54,11 +54,11 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
         }
 
         public static SeedResult constraints(IConstraint... constraints) {
-            return constraints(Arrays.asList(constraints));
+            return constraints(CapsuleUtil.toSet(constraints));
         }
 
         public static SeedResult constraints(Iterable<? extends IConstraint> constraints) {
-            return SeedResult.builder().constraints(constraints).build();
+            return SeedResult.builder().constraints(CapsuleUtil.toSet(constraints)).build();
         }
 
     }

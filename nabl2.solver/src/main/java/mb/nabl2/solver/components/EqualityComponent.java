@@ -1,12 +1,11 @@
 package mb.nabl2.solver.components;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.equality.CInequal;
@@ -35,7 +34,7 @@ public class EqualityComponent extends ASolver {
     }
 
     public SeedResult seed(IUnifier.Immutable solution, IMessageInfo message) throws InterruptedException {
-        final Set<IConstraint> constraints = new HashSet<>();
+        final Set.Transient<IConstraint> constraints = Set.Transient.of();
         final IMessages.Transient messages = Messages.Transient.of();
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();
@@ -48,7 +47,7 @@ public class EqualityComponent extends ASolver {
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
         }
-        return SeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
+        return SeedResult.builder().constraints(constraints.freeze()).messages(messages.freeze()).build();
     }
 
     public SolveResult solve(IEqualityConstraint constraint) throws VariableDelayException {

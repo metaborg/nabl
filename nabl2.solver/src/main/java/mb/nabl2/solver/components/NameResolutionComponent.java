@@ -5,11 +5,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -58,20 +58,18 @@ public class NameResolutionComponent extends ASolver {
     // ------------------------------------------------------------------------------------------------------//
 
     public SeedResult seed(NameResolutionResult solution, IMessageInfo message) throws InterruptedException {
-        final java.util.Set<IConstraint> constraints = new HashSet<>();
         scopeGraph.addAll(solution.scopeGraph(), unifier()::getVars);
         nameResolution.addCached(solution.resolutionCache());
-        constraints.addAll(seed(solution.declProperties(), message).constraints());
-        return SeedResult.constraints(constraints);
+        return seed(solution.declProperties(), message);
     }
 
     public SeedResult seed(IProperties<Occurrence, ITerm, ITerm> solution, IMessageInfo message)
             throws InterruptedException {
-        final java.util.Set<IConstraint> constraints = new HashSet<>();
+        final Set.Transient<IConstraint> constraints = Set.Transient.of();
         solution.stream().forEach(entry -> {
-            putProperty(entry._1(), entry._2(), entry._3(), message).ifPresent(constraints::add);
+            putProperty(entry._1(), entry._2(), entry._3(), message).ifPresent(constraints::__insert);
         });
-        return SeedResult.constraints(constraints);
+        return SeedResult.constraints(constraints.freeze());
     }
 
     public SolveResult solve(INameResolutionConstraint constraint) throws DelayException {
@@ -108,7 +106,7 @@ public class NameResolutionComponent extends ASolver {
                     MessageContent.builder().append("Resolution of ").append(ref).append(" is stuck.").build());
             return SolveResult.messages(message);
         }
-        final Set<Occurrence> declarations = new HashSet<>(Paths.resolutionPathsToDecls(paths));
+        final java.util.Set<Occurrence> declarations = new HashSet<>(Paths.resolutionPathsToDecls(paths));
         final SolveResult result;
         switch(declarations.size()) {
             case 0: {
