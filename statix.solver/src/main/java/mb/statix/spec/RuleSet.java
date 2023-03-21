@@ -144,8 +144,11 @@ public final class RuleSet implements Serializable {
     public java.util.Map<String, java.util.Set<Rule>> getAllEquivalentRules() {
         final HashMap<String, java.util.Set<Rule>> overlappingRules = new HashMap<>();
         this.rules.keySet().forEach(name -> {
-            overlappingRules.computeIfAbsent(name, k -> new HashSet<>())
-                .addAll(getEquivalentRules(name));
+            final java.util.Set<Rule> equivalentRules = getEquivalentRules(name);
+            if(!equivalentRules.isEmpty()) {
+                overlappingRules.computeIfAbsent(name, k -> new HashSet<>())
+                    .addAll(equivalentRules);
+            }
         });
         return overlappingRules;
     }
