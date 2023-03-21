@@ -3,7 +3,6 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
-import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.collection.Sets;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
@@ -25,6 +24,7 @@ import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.tuple.Tuple3;
 
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
@@ -402,10 +402,10 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<MultiSetMap.Immutable<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
+    public static IMatcher<SetMultimap.Immutable<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
         return M.listElems(scopeExtension(), (t, exts) -> {
-            final MultiSetMap.Transient<String, Tuple2<Integer, ITerm>> extmap = MultiSetMap.Transient.of();
-            exts.forEach(ext -> ext.apply(extmap::put));
+            final SetMultimap.Transient<String, Tuple2<Integer, ITerm>> extmap = SetMultimap.Transient.of();
+            exts.forEach(ext -> ext.apply(extmap::__insert));
             return extmap.freeze();
         });
     }

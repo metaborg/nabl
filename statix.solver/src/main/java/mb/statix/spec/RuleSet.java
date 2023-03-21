@@ -17,6 +17,8 @@ import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.completeness.CompletenessUtil;
 
@@ -115,8 +117,11 @@ public final class RuleSet implements Serializable {
     public java.util.Map<String, java.util.Set<Rule>> getAllOrderIndependentRules() {
         final HashMap<String, java.util.Set<Rule>> independentRules = new HashMap<>();
         this.rules.keySet().forEach(name -> {
-            independentRules.computeIfAbsent(name, k -> new HashSet<>())
-                .addAll(getOrderIndependentRules(name));
+            final Immutable<Rule> orderIndependentRules = getOrderIndependentRules(name);
+            if(!orderIndependentRules.isEmpty()) {
+                independentRules.computeIfAbsent(name, k -> new HashSet<>())
+                    .addAll(orderIndependentRules);
+            }
         });
         return independentRules;
     }
@@ -167,7 +172,7 @@ public final class RuleSet implements Serializable {
                 .collect(Collectors.toSet());
     }
 
-    public RuleSet precomputeCriticalEdges(MultiSetMap.Immutable<String, Tuple2<Integer, ITerm>> scopeExtensions) {
+    public RuleSet precomputeCriticalEdges(SetMultimap.Immutable<String, Tuple2<Integer, ITerm>> scopeExtensions) {
         return new RuleSet(buildRuleSet(
             rules.keySet().stream().flatMap(name -> rules.get(name).stream()).map(
                 (Rule rule) -> CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions))));

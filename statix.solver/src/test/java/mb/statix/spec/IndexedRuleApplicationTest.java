@@ -6,14 +6,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.Test;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
-import org.metaborg.util.collection.MultiSetMap;
 
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.constraints.CEqual;
@@ -40,7 +39,7 @@ public class IndexedRuleApplicationTest {
         Rule.of("q", ImList.Immutable.of(P.newInt(1)), new CFalse()),
         Rule.of("q", ImList.Immutable.of(P.newWld()), new CTrue())
     ));
-    final Spec spec = Spec.of(ruleSet, CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), MultiSetMap.Immutable.of());
+    final Spec spec = Spec.of(ruleSet, CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), SetMultimap.Immutable.of());
     // @formatter:on
 
     @Test public void testTrue() throws Delay, InterruptedException {
