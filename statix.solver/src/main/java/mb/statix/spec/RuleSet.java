@@ -168,7 +168,7 @@ public final class RuleSet implements Serializable {
     public java.util.Set<Rule> getEquivalentRules(String name) {
         SortedSet<Rule> rules = getRules(name);
         return rules.stream().filter(a -> rules.stream().anyMatch(
-                b -> !a.equals(b) && ARule.leftRightPatternOrdering.compare(a, b).map(c -> c == 0).orElse(false)))
+                b -> !a.equals(b) && ARule.LeftRightOrder.compare(a, b).map(c -> c == 0).orElse(false)))
                 .collect(Collectors.toSet());
     }
 
@@ -182,7 +182,7 @@ public final class RuleSet implements Serializable {
         final HashMap<String, SortedSet<Rule>> builder = new HashMap<>();
         rules.forEach(rule -> {
             final SortedSet<Rule> value = builder.computeIfAbsent(rule.name(),
-                k -> new TreeSet<>(Rule.leftRightPatternOrdering.asComparator()));
+                k -> new TreeSet<>(Rule.leftRightOrderWithConsistentEquality.asComparator()));
             value.add(rule);
         });
         builder.replaceAll((key, value) -> Collections.unmodifiableSortedSet(value));

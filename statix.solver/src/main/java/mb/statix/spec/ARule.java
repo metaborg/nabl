@@ -227,21 +227,32 @@ public abstract class ARule {
      */
     public static final LeftRightOrder leftRightPatternOrdering = new LeftRightOrder();
 
+    public static final LeftRightOrderWithConsistentEquality leftRightOrderWithConsistentEquality = new LeftRightOrderWithConsistentEquality();
+
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
     public static class LeftRightOrder {
 
-        public Optional<Integer> compare(Rule r1, Rule r2) {
+        public static Optional<Integer> compare(Rule r1, Rule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
             return Pattern.leftRightOrdering.compare(p1, p2);
         }
 
         public Comparator<Rule> asComparator() {
-            return (r1, r2) -> LeftRightOrder.this.compare(r1, r2).orElse(0);
+            return (r1, r2) -> LeftRightOrder.compare(r1, r2).orElse(0);
         }
 
+    }
+
+    public static class LeftRightOrderWithConsistentEquality {
+        public Comparator<Rule> asComparator() {
+            return (r1, r2) -> {
+                final Optional<Integer> patternComparison = LeftRightOrder.compare(r1, r2);
+                return patternComparison.filter(i -> i != 0).orElse(Integer.compare(r1.hashCode(), r2.hashCode()));
+            };
+        }
     }
 
 }
