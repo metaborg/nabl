@@ -4,10 +4,10 @@ import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -17,6 +17,7 @@ import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.stream.StreamUtil;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Set;
@@ -314,26 +315,24 @@ public class MessageUtil {
 
     private static Optional<ITerm> findOriginArgument(IConstraint constraint, IUniDisunifier unifier) {
         // @formatter:off
-        return Constraints.<Optional<List<ITerm>>>cases(
-            onArith -> Optional.empty(),
-            onConj -> Optional.empty(),
-            onEqual -> Optional.empty(),
-            onExists -> Optional.empty(),
-            onFalse -> Optional.empty(),
-            onInequal -> Optional.empty(),
-            onNew -> Optional.empty(),
-            onResolveQuery -> Optional.empty(),
-            onTellEdge -> Optional.empty(),
-            onTermId -> Optional.empty(),
-            onTermProperty -> Optional.empty(),
-            onTrue -> Optional.empty(),
-            onTry -> Optional.empty(),
-            onUser -> Optional.of(onUser.args())
-        )
-            // @formatter:on
-            .apply(constraint)
-            .<ITerm>flatMap(l -> l.stream().map(t -> getOriginTerm(t, unifier)).findFirst()
-                    .orElse(Optional.empty()));
+        final Function1<IConstraint, Stream<ITerm>> terms = Constraints.cases(
+            onArith -> Stream.empty(),
+            onConj -> Stream.empty(),
+            onEqual -> Stream.empty(),
+            onExists -> Stream.empty(),
+            onFalse -> Stream.empty(),
+            onInequal -> Stream.empty(),
+            onNew -> Stream.empty(),
+            onResolveQuery -> Stream.empty(),
+            onTellEdge -> Stream.empty(),
+            onTermId -> Stream.empty(),
+            onTermProperty -> Stream.empty(),
+            onTrue -> Stream.empty(),
+            onTry -> Stream.empty(),
+            onUser -> onUser.args().stream()
+        );
+        // @formatter:on
+        return StreamUtil.filterMap(terms.apply(constraint), t -> getOriginTerm(t, unifier)).findFirst();
     }
 
     private static Optional<ITerm> getOriginTerm(ITerm term, IUniDisunifier unifier) {
