@@ -17,8 +17,6 @@ import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.ImmutableList;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.substitution.ISubstitution;
