@@ -1,8 +1,5 @@
 package mb.statix.spec;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermPattern.P;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +29,9 @@ import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.spec.ApplyMode.Safety;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermPattern.P;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -240,7 +240,7 @@ public abstract class ARule {
             return Pattern.leftRightOrdering.compare(p1, p2);
         }
 
-        public Comparator<Rule> asComparator() {
+        public static Comparator<Rule> asComparator() {
             return (r1, r2) -> LeftRightOrder.compare(r1, r2).orElse(0);
         }
 
@@ -248,10 +248,11 @@ public abstract class ARule {
 
     public static class LeftRightOrderWithConsistentEquality {
         public Comparator<Rule> asComparator() {
-            return (r1, r2) -> {
-                final Optional<Integer> patternComparison = LeftRightOrder.compare(r1, r2);
-                return patternComparison.filter(i -> i != 0).orElse(Integer.compare(r1.hashCode(), r2.hashCode()));
-            };
+            return LeftRightOrder.asComparator()
+                .thenComparing((r1, r2) -> Integer.compare(r1.hashCode(), r2.hashCode()))
+                // hash collision handling...
+                .thenComparing((r1, r2) -> r1.equals(r2) ? 0 :
+                    Integer.compare(System.identityHashCode(r1), System.identityHashCode(r2)));
         }
     }
 
