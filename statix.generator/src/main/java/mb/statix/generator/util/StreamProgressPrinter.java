@@ -3,6 +3,7 @@ package mb.statix.generator.util;
 import java.io.PrintStream;
 import java.util.Collections;
 
+import org.metaborg.util.Strings;
 import org.metaborg.util.functions.Action1;
 
 public class StreamProgressPrinter implements IProgressPrinter {
@@ -25,7 +26,7 @@ public class StreamProgressPrinter implements IProgressPrinter {
 
     @Override public void step(char c) {
         if(c == '\n' || (++count % lineWidth) == 0) {
-            out.print(repeatString(" ", lineWidth - count));
+            out.print(Strings.repeat(" ", lineWidth - count));
             eol.apply(out);
             count = 0;
         } else {
@@ -35,13 +36,9 @@ public class StreamProgressPrinter implements IProgressPrinter {
 
     @Override public void done() {
         if((count % lineWidth) != 0) {
-            out.print(repeatString(" ", lineWidth - count - 1));
+            out.print(Strings.repeat(" ", lineWidth - count - 1));
             eol.apply(out);
         }
-    }
-
-    private static String repeatString(String s, int n) {
-        return String.join("", Collections.nCopies(n, s));
     }
 
 }

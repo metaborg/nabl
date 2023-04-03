@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -12,6 +11,7 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import org.metaborg.util.collection.Cache;
 import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.tuple.Tuple2;
@@ -26,7 +26,6 @@ import mb.statix.generator.SearchState;
 import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
-import mb.statix.generator.util.Cache;
 import mb.statix.generator.util.RandomGenerator;
 import mb.statix.generator.util.StreamUtil;
 import mb.statix.solver.CriticalEdge;
