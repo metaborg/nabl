@@ -18,8 +18,7 @@ public class NaBL2DebugConfig implements Serializable {
         ALL, ANALYSIS, FILES, COLLECTION, RESOLUTION, CUSTOM, TIMING;
 
         public static EnumSet<Flag> valuesOf(Collection<String> names) {
-            Set<Flag> flags = names.stream().map(String::toUpperCase).map(Flag::valueOf).collect(Collectors.toSet());
-            return EnumSet.copyOf(flags);
+            return names.stream().map(String::toUpperCase).map(Flag::valueOf).collect(Collectors.toCollection(() -> EnumSet.noneOf(Flag.class)));
         }
 
         public static List<String> namesOf(Collection<Flag> flags) {
