@@ -33,7 +33,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import org.metaborg.util.collection.BiMap;
-;
 import mb.p_raffrayi.TypeCheckingFailedException;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.Edge;
