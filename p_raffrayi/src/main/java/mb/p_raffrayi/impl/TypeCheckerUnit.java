@@ -17,6 +17,7 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -32,7 +33,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.IScopeGraphLibrary;
@@ -677,13 +677,13 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             // these should be set by the now reused scopegraph.
             logger.debug("Close pending tokens.");
             final HashSet<S> initScopes = new HashSet<>();
-            final SetMultimap.Transient<S, EdgeOrData<L>> closeEdges = SetMultimap.Transient.of();
+            final SetMultimap<S, EdgeOrData<L>> closeEdges = new SetMultimap<>();
 
             // @formatter:off
             final IWaitFor.Cases<S, L, D> cases = IWaitFor.cases(
                 initScope -> initScopes.add(initScope.scope()),
                 closeScope -> {},
-                closeLabel -> closeEdges.__insert(closeLabel.scope(), closeLabel.label()),
+                closeLabel -> closeEdges.put(closeLabel.scope(), closeLabel.label()),
                 query -> {},
                 pQuery -> {},
                 confirm -> {},
@@ -702,9 +702,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             for(S scope : initScopes) {
                 doInitShare(self, scope, Collections.emptySet(), false);
             }
-            for(Map.Entry<S, EdgeOrData<L>> entry : closeEdges.entrySet()) {
+            closeEdges.entries().forEach((Map.Entry<S, EdgeOrData<L>> entry) -> {
                 doCloseLabel(self, entry.getKey(), entry.getValue());
-            }
+            });
 
             pendingExternalDatums.asMap().forEach((d, futures) -> futures.elementSet().forEach(future -> {
                 final D datum = previousResult.result().analysis().getExternalRepresentation(d);

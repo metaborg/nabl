@@ -9,12 +9,12 @@ import java.util.Set;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.collection.Sets;
 
 import io.usethesource.capsule.BinaryRelation;
 import io.usethesource.capsule.Set.Immutable;
 import io.usethesource.capsule.Set.Transient;
-import io.usethesource.capsule.SetMultimap;
 
 public class DeadlockUtils {
 
@@ -54,12 +54,12 @@ public class DeadlockUtils {
      * @return A set of strongly connected components, where each component is represented by the set of vertices it includes.
      */
     public static <V> Set<Set<V>> sccs(IGraph<V> graph) {
-        final SetMultimap.Transient<V, V> reachables = SetMultimap.Transient.of();
+        final SetMultimap<V, V> reachables = new SetMultimap<>();
         final Set<V> vertices = new HashSet<>(graph.vertices());
 
         // Create a map of all transitively reachable vertices.
         for(V vertex: vertices) {
-            reachables.__insert(vertex, reachableVertices(vertex, graph));
+            reachables.putAll(vertex, reachableVertices(vertex, graph));
         }
 
         // For each vertex, see of all reachable vertices have the same reachable set.
@@ -96,24 +96,24 @@ public class DeadlockUtils {
         return sccs;
     }
 
-    public static <V> io.usethesource.capsule.Set.Immutable<V> reachableVertices(V vertex, IGraph<V> graph) {
+    public static <V> Set<V> reachableVertices(V vertex, IGraph<V> graph) {
         final Queue<V> queue = new LinkedList<>();
-        final io.usethesource.capsule.Set.Transient<V> reachable = CapsuleUtil.transientSet();
+        final Set<V> reachable = new HashSet<>();
 
         queue.add(vertex);
-        reachable.__insert(vertex);
+        reachable.add(vertex);
 
         while(!queue.isEmpty()) {
             final V head = queue.remove();
             for(V target : graph.targets(head)) {
                 if(!reachable.contains(target)) {
                     queue.add(target);
-                    reachable.__insert(target);
+                    reachable.add(target);
                 }
             }
         }
 
-        return reachable.freeze();
+        return reachable;
     }
 
 

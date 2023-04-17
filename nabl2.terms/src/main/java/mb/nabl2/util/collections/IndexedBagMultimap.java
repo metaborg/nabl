@@ -5,14 +5,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.functions.Function1;
-
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
@@ -25,12 +24,12 @@ public class IndexedBagMultimap<K, V, I> {
     }
 
     private final MultiSetMap.Transient<K, V> values;
-    private final SetMultimap.Transient<I, Entry> entries;
+    private final SetMultimap<I, Entry> entries;
     private final RemovalPolicy removalPolicy;
 
     public IndexedBagMultimap(RemovalPolicy removalPolicy) {
         this.values = MultiSetMap.Transient.of();
-        this.entries = SetMultimap.Transient.of();
+        this.entries = new SetMultimap<>();
         this.removalPolicy = removalPolicy;
     }
 
@@ -69,7 +68,7 @@ public class IndexedBagMultimap<K, V, I> {
         values.put(key, value);
         final Entry entry = new Entry(key, value);
         for(I index : indices) {
-            this.entries.__insert(index, entry);
+            this.entries.put(index, entry);
             entry.indices.add(index);
         }
         return tryRemove(entry);
@@ -78,14 +77,14 @@ public class IndexedBagMultimap<K, V, I> {
     /**
      * Update indices using the normalize function, returning any values for which the index was fully reduced.
      */
-    public Collection<Entry> reindex(I index, Function1<I, ? extends Set.Immutable<? extends I>> normalize) {
+    public Collection<Entry> reindex(I index, Function1<I, ? extends Set<? extends I>> normalize) {
         final Collection<Entry> entries = new ArrayList<>(this.entries.get(index));
-        this.entries.__remove(index);
-        final Set.Immutable<? extends I> newIndices = normalize.apply(index);
+        this.entries.remove(index);
+        final Set<? extends I> newIndices = normalize.apply(index);
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
             for(Entry e : entries) {
                 for(I i : e.indices) {
-                    this.entries.__remove(i, e);
+                    this.entries.remove(i, e);
                 }
                 e.indices.clear();
             }
@@ -95,7 +94,7 @@ public class IndexedBagMultimap<K, V, I> {
             }
             for(I newIndex : newIndices) {
                 for(Entry entry : entries) {
-                    this.entries.__insert(newIndex, entry);
+                    this.entries.put(newIndex, entry);
                     entry.indices.add(newIndex);
                 }
             }
@@ -103,7 +102,7 @@ public class IndexedBagMultimap<K, V, I> {
         return entries.stream().filter(e -> tryRemove(e)).collect(Collectors.toList());
     }
 
-    public Collection<Entry> reindexAll(Function1<I, ? extends Set.Immutable<? extends I>> normalize) {
+    public Collection<Entry> reindexAll(Function1<I, ? extends Set<? extends I>> normalize) {
         return entries.keySet().stream().flatMap(i -> reindex(i, normalize).stream())
                 .collect(ImList.toImmutableList());
     }

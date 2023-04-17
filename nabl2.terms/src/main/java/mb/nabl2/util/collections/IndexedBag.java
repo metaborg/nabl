@@ -3,13 +3,12 @@ package mb.nabl2.util.collections;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.functions.Function1;
-
-import io.usethesource.capsule.Set;
-import io.usethesource.capsule.SetMultimap;
 
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
@@ -22,12 +21,12 @@ public class IndexedBag<V, I> {
     }
 
     private final MultiSet.Transient<V> values;
-    private final SetMultimap.Transient<I, Entry> entries;
+    private final SetMultimap<I, Entry> entries;
     private final RemovalPolicy removalPolicy;
 
     public IndexedBag(RemovalPolicy removalPolicy) {
         this.values = MultiSet.Transient.of();
-        this.entries = SetMultimap.Transient.of();
+        this.entries = new SetMultimap<>();
         this.removalPolicy = removalPolicy;
     }
 
@@ -54,7 +53,7 @@ public class IndexedBag<V, I> {
         values.add(value);
         final Entry entry = new Entry(value);
         for(I index : indices) {
-            this.entries.__insert(index, entry);
+            this.entries.put(index, entry);
             entry.indices.add(index);
         }
         return tryRemove(entry);
@@ -63,13 +62,13 @@ public class IndexedBag<V, I> {
     /**
      * Update indices using the normalize function, returning any values for which the index was fully reduced.
      */
-    public Collection<V> reindex(I index, Function1<I, ? extends Set.Immutable<? extends I>> normalize) {
+    public Collection<V> reindex(I index, Function1<I, ? extends Set<? extends I>> normalize) {
         final Collection<Entry> entries = new ArrayList<>(this.entries.get(index));
-        this.entries.__remove(index);
-        final Set.Immutable<? extends I> newIndices = normalize.apply(index);
+        this.entries.remove(index);
+        final Set<? extends I> newIndices = normalize.apply(index);
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
             for(Entry e : entries) {
-                e.indices.forEach(i -> this.entries.__remove(i, e));
+                e.indices.forEach(i -> this.entries.remove(i, e));
                 e.indices.clear();
             }
         } else {
@@ -78,7 +77,7 @@ public class IndexedBag<V, I> {
             }
             for(I newIndex : newIndices) {
                 for(Entry entry : entries) {
-                    this.entries.__insert(newIndex, entry);
+                    this.entries.put(newIndex, entry);
                     entry.indices.add(newIndex);
                 }
             }

@@ -8,12 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.namebinding.DeclProperties;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.IListTerm;
@@ -123,14 +123,14 @@ public class InterpreterTerms {
     }
 
     private static IListTerm multimap(Iterable<? extends Map.Entry<? extends ITerm, ? extends ITerm>> entries) {
-        SetMultimap.Transient<ITerm, ITerm> grouped = SetMultimap.Transient.of();
+        SetMultimap<ITerm, ITerm> grouped = new SetMultimap<>();
         for(Map.Entry<? extends ITerm, ? extends ITerm> entry : entries) {
-            grouped.__insert(entry.getKey(), entry.getValue());
+            grouped.put(entry.getKey(), entry.getValue());
         }
         List<ITerm> entryterms = new ArrayList<>();
-        for(ITerm key : grouped.keySet()) {
-            entryterms.add(B.newTuple(key, B.newList(grouped.get(key))));
-        }
+        grouped.forEach((key, group) -> {
+            entryterms.add(B.newTuple(key, B.newList(group)));
+        });
         return B.newList(entryterms);
     }
 

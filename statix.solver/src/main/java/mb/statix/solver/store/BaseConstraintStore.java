@@ -9,10 +9,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.log.Level;
 
 import io.usethesource.capsule.Map;
-import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.solver.CriticalEdge;
 import mb.statix.solver.Delay;
@@ -24,14 +24,14 @@ public class BaseConstraintStore implements IConstraintStore {
 
     final IDebugContext debug;
     private final Deque<IConstraint> active;
-    private final SetMultimap.Transient<ITermVar, Delayed> stuckOnVar;
-    private final SetMultimap.Transient<CriticalEdge, Delayed> stuckOnEdge;
+    private final SetMultimap<ITermVar, Delayed> stuckOnVar;
+    private final SetMultimap<CriticalEdge, Delayed> stuckOnEdge;
 
     public BaseConstraintStore(IDebugContext debug) {
         this.debug = debug;
         this.active = new ConcurrentLinkedDeque<>();
-        this.stuckOnVar = SetMultimap.Transient.of();
-        this.stuckOnEdge = SetMultimap.Transient.of();
+        this.stuckOnVar = new SetMultimap<>();
+        this.stuckOnEdge = new SetMultimap<>();
     }
 
     @Override public int activeSize() {
@@ -57,14 +57,14 @@ public class BaseConstraintStore implements IConstraintStore {
                 debug.debug("delayed {} on vars {}", constraint, delay.vars());
             }
             for(ITermVar var : delay.vars()) {
-                stuckOnVar.__insert(var, delayed);
+                stuckOnVar.put(var, delayed);
             }
         } else if(!delay.criticalEdges().isEmpty()) {
             if(debug.isEnabled(Level.Debug)) {
                 debug.debug("delayed {} on critical edges {}", constraint, delay.criticalEdges());
             }
             for(CriticalEdge edge : delay.criticalEdges()) {
-                stuckOnEdge.__insert(edge, delayed);
+                stuckOnEdge.put(edge, delayed);
             }
         } else {
             throw new IllegalArgumentException("delayed for no apparent reason");
@@ -73,7 +73,7 @@ public class BaseConstraintStore implements IConstraintStore {
 
     @Override public void activateFromVars(Iterable<? extends ITermVar> vars, IDebugContext debug) {
         for(ITermVar var : vars) {
-            final Collection<Delayed> activated = CapsuleUtil.removeAll(stuckOnVar, var);
+            final Collection<Delayed> activated = stuckOnVar.remove(var);
             for(Delayed delayed : activated) {
                 if(delayed.activate()) {
                     final IConstraint constraint = delayed.constraint;
@@ -88,7 +88,7 @@ public class BaseConstraintStore implements IConstraintStore {
 
     @Override public void activateFromEdges(Iterable<? extends CriticalEdge> edges, IDebugContext debug) {
         for(CriticalEdge edge : edges) {
-            final Collection<Delayed> activated = CapsuleUtil.removeAll(stuckOnEdge, edge);
+            final Collection<Delayed> activated = stuckOnEdge.remove(edge);
             for(Delayed delayed : activated) {
                 if(delayed.activate()) {
                     final IConstraint constraint = delayed.constraint;
@@ -102,13 +102,13 @@ public class BaseConstraintStore implements IConstraintStore {
     }
 
     @Override public Map.Immutable<IConstraint, Delay> delayed() {
-        final SetMultimap.Transient<IConstraint, ITermVar> varStuck = SetMultimap.Transient.of();
-        stuckOnVar.entrySet().stream().filter(e -> !e.getValue().activated)
-                .forEach(e -> varStuck.__insert(e.getValue().constraint, e.getKey()));
+        final SetMultimap<IConstraint, ITermVar> varStuck = new SetMultimap<>();
+        stuckOnVar.entries().filter(e -> !e.getValue().activated)
+                .forEach(e -> varStuck.put(e.getValue().constraint, e.getKey()));
 
-        final SetMultimap.Transient<IConstraint, CriticalEdge> edgeStuck = SetMultimap.Transient.of();
-        stuckOnEdge.entrySet().stream().filter(e -> !e.getValue().activated)
-                .forEach(e -> edgeStuck.__insert(e.getValue().constraint, e.getKey()));
+        final SetMultimap<IConstraint, CriticalEdge> edgeStuck = new SetMultimap<>();
+        stuckOnEdge.entries().filter(e -> !e.getValue().activated)
+                .forEach(e -> edgeStuck.put(e.getValue().constraint, e.getKey()));
 
         final Set<IConstraint> stuck = new HashSet<>();
         stuck.addAll(varStuck.keySet());
