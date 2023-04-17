@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 
 import io.usethesource.capsule.Map;
@@ -26,11 +27,11 @@ abstract class AStepResult {
     @Value.Parameter public abstract Map.Immutable<ITermVar, ITermVar> existentials();
 
     public static StepResult of(IState.Immutable newState) {
-        return StepResult.of(newState, ImList.Immutable.of(), ImList.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+        return StepResult.of(newState, ImList.Immutable.of(), ImList.Immutable.of(), CapsuleUtil.immutableMap(), Map.Immutable.of());
     }
 
     public static StepResult ofNew(IState.Immutable newState, ImList.Immutable<IConstraint> newConstraints) {
-        return StepResult.of(newState, ImList.Immutable.of(), newConstraints, Map.Immutable.of(), Map.Immutable.of());
+        return StepResult.of(newState, ImList.Immutable.of(), newConstraints, CapsuleUtil.immutableMap(), Map.Immutable.of());
     }
 
     public static StepResult ofDelay(IState.Immutable newState, Delay delay, IConstraint c) {

@@ -155,7 +155,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         this.delays = HashTrieRelation3.Transient.of();
 
         this.scopeNameCounters = MultiSet.Transient.of();
-        this.usedStableScopes = Set.Transient.of();
+        this.usedStableScopes = CapsuleUtil.transientSet();
 
         this.stats = new Stats(self.stats());
     }
@@ -688,7 +688,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
 
     private class RecordingTypeCheckerContext extends AbstractQueryTypeCheckerContext<S, L, D, R> {
 
-        private final Set.Transient<IRecordedQuery<S, L, D>> queries = Set.Transient.of();
+        private final Set.Transient<IRecordedQuery<S, L, D>> queries = CapsuleUtil.transientSet();
         private boolean disposed = false;
 
         private final IActorRef<? extends IUnit<S, L, D, ?>> origin;
@@ -1073,7 +1073,7 @@ public abstract class AbstractUnit<S, L, D, R> implements IUnit<S, L, D, R>, IAc
         private final IActorRef<? extends IUnit<S, L, D, ?>> sender;
         private final IScopeGraph.Immutable<S, L, D> scopeGraph;
 
-        private final Set.Transient<IRecordedQuery<S, L, D>> queries = Set.Transient.of();
+        private final Set.Transient<IRecordedQuery<S, L, D>> queries = CapsuleUtil.transientSet();
         private boolean disposed = false;
 
         public StaticQueryContext(IActorRef<? extends IUnit<S, L, D, ?>> sender,

@@ -34,7 +34,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
     }
 
     @Override public Set.Immutable<S> getAllScopes() {
-        Set.Transient<S> allScopes = Set.Transient.of();
+        Set.Transient<S> allScopes = CapsuleUtil.transientSet();
         allScopes.__insertAll(getDecls().valueSet());
         allScopes.__insertAll(getRefs().valueSet());
         allScopes.__insertAll(getDirectEdges().keySet());
@@ -47,14 +47,14 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
     }
 
     @Override public Set.Immutable<O> getAllDecls() {
-        Set.Transient<O> allDecls = Set.Transient.of();
+        Set.Transient<O> allDecls = CapsuleUtil.transientSet();
         allDecls.__insertAll(getDecls().keySet());
         allDecls.__insertAll(getExportEdges().keySet());
         return allDecls.freeze();
     }
 
     @Override public Set.Immutable<O> getAllRefs() {
-        Set.Transient<O> allRefs = Set.Transient.of();
+        Set.Transient<O> allRefs = CapsuleUtil.transientSet();
         allRefs.__insertAll(getRefs().keySet());
         allRefs.__insertAll(getImportEdges().valueSet());
         return allRefs.freeze();
@@ -177,7 +177,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                 EsopScopeGraph.Immutable<S, L, O, V> of() {
             return new EsopScopeGraph.Immutable<>(HashTrieFunction.Immutable.of(), HashTrieFunction.Immutable.of(),
                     HashTrieRelation3.Immutable.of(), HashTrieRelation3.Immutable.of(),
-                    HashTrieRelation3.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+                    HashTrieRelation3.Immutable.of(), CapsuleUtil.immutableMap(), Map.Immutable.of());
         }
 
     }
@@ -353,7 +353,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
                 EsopScopeGraph.Transient<S, L, O, V> of() {
             return new EsopScopeGraph.Transient<>(HashTrieFunction.Transient.of(), HashTrieFunction.Transient.of(),
                     HashTrieRelation3.Transient.of(), HashTrieRelation3.Transient.of(),
-                    HashTrieRelation3.Transient.of(), Map.Transient.of(), Map.Transient.of());
+                    HashTrieRelation3.Transient.of(), CapsuleUtil.transientMap(), Map.Transient.of());
         }
 
     }

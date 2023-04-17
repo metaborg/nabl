@@ -79,7 +79,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
     private Optional<RecordedQuery.Builder<S, L, D>> patchDatumScopes(IPatchCollection.Immutable<S> patches,
             final Optional<RecordedQuery.Builder<S, L, D>> builder) {
         if(hasOverlap(datumScopes(), patches.patchDomain())) {
-            final Set.Transient<S> newScopes = Set.Transient.of();
+            final Set.Transient<S> newScopes = CapsuleUtil.transientSet();
             for(S scope : datumScopes()) {
                 newScopes.__insert(patches.patch(scope));
             }

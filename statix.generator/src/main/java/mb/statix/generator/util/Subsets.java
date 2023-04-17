@@ -37,7 +37,7 @@ public class Subsets<E> {
 
     private Stream<Set.Immutable<E>> enumerate(int n, int start, int end, Random rnd) {
         if(n == 0) {
-            return Stream.of(Set.Immutable.of());
+            return Stream.of(CapsuleUtil.immutableSet());
         }
         final List<Integer> indices =
                 IntStream.range(start, end + 1).boxed().collect(Collectors.toCollection(ArrayList::new));

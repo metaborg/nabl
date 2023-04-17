@@ -1,5 +1,7 @@
 package mb.scopegraph.regexp.impl;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import io.usethesource.capsule.Set;
 import mb.scopegraph.regexp.IAlphabet;
 import mb.scopegraph.regexp.IRegExp;
@@ -7,7 +9,7 @@ import mb.scopegraph.regexp.IRegExp;
 public final class RegExps {
 
     public static <S> IAlphabet<S> alphabet(IRegExp<S> re) {
-        final Set.Transient<S> alphabet = Set.Transient.of();
+        final Set.Transient<S> alphabet = CapsuleUtil.transientSet();
         alphabet(re, alphabet);
         return new FiniteAlphabet<>(alphabet.freeze());
     }

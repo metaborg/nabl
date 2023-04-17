@@ -110,7 +110,7 @@ public abstract class Pattern implements Serializable {
         final ISubstitution.Immutable subst = _subst.freeze();
 
         // create equalities between unifier terms from pattern equalities
-        final Set.Transient<ITermVar> stuckVars = Set.Transient.of();
+        final Set.Transient<ITermVar> stuckVars = CapsuleUtil.transientSet();
         final ImList.Transient<Tuple2<ITerm, ITerm>> allEqs = new ImList.Transient<>(termEqs.size());
         for(Tuple2<ITermVar, ITerm> termEq : termEqs) {
             final ITermVar leftVar = termEq._1();

@@ -3,6 +3,7 @@ package mb.nabl2.spoofax.primitives;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
@@ -53,7 +54,7 @@ public class SG_solve_single_constraint extends AbstractPrimitive {
 
 
         final ITerm constraintTerm = ConstraintTerms.specialize(strategoTerms.fromStratego(constraintSTerm));
-        final Set.Immutable<IConstraint> constraints = Constraints.matchConstraintOrList().map(Set.Immutable::of)
+        final Set.Immutable<IConstraint> constraints = Constraints.matchConstraintOrList().map(CapsuleUtil::toSet)
                 .match(constraintTerm).orElseThrow(() -> new InterpreterException("Current term is not a constraint."));
 
         NaBL2DebugConfig debugConfig = NaBL2DebugConfig.NONE; // FIXME How to get debug configuration in here?

@@ -62,7 +62,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return CompletableFuture.completedFuture(EmptyO.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -78,13 +78,13 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(1), false, false);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(1), false, false);
                         unit.addEdge(s, 1, s);
                         unit.closeEdge(s, 1);
                         return CompletableFuture.completedFuture(EmptyI.of());
                     }
 
-                }, Set.Immutable.of(1));
+                }, CapsuleUtil.immutableSet(1));
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -100,12 +100,12 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(1), false, false);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(1), false, false);
                         unit.addEdge(s, 1, s);
                         return CompletableFuture.completedFuture(EmptyI.of());
                     }
 
-                }, Set.Immutable.of(1));
+                }, CapsuleUtil.immutableSet(1));
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -121,7 +121,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>>> subResult =
                                 unit.add("sub", new BaseTypeCheckerI() {
@@ -130,7 +130,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                                             List<Scope> roots) {
                                         Scope root = roots.get(0);
-                                        unit.initScope(root, Set.Immutable.of(), false);
+                                        unit.initScope(root, CapsuleUtil.immutableSet(), false);
                                         return CompletableFuture.completedFuture(EmptyI.of());
                                     }
 
@@ -141,7 +141,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.thenApply(r -> EmptyI.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -158,7 +158,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
 
                         IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>>> subFuture =
                                 unit.add("sub", new BaseTypeCheckerI() {
@@ -167,7 +167,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                                             List<Scope> roots) {
                                         Scope root = roots.get(0);
-                                        unit.initScope(root, Set.Immutable.of(), false);
+                                        unit.initScope(root, CapsuleUtil.immutableSet(), false);
                                         return CompletableFuture.completedFuture(EmptyI.of());
                                     }
 
@@ -176,7 +176,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subFuture.thenApply(r -> EmptyI.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -199,7 +199,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
 
                         final IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerI() {
 
@@ -216,7 +216,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.handle((r, ex) -> EmptyI.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -239,7 +239,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                     @Override public IFuture<EmptyI> run(
                             IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                             List<Scope> roots) {
-                        Scope s = unit.freshScope("s", Set.Immutable.of(), false, true);
+                        Scope s = unit.freshScope("s", CapsuleUtil.immutableSet(), false, true);
 
                         final IFuture<?> subResult = unit.add("sub", new BaseTypeCheckerI() {
 
@@ -247,7 +247,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                                     IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit,
                                     List<Scope> roots) {
                                 Scope root = roots.get(0);
-                                unit.initScope(root, Set.Immutable.of(1), false);
+                                unit.initScope(root, CapsuleUtil.immutableSet(1), false);
                                 return CompletableFuture.completedFuture(EmptyI.of());
                             }
 
@@ -258,7 +258,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.handle((r, ex) -> EmptyI.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyI, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -687,7 +687,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         throw new ExpectedFailure();
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -707,7 +707,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         });
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -731,7 +731,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         // formatter:on
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -749,7 +749,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return new CompletableFuture<>();
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -767,7 +767,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return CompletableFuture.completedExceptionally(new ExpectedFailure());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -792,7 +792,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         }, Arrays.asList()).thenApply(IUnitResult::result).thenApply(Result::analysis);
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -813,7 +813,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return CompletableFuture.completedExceptionally(new ExpectedFailure());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -854,7 +854,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.handle((r, ex) -> EmptyO.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -896,7 +896,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.handle((r, ex) -> EmptyO.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -938,7 +938,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
                         return subResult.handle((r, ex) -> EmptyO.of());
                     }
 
-                }, Set.Immutable.of());
+                }, CapsuleUtil.immutableSet());
 
         final IUnitResult<Scope, Object, IDatum, Result<Scope, Object, IDatum, EmptyO, EmptyO>> result =
                 future.asJavaCompletion().get();
@@ -1079,7 +1079,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), false, true);
 
@@ -1115,7 +1115,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), false, true);
 
@@ -1151,7 +1151,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 
@@ -1187,7 +1187,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 
@@ -1223,7 +1223,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 
@@ -1263,7 +1263,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 
@@ -1303,7 +1303,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 
@@ -1343,7 +1343,7 @@ public class PRaffrayiTest extends PRaffrayiTestBase {
         @Override public IFuture<EmptyI> run(
                 IIncrementalTypeCheckerContext<Scope, Integer, IDatum, EmptyI, EmptyI> unit, List<Scope> rootScopes) {
             Scope s = rootScopes.get(0);
-            unit.initScope(s, Set.Immutable.of(ownLabel), false);
+            unit.initScope(s, CapsuleUtil.immutableSet(ownLabel), false);
 
             Scope s1 = unit.freshScope("s'", Collections.emptySet(), true, false);
 

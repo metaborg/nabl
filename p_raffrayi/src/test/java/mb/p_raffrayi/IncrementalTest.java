@@ -89,7 +89,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub", false)
-            ), Set.Immutable.of(), parentResult);
+            ), CapsuleUtil.immutableSet(), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -120,7 +120,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(true,
                 new SingleQueryTypeChecker("sub", false)
-            ), Set.Immutable.of(), parentResult);
+            ), CapsuleUtil.immutableSet(), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -164,7 +164,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -222,7 +222,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(true,
                 new DeclQueryTypeChecker("sub", false, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -267,7 +267,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<>(false,
                 new DeclQueryTypeChecker("sub", true, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -307,7 +307,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -373,7 +373,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new NestedDeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -452,7 +452,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new NoopTypeChecker("sub1", false),
                 new NoopTypeChecker("sub2", false)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -473,7 +473,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                 rootResult().build();
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future =
-                this.run(new NoopTypeChecker(".", true), Set.Immutable.of(), previousResult);
+                this.run(new NoopTypeChecker(".", true), CapsuleUtil.immutableSet(), previousResult);
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -507,7 +507,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<>(true, lbl,
                 new SingleQueryTypeChecker("sub", false)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -558,7 +558,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -579,7 +579,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future =
-                this.run(new NoopTypeChecker(".", false), Set.Immutable.of(), previousResult);
+                this.run(new NoopTypeChecker(".", false), CapsuleUtil.immutableSet(), previousResult);
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -613,7 +613,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new DeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -674,7 +674,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<>(false,
                 new SingleQueryTypeChecker("sub1", false),
                 new NestedDeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -697,7 +697,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<>(true, lbl,
                 new SingleQueryTypeChecker("sub", true)
-            ), Set.Immutable.of(lbl), null);
+            ), CapsuleUtil.immutableSet(lbl), null);
         // @formatter:on
 
         IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -811,7 +811,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                             });
                         });
                     }}
-            ), Set.Immutable.of(lbl1, lbl2), parentResult);
+            ), CapsuleUtil.immutableSet(lbl1, lbl2), parentResult);
         // @formatter:on
 
         IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -832,7 +832,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
             new ComposedRootTypeChecker<Integer>(true,
                 new EnvSizeTypeChecker("sub1", true),
                 new DeclTypeChecker("sub2", true, lbl, datum)
-            ), Set.Immutable.of(lbl), null);
+            ), CapsuleUtil.immutableSet(lbl), null);
         // @formatter:on
 
         IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Integer>, EmptyI>> result =
@@ -896,7 +896,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", true, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -941,7 +941,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -991,7 +991,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclQueryTypeChecker("sub", false, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -1024,7 +1024,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         // @formatter:on
 
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future =
-                this.run(new NoopTypeChecker(".", false), Set.Immutable.of(), previousResult);
+                this.run(new NoopTypeChecker(".", false), CapsuleUtil.immutableSet(), previousResult);
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -1068,7 +1068,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new SelfDeclTypeChecker("sub", false, lbl)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -1119,7 +1119,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Integer>, EmptyI>>> future = this.run(
             new ComposedSelfDeclRootTypeChecker<Integer>(true, lbl,
                 new EnvSizeTypeChecker("sub", true)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Integer>, EmptyI>> result =
@@ -1159,7 +1159,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new DeclTypeChecker("sub", true, lbl, datum)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
@@ -1359,7 +1359,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
                                 .thenApply(IUnitResult::result).thenApply(Result::analysis);
                     }
 
-                }, Set.Immutable.of(lbl), false, parentResult);
+                }, CapsuleUtil.immutableSet(lbl), false, parentResult);
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =
                 future.asJavaCompletion().get();
@@ -1411,7 +1411,7 @@ public class IncrementalTest extends PRaffrayiTestBase {
         final IFuture<IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>>> future = this.run(
             new ComposedRootTypeChecker<Unit>(false,
                 new NoopTypeChecker("sub1", false)
-            ), Set.Immutable.of(lbl), parentResult);
+            ), CapsuleUtil.immutableSet(lbl), parentResult);
         // @formatter:on
 
         final IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, Output<Integer, Unit>, EmptyI>> result =

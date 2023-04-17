@@ -47,7 +47,7 @@ public class CTrue implements IConstraint, Serializable {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public Set.Immutable<ITermVar> freeVars() {

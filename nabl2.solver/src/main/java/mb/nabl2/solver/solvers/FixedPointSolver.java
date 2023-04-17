@@ -63,7 +63,7 @@ public class FixedPointSolver {
         final IndexedBag<IConstraint, CriticalEdge> criticalEdgeDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, String> relationDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, ITermVar> variableDelays = new IndexedBag<>(RemovalPolicy.ANY);
-        final Set.Transient<IConstraint> unsolved = Set.Transient.of();
+        final Set.Transient<IConstraint> unsolved = CapsuleUtil.transientSet();
 
         final Action1<Iterable<CriticalEdge>> resolveCriticalEdges = es -> {
             es.forEach(e -> {

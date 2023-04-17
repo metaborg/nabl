@@ -5,6 +5,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate0;
 import org.metaborg.util.functions.Predicate2;
 
@@ -136,7 +137,7 @@ public class NameResolution<S extends D, L, D, X> {
      * @return the maximal elements of the set of labels
      */
     private Set<EdgeOrData<L>> max(Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
-        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> max = io.usethesource.capsule.Set.Transient.of();
+        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> max = CapsuleUtil.transientSet();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
@@ -157,7 +158,7 @@ public class NameResolution<S extends D, L, D, X> {
      */
     private Set<EdgeOrData<L>> smaller(Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> smaller = io.usethesource.capsule.Set.Transient.of();
+        final io.usethesource.capsule.Set.Transient<EdgeOrData<L>> smaller = CapsuleUtil.transientSet();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.__insert(l2);

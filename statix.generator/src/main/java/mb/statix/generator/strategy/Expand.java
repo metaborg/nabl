@@ -12,6 +12,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import org.metaborg.util.collection.Cache;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.tuple.Tuple2;
@@ -118,7 +119,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
             final java.util.Map<String, Long> rcs =
                     rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
             // ImmutableMap iterates over keys in insertion-order
-            final Map.Transient<Rule, Double> ruleWeights = Map.Transient.of();
+            final Map.Transient<Rule, Double> ruleWeights = CapsuleUtil.transientMap();
             rs.forEach(r -> {
                 long count = rcs.getOrDefault(r.label(), 1L);
                 double weight = ruleWeight.apply(r, count);
@@ -145,7 +146,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, ctx.spec(), applyUnifier);
 
         // update delays
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         input.delays().forEach((c, d) -> {
             if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
                 constraints.__insert(c);

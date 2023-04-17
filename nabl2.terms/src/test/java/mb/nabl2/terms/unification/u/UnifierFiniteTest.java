@@ -115,13 +115,13 @@ public class UnifierFiniteTest {
     }
 
     @Test(timeout = 10000) public void testRemoveInBetweenUnifiedVar() throws OccursException {
-        Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
-        Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        Map.Transient<ITermVar, ITermVar> reps = CapsuleUtil.transientMap();
+        Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
         reps.__put(a, b);
         reps.__put(b, c);
         terms.__put(d, B.newAppl(f, a));
         IUnifier.Transient phi =
-                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
+                PersistentUnifier.Immutable.of(true, reps.freeze(), CapsuleUtil.immutableMap(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
         assertFalse(phi.domainSet().contains(b));
@@ -130,12 +130,12 @@ public class UnifierFiniteTest {
     }
 
     @Test(timeout = 10000) public void testRemoveFreeVar() throws OccursException {
-        Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
-        Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        Map.Transient<ITermVar, ITermVar> reps = CapsuleUtil.transientMap();
+        Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
         reps.__put(a, b);
         reps.__put(b, c);
         IUnifier.Transient phi =
-                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
+                PersistentUnifier.Immutable.of(true, reps.freeze(), CapsuleUtil.immutableMap(), terms.freeze()).melt();
         phi.remove(c);
         assertFalse(phi.domainSet().contains(c));
         assertTrue(phi.diff(a, b).orElseThrow(() -> new RuntimeException()).isEmpty());
@@ -143,12 +143,12 @@ public class UnifierFiniteTest {
     }
 
     @Test(timeout = 10000) public void testRemoveVarWithTerm() throws OccursException {
-        Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
-        Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        Map.Transient<ITermVar, ITermVar> reps = CapsuleUtil.transientMap();
+        Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
         reps.__put(a, b);
         terms.__put(b, B.newAppl(f, c));
         IUnifier.Transient phi =
-                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
+                PersistentUnifier.Immutable.of(true, reps.freeze(), CapsuleUtil.immutableMap(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(b));
         phi.remove(b);
         assertFalse(phi.domainSet().contains(b));
@@ -156,16 +156,16 @@ public class UnifierFiniteTest {
     }
 
     @Test(timeout = 10000) public void testRemoveVarsWithTerm() throws OccursException {
-        Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
-        Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+        Map.Transient<ITermVar, ITermVar> reps = CapsuleUtil.transientMap();
+        Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
         reps.__put(a, b);
         reps.__put(b, c);
         terms.__put(c, B.newAppl(f, d));
         IUnifier.Transient phi =
-                PersistentUnifier.Immutable.of(true, reps.freeze(), Map.Immutable.of(), terms.freeze()).melt();
+                PersistentUnifier.Immutable.of(true, reps.freeze(), CapsuleUtil.immutableMap(), terms.freeze()).melt();
         assertTrue(phi.domainSet().contains(a));
         assertTrue(phi.domainSet().contains(b));
-        phi.removeAll(Set.Immutable.of(a, b));
+        phi.removeAll(CapsuleUtil.immutableSet(a, b));
         assertFalse(phi.domainSet().contains(a));
         assertFalse(phi.domainSet().contains(b));
         assertTrue(phi.diff(c, B.newAppl(f, d)).orElseThrow(() -> new RuntimeException()).isEmpty());
@@ -215,9 +215,9 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testEquivalenceClasses() throws OccursException {
         final IUnifier.Immutable phi =
-                PersistentUnifier.Immutable.of(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of());
+                PersistentUnifier.Immutable.of(true, Map.Immutable.of(a, b), CapsuleUtil.immutableMap(), Map.Immutable.of());
         final IUnifier.Immutable theta =
-                PersistentUnifier.Immutable.of(true, Map.Immutable.of(b, a), Map.Immutable.of(), Map.Immutable.of());
+                PersistentUnifier.Immutable.of(true, Map.Immutable.of(b, a), CapsuleUtil.immutableMap(), Map.Immutable.of());
         assertSame(phi, theta);
     }
 
@@ -283,28 +283,28 @@ public class UnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
 
         assertPresent(phi.unify(a, B.newAppl(f, b)));
-        assertEquals(Set.Immutable.of(a, b), phi.varSet());
-        assertEquals(Set.Immutable.of(a), phi.domainSet());
-        assertEquals(Set.Immutable.of(b), phi.rangeSet());
+        assertEquals(CapsuleUtil.immutableSet(a, b), phi.varSet());
+        assertEquals(CapsuleUtil.immutableSet(a), phi.domainSet());
+        assertEquals(CapsuleUtil.immutableSet(b), phi.rangeSet());
 
         assertPresent(phi.unify(b, B.newAppl(f, c)));
         assertEquals(CapsuleUtil.toSet(a, b, c), phi.varSet());
-        assertEquals(Set.Immutable.of(a, b), phi.domainSet());
-        assertEquals(Set.Immutable.of(c), phi.rangeSet());
+        assertEquals(CapsuleUtil.immutableSet(a, b), phi.domainSet());
+        assertEquals(CapsuleUtil.immutableSet(c), phi.rangeSet());
 
         phi.remove(b);
-        assertEquals(Set.Immutable.of(a, c), phi.varSet());
-        assertEquals(Set.Immutable.of(a), phi.domainSet());
-        assertEquals(Set.Immutable.of(c), phi.rangeSet());
+        assertEquals(CapsuleUtil.immutableSet(a, c), phi.varSet());
+        assertEquals(CapsuleUtil.immutableSet(a), phi.domainSet());
+        assertEquals(CapsuleUtil.immutableSet(c), phi.rangeSet());
     }
 
     @Test(timeout = 10000) public void testVarSets2() throws OccursException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
 
         assertPresent(phi.unify(a, B.newAppl(f, b)));
-        assertEquals(Set.Immutable.of(a, b), phi.varSet());
-        assertEquals(Set.Immutable.of(a), phi.domainSet());
-        assertEquals(Set.Immutable.of(b), phi.rangeSet());
+        assertEquals(CapsuleUtil.immutableSet(a, b), phi.varSet());
+        assertEquals(CapsuleUtil.immutableSet(a), phi.domainSet());
+        assertEquals(CapsuleUtil.immutableSet(b), phi.rangeSet());
 
         assertPresent(phi.unify(c, B.newAppl(f, d)));
         assertEquals(CapsuleUtil.toSet(a, b, c, d), phi.varSet());
@@ -319,13 +319,13 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testUnifyFreeRigidVarFreeVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
-        assertPresent(phi.unify(a, b, Set.Immutable.of(a)::contains));
+        assertPresent(phi.unify(a, b, CapsuleUtil.immutableSet(a)::contains));
     }
 
     @Test(timeout = 10000) public void testUnifyFreeRigidVarFreeRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         try {
-            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            phi.unify(a, b, CapsuleUtil.immutableSet(a, b)::contains);
             throw new AssertionError("Expected RigidException.");
         } catch(RigidException ex) {
             assertContains(a, ex.vars());
@@ -337,7 +337,7 @@ public class UnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         assertPresent(phi.unify(b, x));
         try {
-            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            phi.unify(a, b, CapsuleUtil.immutableSet(a, b)::contains);
             throw new AssertionError("Expected RigidException.");
         } catch(RigidException ex) {
             assertContains(a, ex.vars());
@@ -350,7 +350,7 @@ public class UnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         assertPresent(phi.unify(a, x));
         assertPresent(phi.unify(b, x));
-        assertPresent(phi.unify(a, b, Set.Immutable.of(a, b)::contains));
+        assertPresent(phi.unify(a, b, CapsuleUtil.immutableSet(a, b)::contains));
 
     }
 
@@ -358,15 +358,15 @@ public class UnifierFiniteTest {
         IUnifier.Transient phi = PersistentUnifier.Immutable.of().melt();
         assertPresent(phi.unify(a, x));
         assertPresent(phi.unify(b, x));
-        assertPresent(phi.unify(a, b, Set.Immutable.of(b)::contains));
+        assertPresent(phi.unify(a, b, CapsuleUtil.immutableSet(b)::contains));
 
     }
 
     @Test(timeout = 10000) public void testUnifyUnifiedFreeRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable
-                .of(true, Map.Immutable.of(a, b), Map.Immutable.of(), Map.Immutable.of()).melt();
+                .of(true, Map.Immutable.of(a, b), CapsuleUtil.immutableMap(), Map.Immutable.of()).melt();
         try {
-            phi.unify(a, x, Set.Immutable.of(a, b)::contains);
+            phi.unify(a, x, CapsuleUtil.immutableSet(a, b)::contains);
             throw new AssertionError("Expected RigidException.");
         } catch(RigidException ex) {
             assertContains(b, ex.vars());
@@ -376,9 +376,9 @@ public class UnifierFiniteTest {
 
     @Test(timeout = 10000) public void testUnifyUnifiedBoundRigidVar() throws OccursException, RigidException {
         IUnifier.Transient phi = PersistentUnifier.Immutable
-                .of(true, Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(a, x)).melt();
+                .of(true, CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), Map.Immutable.of(a, x)).melt();
         try {
-            phi.unify(a, b, Set.Immutable.of(a, b)::contains);
+            phi.unify(a, b, CapsuleUtil.immutableSet(a, b)::contains);
             throw new AssertionError("Expected RigidException.");
         } catch(RigidException ex) {
             assertContains(b, ex.vars());

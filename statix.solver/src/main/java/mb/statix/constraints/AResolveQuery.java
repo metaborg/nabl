@@ -67,7 +67,7 @@ public abstract class AResolveQuery implements IResolveQuery {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         vars.__insertAll(filter.getVars());
         vars.__insertAll(min.getVars());
         vars.__insertAll(scopeTerm.getVars());

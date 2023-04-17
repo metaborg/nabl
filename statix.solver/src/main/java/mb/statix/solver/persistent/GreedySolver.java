@@ -94,7 +94,7 @@ import mb.statix.spoofax.StatixTerms;
 
 class GreedySolver {
 
-    private static final Set.Immutable<ITermVar> NO_UPDATED_VARS = Set.Immutable.of();
+    private static final Set.Immutable<ITermVar> NO_UPDATED_VARS = CapsuleUtil.immutableSet();
     private static final ImList.Immutable<IConstraint> NO_NEW_CONSTRAINTS = ImList.Immutable.of();
     private static final mb.statix.solver.completeness.Completeness.Immutable NO_NEW_CRITICAL_EDGES =
             Completeness.Immutable.of();

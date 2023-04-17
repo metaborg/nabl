@@ -11,12 +11,12 @@ public class RigidException extends Exception {
 
     public RigidException(ITermVar var) {
         super("rigid", null, false, false);
-        this.vars = Set.Immutable.of(var);
+        this.vars = CapsuleUtil.immutableSet(var);
     }
 
     public RigidException(ITermVar var1, ITermVar var2) {
         super("rigid", null, false, false);
-        this.vars = Set.Immutable.of(var1, var2);
+        this.vars = CapsuleUtil.immutableSet(var1, var2);
     }
 
     public RigidException(Set.Immutable<ITermVar> vars) {

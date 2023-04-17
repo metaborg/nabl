@@ -88,7 +88,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
     public static class Immutable<S> extends PatchCollection<S> implements IPatchCollection.Immutable<S> {
 
         @SuppressWarnings({ "rawtypes", "unchecked" }) private static final PatchCollection.Immutable EMPTY =
-                new PatchCollection.Immutable(BiMap.Immutable.of(), Set.Immutable.of());
+                new PatchCollection.Immutable(BiMap.Immutable.of(), CapsuleUtil.immutableSet());
 
         /**
          * Maps new scopes to old scopes.
@@ -353,7 +353,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
         }
 
         public static <S> PatchCollection.Transient<S> of() {
-            return new PatchCollection.Transient<>(BiMap.Transient.of(), Set.Transient.of());
+            return new PatchCollection.Transient<>(BiMap.Transient.of(), CapsuleUtil.transientSet());
         }
 
     }

@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import io.usethesource.capsule.Map;
 
 public abstract class Fresh {
@@ -54,7 +56,7 @@ public abstract class Fresh {
         }
 
         public Immutable freeze() {
-            final Map.Transient<String, Integer> transientCounters = Map.Transient.of();
+            final Map.Transient<String, Integer> transientCounters = CapsuleUtil.transientMap();
             transientCounters.__putAll(counters);
             return new Immutable(transientCounters.freeze());
         }

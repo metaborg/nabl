@@ -34,7 +34,7 @@ public class EqualityComponent extends ASolver {
     }
 
     public SeedResult seed(IUnifier.Immutable solution, IMessageInfo message) throws InterruptedException {
-        final Set.Transient<IConstraint> constraints = Set.Transient.of();
+        final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
         final IMessages.Transient messages = Messages.Transient.of();
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();

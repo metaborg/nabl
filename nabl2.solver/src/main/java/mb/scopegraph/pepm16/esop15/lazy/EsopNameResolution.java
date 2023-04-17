@@ -110,7 +110,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             return resolution.get(ref);
         } else {
             final IEsopEnv<S, L, O, IResolutionPath<S, L, O>> env = pendingResolution.computeIfAbsent(ref,
-                    r -> resolveEnv(io.usethesource.capsule.Set.Immutable.of(), ref));
+                    r -> resolveEnv(CapsuleUtil.immutableSet(), ref));
             Collection<IResolutionPath<S, L, O>> result = env.get(cancel);
             resolution.__put(ref, result);
             pendingResolution.remove(ref);
@@ -173,11 +173,11 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
     }
 
     private IEsopEnv<S, L, O, IDeclPath<S, L, O>> visibleEnv(S scope) {
-        return env(io.usethesource.capsule.Set.Immutable.of(), order, wf, Paths.empty(scope), EsopEnvs.envFilter());
+        return env(CapsuleUtil.immutableSet(), order, wf, Paths.empty(scope), EsopEnvs.envFilter());
     }
 
     private IEsopEnv<S, L, O, IDeclPath<S, L, O>> reachableEnv(S scope) {
-        return env(io.usethesource.capsule.Set.Immutable.of(), noOrder, wf, Paths.empty(scope), EsopEnvs.envFilter());
+        return env(CapsuleUtil.immutableSet(), noOrder, wf, Paths.empty(scope), EsopEnvs.envFilter());
     }
 
     private IEsopEnv<S, L, O, IResolutionPath<S, L, O>> resolveEnv(io.usethesource.capsule.Set.Immutable<O> seenI,
@@ -337,7 +337,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
 
     public static <S extends IScope, L extends ILabel, O extends IOccurrence> EsopNameResolution<S, L, O>
             of(IResolutionParameters<L> params, IEsopScopeGraph<S, L, O, ?> scopeGraph, Predicate2<S, L> isEdgeClosed) {
-        return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, Map.Transient.of(), Map.Transient.of(),
+        return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, CapsuleUtil.transientMap(), CapsuleUtil.transientMap(),
                 Map.Transient.of());
     }
 
@@ -349,7 +349,7 @@ public class EsopNameResolution<S extends IScope, L extends ILabel, O extends IO
             return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, _cache.resolutionEntries().asTransient(),
                     _cache.visibilityEntries().asTransient(), _cache.reachabilityEntries().asTransient());
         } else {
-            return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, Map.Transient.of(), Map.Transient.of(),
+            return new EsopNameResolution<>(params, scopeGraph, isEdgeClosed, CapsuleUtil.transientMap(), CapsuleUtil.transientMap(),
                     Map.Transient.of());
         }
 

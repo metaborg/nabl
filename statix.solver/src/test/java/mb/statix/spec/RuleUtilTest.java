@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -248,7 +249,7 @@ public class RuleUtilTest {
     private static void testClose1() {
         ITermVar x = B.newVar("", "x");
         ITermVar y = B.newVar("", "y");
-        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
+        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(),
                 Map.Immutable.of(y, B.newAppl("Id", x)));
         Rule r = Rule.of("", ImList.Immutable.of(), new CExists(Arrays.asList(x), new CEqual(y, B.newAppl("Id", x))));
         Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);
@@ -259,7 +260,7 @@ public class RuleUtilTest {
     private static void testClose2() {
         ITermVar x = B.newVar("", "x");
         ITermVar y = B.newVar("", "y");
-        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, Map.Immutable.of(), Map.Immutable.of(),
+        IUnifier.Immutable u = PersistentUnifier.Immutable.of(true, CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(),
                 Map.Immutable.of(y, B.newAppl("Id", x)));
         Rule r = Rule.of("", ImList.Immutable.of(P.newVar(x)), new CEqual(y, B.newAppl("Id", x)));
         Rule s = RuleUtil.closeInUnifier(r, u, Safety.SAFE);

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.HashTrieRelation2;
 import org.metaborg.util.collection.HashTrieRelation3;
 import org.metaborg.util.collection.IRelation2;
@@ -167,10 +168,10 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
     // Implementation
     ///////////////////////////////////////////////////////////////////////////
 
-    private final Map.Transient<Tuple3<BUEnvKind, S, IRegExp<L>>, BUEnvKey<S, L>> envKeys = Map.Transient.of();
-    private final Map.Transient<Tuple2<SpacedName, L>, BUPathKey<L>> pathKeys = Map.Transient.of();
-    private final Map.Transient<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs = Map.Transient.of();
-    private final Set.Transient<BUEnvKey<S, L>> completed = Set.Transient.of();
+    private final Map.Transient<Tuple3<BUEnvKind, S, IRegExp<L>>, BUEnvKey<S, L>> envKeys = CapsuleUtil.transientMap();
+    private final Map.Transient<Tuple2<SpacedName, L>, BUPathKey<L>> pathKeys = CapsuleUtil.transientMap();
+    private final Map.Transient<BUEnvKey<S, L>, BUEnv<S, L, O, IDeclPath<S, L, O>>> envs = CapsuleUtil.transientMap();
+    private final Set.Transient<BUEnvKey<S, L>> completed = CapsuleUtil.transientSet();
     private final IRelation2.Transient<BUEnvKey<S, L>, CriticalEdge> openEdges = HashTrieRelation2.Transient.of();
     private final IRelation3.Transient<BUEnvKey<S, L>, IStep<S, L, O>, BUEnvKey<S, L>> backedges =
             HashTrieRelation3.Transient.of();
@@ -186,7 +187,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
             throws InterruptedException, CriticalEdgeException, StuckException {
         final S scope;
         if((scope = scopeGraph.getRefs().get(ref).orElse(null)) == null) {
-            return Set.Immutable.of();
+            return CapsuleUtil.immutableSet();
         }
         final BUEnvKey<S, L> key = envKey(BUEnvKind.VISIBLE, scope, wf);
         final BUEnv<S, L, O, IDeclPath<S, L, O>> env = getOrCompute(key, cancel);
@@ -499,7 +500,7 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
 
         // check for critical edges
         final java.util.Set<BUEnvKey<S, L>> reachableEnvs = sccGraph.getAllReachableTargets(env);
-        final Set.Transient<CriticalEdge> ces = Set.Transient.of();
+        final Set.Transient<CriticalEdge> ces = CapsuleUtil.transientSet();
         ces.__insertAll(openEdges.get(env));
         for(BUEnvKey<S, L> reachEnv : reachableEnvs) {
             ces.__insertAll(openEdges.get(reachEnv));

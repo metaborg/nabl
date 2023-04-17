@@ -133,7 +133,7 @@ public class EsopEnvs {
 
             private final Deque<IEsopEnv<S, L, O, P>> _envs = new ArrayDeque<>(Arrays.asList(envs));
             private final Collection<Object> _shadowed = new HashSet<>();
-            private final Set.Transient<P> _paths = Set.Transient.of();
+            private final Set.Transient<P> _paths = CapsuleUtil.transientSet();
             private Collection<P> paths = null;
 
             private Collection<P> env(ICancel cancel) throws CriticalEdgeException, InterruptedException {
@@ -190,7 +190,7 @@ public class EsopEnvs {
             private static final long serialVersionUID = 42L;
 
             private final java.util.LinkedList<IEsopEnv<S, L, O, P>> _envs = new LinkedList<>(envs);
-            private final Set.Transient<P> _paths = Set.Transient.of();
+            private final Set.Transient<P> _paths = CapsuleUtil.transientSet();
             private Collection<P> paths = null;
 
             private Collection<P> env(ICancel cancel) throws CriticalEdgeException, InterruptedException {

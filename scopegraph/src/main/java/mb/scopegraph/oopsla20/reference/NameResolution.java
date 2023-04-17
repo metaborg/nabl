@@ -2,6 +2,7 @@ package mb.scopegraph.oopsla20.reference;
 
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.task.ICancel;
 
@@ -69,7 +70,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
     }
 
     private java.util.Set<EdgeOrData<L>> max(java.util.Set<EdgeOrData<L>> L) throws ResolutionException, InterruptedException {
-        final Set.Transient<EdgeOrData<L>> max = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> max = CapsuleUtil.transientSet();
         outer: for(EdgeOrData<L> l1 : L) {
             for(EdgeOrData<L> l2 : L) {
                 if(labelOrder.lt(l1, l2)) {
@@ -83,7 +84,7 @@ public class NameResolution<S extends D, L, D> implements INameResolution<S, L, 
 
     private java.util.Set<EdgeOrData<L>> smaller(java.util.Set<EdgeOrData<L>> L, EdgeOrData<L> l1)
             throws ResolutionException, InterruptedException {
-        final Set.Transient<EdgeOrData<L>> smaller = Set.Transient.of();
+        final Set.Transient<EdgeOrData<L>> smaller = CapsuleUtil.transientSet();
         for(EdgeOrData<L> l2 : L) {
             if(labelOrder.lt(l2, l1)) {
                 smaller.__insert(l2);

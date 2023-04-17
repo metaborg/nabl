@@ -2,6 +2,7 @@ package mb.scopegraph.pepm16.terms.path;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -32,11 +33,11 @@ abstract class AEmptyScopePath<S extends IScope, L extends ILabel, O extends IOc
     }
 
     @Value.Lazy @Override public Set.Immutable<O> getImports() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Value.Lazy @Override public Set.Immutable<S> getScopes() {
-        return Set.Immutable.of(getScope());
+        return CapsuleUtil.immutableSet(getScope());
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {

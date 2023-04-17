@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
@@ -475,7 +476,7 @@ public class TermMatch {
 
         public <K, V> IMatcher<Map.Immutable<K, V>> map(IMatcher<K> keyMatcher, IMatcher<V> valueMatcher) {
             return listElems(tuple2(keyMatcher, valueMatcher, (e, k, v) -> Tuple2.of(k, v)), (t, es) -> {
-                Map.Transient<K, V> map = Map.Transient.of();
+                Map.Transient<K, V> map = CapsuleUtil.transientMap();
                 for(Tuple2<K, V> e : es) {
                     final K key = e._1();
                     if(map.containsKey(key)) {

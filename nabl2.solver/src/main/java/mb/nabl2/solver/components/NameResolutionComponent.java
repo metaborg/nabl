@@ -65,7 +65,7 @@ public class NameResolutionComponent extends ASolver {
 
     public SeedResult seed(IProperties<Occurrence, ITerm, ITerm> solution, IMessageInfo message)
             throws InterruptedException {
-        final Set.Transient<IConstraint> constraints = Set.Transient.of();
+        final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
         solution.stream().forEach(entry -> {
             putProperty(entry._1(), entry._2(), entry._3(), message).ifPresent(constraints::__insert);
         });

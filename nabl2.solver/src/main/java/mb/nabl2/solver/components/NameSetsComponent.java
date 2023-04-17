@@ -50,7 +50,7 @@ public class NameSetsComponent extends ASolver {
     }
 
     private Set.Immutable<IElement<ITerm>> makeSet(Iterable<Occurrence> occurrences, Namespace namespace) {
-        Set.Transient<IElement<ITerm>> result = Set.Transient.of();
+        Set.Transient<IElement<ITerm>> result = CapsuleUtil.transientSet();
         for(Occurrence occurrence : occurrences) {
             if(namespace.getName().isEmpty() || namespace.equals(occurrence.getNamespace())) {
                 result.__insert(new OccurrenceElement(occurrence));

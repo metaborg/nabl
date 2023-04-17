@@ -150,7 +150,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         public static ISubstitution.Immutable of() {
-            return new PersistentSubstitution.Immutable(Map.Immutable.of(), MultiSet.Immutable.of());
+            return new PersistentSubstitution.Immutable(CapsuleUtil.immutableMap(), MultiSet.Immutable.of());
         }
 
         public static ISubstitution.Immutable of(ITermVar var, ITerm term) {
@@ -159,7 +159,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         public static ISubstitution.Immutable of(java.util.Map<ITermVar, ? extends ITerm> substEntries) {
-            final Map.Transient<ITermVar, ITerm> subst = Map.Transient.of();
+            final Map.Transient<ITermVar, ITerm> subst = CapsuleUtil.transientMap();
             final MultiSet.Transient<ITermVar> range = MultiSet.Transient.of();
             substEntries.forEach((v, t) -> {
                 subst.__put(v, t);
@@ -238,7 +238,7 @@ public abstract class PersistentSubstitution implements ISubstitution {
         }
 
         public static ISubstitution.Transient of() {
-            return new PersistentSubstitution.Transient(Map.Transient.of(), MultiSet.Transient.of());
+            return new PersistentSubstitution.Transient(CapsuleUtil.transientMap(), MultiSet.Transient.of());
         }
 
     }

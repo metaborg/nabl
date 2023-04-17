@@ -89,7 +89,7 @@ public class CUser implements IConstraint, Serializable {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         for(ITerm a : args) {
             vars.__insertAll(a.getVars());
         }

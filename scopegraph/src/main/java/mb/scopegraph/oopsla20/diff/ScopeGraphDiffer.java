@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
@@ -200,7 +201,7 @@ public class ScopeGraphDiffer<S, L, D> {
         Queue<EdgeMatch> newMatches = new LinkedList<>();
 
         for(Edge<S, L> currentEdge : currentEdges) {
-            final Map.Transient<Edge<S, L>, BiMap.Immutable<S>> matchingPreviousEdges = Map.Transient.of();
+            final Map.Transient<Edge<S, L>, BiMap.Immutable<S>> matchingPreviousEdges = CapsuleUtil.transientMap();
             for(Edge<S, L> previousEdge : previousEdges) {
                 final BiMap.Immutable<S> req;
                 if((req = matchScopes(current, currentEdge.target, previousEdge.target).orElse(null)) != null) {
@@ -274,13 +275,13 @@ public class ScopeGraphDiffer<S, L, D> {
     public ScopeGraphDiff<S, L, D> finalize(IScopeGraph.Immutable<S, L, D> current,
         DifferState.Immutable<S, L, D> initialState) {
         final DifferState.Transient<S, L, D> state = initialState.melt();
-        final Map.Transient<S, D> addedScopes = Map.Transient.of();
-        final Set.Transient<Edge<S, L>> addedEdges = Set.Transient.of();
+        final Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
+        final Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
         finishDiff(current, diffOps::getCurrentScopes, state.seenCurrentScopes(), state.seenCurrentEdges(),
             state.matchedScopes().keySet(), state.matchedEdges().keySet(), addedScopes, addedEdges);
 
-        final Map.Transient<S, D> removedScopes = Map.Transient.of();
-        final Set.Transient<Edge<S, L>> removedEdges = Set.Transient.of();
+        final Map.Transient<S, D> removedScopes = CapsuleUtil.transientMap();
+        final Set.Transient<Edge<S, L>> removedEdges = CapsuleUtil.transientSet();
         finishDiff(previous, diffOps::getPreviousScopes, state.seenPreviousScopes(), state.seenPreviousEdges(),
             state.matchedScopes().valueSet(), state.matchedEdges().valueSet(), removedScopes, removedEdges);
 

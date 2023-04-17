@@ -45,7 +45,7 @@ public class SG_solve_multi_unit_constraint extends ScopeGraphMultiFileAnalysisP
                 }).match(currentTerm)
                         .orElseThrow(() -> new InterpreterException("Current term is not (InitialResult, C)."));
         final MultiInitialResult initialResult = input._1();
-        final Set.Immutable<IConstraint> constraints = Set.Immutable.of(input._2());
+        final Set.Immutable<IConstraint> constraints = CapsuleUtil.immutableSet(input._2());
 
         final Fresh.Transient unitFresh = Fresh.Transient.of();
 

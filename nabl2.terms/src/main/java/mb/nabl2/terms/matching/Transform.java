@@ -49,7 +49,7 @@ public class Transform {
             // @formatter:on
         }
 
-        public Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
+        public static Function1<ITerm, ITerm> somebu(PartialFunction1<ITerm, ITerm> m) {
             return term -> {
                 // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(

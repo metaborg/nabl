@@ -65,7 +65,7 @@ public class SearchState {
     }
 
     public Map.Immutable<ITermVar, ITermVar> existentials() {
-        return existentials != null ? existentials : Map.Immutable.of();
+        return existentials != null ? existentials : CapsuleUtil.immutableMap();
     }
 
     public ICompleteness.Immutable completeness() {
@@ -91,7 +91,7 @@ public class SearchState {
                 removedEdges.addAll(completeness.remove(c, spec, state.unifier()));
             }
         });
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         this.delays.forEach((c, d) -> {
             if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
                 constraints.__insert(c);
@@ -119,8 +119,8 @@ public class SearchState {
      * Replace the current state and constraints by the result from solving.
      */
     public SearchState replace(SolverResult result) {
-        final Set.Transient<IConstraint> constraints = Set.Transient.of();
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         result.delays().forEach((c, d) -> {
             if(d.criticalEdges().isEmpty()) {
                 constraints.__insert(c);
@@ -142,7 +142,7 @@ public class SearchState {
     public static SearchState of(Spec spec, IState.Immutable state, Collection<? extends IConstraint> constraints) {
         final ICompleteness.Transient completeness = Completeness.Transient.of();
         completeness.addAll(constraints, spec, state.unifier());
-        return new SearchState(state, CapsuleUtil.toSet(constraints), Map.Immutable.of(), null, completeness.freeze());
+        return new SearchState(state, CapsuleUtil.toSet(constraints), CapsuleUtil.immutableMap(), null, completeness.freeze());
     }
 
     public void print(Action1<String> printLn, Function2<ITerm, IUniDisunifier, String> pp) {

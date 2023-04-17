@@ -51,7 +51,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
                     return Tuple2.of(params, C);
                 }).match(currentTerm).orElseThrow(() -> new InterpreterException("Current term is not (params, C)."));
         final ITerm params = input._1();
-        final Set.Immutable<IConstraint> constraints = Set.Immutable.of(input._2());
+        final Set.Immutable<IConstraint> constraints = CapsuleUtil.immutableSet(input._2());
 
         final Set.Immutable<ITermVar> globalVars = params.getVars();
         final Fresh.Transient globalFresh = Fresh.Transient.of();

@@ -63,8 +63,8 @@ public abstract class ASolverResult {
     }
 
     public static SolverResult of(Spec spec) {
-        return SolverResult.of(spec, State.of(), Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(),
-            Set.Immutable.of(), Set.Immutable.of(), Completeness.Immutable.of());
+        return SolverResult.of(spec, State.of(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(),
+            CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), Completeness.Immutable.of());
     }
 
     public SolverResult combine(SolverResult other) {
@@ -84,7 +84,7 @@ public abstract class ASolverResult {
     }
 
     private static <K, V> Map.Immutable<K, V> merge(Map.Immutable<K, V> map1, Map.Immutable<K, V> map2) {
-        final Map.Transient<K, V> builder = Map.Transient.of();
+        final Map.Transient<K, V> builder = CapsuleUtil.transientMap();
         builder.__putAll(map1);
         map2.forEach((k, v) -> {
             if(!map1.containsKey(k)) {
@@ -95,7 +95,7 @@ public abstract class ASolverResult {
     }
 
     private static <K, V> Map.Immutable<K, V> merge(Map.Immutable<K, V> map1, Map.Immutable<K, V> map2, Function2<V, V, V> resolveConflict) {
-        final Map.Transient<K, V> builder = Map.Transient.of();
+        final Map.Transient<K, V> builder = CapsuleUtil.transientMap();
         builder.__putAll(map1);
         map2.forEach((k, v) -> {
             if(!map1.containsKey(k)) {
