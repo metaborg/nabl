@@ -63,8 +63,7 @@ public class IndexedBag<V, I> {
      * Update indices using the normalize function, returning any values for which the index was fully reduced.
      */
     public Collection<V> reindex(I index, Function1<I, ? extends Set<? extends I>> normalize) {
-        final Collection<Entry> entries = new ArrayList<>(this.entries.get(index));
-        this.entries.remove(index);
+        final Collection<Entry> entries = this.entries.remove(index);
         final Set<? extends I> newIndices = normalize.apply(index);
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
             for(Entry e : entries) {

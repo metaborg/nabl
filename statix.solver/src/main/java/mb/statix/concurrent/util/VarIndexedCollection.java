@@ -44,8 +44,7 @@ public class VarIndexedCollection<V> {
 
     private void update(ITermVar indexVar, IUnifier unifier, Set.Transient<V> done) {
         final Set<ITermVar> vars = unifier.getVars(indexVar);
-        final Iterable<Entry> entries = index.get(indexVar);
-        index.remove(indexVar);
+        final Iterable<Entry> entries = index.remove(indexVar);
         for(Entry entry : entries) {
             entry.dec();
             for(ITermVar var : vars) {

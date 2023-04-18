@@ -1034,8 +1034,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         logger.trace("{}: PS complete.", previousScope);
         // waitFors.remove(ScopeProcessed.of(previousScope));
         final Set<ICompletable<Optional<S>>> previousScopeProcessedDelay =
-            previousScopeProcessedDelays.get(previousScope);
-        previousScopeProcessedDelays.remove(previousScope);
+            previousScopeProcessedDelays.remove(previousScope);
         previousScopeProcessedDelay.forEach(c -> c.complete(match));
         logger.trace("{}: PS completion finished.", previousScope);
     }
@@ -1046,8 +1045,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         // waitFors.remove(ScopeCompleted.of(previousScope, label));
         final Tuple2<S, L> previousScopeAndLabel = Tuple2.of(previousScope, label);
         final Set<ICompletable<Unit>> previousScopeCompletedDelay =
-            previousScopeCompletedDelays.get(previousScopeAndLabel);
-        previousScopeCompletedDelays.remove(previousScopeAndLabel);
+            previousScopeCompletedDelays.remove(previousScopeAndLabel);
         previousScopeCompletedDelay.forEach(c -> c.complete(Unit.unit));
         logger.trace("{}: PSC completion finished.", previousScope);
     }
@@ -1056,8 +1054,7 @@ public class ScopeGraphDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
         logger.trace("{}: CE complete.", current);
         // waitFors.remove(EdgeCompleted.of(current));
         final Set<ICompletable<Unit>> currentEdgeCompleteDelay =
-            currentEdgeCompleteDelays.get(current);
-        currentEdgeCompleteDelays.remove(current);
+            currentEdgeCompleteDelays.remove(current);
         currentEdgeCompleteDelay.forEach(c -> c.complete(Unit.unit));
         logger.trace("{}: CE completion finished.", current);
     }
