@@ -119,4 +119,36 @@ public abstract class AResolutionParameters implements IResolutionParameters<Lab
         return ResolutionParameters.of(labels, Label.D, Label.R, wf, order.freeze(), Strategy.SEARCH, true);
     }
 
+    @Override
+    public int hashCode() {
+        int h = 5381;
+        h += (h << 5) + getLabels().hashCode();
+        h += (h << 5) + getLabelD().hashCode();
+        h += (h << 5) + getLabelR().hashCode();
+        h += (h << 5) + getPathWf().hashCode();
+        h += (h << 5) + getSpecificityOrder().hashCode();
+        h += (h << 5) + getStrategy().hashCode();
+        h += (h << 5) + Boolean.hashCode(getPathRelevance());
+        return h;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder b = new StringBuilder("ResolutionParameters{");
+        b.append("labels=").append(getLabels());
+        b.append(", ");
+        b.append("labelD=").append(getLabelD());
+        b.append(", ");
+        b.append("labelR=").append(getLabelR());
+        b.append(", ");
+        b.append("pathWf=").append(getPathWf());
+        b.append(", ");
+        b.append("specificityOrder=").append(getSpecificityOrder());
+        b.append(", ");
+        b.append("strategy=").append(getStrategy());
+        b.append(", ");
+        b.append("pathRelevance=").append(getPathRelevance());
+        return b.append('}').toString();
+    }
+
 }

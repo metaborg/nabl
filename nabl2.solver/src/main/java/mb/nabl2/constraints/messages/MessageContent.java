@@ -80,7 +80,7 @@ public abstract class MessageContent implements IMessageContent {
     @Serial.Version(value = 42L)
     static abstract class ACompoundMessage extends MessageContent {
 
-        @Value.Parameter abstract List<IMessageContent> getParts();
+        @Value.Parameter abstract ImList.Immutable<IMessageContent> getParts();
 
         @Override public ACompoundMessage apply(Function1<ITerm, ITerm> f) {
             return CompoundMessage
@@ -145,7 +145,7 @@ public abstract class MessageContent implements IMessageContent {
             M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> CompoundMessage.of(ps)),
             M.string(s -> TextMessage.of(s.getValue())),
             partMatcher(),
-            M.term(t -> CompoundMessage.of(Iterables2.from(
+            M.term(t -> CompoundMessage.of(ImList.Immutable.of(
                 TermMessage.of(t),
                 TextMessage.of(" (error message was malformed)")
             )))

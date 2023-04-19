@@ -16,4 +16,11 @@ public abstract class AStrategoAnnotations {
     public boolean isEmpty() {
         return getAnnotationList().isEmpty();
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder b = new StringBuilder("StrategoAnnotations{");
+        b.append("annotationList=").append(getAnnotationList());
+        return b.append('}').toString();
+    }
 }

@@ -13,10 +13,10 @@ public class WaitForGraph<P, T> {
 
     private static final ILogger logger = LoggerUtils.logger(WaitForGraph.class);
 
-    private MultiSet.Transient<T> waitFors = MultiSet.Transient.of();
-    private Map<P, MultiSet.Transient<T>> waitForsByProcess = new HashMap<>();
+    private final MultiSet.Mutable<T> waitFors = new MultiSet.Mutable<>();
+    private final Map<P, MultiSet.Mutable<T>> waitForsByProcess = new HashMap<>();
 
-    private MultiSet.Transient<P> waits = MultiSet.Transient.of();
+    private final MultiSet.Mutable<P> waits = new MultiSet.Mutable<>();
 
     public boolean isWaiting() {
         return !waitFors.isEmpty() || !waits.isEmpty();
@@ -27,15 +27,15 @@ public class WaitForGraph<P, T> {
     }
 
     public boolean isWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, MultiSet.Transient.of()).contains(token);
+        return waitForsByProcess.getOrDefault(from, new MultiSet.Mutable<>()).contains(token);
     }
 
     public int countWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, MultiSet.Transient.of()).count(token);
+        return waitForsByProcess.getOrDefault(from, new MultiSet.Mutable<>()).count(token);
     }
 
     public MultiSet.Immutable<T> getTokens(P unit) {
-        return MultiSet.Immutable.copyOf(waitForsByProcess.getOrDefault(unit, MultiSet.Transient.of()));
+        return MultiSet.Immutable.copyOf(waitForsByProcess.getOrDefault(unit, new MultiSet.Mutable<>()));
     }
 
     public MultiSet<T> getTokens() {
@@ -50,12 +50,12 @@ public class WaitForGraph<P, T> {
         boolean newDependency = !waitForsByProcess.containsKey(process) && !waits.contains(process);
         logger.debug("wait for {}/{}", process, token);
         waitFors.add(token);
-        waitForsByProcess.computeIfAbsent(process, __ -> MultiSet.Transient.of()).add(token);
+        waitForsByProcess.computeIfAbsent(process, __ -> new MultiSet.Mutable<>()).add(token);
         return newDependency;
     }
 
     protected boolean granted(P process, T token) {
-        final MultiSet.Transient<T> tokens = waitForsByProcess.get(process);
+        final MultiSet.Mutable<T> tokens = waitForsByProcess.get(process);
         if(tokens == null || !tokens.contains(token)) {
             logger.error("not waiting for granted {}/{}", process, token);
             throw new IllegalStateException("not waiting for granted " + process + "/" + token);
