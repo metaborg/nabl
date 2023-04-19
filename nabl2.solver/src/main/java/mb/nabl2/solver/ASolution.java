@@ -2,6 +2,7 @@ package mb.nabl2.solver;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;

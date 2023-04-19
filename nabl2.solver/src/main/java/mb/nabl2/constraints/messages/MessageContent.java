@@ -138,9 +138,9 @@ public abstract class MessageContent implements IMessageContent {
 
     }
 
-    public static IMatcher<MessageContent> matcher() {
+    public static IMatcher<IMessageContent> matcher() {
         // @formatter:off
-        return M.<MessageContent>cases(
+        return M.<IMessageContent>cases(
             M.appl0(DEFAULT, (t) -> DefaultMessage.of()),
             M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> CompoundMessage.of(ps)),
             M.string(s -> TextMessage.of(s.getValue())),
@@ -153,9 +153,9 @@ public abstract class MessageContent implements IMessageContent {
         // @formatter:on
     }
 
-    public static IMatcher<MessageContent> partMatcher() {
+    public static IMatcher<IMessageContent> partMatcher() {
         // @formatter:off
-        return M.<MessageContent>cases(
+        return M.<IMessageContent>cases(
             M.appl1(TEXT, M.stringValue(), (t,s) -> TextMessage.of(s)),
             M.appl1(TERM, M.term(), (t,s) -> TermMessage.of(s))
         );

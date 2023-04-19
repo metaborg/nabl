@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;

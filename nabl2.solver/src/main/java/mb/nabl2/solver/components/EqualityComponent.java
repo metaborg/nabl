@@ -3,6 +3,7 @@ package mb.nabl2.solver.components;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;

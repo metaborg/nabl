@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;

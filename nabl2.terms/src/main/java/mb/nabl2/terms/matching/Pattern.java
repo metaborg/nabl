@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;

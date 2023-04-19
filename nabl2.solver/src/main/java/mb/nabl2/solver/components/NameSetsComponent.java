@@ -4,6 +4,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;

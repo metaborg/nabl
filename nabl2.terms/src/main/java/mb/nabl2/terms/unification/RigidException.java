@@ -1,5 +1,7 @@
 package mb.nabl2.terms.unification;
 
+import org.metaborg.util.collection.CapsuleUtil;
+
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 
