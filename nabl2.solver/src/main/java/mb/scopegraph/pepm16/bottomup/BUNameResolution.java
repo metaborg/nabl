@@ -329,8 +329,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
                 final BUEnvKey<S, L> dstEnv = entry.getValue();
                 final IStep<S, L, O> step = entry.getKey();
                 final BUChanges<S, L, O, IDeclPath<S, L, O>> envChanges = newChanges.flatMap((k, ps) -> {
-                    final ImList.Transient<IDeclPath<S, L, O>> newPs =
-                            new ImList.Transient<>(ps.size());
+                    final ImList.Mutable<IDeclPath<S, L, O>> newPs =
+                            new ImList.Mutable<>(ps.size());
                     for(IDeclPath<S, L, O> p : ps) {
                         (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
                     }
@@ -391,8 +391,8 @@ public class BUNameResolution<S extends IScope, L extends ILabel, O extends IOcc
         final BUEnv<S, L, O, IDeclPath<S, L, O>> _env = envs.get(srcEnv);
         final BUChanges<S, L, O, IDeclPath<S, L, O>> changes =
                 BUChanges.ofPaths(srcEnv, _env.pathSet()).flatMap((k, ps) -> {
-                    final ImList.Transient<IDeclPath<S, L, O>> newPs =
-                            new ImList.Transient<>(ps.size());
+                    final ImList.Mutable<IDeclPath<S, L, O>> newPs =
+                            new ImList.Mutable<>(ps.size());
                     for(IDeclPath<S, L, O> p : ps) {
                         (params.getPathRelevance() ? Paths.append(step, p) : Optional.of(p)).ifPresent(newPs::add);
                     }

@@ -137,7 +137,7 @@ public class TermPattern {
             return term.match(Terms.cases(
                 appl -> {
                     final List<ITerm> args = appl.getArgs();
-                    final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
+                    final ImList.Mutable<Pattern> newArgs = new ImList.Mutable<>(args.size());
                     for(ITerm arg : args) {
                         newArgs.add(fromTerm(arg, isWildcard));
                     }

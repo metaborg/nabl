@@ -10,7 +10,6 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -172,10 +171,10 @@ public abstract class MessageContent implements IMessageContent {
 
     public static class Builder {
 
-        private final ImList.Transient<IMessageContent> parts;
+        private final ImList.Mutable<IMessageContent> parts;
 
         private Builder() {
-            this.parts = ImList.Transient.of();
+            this.parts = ImList.Mutable.of();
         }
 
         public Builder append(String text) {

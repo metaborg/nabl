@@ -5,7 +5,6 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 
 import org.metaborg.util.collection.ImList;
-import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
@@ -85,7 +84,7 @@ public class CompletenessUtil {
      * Return critical edges for this constraint.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
-        ImList.Transient<CriticalEdge> criticalEdges = ImList.Transient.of();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> criticalEdges.add(CriticalEdge.of(s, l)));
         return criticalEdges.freeze();
     }
@@ -94,7 +93,7 @@ public class CompletenessUtil {
      * Return critical edges for this constraint, normalized against the given unifier.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
-        ImList.Transient<CriticalEdge> criticalEdges = ImList.Transient.of();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> {
             scopeOrVar().match(s, unifier).ifPresent(scopeOrVar -> {
                 criticalEdges.add(CriticalEdge.of(scopeOrVar, l));

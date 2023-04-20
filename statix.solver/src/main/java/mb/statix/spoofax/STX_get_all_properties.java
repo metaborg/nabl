@@ -49,9 +49,9 @@ public class STX_get_all_properties extends StatixPropertyPrimitive {
             group.put(propName, propValue);
         }
 
-        final ImList.Transient<ITerm> propSets = ImList.Transient.of();
+        final ImList.Mutable<ITerm> propSets = ImList.Mutable.of();
         for(Map.Entry<TermIndex, SortedMap<ITerm, ITermProperty>> rawSet : groupedProps.entrySet()) {
-            final ImList.Transient<ITerm> props = ImList.Transient.of();
+            final ImList.Mutable<ITerm> props = ImList.Mutable.of();
             final TermIndex index = rawSet.getKey();
 
             for(Map.Entry<ITerm, ITermProperty> rawProp : rawSet.getValue().entrySet()) {

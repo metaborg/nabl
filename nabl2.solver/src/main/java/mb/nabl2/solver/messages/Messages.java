@@ -31,7 +31,7 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Transient melt() {
-            return new Messages.Transient(messages.asTransient());
+            return new Messages.Transient(messages.mutableCopy());
         }
 
         @Override public int hashCode() {
@@ -66,9 +66,9 @@ public abstract class Messages implements IMessages {
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private final ImList.Transient<IMessageInfo> messages;
+        private final ImList.Mutable<IMessageInfo> messages;
 
-        private Transient(ImList.Transient<IMessageInfo> messages) {
+        private Transient(ImList.Mutable<IMessageInfo> messages) {
             this.messages = messages;
         }
 
@@ -96,7 +96,7 @@ public abstract class Messages implements IMessages {
         }
 
         public static Messages.Transient of() {
-            return new Messages.Transient(ImList.Transient.of());
+            return new Messages.Transient(ImList.Mutable.of());
         }
 
     }

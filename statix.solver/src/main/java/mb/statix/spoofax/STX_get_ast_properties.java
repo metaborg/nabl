@@ -32,7 +32,7 @@ public class STX_get_ast_properties extends StatixPropertyPrimitive {
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
-            final ImList.Transient<ITerm> props = ImList.Transient.of();
+            final ImList.Mutable<ITerm> props = ImList.Mutable.of();
             for(Map.Entry<Tuple2<TermIndex, ITerm>, ITermProperty> prop : analysis.state().termProperties()
                     .entrySet()) {
                 if(prop.getKey()._1().equals(index)) {

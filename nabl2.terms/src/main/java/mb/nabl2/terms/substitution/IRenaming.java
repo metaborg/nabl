@@ -24,7 +24,7 @@ public interface IRenaming {
     ITermVar rename(ITermVar term);
 
     default List<ITermVar> rename(List<ITermVar> terms) {
-        final ImList.Transient<ITermVar> vars = new ImList.Transient<>(terms.size());
+        final ImList.Mutable<ITermVar> vars = new ImList.Mutable<>(terms.size());
         for(ITermVar term : terms) {
             vars.add(rename(term));
         }
@@ -38,7 +38,7 @@ public interface IRenaming {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        final ImList.Transient<ITerm> newTerms = new ImList.Transient<>(terms.size());
+        final ImList.Mutable<ITerm> newTerms = new ImList.Mutable<>(terms.size());
         for(ITerm term : terms) {
             newTerms.add(apply(term));
         }

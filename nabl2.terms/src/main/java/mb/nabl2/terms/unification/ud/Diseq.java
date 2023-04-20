@@ -88,8 +88,8 @@ public class Diseq implements Serializable {
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {
         final Set.Immutable<ITermVar> diseqsDomainSet = diseqs.domainSet();
-        final ImList.Transient<ITerm> lefts = new ImList.Transient<>(diseqsDomainSet.size());
-        final ImList.Transient<ITerm> rights = new ImList.Transient<>(diseqsDomainSet.size());
+        final ImList.Mutable<ITerm> lefts = new ImList.Mutable<>(diseqsDomainSet.size());
+        final ImList.Mutable<ITerm> rights = new ImList.Mutable<>(diseqsDomainSet.size());
         for(ITermVar var : diseqsDomainSet) {
             lefts.add(var);
             rights.add(diseqs.findTerm(var));

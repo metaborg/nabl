@@ -149,7 +149,7 @@ public class StrategoTerms {
                     return B.newVar(resource, name, attachments);
                 } else {
                     final IStrategoTerm[] subTerms = appl.getAllSubterms();
-                    final ImList.Transient<ITerm> args = new ImList.Transient<>(subTerms.length);
+                    final ImList.Mutable<ITerm> args = new ImList.Mutable<>(subTerms.length);
                     for(IStrategoTerm subTerm : subTerms) {
                         args.add(fromStratego(subTerm, varProvider));
                     }
@@ -158,7 +158,7 @@ public class StrategoTerms {
             },
             tuple -> {
                 final IStrategoTerm[] subTerms = tuple.getAllSubterms();
-                final ImList.Transient<ITerm> args = new ImList.Transient<>(subTerms.length);
+                final ImList.Mutable<ITerm> args = new ImList.Mutable<>(subTerms.length);
                 for(IStrategoTerm subTerm : subTerms) {
                     args.add(fromStratego(subTerm, varProvider));
                 }

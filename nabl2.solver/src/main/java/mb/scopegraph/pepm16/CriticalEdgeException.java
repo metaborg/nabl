@@ -29,7 +29,7 @@ public class CriticalEdgeException extends Throwable {
     }
 
     public static CriticalEdgeException of(Iterable<CriticalEdgeException> exceptions) {
-        ImList.Transient<CriticalEdge> incompletes = ImList.Transient.of();
+        ImList.Mutable<CriticalEdge> incompletes = ImList.Mutable.of();
         exceptions.forEach(e -> incompletes.addAll(e.criticalEdges()));
         return new CriticalEdgeException(incompletes.freeze());
     }

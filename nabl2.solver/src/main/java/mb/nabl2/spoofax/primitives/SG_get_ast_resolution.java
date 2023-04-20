@@ -30,7 +30,7 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             throws InterpreterException {
         return TermIndex.get(term).flatMap(index -> {
             final Collection<Occurrence> refs = solution.astRefs().get(OccurrenceIndex.of(index));
-            final ImList.Transient<ITerm> entriesBuilder = ImList.Transient.of();
+            final ImList.Mutable<ITerm> entriesBuilder = ImList.Mutable.of();
             try {
                 for(Occurrence ref : refs) {
                     try {

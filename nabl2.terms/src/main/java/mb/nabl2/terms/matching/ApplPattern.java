@@ -75,7 +75,7 @@ public final class ApplPattern extends Pattern {
     }
 
     @Override public Pattern apply(IRenaming subst) {
-        final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
+        final ImList.Mutable<Pattern> newArgs = new ImList.Mutable<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.apply(subst));
         }
@@ -83,7 +83,7 @@ public final class ApplPattern extends Pattern {
     }
 
     @Override public ApplPattern eliminateWld(Function0<ITermVar> fresh) {
-        final ImList.Transient<Pattern> newArgs = new ImList.Transient<>(args.size());
+        final ImList.Mutable<Pattern> newArgs = new ImList.Mutable<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.eliminateWld(fresh));
         }
@@ -92,7 +92,7 @@ public final class ApplPattern extends Pattern {
 
     @Override protected ITerm asTerm(Action2<ITermVar, ITerm> equalities,
             Function1<Optional<ITermVar>, ITermVar> fresh) {
-        final ImList.Transient<ITerm> newArgs = new ImList.Transient<>(args.size());
+        final ImList.Mutable<ITerm> newArgs = new ImList.Mutable<>(args.size());
         for(Pattern arg : args) {
             newArgs.add(arg.asTerm(equalities, fresh));
         }

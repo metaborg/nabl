@@ -24,7 +24,7 @@ public interface ISubstitution {
     ITerm apply(ITerm term);
 
     default List<ITerm> apply(List<ITerm> terms) {
-        final ImList.Transient<ITerm> newTerms = new ImList.Transient<>(terms.size());
+        final ImList.Mutable<ITerm> newTerms = new ImList.Mutable<>(terms.size());
         for(ITerm term : terms) {
             newTerms.add(apply(term));
         }

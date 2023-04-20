@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.IFuture;
-import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
@@ -47,7 +46,7 @@ public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
         final Optional<Rule> rule = group.rule();
         final String resource = group.resource();
 
-        final ImList.Transient<Scope> scopesBuilder = new ImList.Transient<>(rootScopes.size() + thisGroupScopes.size());
+        final ImList.Mutable<Scope> scopesBuilder = new ImList.Mutable<>(rootScopes.size() + thisGroupScopes.size());
         scopesBuilder.addAll(rootScopes);
         scopesBuilder.addAll(thisGroupScopes);
         final ImList.Immutable<Scope> scopes = scopesBuilder.freeze();

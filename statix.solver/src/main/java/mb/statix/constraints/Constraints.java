@@ -493,14 +493,14 @@ public final class Constraints {
     public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f,
             boolean recurseInLogicalScopes) {
         return c -> {
-            final ImList.Transient<T> ts = ImList.Transient.of();
+            final ImList.Mutable<T> ts = ImList.Mutable.of();
             collectBase(c, f, ts, recurseInLogicalScopes);
             return ts.freeze();
         };
     }
 
     private static <T> void collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
-        ImList.Transient<T> ts, boolean recurseInLogicalScopes) {
+        ImList.Mutable<T> ts, boolean recurseInLogicalScopes) {
         // @formatter:off
         constraint.match(cases(
             c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
@@ -573,7 +573,7 @@ public final class Constraints {
      * Split a conjunction constraint into constraints.
      */
     public static ImList.Immutable<IConstraint> disjoin(IConstraint constraint) {
-        ImList.Transient<IConstraint> constraints = ImList.Transient.of();
+        ImList.Mutable<IConstraint> constraints = ImList.Mutable.of();
         disjoin(constraint, constraints::add);
         return constraints.freeze();
     }

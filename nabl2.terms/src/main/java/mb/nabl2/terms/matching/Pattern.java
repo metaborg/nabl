@@ -112,7 +112,7 @@ public abstract class Pattern implements Serializable {
 
         // create equalities between unifier terms from pattern equalities
         final Set.Transient<ITermVar> stuckVars = CapsuleUtil.transientSet();
-        final ImList.Transient<Tuple2<ITerm, ITerm>> allEqs = new ImList.Transient<>(termEqs.size());
+        final ImList.Mutable<Tuple2<ITerm, ITerm>> allEqs = new ImList.Mutable<>(termEqs.size());
         for(Tuple2<ITermVar, ITerm> termEq : termEqs) {
             final ITermVar leftVar = termEq._1();
             final ITerm rightTerm = termEq._2();
@@ -157,7 +157,7 @@ public abstract class Pattern implements Serializable {
     public abstract Pattern eliminateWld(Function0<ITermVar> fresh);
 
     public Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> asTerm(Function1<Optional<ITermVar>, ITermVar> fresh) {
-        final ImList.Transient<Tuple2<ITermVar, ITerm>> eqs = new ImList.Transient<>(1);
+        final ImList.Mutable<Tuple2<ITermVar, ITerm>> eqs = new ImList.Mutable<>(1);
         final ITerm term = asTerm((v, t) -> {
             eqs.add(Tuple2.of(v, t));
         }, fresh);

@@ -321,7 +321,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         @Override public List<CriticalEdge> reduce(Iterable<? extends V> vs,
                 Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, S> fs, Function1<V, O> fo) {
-            final ImList.Transient<CriticalEdge> reduced = ImList.Transient.of();
+            final ImList.Mutable<CriticalEdge> reduced = ImList.Mutable.of();
             this.<S>reduce(incompleteDirectEdges, vs, norm, fs, this::addDirectEdge, reduced);
             this.<O>reduce(incompleteImportEdges, vs, norm, fo, this::addImportEdge, reduced);
             return reduced.freeze();
@@ -329,7 +329,7 @@ public abstract class EsopScopeGraph<S extends IScope, L extends ILabel, O exten
 
         private <X> void reduce(IndexedBagMultimap<Tuple2<S, L>, V, V> index, Iterable<? extends V> vs,
                 Function1<V, ? extends Set.Immutable<? extends V>> norm, Function1<V, X> f, Predicate3<S, L, X> add,
-            ImList.Transient<CriticalEdge> reduced) {
+            ImList.Mutable<CriticalEdge> reduced) {
             for(V v : vs) {
                 for(Map.Entry<Tuple2<S, L>, V> slv : index.reindex(v, norm)) {
                     X x = f.apply(slv.getValue());

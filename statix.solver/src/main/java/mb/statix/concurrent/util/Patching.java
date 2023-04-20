@@ -279,13 +279,13 @@ public class Patching {
 
     public static Rule patch(Rule rule, IPatchCollection<Scope> patches) {
         final List<Pattern> params = rule.params();
-        ImList.Transient<Pattern> newParamsBuilder = null;
+        ImList.Mutable<Pattern> newParamsBuilder = null;
         for(int i = 0; i < params.size(); i++) {
             final Pattern param = params.get(i);
             final Pattern newParam = patch(param, patches);
             if(newParam != null) {
                 if(newParamsBuilder == null) {
-                    newParamsBuilder = new ImList.Transient<>(params.size());
+                    newParamsBuilder = new ImList.Mutable<>(params.size());
                     for(int j = 0; j < i; j++) {
                         newParamsBuilder.add(params.get(j));
                     }
@@ -484,13 +484,13 @@ public class Patching {
             @Override public IConstraint caseUser(CUser c) {
                 final List<ITerm> args = c.args();
                 final int size = args.size();
-                ImList.Transient<ITerm> newArgsBuilder = null;
+                ImList.Mutable<ITerm> newArgsBuilder = null;
                 for(int i = 0; i < size; i++) {
                     final ITerm arg = args.get(i);
                     final ITerm newArg = patch(arg, patches);
                     if(newArg != null) {
                         if(newArgsBuilder == null) {
-                            newArgsBuilder = new ImList.Transient<>(size);
+                            newArgsBuilder = new ImList.Mutable<>(size);
                             for(int j = 0; j < i; j++) {
                                 newArgsBuilder.add(args.get(j));
                             }
@@ -539,13 +539,13 @@ public class Patching {
                 }
             }
 
-            ImList.Transient<Pattern> newArgsBuilder = null;
+            ImList.Mutable<Pattern> newArgsBuilder = null;
             for(int i = 0; i < size; i++) {
                 final Pattern arg = args.get(i);
                 final Pattern newArg = patch(arg, patches);
                 if(newArg != null) {
                     if(newArgsBuilder == null) {
-                        newArgsBuilder = new ImList.Transient<>(size);
+                        newArgsBuilder = new ImList.Mutable<>(size);
                         for(int j = 0; j < i; j++) {
                             newArgsBuilder.add(args.get(j));
                         }
@@ -631,14 +631,14 @@ public class Patching {
 
                 final List<ITerm> args = appl.getArgs();
                 final int size = args.size();
-                ImList.Transient<ITerm> newArgsBuilder = null;
+                ImList.Mutable<ITerm> newArgsBuilder = null;
 
                 for(int i = 0; i < size; i++) {
                     final ITerm arg = args.get(i);
                     final ITerm newArg = patch(arg, patches);
                     if(newArg != null) {
                         if(newArgsBuilder == null) {
-                            newArgsBuilder = new ImList.Transient<>(size);
+                            newArgsBuilder = new ImList.Mutable<>(size);
                             for(int j = 0; j < i; j++) {
                                 newArgsBuilder.add(args.get(j));
                             }

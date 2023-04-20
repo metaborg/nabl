@@ -37,7 +37,7 @@ public class ConstraintTerms {
         ITerm newTerm = term.match(Terms.cases(
             appl -> {
                 final List<ITerm> args = appl.getArgs();
-                final ImList.Transient<ITerm> newArgs = new ImList.Transient<>(args.size());
+                final ImList.Mutable<ITerm> newArgs = new ImList.Mutable<>(args.size());
                 for(ITerm arg : args) {
                     newArgs.add(specialize(arg));
                 }
@@ -106,7 +106,7 @@ public class ConstraintTerms {
         return term.match(Terms.cases(
             appl -> {
                 final List<ITerm> args = appl.getArgs();
-                final ImList.Transient<ITerm> newArgs = new ImList.Transient<>(args.size());
+                final ImList.Mutable<ITerm> newArgs = new ImList.Mutable<>(args.size());
                 for(ITerm arg : args) {
                     newArgs.add(explicate(arg));
                 }

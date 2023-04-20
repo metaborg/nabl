@@ -110,7 +110,7 @@ public class RuleUtil {
     private static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrdered(IUniDisunifier.Immutable unifier,
             SortedSet<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety,
             boolean onlyOne) throws E {
-        final ImList.Transient<Tuple2<Rule, ApplyResult>> results = ImList.Transient.of();
+        final ImList.Mutable<Tuple2<Rule, ApplyResult>> results = ImList.Mutable.of();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
         for(Rule rule : rules) {
             // apply rule
@@ -157,7 +157,7 @@ public class RuleUtil {
     public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IUniDisunifier.Immutable state,
             Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode,
             Safety safety) throws E {
-        final ImList.Transient<Tuple2<Rule, ApplyResult>> results = ImList.Transient.of();
+        final ImList.Mutable<Tuple2<Rule, ApplyResult>> results = ImList.Mutable.of();
         for(Rule rule : rules) {
             final ApplyResult result;
             if((result = apply(state, rule, args, cause, mode, safety).orElse(null)) != null) {

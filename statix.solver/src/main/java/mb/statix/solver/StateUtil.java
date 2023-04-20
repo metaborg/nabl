@@ -16,20 +16,20 @@ import mb.statix.constraints.CInequal;
 public class StateUtil {
 
     public static List<IConstraint> asConstraint(IUniDisunifier unifier) {
-        final ImList.Transient<IConstraint> constraints = ImList.Transient.of();
+        final ImList.Mutable<IConstraint> constraints = ImList.Mutable.of();
         buildEqualities(unifier, constraints::add);
         buildInequalities(unifier.disequalities(), constraints::add);
         return constraints.freeze();
     }
 
     public static List<CEqual> asEqualities(IUnifier unifier) {
-        final ImList.Transient<CEqual> constraints = ImList.Transient.of();
+        final ImList.Mutable<CEqual> constraints = ImList.Mutable.of();
         buildEqualities(unifier, constraints::add);
         return constraints.freeze();
     }
 
     public static List<CInequal> asInequalities(IUniDisunifier unifier) {
-        final ImList.Transient<CInequal> constraints = ImList.Transient.of();
+        final ImList.Mutable<CInequal> constraints = ImList.Mutable.of();
         buildInequalities(unifier.disequalities(), constraints::add);
         return constraints.freeze();
     }

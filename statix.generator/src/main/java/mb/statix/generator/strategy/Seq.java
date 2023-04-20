@@ -47,7 +47,7 @@ public final class Seq<I extends SearchState, O extends SearchState> extends Sea
 
     public static class Builder<I extends SearchState, O extends SearchState> {
 
-        private final ImList.Transient<SearchStrategy<?, ?>> ss = ImList.Transient.of();
+        private final ImList.Mutable<SearchStrategy<?, ?>> ss = ImList.Mutable.of();
 
         public Builder(SearchStrategy<I, O> s) {
             ss.add(s);

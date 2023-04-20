@@ -105,15 +105,15 @@ public class Env<S, L, D, X> {
      */
     public static class Builder<S, L, D, X> {
 
-        private final ImList.Transient<Match<S, L, D, X>> matches;
-        private final ImList.Transient<Match<S, L, D, X>> rejects;
+        private final ImList.Mutable<Match<S, L, D, X>> matches;
+        private final ImList.Mutable<Match<S, L, D, X>> rejects;
 
         /**
          * Initializes a new instance of the {@link Builder} class.
          */
         public Builder() {
-            this.matches = ImList.Transient.of();
-            this.rejects = ImList.Transient.of();
+            this.matches = ImList.Mutable.of();
+            this.rejects = ImList.Mutable.of();
         }
 
         /**

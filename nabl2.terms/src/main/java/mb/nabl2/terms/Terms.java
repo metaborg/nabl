@@ -356,13 +356,13 @@ public class Terms {
      * identity, otherwise returns null.
      */
     public static @Nullable ImList.Immutable<ITerm> applyLazy(List<ITerm> terms, Function1<ITerm, ITerm> f) {
-        ImList.Transient<ITerm> newTerms = null;
+        ImList.Mutable<ITerm> newTerms = null;
         for(int i = 0; i < terms.size(); i++) {
             ITerm term = terms.get(i);
             ITerm newTerm = f.apply(term);
             if(newTerm != term || newTerms != null) {
                 if(newTerms == null) {
-                    newTerms = new ImList.Transient<>(terms.size());
+                    newTerms = new ImList.Mutable<>(terms.size());
                     for(int j = 0; j < i; j++) {
                         newTerms.add(terms.get(j));
                     }
