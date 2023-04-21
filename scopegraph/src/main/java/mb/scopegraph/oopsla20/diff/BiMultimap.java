@@ -3,7 +3,6 @@ package mb.scopegraph.oopsla20.diff;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.metaborg.util.collection.BagMap;
 import org.metaborg.util.collection.MultiSetMap;
 
 public abstract class BiMultimap<K, V> {
