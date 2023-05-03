@@ -72,6 +72,10 @@ public class Message implements IMessage, Serializable {
         return new Message(kind, newContent, newOrigin);
     }
 
+    @Override public IMessage withKind(MessageKind kind) {
+        return new Message(kind, content, origin);
+    }
+
     @Override public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(kind);

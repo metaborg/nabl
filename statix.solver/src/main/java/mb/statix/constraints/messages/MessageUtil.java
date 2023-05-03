@@ -59,13 +59,13 @@ public class MessageUtil {
     // @formatter:on
 
     public static IMessage findClosestMessage(IConstraint c) {
-        return findClosestMessage(c, KINDS.getOrDefault(c.getClass(), MessageKind.ERROR));
+        return findClosestMessage(c, KINDS.getOrDefault(c.getClass(), null));
     }
 
     /**
      * Find closest message in the
      */
-    public static IMessage findClosestMessage(IConstraint c, MessageKind kind) {
+    public static IMessage findClosestMessage(IConstraint c, @Nullable MessageKind kind) {
         @Nullable IMessage message = null;
         while(c != null) {
             @Nullable IMessage m;
@@ -75,7 +75,13 @@ public class MessageUtil {
             c = c.cause().orElse(null);
         }
         if(message == null) {
-            message = new Message(kind);
+            if(kind == null) {
+                message = new Message(MessageKind.ERROR);
+            } else {
+                message = new Message(kind);
+            }
+        } else if(kind != null) {
+            message = message.withKind(kind);
         }
         return message;
     }
@@ -209,6 +215,10 @@ public class MessageUtil {
 
         @Override public IMessage apply(IRenaming subst) {
             return new Unsolved(message.apply(subst), delay, completeness == null ? null : completeness.apply(subst));
+        }
+
+        @Override public IMessage withKind(MessageKind kind) {
+            return new Unsolved(message.withKind(kind), delay, completeness);
         }
 
     }
