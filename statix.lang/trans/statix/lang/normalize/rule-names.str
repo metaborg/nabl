@@ -1,0 +1,28 @@
+module statix/lang/normalize/rule-names
+
+imports
+
+  signatures/-
+
+rules
+
+  normalize-rule-names = scope-local-new(alltd(preserve-annos(assign-rule-name)))
+
+  assign-rule-name: Rule(name, head, body) -> Rule(name', head, body)
+    with name' := <assign-name> (name, head)
+
+  assign-name: (Name(name){a*}, head) -> Name(name'){a*}
+    with name' := <mk-newname> name
+
+  assign-name: (NoName(){a*}, head) -> Name(name){a*}
+    with name := <mk-name> head
+
+  mk-name: C(c-id, arg-ptrns) -> name
+    with ctors := <collect-all(?Op(<id>, _))>
+       ; name  := < separate-by(|"-")
+                  ; concat-strings
+                  ; string-as-chars([to-upper | id])
+                  ; mk-newname
+                  > [c-id | ctors]
+
+  mk-newname = local-newname; string-replace(|"_0", ""); string-replace(|"_", "-")

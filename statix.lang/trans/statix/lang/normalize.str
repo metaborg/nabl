@@ -19,6 +19,7 @@ rules
   ; normalize-functional-relations
   ; normalize-lambda-patterns
   ; normalize-terms
+  ; normalize-rule-names
   ; nabl2-custom-analysis-info-msg(|"| Done.")
 
   normalize-add-anno-types(|a) =
