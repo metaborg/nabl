@@ -521,7 +521,7 @@ rules
          end
 
 
-  stx--merge-spec-aterms = foldr(stx--merge-spec-aterms-init, stx--merge-spec-aterms-step)
+  stx--merge-spec-aterms = foldr(stx--merge-spec-aterms-init, stx--merge-spec-aterms-step); stx--uniquify-spec
 
   stx--merge-spec-aterms-init = !Spec([], [], EOP(), [], [])
 
@@ -534,6 +534,36 @@ rules
                       , <conc> (rule1*, rule*)
                       , <union> (ext1*, ext*)
                       )
+
+rules
+
+  // At 'link-time' generate unique names
+  stx--uniquify-spec = Spec(id, id, id, stx--uniquify-rules, id)
+
+  stx--uniquify-rules = scope-local-new(downup(where(try(stx--newname)), preserve-annos(try(stx--uniquify))))
+
+  stx--newname = ?CExists(<id>, _); map(Var(local-newname))
+  stx--newname = ?C(<id>, _); topdown(try(Var(local-newname)))
+
+  stx--uniquify =
+     stx--uniquify-exists
+  <+ stx--uniquify-rule
+
+  stx--uniquify-exists: c@CExists(xs, _) -> c'
+    with xs'  := <map(stx--pair-fresh-name)> xs
+       ; c'   := <foldr(!c, stx--subst-fresh-name)> xs'
+
+  stx--uniquify-rule: r@Rule(name, C(c-id, args), c) -> r'
+    with xs'  := <collect-all(?Var(_)); map(stx--pair-fresh-name)> args
+       ; r'   := <foldr(!r, stx--subst-fresh-name)> xs'
+
+  stx--uniquify-rule: l@LLam(args, c) -> l'
+    with xs'  := <collect-all(?Var(_)); map(stx--pair-fresh-name)> args
+       ; l'   := <foldr(!l, stx--subst-fresh-name)> xs'
+
+  stx--pair-fresh-name: v@Var(x){a*} -> (v, Var(<preserve-annos(local-newname)> x){a*})
+  stx--subst-fresh-name: ((v_old, v_new), c) -> c'
+     with c' := <topdown(preserve-annos(try(?v_old; !v_new)))> c
 
 rules
 
