@@ -10,6 +10,7 @@ imports
   statix/lang/normalize
   statix/lang/precompile
   statix/lang/transform/-
+  statix/lang/schema/-
 
   pp
 
@@ -101,3 +102,10 @@ rules // Explicit signature rules
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with ast' := <add-signature-rules(|a)> ast
+
+rules
+
+  show-sdfg-constraints: input@(_, _, ast, path, project-path) -> (filename, result)
+    with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
+    with filename := <guarantee-extension(|"sdfg.aterm")> path;
+         result   := <nabl2-simplify-ast-indices> sdfg

@@ -1,0 +1,7 @@
+module Schema
+
+menus
+
+  menu: "Schema" (openeditor)
+
+    action: "Show Scope DataFlow Graph Constraints" = show-sdfg-constraints
