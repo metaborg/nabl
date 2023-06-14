@@ -69,9 +69,24 @@ rules
     with  <sdfg-is-scope> v2
         ; sdfg-c* := [UEdge(Variable(v1), Variable(v2))]
 
+  // FIXME: how about `EOP()` target
+  extract-constraint-sdfg: CResolveQuery(rel@Label(_), _, _, _, s, R, _) -> sdfg-c*
+    with sdfg-c* := <extract-answer-sdfg(|rel)> R
+
+  extract-answer-sdfg(|rel): List(ts) -> sdfg-c*
+    with sdfg-c* := <map(try(?Tuple([_, <id>]); norm-ans; extract-terms-sdfg(mk-r-arg(|rel), mk-rev-d-edge)))> ts
+
+  extract-answer-sdfg(|rel): ListTail(ts, _) -> sdfg-c*
+    with sdfg-c* := <map(try(?Tuple([_, <id>]); norm-ans; extract-terms-sdfg(mk-r-arg(|rel), mk-rev-d-edge)))> ts
+
+  extract-answer-sdfg(|rel): _ -> []
+
+  norm-ans: Tuple(ts) -> ts
+  norm-ans: t -> [t]
+
   extract-terms-sdfg(mk-cvar, mk-edge) = map-with-index(extract-term-sdfg(mk-cvar, mk-edge)); flatten-list
 
-  extract-term-sdfg(mk-cvar, mk-edge): e@(i, v@Var(_)) -> <mk-edge> (cvar, Variable(<strip-annos> v))
+  extract-term-sdfg(mk-cvar, mk-edge): e@(i, v@Var(_)) -> <mk-edge> (Variable(<strip-annos> v), cvar)
     where <sdfg-is-scope> v
      with cvar := <mk-cvar> i
 
