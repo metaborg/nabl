@@ -34,24 +34,24 @@ rules
 rules
 
   // Extract all scope graph assertions
-  extract-scopes = collect-om(?CNew(_))
-  extract-edges  = collect-om(?CTellEdge(_, _, _))
-  extract-decls  = collect-om(?CTellRel(_, _, _))
+  extract-scopes = collect-om(?CNew(<id>)); flatten-list; map(strip-annos)
+  extract-edges  = collect-om(CTellEdge(strip-annos, id, strip-annos))
+  extract-decls  = collect-om(CTellRel(id, id, strip-annos))
 
 rules
 
   extract-spec-sdfg = collect-om(extract-rule-sdfg); flatten-list
 
   extract-rule-sdfg: Rule(name, head, body) -> sdfg-c*
-    with sdfg-c* := <flatten-list> [<extract-head-sdfg> head, <extract-body-sdfg> body]
+    with sdfg-c* := <conc> (<extract-head-sdfg> head, <extract-body-sdfg> body)
 
   extract-head-sdfg: C(c-id, args) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(mk-p-arg(|c-id))> args
+    with sdfg-c* := <extract-terms-sdfg(mk-p-arg(|c-id), mk-rev-d-edge)> args
 
   extract-body-sdfg = collect-om(extract-constraint-sdfg)
 
   extract-constraint-sdfg: C(c-id, args, _) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(mk-p-arg(|c-id))> args
+    with sdfg-c* := <extract-terms-sdfg(mk-p-arg(|c-id), mk-d-edge)> args
 
   /* extract-constraint-sdfg: CNew(var) -> sdfg-c*
     with sdfg-c* := [ DEdge(Variable(var), Variable(<term-to-var()> var)) ] */
@@ -61,7 +61,7 @@ rules
                     , DEdge(Variable(<term-to-var()> tgt), tgt)] */
 
   extract-constraint-sdfg: CTellRel(rel, args, _) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(mk-r-arg(|rel))> args
+    with sdfg-c* := <extract-terms-sdfg(mk-r-arg(|rel), mk-d-edge)> args
 
   // FIXME: How about constraints like `MOD(s1) == MOD(s2)`?
   extract-constraint-sdfg: CEqual(v1@Var(_), v2@Var(_), _) -> sdfg-c*
@@ -69,30 +69,31 @@ rules
     with  <sdfg-is-scope> v2
         ; sdfg-c* := [UEdge(Variable(v1), Variable(v2))]
 
-  extract-terms-sdfg(mk-arg) = map-with-index(extract-term-sdfg(mk-arg)); flatten-list
+  extract-terms-sdfg(mk-cvar, mk-edge) = map-with-index(extract-term-sdfg(mk-cvar, mk-edge)); flatten-list
 
-  extract-term-sdfg(mk-arg): (i, v@Var(_)) -> [UEdge(Variable(v), <mk-arg> i)]
-    where(<sdfg-is-scope> v)
+  extract-term-sdfg(mk-cvar, mk-edge): e@(i, v@Var(_)) -> <mk-edge> (cvar, Variable(<strip-annos> v))
+    where <sdfg-is-scope> v
+     with cvar := <mk-cvar> i
 
-  extract-term-sdfg(mk-arg): (i, v@List(ts)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-arg> i \)> ts
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@List(ts)) -> sdfg-c*
+    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-u-edge)> ts
 
-  extract-term-sdfg(mk-arg): (i, v@ListTail(ts, _)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-arg> i \)> ts
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@ListTail(ts, _)) -> sdfg-c*
+    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-u-edge)> ts
 
-  extract-term-sdfg(mk-arg): (i, v@Tuple(ts)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|""))> ts
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@Tuple(ts)) -> sdfg-c*
+    with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|""), mk-u-edge)> ts
 
-  extract-term-sdfg(mk-arg): (i, v@As(_, t)) -> sdfg-c*
-    with sdfg-c* := <extract-term-sdfg(mk-arg)> (i, t)
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@As(_, t)) -> sdfg-c*
+    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-u-edge)> (i, t)
 
-  extract-term-sdfg(mk-arg): (i, v@Ascribe(t, _)) -> sdfg-c*
-    with sdfg-c* := <extract-term-sdfg(mk-arg)> (i, t)
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@Ascribe(t, _)) -> sdfg-c*
+    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-u-edge)> (i, t)
 
-  extract-term-sdfg(mk-arg): (i, v@Op(c, ts)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|c))> ts
+  extract-term-sdfg(mk-cvar, mk-edge): (i, v@Op(c, ts)) -> sdfg-c*
+    with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|c), mk-u-edge)> ts
 
-  extract-term-sdfg(mk-arg): t -> []
+  extract-term-sdfg(mk-cvar, mk-edge): t -> []
 
 rules
 
@@ -100,4 +101,8 @@ rules
   mk-p-arg(|c-id): i -> PArg(c-id, i)
   mk-r-arg(|r-id): i -> RArg(r-id, i)
 
-  sdfg-is-scope = get-annos; fetch-elem(?OfSort(<id>)); debug; ?SCOPE()
+  mk-u-edge     : (v1, v2) -> [UEdge(v1, v2)]
+  mk-d-edge     : (v1, v2) -> [DEdge(v1, v2)]
+  mk-rev-d-edge : (v1, v2) -> [DEdge(v2, v1)]
+
+  sdfg-is-scope = get-annos; fetch-elem(?OfSort(<id>)); ?SCOPE()
