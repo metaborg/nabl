@@ -25,18 +25,19 @@ signature
 
 rules
 
-  extract-sdfg: spec -> (scope*, edge*, decl*, sdfg-c*)
+  extract-sdfg: spec -> schema
     with scope*  := <extract-scopes> spec
     with edge*   := <extract-edges> spec
     with decl*   := <extract-decls> spec
     with sdfg-c* := <extract-spec-sdfg> spec
+    with schema  := <compute-schema> (scope*, edge*, decl*, sdfg-c*)
 
 rules
 
   // Extract all scope graph assertions
   extract-scopes = collect-om(?CNew(<id>)); flatten-list; map(strip-annos)
   extract-edges  = collect-om(CTellEdge(strip-annos, id, strip-annos))
-  extract-decls  = collect-om(CTellRel(id, id, strip-annos))
+  extract-decls  = collect-om(CTellRel(id, topdown(strip-annos), strip-annos))
 
 rules
 
@@ -67,7 +68,7 @@ rules
   extract-constraint-sdfg: CEqual(v1@Var(_), v2@Var(_), _) -> sdfg-c*
     where <sdfg-is-scope> v1
     with  <sdfg-is-scope> v2
-        ; sdfg-c* := [UEdge(Variable(v1), Variable(v2))]
+        ; sdfg-c* := [UEdge(Variable(<strip-annos> v1), Variable(<strip-annos> v2))]
 
   // FIXME: how about `EOP()` target
   extract-constraint-sdfg: CResolveQuery(rel@Label(_), _, _, _, s, R, _) -> sdfg-c*
@@ -91,19 +92,19 @@ rules
      with cvar := <mk-cvar> i
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@List(ts)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-u-edge)> ts
+    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-edge)> ts
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@ListTail(ts, _)) -> sdfg-c*
-    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-u-edge)> ts
+    with sdfg-c* := <extract-terms-sdfg(\_ -> <mk-cvar> i \, mk-edge)> ts
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@Tuple(ts)) -> sdfg-c*
     with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|""), mk-u-edge)> ts
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@As(_, t)) -> sdfg-c*
-    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-u-edge)> (i, t)
+    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-edge)> (i, t)
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@Ascribe(t, _)) -> sdfg-c*
-    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-u-edge)> (i, t)
+    with sdfg-c* := <extract-term-sdfg(mk-cvar, mk-edge)> (i, t)
 
   extract-term-sdfg(mk-cvar, mk-edge): (i, v@Op(c, ts)) -> sdfg-c*
     with sdfg-c* := <extract-terms-sdfg(mk-c-arg(|c), mk-u-edge)> ts
@@ -112,11 +113,15 @@ rules
 
 rules
 
+  external compute-schema(|)
+
+rules
+
   mk-c-arg(|c-id): i -> CArg(c-id, i)
   mk-p-arg(|c-id): i -> PArg(c-id, i)
   mk-r-arg(|r-id): i -> RArg(r-id, i)
 
-  mk-u-edge     : (v1, v2) -> [UEdge(v1, v2)]
+  mk-u-edge     : (v1, v2) -> <debug(!"mk-u-edge: ")> [UEdge(v1, v2)]
   mk-d-edge     : (v1, v2) -> [DEdge(v1, v2)]
   mk-rev-d-edge : (v1, v2) -> [DEdge(v2, v1)]
 

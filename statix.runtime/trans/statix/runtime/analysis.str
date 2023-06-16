@@ -548,6 +548,7 @@ rules
   stx--uniquify =
      stx--uniquify-exists
   <+ stx--uniquify-rule
+  <+ stx--uniquify-wld
 
   stx--uniquify-exists: c@CExists(xs, _) -> c'
     with xs'  := <map(stx--pair-fresh-name)> xs
@@ -564,6 +565,9 @@ rules
   stx--pair-fresh-name: v@Var(x){a*} -> (v, Var(<preserve-annos(local-newname)> x){a*})
   stx--subst-fresh-name: ((v_old, v_new), c) -> c'
      with c' := <topdown(preserve-annos(try(?v_old; !v_new)))> c
+
+  stx--uniquify-wld: Wld(){a*} -> Var(v){a*}
+    with v := <local-newname> "wld"
 
 rules
 
