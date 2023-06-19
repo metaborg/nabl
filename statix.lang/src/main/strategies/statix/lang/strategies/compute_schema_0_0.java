@@ -45,28 +45,33 @@ public class compute_schema_0_0 extends Strategy {
         //
 
         // Mapping :: Variable -> ScopeType -> Cardinality
-        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo = new HashMap<>();
+        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo = new HashMap<>();
         // Variables to be used as starting point for next phase.
         final HashSet<IStrategoTerm> nextPhase = new HashSet<>();
         for(IStrategoTerm type : types) {
-            propagateOwnedTypes(type, initialNodeInfo, cg, context.getFactory(), nextPhase);
+            propagateOwnedTypes(type, nodeInfo, cg, context.getFactory(), nextPhase);
         }
 
         // 2. Propagate remainder of constraints
-        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nextNodeInfo = new HashMap<>();
+        final Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo = new HashMap<>();
         for(IStrategoTerm var : nextPhase) {
-
+            propagateRemoteTypes(var, cg, nodeInfo, nextNodeInfo);
+        }
+        for(Map.Entry<IStrategoTerm, Set<IStrategoTerm>> var: nextNodeInfo.entrySet()) {
+            final Map<IStrategoTerm, Cardinality> varTypes = getMapValue(nodeInfo, var.getKey());
+            for(IStrategoTerm type : var.getValue()) {
+                varTypes.put(type, Cardinality.ZERO2INFINITE);
+            }
         }
 
-        for(IStrategoTerm var : initialNodeInfo.keySet()) {
+        for(IStrategoTerm var : nodeInfo.keySet()) {
             log.info("{}", var);
-            final Map<IStrategoTerm, Cardinality> cards = initialNodeInfo.get(var);
+            final Map<IStrategoTerm, Cardinality> cards = nodeInfo.get(var);
             for(Map.Entry<IStrategoTerm, Cardinality> card : cards.entrySet()) {
                 final IStrategoTerm type = card.getKey();
                 log.info("* {}: {}", type, card.getValue());
             }
         }
-        log.info("Next phase: {}.", nextPhase);
 
         return current;
     }
@@ -165,10 +170,11 @@ public class compute_schema_0_0 extends Strategy {
 
                     final Set<Entry<IStrategoTerm, Integer>> backEdges = cg.directedEdges.incomingEdges(tgt).entrySet();
                     for(Map.Entry<IStrategoTerm, Integer> backEdge : backEdges) {
-                        log.info("{}Back-traversing directed edge {}->{} ({} * {})", indent, var, tgt, subCard, backEdge.getValue());
-                        propagateOwnedTypes(Edge.backward(tgt, backEdge.getKey(), backEdge.getValue()), type, nodeInfo, cg, subCard,
-                                newVisitedNodes.__insert(tgt), newVisitedEdges.__insert(Edge.backward(var, tgt, count)),
-                                nextPhase, indent);
+                        log.info("{}Back-traversing directed edge {}->{} ({} * {})", indent, var, tgt, subCard,
+                                backEdge.getValue());
+                        propagateOwnedTypes(Edge.backward(tgt, backEdge.getKey(), backEdge.getValue()), type, nodeInfo,
+                                cg, subCard, newVisitedNodes.__insert(tgt),
+                                newVisitedEdges.__insert(Edge.backward(var, tgt, count)), nextPhase, indent);
                     }
                 } else {
                     // Other scopes may propagate to/from the parent rule,
@@ -259,7 +265,27 @@ public class compute_schema_0_0 extends Strategy {
 
     // Phase 2. Propagate info obtained through queries or term matching/building.
 
+    private void propagateRemoteTypes(IStrategoTerm var,
+            ConstraintGraph<IStrategoTerm> cg, Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo,
+            Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo) {
+        final HashSet<IStrategoTerm> types = new HashSet<>();
+        types.addAll(getMapValue(initialNodeInfo, var).keySet());
+        types.addAll(getSetValue(nextNodeInfo, var));
 
+        // Traverse directed edges
+        for(IStrategoTerm tgt: cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
+            if(initialNodeInfo.containsKey(tgt)) {
+                log.info("STOP: node {} instantiated by owned scope.", var);
+                continue;
+            }
+            if(getSetValue(nextNodeInfo, tgt).addAll(types)) {
+                log.info("Propagating {}.", tgt);
+                propagateRemoteTypes(tgt, cg, initialNodeInfo, nextNodeInfo);
+            } else {
+                log.info("Reached fixpoint at {}.", tgt);
+            }
+        }
+    }
 
     // Utilities
 
@@ -543,8 +569,7 @@ public class compute_schema_0_0 extends Strategy {
             return result;
         }
 
-        @SuppressWarnings("rawtypes")
-        @Override public boolean equals(Object obj) {
+        @SuppressWarnings("rawtypes") @Override public boolean equals(Object obj) {
             if(this == obj)
                 return true;
             if(obj == null)
