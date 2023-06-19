@@ -30,7 +30,8 @@ rules
     with edge*   := <extract-edges> spec
     with decl*   := <extract-decls> spec
     with sdfg-c* := <extract-spec-sdfg> spec
-    with schema  := <compute-schema> (scope*, edge*, decl*, sdfg-c*)
+    with var*    := <extract-vars> sdfg-c*
+    with schema  := <compute-schema> (scope*, edge*, decl*, sdfg-c*, var*)
 
 rules
 
@@ -38,6 +39,8 @@ rules
   extract-scopes = collect-om(?CNew(<id>)); flatten-list; map(strip-annos)
   extract-edges  = collect-om(CTellEdge(strip-annos, id, strip-annos))
   extract-decls  = collect-om(CTellRel(id, topdown(strip-annos), strip-annos))
+
+  extract-vars = collect-om(?PArg(_, _) + ?CArg(_, _) + ?RArg(_, _))
 
 rules
 

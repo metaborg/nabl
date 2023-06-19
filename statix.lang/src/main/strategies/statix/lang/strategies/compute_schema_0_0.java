@@ -35,6 +35,8 @@ public class compute_schema_0_0 extends Strategy {
         final IStrategoTerm edges = args.get(1);
         final IStrategoTerm decls = args.get(2);
         final IStrategoTerm constraints = args.get(3);
+        final IStrategoTerm vars = args.get(4);
+        final ITermFactory TF = context.getFactory();
 
         final ConstraintGraph<IStrategoTerm> cg = createConstraintGraph(constraints);
         log.info("Constraint graph: {}.", cg);
@@ -45,28 +47,40 @@ public class compute_schema_0_0 extends Strategy {
         //
 
         // Mapping :: Variable -> ScopeType -> Cardinality
-        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo = new HashMap<>();
+        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo = new HashMap<>();
         // Variables to be used as starting point for next phase.
         final HashSet<IStrategoTerm> nextPhase = new HashSet<>();
         for(IStrategoTerm type : types) {
-            propagateOwnedTypes(type, nodeInfo, cg, context.getFactory(), nextPhase);
+            propagateOwnedTypes(type, initialNodeInfo, cg, TF, nextPhase);
         }
 
         // 2. Propagate remainder of constraints
         final Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo = new HashMap<>();
         for(IStrategoTerm var : nextPhase) {
-            propagateRemoteTypes(var, cg, nodeInfo, nextNodeInfo);
+            propagateRemoteTypes(var, cg, initialNodeInfo, nextNodeInfo);
         }
-        for(Map.Entry<IStrategoTerm, Set<IStrategoTerm>> var: nextNodeInfo.entrySet()) {
+
+        // 3. Mark scopes with unknown origin
+        final IStrategoTerm UNKNOWN = TF.makeAppl("Unknown");
+        for(IStrategoTerm var : vars) {
+            if(!nextNodeInfo.containsKey(var) && !nextNodeInfo.containsKey(var)) {
+                propagateUnknown(var, UNKNOWN, cg, initialNodeInfo, nextNodeInfo);
+            }
+        }
+
+        // 4. Aggregate info
+        final Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo = new HashMap<>();
+        nodeInfo.putAll(initialNodeInfo);
+        for(Map.Entry<IStrategoTerm, Set<IStrategoTerm>> var : nextNodeInfo.entrySet()) {
             final Map<IStrategoTerm, Cardinality> varTypes = getMapValue(nodeInfo, var.getKey());
             for(IStrategoTerm type : var.getValue()) {
                 varTypes.put(type, Cardinality.ZERO2INFINITE);
             }
         }
 
-        for(IStrategoTerm var : nodeInfo.keySet()) {
+        for(IStrategoTerm var : initialNodeInfo.keySet()) {
             log.info("{}", var);
-            final Map<IStrategoTerm, Cardinality> cards = nodeInfo.get(var);
+            final Map<IStrategoTerm, Cardinality> cards = initialNodeInfo.get(var);
             for(Map.Entry<IStrategoTerm, Cardinality> card : cards.entrySet()) {
                 final IStrategoTerm type = card.getKey();
                 log.info("* {}: {}", type, card.getValue());
@@ -265,15 +279,15 @@ public class compute_schema_0_0 extends Strategy {
 
     // Phase 2. Propagate info obtained through queries or term matching/building.
 
-    private void propagateRemoteTypes(IStrategoTerm var,
-            ConstraintGraph<IStrategoTerm> cg, Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo,
+    private void propagateRemoteTypes(IStrategoTerm var, ConstraintGraph<IStrategoTerm> cg,
+            Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo,
             Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo) {
         final HashSet<IStrategoTerm> types = new HashSet<>();
         types.addAll(getMapValue(initialNodeInfo, var).keySet());
         types.addAll(getSetValue(nextNodeInfo, var));
 
         // Traverse directed edges
-        for(IStrategoTerm tgt: cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
+        for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
             if(initialNodeInfo.containsKey(tgt)) {
                 log.info("STOP: node {} instantiated by owned scope.", var);
                 continue;
@@ -284,6 +298,33 @@ public class compute_schema_0_0 extends Strategy {
             } else {
                 log.info("Reached fixpoint at {}.", tgt);
             }
+        }
+    }
+
+    // Phase 3. Propagate unknown node info
+
+    private void propagateUnknown(IStrategoTerm var, IStrategoTerm type, ConstraintGraph<IStrategoTerm> cg,
+            Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> initialNodeInfo,
+            Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo) {
+        final Set<IStrategoTerm> varTypes = getSetValue(nextNodeInfo, var);
+        if(varTypes.contains(type)) {
+            log.info("STOP: encounter processed scope: {}.", var);
+            return;
+        }
+        if(initialNodeInfo.containsKey(var)) {
+            log.info("STOP: encounter owned scope: {}.", var);
+            return;
+        }
+
+        varTypes.add(var);
+
+        final HashSet<IStrategoTerm> tgts = new HashSet<>();
+        tgts.addAll(cg.directedEdges.outgoingEdges(var).elementSet());
+        tgts.addAll(cg.directedEdges.incomingEdges(var).elementSet());
+        tgts.addAll(cg.undirectedEdges.edges(var).elementSet());
+
+        for(IStrategoTerm tgt : tgts) {
+            propagateUnknown(tgt, type, cg, initialNodeInfo, nextNodeInfo);
         }
     }
 
