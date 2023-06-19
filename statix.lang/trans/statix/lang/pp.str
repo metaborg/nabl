@@ -44,6 +44,8 @@ rules
   prettyprint-Statix-NaBL2Scope      = prettyprint-NaBL2Scope
   prettyprint-Statix-NaBL2TermIndex  = prettyprint-NaBL2TermIndex
 
+  prettyprint-Statix-INTT = ![S(<int-to-string>)]
+
 rules
 
   construct-textual-change-statix = construct-textual-change(pp-partial-Statix-string, parenthesize, override-reconstruction, resugar)

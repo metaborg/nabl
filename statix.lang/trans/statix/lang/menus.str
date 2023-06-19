@@ -107,5 +107,5 @@ rules
 
   show-sdfg-constraints: input@(_, _, ast, path, project-path) -> (filename, result)
     with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
-    with filename := <guarantee-extension(|"sdfg.aterm")> path;
-         result   := <nabl2-simplify-ast-indices> sdfg
+    with filename := <guarantee-extension(|"sdfg")> path;
+         result   := <pp-Statix-string> sdfg

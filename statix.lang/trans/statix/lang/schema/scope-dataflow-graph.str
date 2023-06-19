@@ -124,7 +124,7 @@ rules
   mk-p-arg(|c-id): i -> PArg(c-id, i)
   mk-r-arg(|r-id): i -> RArg(r-id, i)
 
-  mk-u-edge     : (v1, v2) -> <debug(!"mk-u-edge: ")> [UEdge(v1, v2)]
+  mk-u-edge     : (v1, v2) -> [UEdge(v1, v2)]
   mk-d-edge     : (v1, v2) -> [DEdge(v1, v2)]
   mk-rev-d-edge : (v1, v2) -> [DEdge(v2, v1)]
 

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
 
+import org.spoofax.interpreter.terms.IStrategoList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
@@ -61,7 +62,7 @@ public class compute_schema_0_0 extends Strategy {
         }
 
         // 3. Mark scopes with unknown origin
-        final IStrategoTerm UNKNOWN = TF.makeAppl("Unknown");
+        final IStrategoTerm UNKNOWN = TF.makeAppl("Wld");
         for(IStrategoTerm var : vars) {
             if(!nextNodeInfo.containsKey(var) && !nextNodeInfo.containsKey(var)) {
                 propagateUnknown(var, UNKNOWN, cg, initialNodeInfo, nextNodeInfo);
@@ -78,16 +79,22 @@ public class compute_schema_0_0 extends Strategy {
             }
         }
 
-        for(IStrategoTerm var : initialNodeInfo.keySet()) {
-            log.info("{}", var);
-            final Map<IStrategoTerm, Cardinality> cards = initialNodeInfo.get(var);
-            for(Map.Entry<IStrategoTerm, Cardinality> card : cards.entrySet()) {
-                final IStrategoTerm type = card.getKey();
-                log.info("* {}: {}", type, card.getValue());
-            }
-        }
+        // 5. Build Scheme
+        //    a. edges
+        final IStrategoTerm edgesTerm = TF.makeAppl("SGEdges", TF.makeList(edges.getSubterms().stream()
+                .map(edge -> buildEdgeTerm(edge, nodeInfo, TF)).toArray(IStrategoTerm[]::new)));
 
-        return current;
+        //    b. decls
+        final IStrategoTerm declsTerm = TF.makeAppl("SGDecls", TF.makeList(decls.getSubterms().stream()
+                .map(decl -> buildDeclTerm(decl, nodeInfo, TF)).toArray(IStrategoTerm[]::new)));
+
+        //    c. scheme vars
+        final IStrategoTerm varsTerm = TF.makeAppl("SchemeVars",
+                TF.makeList(vars.getSubterms().stream()
+                        .map(var -> TF.makeAppl("SchemeVar", var, buildScopeKindCardList(nodeInfo.get(var), TF)))
+                        .toArray(IStrategoTerm[]::new)));
+
+        return TF.makeAppl("SGScheme", edgesTerm, declsTerm, varsTerm);
     }
 
     private ConstraintGraph<IStrategoTerm> createConstraintGraph(IStrategoTerm constraints) {
@@ -311,12 +318,12 @@ public class compute_schema_0_0 extends Strategy {
             log.info("STOP: encounter processed scope: {}.", var);
             return;
         }
-        if(initialNodeInfo.containsKey(var)) {
+        /* if(initialNodeInfo.containsKey(var) && !isConstructorArg(var) && !isRelationArg(var)) {
             log.info("STOP: encounter owned scope: {}.", var);
             return;
-        }
+        }*/
 
-        varTypes.add(var);
+        varTypes.add(type);
 
         final HashSet<IStrategoTerm> tgts = new HashSet<>();
         tgts.addAll(cg.directedEdges.outgoingEdges(var).elementSet());
@@ -326,6 +333,44 @@ public class compute_schema_0_0 extends Strategy {
         for(IStrategoTerm tgt : tgts) {
             propagateUnknown(tgt, type, cg, initialNodeInfo, nextNodeInfo);
         }
+    }
+
+    // Phase 5. Build Scheme Term
+
+    public IStrategoTerm buildEdgeTerm(IStrategoTerm edge, Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo,
+            ITermFactory TF) {
+        final IStrategoTerm src = TF.makeAppl("Variable", edge.getSubterm(0));
+        final IStrategoTerm lbl = edge.getSubterm(1);
+        final IStrategoTerm tgt = TF.makeAppl("Variable", edge.getSubterm(2));
+
+        return TF.makeAppl("SGEdge", buildScopeKindCardList(getMapValue(nodeInfo, src), TF), lbl,
+                buildScopeKindCardList(getMapValue(nodeInfo, tgt), TF));
+    }
+
+    public IStrategoTerm buildDeclTerm(IStrategoTerm decl, Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo,
+            ITermFactory TF) {
+        final IStrategoTerm rel = decl.getSubterm(0);
+        final IStrategoTerm args = decl.getSubterm(1);
+        final IStrategoTerm scope = TF.makeAppl("Variable", decl.getSubterm(2));
+
+        return TF.makeAppl("SGDecl", buildScopeKindCardList(getMapValue(nodeInfo, scope), TF), rel,
+                buildDataList(nodeInfo, args, TF));
+    }
+
+    public IStrategoList buildScopeKindCardList(Map<IStrategoTerm, Cardinality> types, ITermFactory TF) {
+        return TF.makeList(types.entrySet(),
+                e -> TF.makeAppl("ScopeKindWithCard", e.getKey(), e.getValue().makeTerm(TF)));
+    }
+
+    public IStrategoList buildDataList(Map<IStrategoTerm, Map<IStrategoTerm, Cardinality>> nodeInfo, IStrategoTerm args,
+            ITermFactory TF) {
+        return TF.makeList(args.getSubterms(), arg -> {
+            final Map<IStrategoTerm, Cardinality> types = nodeInfo.get(TF.makeAppl("Variable", arg));
+            if(types == null) {
+                return TF.makeAppl("DData");
+            }
+            return TF.makeAppl("DScope", buildScopeKindCardList(types, TF));
+        });
     }
 
     // Utilities
@@ -532,6 +577,17 @@ public class compute_schema_0_0 extends Strategy {
             return b * factor;
         }
 
+        public IStrategoTerm makeTerm(ITermFactory TF) {
+            return TF.makeAppl("Cardinality", boundToTerm(lower, TF), boundToTerm(upper, TF));
+        }
+
+        private IStrategoTerm boundToTerm(int bound, ITermFactory TF) {
+            if(bound == -1) {
+                return TF.makeAppl("INF");
+            }
+            return TF.makeAppl("BNum", TF.makeInt(bound));
+        }
+
         @Override public int hashCode() {
             final int prime = 31;
             int result = 1;
@@ -648,6 +704,7 @@ public class compute_schema_0_0 extends Strategy {
             return new Edge<N>(source, target, Direction.UNDIRECTED, weight);
         }
     }
+
 
     private enum Direction {
         FORWARD, BACKWARD, UNDIRECTED;
