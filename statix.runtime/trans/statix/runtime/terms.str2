@@ -17,6 +17,7 @@ signature
     Str   : string              -> Term
     Int   : string              -> Term
     Var   : string              -> Var
+    Wld   :                        Var
     : Var -> Term
 
     Scope : string * string -> Term
