@@ -16,6 +16,8 @@ runtime:
   nabl2:
     debug: analysis
 language:
+  sdf:
+    sdf2table: java
   stratego:
     format: ctree
     args:
