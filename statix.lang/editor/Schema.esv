@@ -5,3 +5,9 @@ menus
   menu: "Schema" (openeditor)
 
     action: "Show Scope DataFlow Graph Constraints" = show-sdfg-constraints
+
+    separator
+
+    action: "Show Scope DataFlow Graph" = show-sdfg
+
+    action: "Format Scope DataFlow Graph" = format-sdfg

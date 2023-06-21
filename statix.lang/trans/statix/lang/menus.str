@@ -105,7 +105,15 @@ rules // Explicit signature rules
 
 rules
 
-  show-sdfg-constraints: input@(_, _, ast, path, project-path) -> (filename, result)
+  show-sdfg-constraints: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <generate-combined-aterm; Snd; extract-spec-sdfg> input
+    with filename := <guarantee-extension(|"sdfgc.aterm")> path
+
+  show-sdfg: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
+    with filename := <guarantee-extension(|"sdfg.aterm")> path
+
+  format-sdfg: input@(_, _, ast, path, project-path) -> (filename, result)
     with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
     with filename := <guarantee-extension(|"sdfg")> path;
          result   := <pp-Statix-string> sdfg
