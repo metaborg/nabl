@@ -934,7 +934,7 @@ public class StatixTerms {
     private static IMatcher<SchemaEdge<ITerm, ITerm>> schemaEdge() {
         return M.appl3("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()),
                 (appl, sources, lbl, targets) -> {
-                    SchemaEdge.Builder<ITerm, ITerm> builder = SchemaEdge.builder(lbl);
+                    final SchemaEdge.Builder<ITerm, ITerm> builder = SchemaEdge.builder(lbl);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     targets.forEach(k_c -> builder.addTarget(k_c._1(), k_c._2()));
                     return builder.build();
@@ -944,14 +944,12 @@ public class StatixTerms {
     private static IMatcher<SchemaDecl<ITerm, ITerm>> schemaDecl() {
         return M.appl3("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()),
                 (appl, sources, lbl, relKinds) -> {
-                    SchemaDecl.Builder<ITerm, ITerm> builder = SchemaDecl.builder(lbl);
+                    final SchemaDecl.Builder<ITerm, ITerm> builder = SchemaDecl.builder(lbl);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     IntStream.range(0, relKinds.size()).forEach(idx -> {
-                        relKinds.get(idx).ifPresent(kcs -> {
-                            kcs.forEach(k_c -> {
-                                builder.addValue(idx, k_c._1(), k_c._2());
-                            });
-                        });
+                        relKinds.get(idx).ifPresent(kcs -> kcs.forEach(k_c -> {
+                            builder.addValue(idx, k_c._1(), k_c._2());
+                        }));
                     });
                     return builder.build();
                 });

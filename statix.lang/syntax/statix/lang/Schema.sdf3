@@ -6,20 +6,20 @@ imports
 
 context-free start-symbols
 
-  Scheme
+  Schema
 
 context-free sorts
 
-  Scheme
+  Schema
 
 context-free syntax
 
-  Scheme.SGScheme = <scope graph scheme
+  Schema.SGSchema = <scope graph scheme
     <SGEdges>
 
     <SGDecls>
 
-    <SchemeVars>
+    <SchemaVars>
   >
 
 context-free sorts
@@ -53,16 +53,16 @@ context-free syntax
 
 context-free sorts
 
-  SchemeVars
-  SchemeVar
+  SchemaVars
+  SchemaVar
 
 context-free syntax
 
-  SchemeVars.SchemeVars = <schema variables
-    <{SchemeVar "\n"}*>
+  SchemaVars.SchemaVars = <schema variables
+    <{SchemaVar "\n"}*>
   >
 
-  SchemeVar.SchemeVar = [[ScopeKindVar] |-> {[{ScopeKindWithCard ","}*]}]
+  SchemaVar.SchemaVar = [[ScopeKindVar] |-> {[{ScopeKindWithCard ","}*]}]
 
 context-free sorts
 
