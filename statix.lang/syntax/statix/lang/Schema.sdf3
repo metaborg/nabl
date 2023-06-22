@@ -1,0 +1,98 @@
+module statix/lang/Schema
+
+imports
+  statix/lang/Common
+  statix/lang/Core
+
+context-free start-symbols
+
+  Scheme
+
+context-free sorts
+
+  Scheme
+
+context-free syntax
+
+  Scheme.SGScheme = <scope graph scheme
+    <SGEdges>
+
+    <SGDecls>
+
+    <SchemeVars>
+  >
+
+context-free sorts
+  SGEdges
+  SGEdge
+
+context-free syntax
+
+  SGEdges.SGEdges = <edges
+    <{SGEdge "\n"}*>
+  >
+
+  SGEdge.SGEdge = [{[{ScopeKindWithCard ", "}*]} =[Label]=> {[{ScopeKindWithCard ", "}*]}]
+
+context-free sorts
+
+  SGDecls
+  SGDecl
+  Data
+
+context-free syntax
+
+  SGDecls.SGDecls = <decls
+    <{SGDecl "\n"}*>
+  >
+
+  SGDecl.SGDecl = [{[{ScopeKindWithCard ", "}*]} |=[Label]=> \[[{Data ", "}*]\]]
+
+  Data.DData  = <data>
+  Data.DScope = [scope {[{ScopeKindWithCard ", "}*]}]
+
+context-free sorts
+
+  SchemeVars
+  SchemeVar
+
+context-free syntax
+
+  SchemeVars.SchemeVars = <schema variables
+    <{SchemeVar "\n"}*>
+  >
+
+  SchemeVar.SchemeVar = [[ScopeKindVar] |-> {[{ScopeKindWithCard ","}*]}]
+
+context-free sorts
+
+  ScopeKind
+  ScopeKindVar
+  ScopeKindWithCard
+
+context-free syntax
+
+  ScopeKind.Glob         = <glob>
+  ScopeKind.KVar         = <var <Var>>
+  ScopeKind.Unknown      = <unknown>
+
+  ScopeKindVar.Variable  = <var <Var>>
+  ScopeKindVar.PArg      = <prd <ConstraintId>[<INTT>]>
+  ScopeKindVar.CArg      = <ctr <SortId>[<INTT>]>
+  ScopeKindVar.RArg      = <rel <Label>[<INTT>]>
+
+  ScopeKindWithCard.ScopeKindWithCard = <<ScopeKind>[<Cardinality>]>
+
+context-free sorts
+
+  Cardinality
+  Bound
+
+context-free syntax
+
+  Cardinality.Cardinality = <<Bound>..<Bound>>
+  Bound.INF               = <*>
+  Bound.BNum              = <<INTT>>
+
+lexical sorts
+  INTT
