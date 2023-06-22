@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.iterators.Iterables2;
@@ -69,6 +70,11 @@ import mb.scopegraph.resolution.RSubEnv;
 import mb.scopegraph.resolution.RVar;
 import mb.scopegraph.resolution.State;
 import mb.scopegraph.resolution.StateMachine;
+import mb.scopegraph.schema.Bound;
+import mb.scopegraph.schema.Cardinality;
+import mb.scopegraph.schema.Schema;
+import mb.scopegraph.schema.SchemaDecl;
+import mb.scopegraph.schema.SchemaEdge;
 import mb.statix.arithmetic.ArithTerms;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;
@@ -912,5 +918,66 @@ public class StatixTerms {
         ).match(pathTerm);
         // @formatter:on
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    public static IMatcher<Schema<ITerm, ITerm>> schema() {
+        return M.appl3("SGSchema", M.listElems(schemaEdge()), M.listElems(schemaDecl()), term(),
+                (appl, edges, decls, vars) -> {
+                    final Schema.Builder<ITerm, ITerm> builder = Schema.newBuilder();
+                    edges.forEach(builder::addEdge);
+                    decls.forEach(builder::addDecl);
+                    return builder.build();
+                });
+    }
+
+    private static IMatcher<SchemaEdge<ITerm, ITerm>> schemaEdge() {
+        return M.appl3("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()),
+                (appl, sources, lbl, targets) -> {
+                    SchemaEdge.Builder<ITerm, ITerm> builder = SchemaEdge.builder(lbl);
+                    sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
+                    targets.forEach(k_c -> builder.addTarget(k_c._1(), k_c._2()));
+                    return builder.build();
+                });
+    }
+
+    private static IMatcher<SchemaDecl<ITerm, ITerm>> schemaDecl() {
+        return M.appl3("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()),
+                (appl, sources, lbl, relKinds) -> {
+                    SchemaDecl.Builder<ITerm, ITerm> builder = SchemaDecl.builder(lbl);
+                    sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
+                    IntStream.range(0, relKinds.size()).forEach(idx -> {
+                        relKinds.get(idx).ifPresent(kcs -> {
+                            kcs.forEach(k_c -> {
+                                builder.addValue(idx, k_c._1(), k_c._2());
+                            });
+                        });
+                    });
+                    return builder.build();
+                });
+    }
+
+    private static IMatcher<Optional<List<Tuple2<ITerm, Cardinality>>>> relKinds() {
+        // @formatter:off
+        return M.cases(
+                M.appl0("DData", __ -> Optional.empty()),
+                M.appl1("Dscope", M.listElems(kindVar()), (appl, kcs) -> Optional.of(kcs))
+        );
+        // @formatter:on
+    }
+
+    private static IMatcher<Tuple2<ITerm, Cardinality>> kindVar() {
+        return M.appl2("ScopeKindWithCard", M.term(), cardinality(), (appl, kind, card) -> Tuple2.of(kind, card));
+    }
+
+    private static IMatcher<Cardinality> cardinality() {
+        return M.appl2("Cardinality", bound(), bound(), (appl, lower, upper) -> new Cardinality(lower, upper));
+    }
+
+    private static IMatcher<Bound> bound() {
+        return M.cases(M.appl1("BNum", M.integerValue(), (appl, n) -> Bound.finite(n)),
+                M.appl0("INF", __ -> Bound.infinite()));
+    }
+
 
 }
