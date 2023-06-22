@@ -40,7 +40,6 @@ public class compute_schema_0_0 extends Strategy {
         final IStrategoTerm vars = args.get(4);
         final ITermFactory TF = context.getFactory();
 
-
         return new Command(TF).run(types, edges, decls, constraints, vars);
     }
 
@@ -108,30 +107,54 @@ public class compute_schema_0_0 extends Strategy {
             //    are propagated through all predicate calls.
 
             // Variables to be used as starting point for next phase.
+            log.info("*** Phase 1: propagate owned scopes ***");
             final HashSet<IStrategoTerm> nextPhase = new HashSet<>();
             for(IStrategoTerm type : types) {
                 propagateOwnedTypes(type, nextPhase);
             }
 
-            // 2. Close dominated scopes
-            for(IStrategoTerm type : types) {
-                closeDominated(type);
+            // 2. Close scopes with extension permission
+            log.info("*** Phase 2: close owned scopes ***");
+            final Set<IStrategoTerm> downPreds = new HashSet<>();
+            //    a. edges
+            for(IStrategoTerm var : edges.getSubterms()) {
+                closeOwned(mkVariable(var.getSubterm(0)), downPreds);
+            }
+            //    b. decls
+            for(IStrategoTerm var : decls.getSubterms()) {
+                closeOwned(mkVariable(var.getSubterm(2)), downPreds);
+            }
+            //    c. transitive
+            for(IStrategoTerm pvar : downPreds) {
+                closeOwnedTransitive(pvar);
             }
 
             // 3. Propagate remainder of constraints
-            final Map<IStrategoTerm, Set<IStrategoTerm>> nextNodeInfo = new HashMap<>();
+            log.info("*** Phase 3: close unowned scope references ***");
+            log.info("mext phase: {} ", nextPhase);
             for(IStrategoTerm var : nextPhase) {
-                propagateRemoteTypes(var);
+                propagateRemoteTypes(var, TraversalContext.of());
             }
 
             // 4. Mark scopes with unknown origin
+            log.info("*** Phase 4: mark unknown scopes ***");
             final IStrategoTerm UNKNOWN = TF.makeAppl("Wld");
             for(IStrategoTerm var : vars) {
-                if(!nextNodeInfo.containsKey(var) && !nextNodeInfo.containsKey(var)) {
-                    propagateUnknown(var, UNKNOWN);
+                if(!nodeInfo.hasCardinality(var)) {
+                    propagateUnknown(var, UNKNOWN, TraversalContext.of());
                 }
             }
 
+            // Log nodeInfo
+            log.info("*** Logging node info ***");
+            for(IStrategoTerm var : cg.nodes) {
+                log.info("{} - info:", var);
+                for(Map.Entry<IStrategoTerm, Cardinality> type : nodeInfo.getCardinalities(var).entrySet()) {
+                    log.info("- {}: {}.", type.getKey(), type.getValue());
+                }
+            }
+
+            log.info("*** Phase 5: Build Scheme ***");
             // 5. Build Scheme
             //    a. edges
             final IStrategoTerm edgesTerm = TF.makeAppl("SGEdges", TF.makeList(
@@ -143,7 +166,7 @@ public class compute_schema_0_0 extends Strategy {
 
             //    c. scheme vars
             final IStrategoTerm varsTerm = TF.makeAppl("SchemeVars",
-                    TF.makeList(vars.getSubterms().stream()
+                    TF.makeList(cg.nodes.stream()
                             .map(var -> TF.makeAppl("SchemeVar", var, buildScopeKindCardList(var)))
                             .toArray(IStrategoTerm[]::new)));
 
@@ -165,16 +188,16 @@ public class compute_schema_0_0 extends Strategy {
         // Phase 1. Propagate info of owned scopes to all positions where it will propagate with certainty.
 
         private void propagateOwnedTypes(IStrategoTerm type, Set<IStrategoTerm> nextPhase) {
-            propagateOwnedTypes(mkVariable(type), type, Cardinality.ONE, OwnedContext.of(), nextPhase);
+            propagateOwnedTypes(mkVariable(type), type, Cardinality.ONE, TraversalContext.of(), nextPhase);
         }
 
-        private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Cardinality card, OwnedContext ctx,
+        private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Cardinality card, TraversalContext ctx,
                 Set<IStrategoTerm> nextPhase) {
             final Cardinality prevCard = nodeInfo.getCardinalityOrDefault(var, type, Cardinality.ZERO);
 
             // 1. Update the current cardinality
             final Cardinality newCard;
-            final OwnedContext newContext;
+            final TraversalContext newContext;
             if(ctx.visited(var)) {
                 // cycle in 'call graph': unbounded recursion
                 if(cg.directedEdges.incomingEdges(var).elementSet().size() == 1 && prevCard.getLower() != 0) {
@@ -183,7 +206,7 @@ public class compute_schema_0_0 extends Strategy {
                 } else {
                     newCard = Cardinality.ZERO2INFINITE;
                 }
-                newContext = OwnedContext.of();
+                newContext = ctx.reset();
             } else {
                 newCard = card;
                 newContext = ctx.withVisited(var);
@@ -258,7 +281,7 @@ public class compute_schema_0_0 extends Strategy {
         }
 
         private void propagateOwnedTypes(Edge<IStrategoTerm> edge, IStrategoTerm type, Cardinality card,
-                OwnedContext ctx, Set<IStrategoTerm> nextPhase) {
+                TraversalContext ctx, Set<IStrategoTerm> nextPhase) {
             if(ctx.visited(edge.invert())) {
                 ctx.log("STOP: edge already traversed in other direction.");
                 return;
@@ -276,18 +299,6 @@ public class compute_schema_0_0 extends Strategy {
             // Properly manage distribution of scopes over edge instantiation.
             if(isPredicateArg(target) && edge.getDirection() == Direction.FORWARD) {
                 final MultiSet.Immutable<IStrategoTerm> inEdges = cg.directedEdges.incomingEdges(target);
-                boolean inputsDetermined = inEdges.elementSet().stream().allMatch(src -> {
-                    return nodeInfo.hasCardinality(src, type);
-                });
-
-                if(!inputsDetermined) {
-                    // FIXME: invalid on recursive predicates!
-                    ctx.log("STOP: not all inputs to {} determined.", target);
-                    nextPhase.add(target);
-                    return;
-                } else {
-                    nextPhase.remove(target);
-                }
 
                 // If all incoming edges are known, this argument is fully determined by owned scopes.
                 // Therefore, we propagate the info of all incoming types.
@@ -303,6 +314,13 @@ public class compute_schema_0_0 extends Strategy {
                         final int count = inEdge.getValue();
                         final Cardinality oldCard = nodeInfo.getCardinality(inSource, tp);
                         final boolean currentSource = inSource.equals(source) && type.equals(tp);
+                        if(oldCard == null) {
+                            if(currentSource) {
+                                ctx.log("- ignoring unknown value {}.", inSource);
+                                throw new IllegalStateException();
+                            }
+                            continue;
+                        }
                         final Cardinality edgeCard =
                                 (currentSource ? card.mult(edge.getWeigth()) : oldCard.mult(count));
                         if(aggCard == null) {
@@ -324,8 +342,8 @@ public class compute_schema_0_0 extends Strategy {
                 }
             } else {
                 // Update direction of undirected edges
-                if(isConstructorArg(target)
-                        || isRelationArg(target) && edge.getDirection().equals(Direction.UNDIRECTED)) {
+                if((isConstructorArg(target) || isRelationArg(target))
+                        && edge.getDirection().equals(Direction.UNDIRECTED)) {
                     cg.makeDirected(source, target);
                 }
 
@@ -337,27 +355,126 @@ public class compute_schema_0_0 extends Strategy {
 
         // Phase 2. Close Dominated scopes
 
+        private void closeOwned(IStrategoTerm var, Set<IStrategoTerm> downPreds) {
+            closeOwned(var, TraversalContext.of(), downPreds);
+        }
 
-        private void closeDominated(IStrategoTerm type) {
-            // TODO Auto-generated method stub
+        private void closeOwned(IStrategoTerm var, TraversalContext ctx, Set<IStrategoTerm> downPreds) {
+            if(isRelationArg(var) || isConstructorArg(var) || nodeInfo.isClosed(var)) {
+                return;
+            }
 
+            ctx.log("closing {}.", var);
+            nodeInfo.close(var);
+
+            for(IStrategoTerm tgt : cg.directedEdges.incomingEdges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.backward(var, tgt, cg.directedEdges.count(tgt, var));
+                if(!ctx.visited(edge.invert())) {
+                    closeOwned(tgt, ctx.withVisited(edge).increaseIndent(), downPreds);
+                }
+            }
+
+            for(IStrategoTerm tgt : cg.undirectedEdges.edges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.undirected(var, tgt, cg.undirectedEdges.count(tgt, var));
+                if(!ctx.visited(edge.invert())) {
+                    closeOwned(tgt, ctx.withVisited(edge).increaseIndent(), downPreds);
+                }
+            }
+
+            if(isPredicateArg(var)) {
+                downPreds.add(var);
+            }
+
+
+        }
+
+        private void closeOwnedTransitive(IStrategoTerm var) {
+            closeOwnedTransitiveDown(var, TraversalContext.of());
+        }
+
+        private void closeOwnedTransitive(IStrategoTerm var, TraversalContext ctx) {
+            for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.forward(var, tgt, cg.directedEdges.count(var, tgt));
+                if(!ctx.visited(edge.invert())) {
+                    closeOwnedTransitiveDown(tgt, ctx.withVisited(edge).increaseIndent());
+                }
+            }
+
+            for(IStrategoTerm tgt : cg.directedEdges.incomingEdges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.backward(var, tgt, cg.directedEdges.count(tgt, var));
+                if(ctx.visited(edge.invert())) {
+                    closeOwnedTransitiveUp(tgt, ctx.withVisited(edge).increaseIndent());
+                }
+            }
+
+            for(IStrategoTerm tgt : cg.undirectedEdges.edges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.undirected(var, tgt, cg.undirectedEdges.count(tgt, var));
+                if(ctx.visited(edge.invert())) {
+                    closeOwnedTransitiveDown(tgt, ctx.withVisited(edge).increaseIndent());
+                }
+            }
+        }
+
+        private void closeOwnedTransitiveDown(IStrategoTerm var, TraversalContext ctx) {
+            if(isRelationArg(var) || isConstructorArg(var)) {
+                ctx.log("STOP: {} not closable.", var);
+                return;
+            }
+            if(nodeInfo.isClosed(var)) {
+                ctx.log("STOP: {} already closed.", var);
+                return;
+            }
+
+            if(isPredicateArg(var)
+                    && !cg.directedEdges.incomingEdges(var).elementSet().stream().anyMatch(nodeInfo::isClosed)) {
+                // No proof (yet) that _all_ inputs are closed.
+                ctx.log("STOP: {} not all inputs closed.", var);
+                return;
+            }
+
+            ctx.log("closing (transitive-down) {}.", var);
+            nodeInfo.close(var);
+            closeOwnedTransitive(var, ctx);
+        }
+
+        private void closeOwnedTransitiveUp(IStrategoTerm var, TraversalContext ctx) {
+            if(isRelationArg(var) || isConstructorArg(var)) {
+                ctx.log("STOP: {} not closable.", var);
+                return;
+            }
+            if(nodeInfo.isClosed(var)) {
+                ctx.log("STOP: {} already closed.", var);
+                return;
+            }
+
+
+            if(isPredicateArg(var)
+                    && !cg.directedEdges.outgoingEdges(var).elementSet().stream().anyMatch(nodeInfo::isClosed)) {
+                ctx.log("STOP: {} not all outputs closed.", var);
+                return;
+            }
+
+            ctx.log("closing (transitive-up) {}.", var);
+            nodeInfo.close(var);
+            closeOwnedTransitive(var, ctx);
         }
 
         // Phase 3. Propagate info obtained through queries or term matching/building.
 
-        private void propagateRemoteTypes(IStrategoTerm var) {
+        private void propagateRemoteTypes(IStrategoTerm var, TraversalContext ctx) {
+            log.info("{}: propagating remote types.", var);
             for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
+                log.info("- target : {}", tgt);
                 if(nodeInfo.isClosed(tgt)) {
-                    log.info("STOP: node {} instantiated by owned scope.", var);
+                    ctx.log("  STOP: {} closed.", tgt);
                     continue;
                 }
-                for(IStrategoTerm type : nodeInfo.getCardinalities(tgt).keySet()) {
-                    if(!nodeInfo.setCardinality(tgt, type, Cardinality.ZERO2INFINITE)
-                            .equals(Cardinality.ZERO2INFINITE)) {
-                        log.info("Propagating {}.", tgt);
-                        propagateRemoteTypes(tgt);
+                for(IStrategoTerm type : nodeInfo.getCardinalities(var).keySet()) {
+                    if(!Cardinality.ZERO2INFINITE
+                            .equals(nodeInfo.setCardinality(tgt, type, Cardinality.ZERO2INFINITE))) {
+                        propagateRemoteTypes(tgt, ctx.increaseIndent());
                     } else {
-                        log.info("Reached fixpoint at {}.", tgt);
+                        ctx.log("  Reached fixpoint at {}.", tgt);
                     }
                 }
             }
@@ -365,16 +482,17 @@ public class compute_schema_0_0 extends Strategy {
 
         // Phase 3. Propagate unknown node info
 
-        private void propagateUnknown(IStrategoTerm var, IStrategoTerm type) {
+        private void propagateUnknown(IStrategoTerm var, IStrategoTerm type, TraversalContext ctx) {
             if(nodeInfo.hasCardinality(var, type)) {
-                log.info("STOP: encounter processed scope: {}.", var);
+                ctx.log("STOP: {} processed.", var);
                 return;
             }
-            if(nodeInfo.isClosed(var) && !isConstructorArg(var) && !isRelationArg(var)) {
-                log.info("STOP: encounter owned scope: {}.", var);
+            if(nodeInfo.isClosed(var)) {
+                ctx.log("STOP: {} closed.", var);
                 return;
             }
 
+            ctx.log("Set {}.{} to {}.", var, type, Cardinality.ZERO2INFINITE);
             nodeInfo.setCardinality(var, type, Cardinality.ZERO2INFINITE);
 
             final HashSet<IStrategoTerm> tgts = new HashSet<>();
@@ -383,7 +501,7 @@ public class compute_schema_0_0 extends Strategy {
             tgts.addAll(cg.undirectedEdges.edges(var).elementSet());
 
             for(IStrategoTerm tgt : tgts) {
-                propagateUnknown(tgt, type);
+                propagateUnknown(tgt, type, ctx.increaseIndent());
             }
         }
 
@@ -429,7 +547,7 @@ public class compute_schema_0_0 extends Strategy {
 
     }
 
-    private static class OwnedContext {
+    private static class TraversalContext {
 
         private final Immutable<IStrategoTerm> visitedNodes;
 
@@ -437,7 +555,7 @@ public class compute_schema_0_0 extends Strategy {
 
         private final String indent;
 
-        private OwnedContext(Immutable<IStrategoTerm> visitedNodes, Immutable<Edge<IStrategoTerm>> visitedEdges,
+        private TraversalContext(Immutable<IStrategoTerm> visitedNodes, Immutable<Edge<IStrategoTerm>> visitedEdges,
                 String indent) {
             this.visitedNodes = visitedNodes;
             this.visitedEdges = visitedEdges;
@@ -452,24 +570,28 @@ public class compute_schema_0_0 extends Strategy {
             return visitedEdges.contains(edge);
         }
 
-        public OwnedContext withVisited(IStrategoTerm var) {
-            return new OwnedContext(visitedNodes.__insert(var), visitedEdges, indent);
+        public TraversalContext withVisited(IStrategoTerm var) {
+            return new TraversalContext(visitedNodes.__insert(var), visitedEdges, indent);
         }
 
-        public OwnedContext withVisited(Edge<IStrategoTerm> edge) {
-            return new OwnedContext(visitedNodes, visitedEdges.__insert(edge), indent);
+        public TraversalContext withVisited(Edge<IStrategoTerm> edge) {
+            return new TraversalContext(visitedNodes, visitedEdges.__insert(edge), indent);
         }
 
-        public OwnedContext increaseIndent() {
-            return new OwnedContext(visitedNodes, visitedEdges, indent + "  ");
+        public TraversalContext increaseIndent() {
+            return new TraversalContext(visitedNodes, visitedEdges, indent + "  ");
         }
 
-        public static OwnedContext of() {
-            return new OwnedContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), "");
+        public TraversalContext reset() {
+            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), indent);
+        }
+
+        public static TraversalContext of() {
+            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), "");
         }
 
         public void log(String fmt, Object... args) {
-            log.info(indent + fmt, args);
+            // log.info(indent + fmt, args);
         }
 
     }
@@ -581,6 +703,10 @@ public class compute_schema_0_0 extends Strategy {
 
         public boolean hasCardinality(V var, T type) {
             return getMapValue(nodeInfo, var).containsKey(type);
+        }
+
+        public boolean hasCardinality(V var) {
+            return !getMapValue(nodeInfo, var).isEmpty();
         }
 
         public Cardinality getCardinality(V var, T type) {
