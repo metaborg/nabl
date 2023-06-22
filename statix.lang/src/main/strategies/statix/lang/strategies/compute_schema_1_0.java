@@ -150,8 +150,8 @@ public class compute_schema_1_0 extends Strategy {
                 }
             }
 
-            log.info("*** Phase 5: build scheme ***");
-            // 5. Build Scheme
+            log.info("*** Phase 5: build schema ***");
+            // 5. Build Schema
             //    a. edges
             final IStrategoTerm edgesTerm = TF.makeAppl("SGEdges", TF.makeList(
                     edges.getSubterms().stream().map(edge -> buildEdgeTerm(edge)).toArray(IStrategoTerm[]::new)));
@@ -160,13 +160,13 @@ public class compute_schema_1_0 extends Strategy {
             final IStrategoTerm declsTerm = TF.makeAppl("SGDecls", TF.makeList(
                     decls.getSubterms().stream().map(decl -> buildDeclTerm(decl)).toArray(IStrategoTerm[]::new)));
 
-            //    c. scheme vars
-            final IStrategoTerm varsTerm = TF.makeAppl("SchemeVars",
+            //    c. schema vars
+            final IStrategoTerm varsTerm = TF.makeAppl("SchemaVars",
                     TF.makeList(cg.nodes.stream()
-                            .map(var -> TF.makeAppl("SchemeVar", var, buildScopeKindCardList(var)))
+                            .map(var -> TF.makeAppl("SchemaVar", var, buildScopeKindCardList(var)))
                             .toArray(IStrategoTerm[]::new)));
 
-            return TF.makeAppl("SGScheme", edgesTerm, declsTerm, varsTerm);
+            return TF.makeAppl("SGSchema", edgesTerm, declsTerm, varsTerm);
         }
 
         private void createConstraintGraph(IStrategoTerm constraints) {
@@ -501,7 +501,7 @@ public class compute_schema_1_0 extends Strategy {
             }
         }
 
-        // Phase 5. Build Scheme Term
+        // Phase 5. Build Schema Term
 
         public IStrategoTerm buildEdgeTerm(IStrategoTerm edge) {
             final IStrategoTerm src = mkVariable(edge.getSubterm(0));
