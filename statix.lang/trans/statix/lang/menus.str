@@ -109,11 +109,20 @@ rules
     with sdfg := <generate-combined-aterm; Snd; extract-spec-sdfg> input
     with filename := <guarantee-extension(|"sdfgc.aterm")> path
 
+  get-sdfg(debug) = generate-combined-aterm; Snd; extract-sdfg(debug)
+
   show-sdfg: input@(_, _, ast, path, project-path) -> (filename, sdfg)
-    with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
+    with sdfg := <get-sdfg(fail)> input
     with filename := <guarantee-extension(|"sdfg.aterm")> path
 
   format-sdfg: input@(_, _, ast, path, project-path) -> (filename, result)
-    with sdfg := <generate-combined-aterm; Snd; extract-sdfg> input
-    with filename := <guarantee-extension(|"sdfg")> path;
-         result   := <pp-Statix-string> sdfg
+    with result := <get-sdfg(fail); pp-Statix-string> input
+    with filename := <guarantee-extension(|"sdfg")> path
+
+  show-sdfg-debug: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <get-sdfg(id)> input
+    with filename := <guarantee-extension(|"sdfg.aterm")> path
+
+  format-sdfg-debug: input@(_, _, ast, path, project-path) -> (filename, result)
+    with result := <get-sdfg(id); pp-Statix-string> input
+    with filename := <guarantee-extension(|"sdfg")> path

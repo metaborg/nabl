@@ -11,7 +11,7 @@ public class InteropRegisterer extends JavaInteropRegisterer {
             group_by_2_0.instance,
             set_fixed_point_0_1.instance,
             // scope graph schemas
-            compute_schema_0_0.instance
+            compute_schema_1_0.instance
         });
         // @formatter:on
     }

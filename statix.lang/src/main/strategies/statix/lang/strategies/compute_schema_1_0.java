@@ -24,13 +24,13 @@ import org.metaborg.util.log.LoggerUtils;
 
 import io.usethesource.capsule.Set.Immutable;
 
-public class compute_schema_0_0 extends Strategy {
+public class compute_schema_1_0 extends Strategy {
 
-    private static final ILogger log = LoggerUtils.logger(compute_schema_0_0.class);
+    private static final ILogger log = LoggerUtils.logger(compute_schema_1_0.class);
 
-    public static final Strategy instance = new compute_schema_0_0();
+    public static final Strategy instance = new compute_schema_1_0();
 
-    @Override public IStrategoTerm invoke(Context context, IStrategoTerm current) {
+    @Override public IStrategoTerm invoke(Context context, IStrategoTerm current, Strategy s_debug) {
         // 0. Initialization
         final IStrategoTuple args = TermUtils.asTuple(current).get();
         final IStrategoTerm types = args.get(0);
@@ -38,9 +38,11 @@ public class compute_schema_0_0 extends Strategy {
         final IStrategoTerm decls = args.get(2);
         final IStrategoTerm constraints = args.get(3);
         final IStrategoTerm vars = args.get(4);
-        final ITermFactory TF = context.getFactory();
 
-        return new Command(TF).run(types, edges, decls, constraints, vars);
+        final ITermFactory TF = context.getFactory();
+        final boolean debug = s_debug.invoke(context, current) != null;
+
+        return new Command(TF, debug).run(types, edges, decls, constraints, vars);
     }
 
 
@@ -92,15 +94,16 @@ public class compute_schema_0_0 extends Strategy {
 
         private final ITermFactory TF;
 
-        public Command(ITermFactory TF) {
+        private final boolean debug;
+
+        public Command(ITermFactory TF, boolean debug) {
             this.TF = TF;
+            this.debug = debug;
         }
 
         public IStrategoTerm run(IStrategoTerm types, IStrategoTerm edges, IStrategoTerm decls,
                 IStrategoTerm constraints, IStrategoTerm vars) {
             createConstraintGraph(constraints);
-
-            log.info("Constraint graph: {}.", cg);
 
             // 1. Forward propagating node type info
             //    This ensures that the types of all _owner_ scopes (and unification assertions thereof)
@@ -131,9 +134,8 @@ public class compute_schema_0_0 extends Strategy {
 
             // 3. Propagate remainder of constraints
             log.info("*** Phase 3: close unowned scope references ***");
-            log.info("mext phase: {} ", nextPhase);
             for(IStrategoTerm var : nextPhase) {
-                propagateRemoteTypes(var, TraversalContext.of());
+                propagateRemoteTypes(var, TraversalContext.of(debug));
             }
 
             // 4. Mark scopes with unknown origin
@@ -141,20 +143,11 @@ public class compute_schema_0_0 extends Strategy {
             final IStrategoTerm UNKNOWN = TF.makeAppl("Wld");
             for(IStrategoTerm var : vars) {
                 if(!nodeInfo.hasCardinality(var)) {
-                    propagateUnknown(var, UNKNOWN, TraversalContext.of());
+                    propagateUnknown(var, UNKNOWN, TraversalContext.of(debug));
                 }
             }
 
-            // Log nodeInfo
-            log.info("*** Logging node info ***");
-            for(IStrategoTerm var : cg.nodes) {
-                log.info("{} - info:", var);
-                for(Map.Entry<IStrategoTerm, Cardinality> type : nodeInfo.getCardinalities(var).entrySet()) {
-                    log.info("- {}: {}.", type.getKey(), type.getValue());
-                }
-            }
-
-            log.info("*** Phase 5: Build Scheme ***");
+            log.info("*** Phase 5: build scheme ***");
             // 5. Build Scheme
             //    a. edges
             final IStrategoTerm edgesTerm = TF.makeAppl("SGEdges", TF.makeList(
@@ -188,7 +181,7 @@ public class compute_schema_0_0 extends Strategy {
         // Phase 1. Propagate info of owned scopes to all positions where it will propagate with certainty.
 
         private void propagateOwnedTypes(IStrategoTerm type, Set<IStrategoTerm> nextPhase) {
-            propagateOwnedTypes(mkVariable(type), type, Cardinality.ONE, TraversalContext.of(), nextPhase);
+            propagateOwnedTypes(mkVariable(type), type, Cardinality.ONE, TraversalContext.of(debug), nextPhase);
         }
 
         private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Cardinality card, TraversalContext ctx,
@@ -356,7 +349,7 @@ public class compute_schema_0_0 extends Strategy {
         // Phase 2. Close Dominated scopes
 
         private void closeOwned(IStrategoTerm var, Set<IStrategoTerm> downPreds) {
-            closeOwned(var, TraversalContext.of(), downPreds);
+            closeOwned(var, TraversalContext.of(debug), downPreds);
         }
 
         private void closeOwned(IStrategoTerm var, TraversalContext ctx, Set<IStrategoTerm> downPreds) {
@@ -389,7 +382,7 @@ public class compute_schema_0_0 extends Strategy {
         }
 
         private void closeOwnedTransitive(IStrategoTerm var) {
-            closeOwnedTransitiveDown(var, TraversalContext.of());
+            closeOwnedTransitiveDown(var, TraversalContext.of(debug));
         }
 
         private void closeOwnedTransitive(IStrategoTerm var, TraversalContext ctx) {
@@ -462,9 +455,9 @@ public class compute_schema_0_0 extends Strategy {
         // Phase 3. Propagate info obtained through queries or term matching/building.
 
         private void propagateRemoteTypes(IStrategoTerm var, TraversalContext ctx) {
-            log.info("{}: propagating remote types.", var);
+            ctx.log("{}: propagating remote types.", var);
             for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
-                log.info("- target : {}", tgt);
+                ctx.log("- target : {}", tgt);
                 if(nodeInfo.isClosed(tgt)) {
                     ctx.log("  STOP: {} closed.", tgt);
                     continue;
@@ -555,11 +548,14 @@ public class compute_schema_0_0 extends Strategy {
 
         private final String indent;
 
+        private final boolean debug;
+
         private TraversalContext(Immutable<IStrategoTerm> visitedNodes, Immutable<Edge<IStrategoTerm>> visitedEdges,
-                String indent) {
+                String indent, boolean debug) {
             this.visitedNodes = visitedNodes;
             this.visitedEdges = visitedEdges;
             this.indent = indent;
+            this.debug = debug;
         }
 
         public boolean visited(IStrategoTerm var) {
@@ -571,27 +567,29 @@ public class compute_schema_0_0 extends Strategy {
         }
 
         public TraversalContext withVisited(IStrategoTerm var) {
-            return new TraversalContext(visitedNodes.__insert(var), visitedEdges, indent);
+            return new TraversalContext(visitedNodes.__insert(var), visitedEdges, indent, debug);
         }
 
         public TraversalContext withVisited(Edge<IStrategoTerm> edge) {
-            return new TraversalContext(visitedNodes, visitedEdges.__insert(edge), indent);
+            return new TraversalContext(visitedNodes, visitedEdges.__insert(edge), indent, debug);
         }
 
         public TraversalContext increaseIndent() {
-            return new TraversalContext(visitedNodes, visitedEdges, indent + "  ");
+            return new TraversalContext(visitedNodes, visitedEdges, indent + "  ", debug);
         }
 
         public TraversalContext reset() {
-            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), indent);
+            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), indent, debug);
         }
 
-        public static TraversalContext of() {
-            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), "");
+        public static TraversalContext of(boolean debug) {
+            return new TraversalContext(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), "", debug);
         }
 
         public void log(String fmt, Object... args) {
-            // log.info(indent + fmt, args);
+            if(debug) {
+                log.info(indent + fmt, args);
+            }
         }
 
     }
