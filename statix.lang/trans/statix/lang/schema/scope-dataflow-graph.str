@@ -25,12 +25,14 @@ signature
 
 rules
 
-  extract-sdfg(debug): spec -> schema
+  extract-sdfg(debug) = extract-sdfg(debug|[])
+
+  extract-sdfg(debug|glob*): spec -> schema
     with scope*  := <extract-scopes> spec
     with edge*   := <extract-edges> spec
     with decl*   := <extract-decls> spec
     with sdfg-c* := <extract-spec-sdfg> spec
-    with schema  := <compute-schema(debug)> (scope*, edge*, decl*, sdfg-c*)
+    with schema  := <compute-schema(debug)> (scope*, edge*, decl*, sdfg-c*, glob*)
 
 rules
 

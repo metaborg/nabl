@@ -37,13 +37,13 @@ public class compute_schema_1_0 extends Strategy {
         final IStrategoTerm edges = args.get(1);
         final IStrategoTerm decls = args.get(2);
         final IStrategoTerm constraints = args.get(3);
+        final IStrategoTerm globs = args.get(4);
 
         final ITermFactory TF = context.getFactory();
         final boolean debug = s_debug.invoke(context, current) != null;
 
-        return new Command(TF, debug).run(types, edges, decls, constraints);
+        return new Command(TF, debug).run(types, edges, decls, constraints, globs);
     }
-
 
 
     // Utilities
@@ -101,7 +101,7 @@ public class compute_schema_1_0 extends Strategy {
         }
 
         public IStrategoTerm run(IStrategoTerm types, IStrategoTerm edges, IStrategoTerm decls,
-                IStrategoTerm constraints) {
+                IStrategoTerm constraints, IStrategoTerm globs) {
             createConstraintGraph(constraints);
 
             // 1. Forward propagating node type info
@@ -112,7 +112,11 @@ public class compute_schema_1_0 extends Strategy {
             log.info("*** Phase 1: propagate owned scopes ***");
             final HashSet<IStrategoTerm> nextPhase = new HashSet<>();
             for(IStrategoTerm type : types) {
-                propagateOwnedTypes(type, nextPhase);
+                propagateOwnedTypes(mkVariable(type), mkVarKind(type), nextPhase);
+            }
+            final IStrategoTerm globKind = TF.makeAppl("Glob");
+            for(IStrategoTerm glob : globs) {
+                propagateOwnedTypes(glob, globKind, nextPhase);
             }
 
             // 2. Close scopes with extension permission
@@ -179,8 +183,8 @@ public class compute_schema_1_0 extends Strategy {
 
         // Phase 1. Propagate info of owned scopes to all positions where it will propagate with certainty.
 
-        private void propagateOwnedTypes(IStrategoTerm type, Set<IStrategoTerm> nextPhase) {
-            propagateOwnedTypes(mkVariable(type), mkVarKind(type), Cardinality.ONE, TraversalContext.of(debug), nextPhase);
+        private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Set<IStrategoTerm> nextPhase) {
+            propagateOwnedTypes(var, type, Cardinality.ONE, TraversalContext.of(debug), nextPhase);
         }
 
         private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Cardinality card, TraversalContext ctx,
