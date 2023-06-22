@@ -37,12 +37,11 @@ public class compute_schema_1_0 extends Strategy {
         final IStrategoTerm edges = args.get(1);
         final IStrategoTerm decls = args.get(2);
         final IStrategoTerm constraints = args.get(3);
-        final IStrategoTerm vars = args.get(4);
 
         final ITermFactory TF = context.getFactory();
         final boolean debug = s_debug.invoke(context, current) != null;
 
-        return new Command(TF, debug).run(types, edges, decls, constraints, vars);
+        return new Command(TF, debug).run(types, edges, decls, constraints);
     }
 
 
@@ -102,7 +101,7 @@ public class compute_schema_1_0 extends Strategy {
         }
 
         public IStrategoTerm run(IStrategoTerm types, IStrategoTerm edges, IStrategoTerm decls,
-                IStrategoTerm constraints, IStrategoTerm vars) {
+                IStrategoTerm constraints) {
             createConstraintGraph(constraints);
 
             // 1. Forward propagating node type info
@@ -140,8 +139,8 @@ public class compute_schema_1_0 extends Strategy {
 
             // 4. Mark scopes with unknown origin
             log.info("*** Phase 4: mark unknown scopes ***");
-            final IStrategoTerm UNKNOWN = TF.makeAppl("Wld");
-            for(IStrategoTerm var : vars) {
+            final IStrategoTerm UNKNOWN = TF.makeAppl("Unknown");
+            for(IStrategoTerm var : cg.nodes) {
                 if(!nodeInfo.hasCardinality(var)) {
                     propagateUnknown(var, UNKNOWN, TraversalContext.of(debug));
                 }
@@ -181,7 +180,7 @@ public class compute_schema_1_0 extends Strategy {
         // Phase 1. Propagate info of owned scopes to all positions where it will propagate with certainty.
 
         private void propagateOwnedTypes(IStrategoTerm type, Set<IStrategoTerm> nextPhase) {
-            propagateOwnedTypes(mkVariable(type), type, Cardinality.ONE, TraversalContext.of(debug), nextPhase);
+            propagateOwnedTypes(mkVariable(type), mkVarKind(type), Cardinality.ONE, TraversalContext.of(debug), nextPhase);
         }
 
         private void propagateOwnedTypes(IStrategoTerm var, IStrategoTerm type, Cardinality card, TraversalContext ctx,
@@ -536,6 +535,10 @@ public class compute_schema_1_0 extends Strategy {
 
         public IStrategoTerm mkVariable(IStrategoTerm var) {
             return TF.makeAppl("Variable", var);
+        }
+
+        public IStrategoTerm mkVarKind(IStrategoTerm var) {
+            return TF.makeAppl("KVar", var);
         }
 
     }
