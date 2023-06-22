@@ -922,27 +922,35 @@ public class StatixTerms {
     ///////////////////////////////////////////////////////////////////////////
 
     public static IMatcher<Schema<ITerm, ITerm>> schema() {
-        return M.appl3("SGSchema", M.listElems(schemaEdge()), M.listElems(schemaDecl()), term(),
+        return M.req("SGSchema", M.appl3("SGSchema", schemaEdges(), schemaDecls(), M.term(),
                 (appl, edges, decls, vars) -> {
                     final Schema.Builder<ITerm, ITerm> builder = Schema.newBuilder();
                     edges.forEach(builder::addEdge);
                     decls.forEach(builder::addDecl);
                     return builder.build();
-                });
+                }));
+    }
+
+    private static IMatcher<List<SchemaEdge<ITerm, ITerm>>> schemaEdges() {
+        return M.req("SGEdges", M.appl1("SGEdges", M.listElems(schemaEdge()), (appl, edges) -> edges));
     }
 
     private static IMatcher<SchemaEdge<ITerm, ITerm>> schemaEdge() {
-        return M.appl3("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()),
+        return M.req("SGEdge", M.appl3("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()),
                 (appl, sources, lbl, targets) -> {
                     final SchemaEdge.Builder<ITerm, ITerm> builder = SchemaEdge.builder(lbl);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     targets.forEach(k_c -> builder.addTarget(k_c._1(), k_c._2()));
                     return builder.build();
-                });
+                }));
+    }
+
+    private static IMatcher<List<SchemaDecl<ITerm, ITerm>>> schemaDecls() {
+        return M.req("SGDecls", M.appl1("SGDecls", M.listElems(schemaDecl()), (appl, decls) -> decls));
     }
 
     private static IMatcher<SchemaDecl<ITerm, ITerm>> schemaDecl() {
-        return M.appl3("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()),
+        return M.req("SGDecl", M.appl3("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()),
                 (appl, sources, lbl, relKinds) -> {
                     final SchemaDecl.Builder<ITerm, ITerm> builder = SchemaDecl.builder(lbl);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
@@ -952,29 +960,29 @@ public class StatixTerms {
                         }));
                     });
                     return builder.build();
-                });
+                }));
     }
 
     private static IMatcher<Optional<List<Tuple2<ITerm, Cardinality>>>> relKinds() {
         // @formatter:off
-        return M.cases(
+        return M.req("RelKind", M.cases(
                 M.appl0("DData", __ -> Optional.empty()),
-                M.appl1("Dscope", M.listElems(kindVar()), (appl, kcs) -> Optional.of(kcs))
-        );
+                M.appl1("DScope", M.listElems(kindVar()), (appl, kcs) -> Optional.of(kcs))
+        ));
         // @formatter:on
     }
 
     private static IMatcher<Tuple2<ITerm, Cardinality>> kindVar() {
-        return M.appl2("ScopeKindWithCard", M.term(), cardinality(), (appl, kind, card) -> Tuple2.of(kind, card));
+        return M.req("SK/C", M.appl2("ScopeKindWithCard", M.term(), cardinality(), (appl, kind, card) -> Tuple2.of(kind, card)));
     }
 
     private static IMatcher<Cardinality> cardinality() {
-        return M.appl2("Cardinality", bound(), bound(), (appl, lower, upper) -> new Cardinality(lower, upper));
+        return M.req("Card", M.appl2("Cardinality", bound(), bound(), (appl, lower, upper) -> new Cardinality(lower, upper)));
     }
 
     private static IMatcher<Bound> bound() {
-        return M.cases(M.appl1("BNum", M.integerValue(), (appl, n) -> Bound.finite(n)),
-                M.appl0("INF", __ -> Bound.infinite()));
+        return M.req("Bound", M.cases(M.appl1("BNum", M.integerValue(), (appl, n) -> Bound.finite(n)),
+                M.appl0("INF", __ -> Bound.infinite())));
     }
 
 

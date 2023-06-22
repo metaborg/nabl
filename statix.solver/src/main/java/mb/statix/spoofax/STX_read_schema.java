@@ -10,10 +10,10 @@ import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.terms.ITerm;
 
-public class STX_read_scheme extends StatixPrimitive {
+public class STX_read_schema extends StatixPrimitive {
 
-    @Inject public STX_read_scheme() {
-        super(STX_read_scheme.class.getSimpleName(), 0);
+    @Inject public STX_read_schema() {
+        super(STX_read_schema.class.getSimpleName(), 0);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
