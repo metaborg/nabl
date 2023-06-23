@@ -119,8 +119,7 @@ public final class RuleSet implements Serializable {
         this.rules.keySet().forEach(name -> {
             final Immutable<Rule> orderIndependentRules = getOrderIndependentRules(name);
             if(!orderIndependentRules.isEmpty()) {
-                independentRules.computeIfAbsent(name, k -> new HashSet<>())
-                    .addAll(orderIndependentRules);
+                independentRules.put(name, orderIndependentRules);
             }
         });
         return independentRules;
