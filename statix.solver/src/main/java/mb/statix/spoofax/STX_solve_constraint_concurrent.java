@@ -9,7 +9,7 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;

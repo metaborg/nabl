@@ -9,7 +9,7 @@ import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import com.google.common.collect.Lists;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;

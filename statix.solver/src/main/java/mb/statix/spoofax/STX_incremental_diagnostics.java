@@ -15,7 +15,7 @@ import org.metaborg.util.future.IFuture;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
