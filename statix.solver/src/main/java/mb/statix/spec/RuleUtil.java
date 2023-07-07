@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -70,7 +69,7 @@ public class RuleUtil {
      *         tuple is true if this is the only match.
      */
     public static <E extends Throwable> Optional<Tuple3<Rule, ApplyResult, Boolean>> applyOrderedOne(
-            IUniDisunifier.Immutable state, SortedSet<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
+            IUniDisunifier.Immutable state, ImList.Immutable<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
             ApplyMode<E> mode, Safety safety) throws E {
         final List<Tuple2<Rule, ApplyResult>> results = applyOrdered(state, rules, args, cause, mode, safety, true);
         if(results.size() == 0) {
@@ -98,7 +97,7 @@ public class RuleUtil {
      * @return A list of apply results, up to and including the first unconditionally matching result.
      */
     public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
-            SortedSet<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety)
+            ImList.Immutable<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety)
             throws E {
         return applyOrdered(state, rules, args, cause, mode, safety, false);
     }
@@ -108,7 +107,7 @@ public class RuleUtil {
      * rules that could be applied. If onlyOne is true, returns at most two results.
      */
     private static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrdered(IUniDisunifier.Immutable unifier,
-            SortedSet<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety,
+            ImList.Immutable<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety,
             boolean onlyOne) throws E {
         final ImList.Mutable<Tuple2<Rule, ApplyResult>> results = ImList.Mutable.of();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
@@ -174,7 +173,7 @@ public class RuleUtil {
      *            the ordered set of rules for which to compute
      * @return the set of order independent rules
      */
-    public static Set.Immutable<Rule> computeOrderIndependentRules(SortedSet<Rule> rules) {
+    public static Set.Immutable<Rule> computeOrderIndependentRules(ImList.Immutable<Rule> rules) {
         final Set.Transient<Rule> newRules = CapsuleUtil.transientSet();
         final List<Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable>> guards = new ArrayList<>();
         RULE: for(Rule rule : rules) {

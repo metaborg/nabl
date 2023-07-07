@@ -1,18 +1,16 @@
 package mb.statix.spec;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
@@ -31,7 +29,7 @@ public final class RuleSet implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** The rules, ordered from most specific to least specific guard. */
-    private final Map.Immutable<String, SortedSet<Rule>> rules;
+    private final Map.Immutable<String, ImList.Immutable<Rule>> rules;
     /**
      * The independent rules. If a rule name is not in this map, an independent version of its rules has not yet been
      * created.
@@ -57,7 +55,7 @@ public final class RuleSet implements Serializable {
      * @param rules
      *            the multimap of rule names to rules, ordered from most specific to least specific guard
      */
-    public RuleSet(Map.Immutable<String, SortedSet<Rule>> rules) {
+    public RuleSet(Map.Immutable<String, ImList.Immutable<Rule>> rules) {
         this.rules = rules;
     }
 
@@ -68,7 +66,7 @@ public final class RuleSet implements Serializable {
      *
      * @return the map of rules
      */
-    public Map.Immutable<String, SortedSet<Rule>> getRuleMap() {
+    public Map.Immutable<String, ImList.Immutable<Rule>> getRuleMap() {
         return this.rules;
     }
 
@@ -89,7 +87,7 @@ public final class RuleSet implements Serializable {
      * @return all rules
      */
     public List<Rule> getAllRules() {
-        return this.rules.values().stream().flatMap(SortedSet::stream).collect(Collectors.toList());
+        return this.rules.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     /**
@@ -101,7 +99,7 @@ public final class RuleSet implements Serializable {
      *            the name of the rules to find
      * @return the rules with the specified name
      */
-    public SortedSet<Rule> getRules(String name) {
+    public ImList.Immutable<Rule> getRules(String name) {
         return this.rules.get(name);
     }
 
@@ -165,7 +163,7 @@ public final class RuleSet implements Serializable {
      * @return a set of rules with equivalent patterns
      */
     public java.util.Set<Rule> getEquivalentRules(String name) {
-        SortedSet<Rule> rules = getRules(name);
+        ImList.Immutable<Rule> rules = getRules(name);
         return rules.stream().filter(a -> rules.stream().anyMatch(
                 b -> !a.equals(b) && ARule.LeftRightOrder.compare(a, b).map(c -> c == 0).orElse(false)))
                 .collect(Collectors.toSet());
@@ -177,15 +175,15 @@ public final class RuleSet implements Serializable {
                 (Rule rule) -> CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions))));
     }
 
-    private static Map.Immutable<String, SortedSet<Rule>> buildRuleSet(Stream<Rule> rules) {
-        final HashMap<String, SortedSet<Rule>> builder = new HashMap<>();
+    private static Map.Immutable<String, ImList.Immutable<Rule>> buildRuleSet(Stream<Rule> rules) {
+        final HashMap<String, List<Rule>> builder = new HashMap<>();
         rules.forEach(rule -> {
-            final SortedSet<Rule> value = builder.computeIfAbsent(rule.name(),
-                k -> new TreeSet<>(Rule.leftRightOrderWithConsistentEquality.asComparator()));
+            final List<Rule> value = builder.computeIfAbsent(rule.name(),
+                k -> new ArrayList<>());
             value.add(rule);
         });
-        builder.replaceAll((key, value) -> Collections.unmodifiableSortedSet(value));
-        return CapsuleUtil.toMap(builder);
+        return CapsuleUtil.toMap(builder,
+            value -> ImList.Immutable.sortedCopyOf(value, ARule.LeftRightOrder.asComparator()));
     }
 
 }

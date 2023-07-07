@@ -227,8 +227,6 @@ public abstract class ARule {
      */
     public static final LeftRightOrder leftRightPatternOrdering = new LeftRightOrder();
 
-    public static final LeftRightOrderWithConsistentEquality leftRightOrderWithConsistentEquality = new LeftRightOrderWithConsistentEquality();
-
     /**
      * Note: this comparator imposes orderings that are inconsistent with equals.
      */
@@ -244,16 +242,6 @@ public abstract class ARule {
             return (r1, r2) -> LeftRightOrder.compare(r1, r2).orElse(0);
         }
 
-    }
-
-    public static class LeftRightOrderWithConsistentEquality {
-        public Comparator<Rule> asComparator() {
-            return LeftRightOrder.asComparator()
-                .thenComparing((r1, r2) -> Integer.compare(r1.hashCode(), r2.hashCode()))
-                // hash collision handling...
-                .thenComparing((r1, r2) -> r1.equals(r2) ? 0 :
-                    Integer.compare(System.identityHashCode(r1), System.identityHashCode(r2)));
-        }
     }
 
 }
