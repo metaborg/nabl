@@ -1,6 +1,6 @@
 package mb.statix.spoofax;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.stratego.TermIndex;

@@ -15,7 +15,7 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;

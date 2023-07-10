@@ -9,7 +9,7 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;

@@ -11,7 +11,7 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
