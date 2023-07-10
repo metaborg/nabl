@@ -3,9 +3,9 @@ package mb.scopegraph.pepm16.terms;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 
 import io.usethesource.capsule.Set;
@@ -63,7 +63,7 @@ public class OccurrenceIndex implements IOccurrenceIndex, IApplTerm, Serializabl
         return term.getArity();
     }
 
-    @Override public List<ITerm> getArgs() {
+    @Override public ImList.Immutable<ITerm> getArgs() {
         return term.getArgs();
     }
 

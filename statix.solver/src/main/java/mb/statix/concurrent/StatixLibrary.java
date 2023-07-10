@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -28,7 +27,7 @@ public class StatixLibrary implements IStatixLibrary, IScopeGraphLibrary<Scope, 
 
     public StatixLibrary(List<Scope> rootScopes, Collection<Scope> ownScopes,
             IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph) {
-        this.rootScopes = ImmutableList.copyOf(rootScopes);
+        this.rootScopes = ImList.Immutable.copyOf(rootScopes);
         this.ownScopes = CapsuleUtil.toSet(ownScopes);
         this.scopeGraph = scopeGraph;
     }

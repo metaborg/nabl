@@ -9,12 +9,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set.Immutable;
 import mb.p_raffrayi.ITypeChecker.IOutput;
@@ -22,7 +20,7 @@ import mb.p_raffrayi.ITypeChecker.IState;
 import mb.p_raffrayi.impl.Broker;
 import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public abstract class PRaffrayiTestBase {
 
@@ -115,7 +113,7 @@ public abstract class PRaffrayiTestBase {
         }
 
         @Override public List<Scope> scopes() {
-            return ImmutableList.of(this);
+            return ImList.Immutable.of(this);
         }
 
     }
@@ -156,20 +154,21 @@ public abstract class PRaffrayiTestBase {
         }
 
         @Override public Optional<BiMap.Immutable<Scope>> matchDatums(IDatum currentDatum, IDatum previousDatum) {
-            if(currentDatum.scopes().size() != previousDatum.scopes().size()) {
+            final List<Scope> currentScopes = currentDatum.scopes();
+            final List<Scope> previousScopes = previousDatum.scopes();
+            final int size = currentScopes.size();
+            if(size != previousScopes.size()) {
                 return Optional.empty();
             }
 
             final BiMap.Transient<Scope> result = BiMap.Transient.of();
-            final List<Tuple2<Scope, Scope>> matches =
-                    Streams.zip(currentDatum.scopes().stream(), previousDatum.scopes().stream(), Tuple2::of)
-                            .collect(Collectors.toList());
-
-            for(Tuple2<Scope, Scope> match : matches) {
-                if(!result.canPut(match._1(), match._2())) {
+            for(int i = 0; i < size; i++) {
+                Scope currentScope = currentScopes.get(i);
+                Scope previousScope = previousScopes.get(i);
+                if(!result.canPut(currentScope, previousScope)) {
                     return Optional.empty();
                 }
-                result.put(match._1(), match._2());
+                result.put(currentScope, previousScope);
             }
             return Optional.of(result.freeze());
         }

@@ -16,7 +16,7 @@ import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.ScopeDiff;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 
 public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {

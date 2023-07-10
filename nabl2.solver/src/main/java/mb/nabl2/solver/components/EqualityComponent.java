@@ -1,13 +1,12 @@
 package mb.nabl2.solver.components;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.iterators.Iterables2;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.equality.CInequal;
@@ -36,7 +35,7 @@ public class EqualityComponent extends ASolver {
     }
 
     public SeedResult seed(IUnifier.Immutable solution, IMessageInfo message) throws InterruptedException {
-        final Set<IConstraint> constraints = Sets.newHashSet();
+        final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
         final IMessages.Transient messages = Messages.Transient.of();
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();
@@ -49,7 +48,7 @@ public class EqualityComponent extends ASolver {
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
         }
-        return SeedResult.builder().constraints(constraints).messages(messages.freeze()).build();
+        return SeedResult.builder().constraints(constraints.freeze()).messages(messages.freeze()).build();
     }
 
     public SolveResult solve(IEqualityConstraint constraint) throws VariableDelayException {
@@ -95,7 +94,7 @@ public class EqualityComponent extends ASolver {
             IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
             return SolveResult.messages(message);
         } else {
-            throw new VariableDelayException(Iterables.concat(unifier().getVars(left), unifier().getVars(right)));
+            throw new VariableDelayException(Iterables2.fromConcat(unifier().getVars(left), unifier().getVars(right)));
         }
     }
 

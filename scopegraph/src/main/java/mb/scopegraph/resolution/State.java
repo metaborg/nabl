@@ -1,33 +1,36 @@
 package mb.scopegraph.resolution;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import io.usethesource.capsule.Map;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 public class State<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableList<RStep<L>> resolutionSteps;
+    private final List<RStep<L>> resolutionSteps;
     private final RVar resultVar;
 
     private final boolean accepting;
-    private final ImmutableMap<L, String> transitions;
+    private final Map.Immutable<L, String> transitions;
 
-    public State(Iterable<RStep<L>> resolutionSteps, RVar resultVar, boolean accepting, Map<L, String> transitions) {
-        this.resolutionSteps = ImmutableList.copyOf(resolutionSteps);
+    public State(Collection<RStep<L>> resolutionSteps, RVar resultVar, boolean accepting, Map.Immutable<L, String> transitions) {
+        this.resolutionSteps = Collections.unmodifiableList(new ArrayList<>(resolutionSteps));
         this.resultVar = resultVar;
 
         this.accepting = accepting;
-        this.transitions = ImmutableMap.copyOf(transitions);
+        this.transitions = transitions;
     }
 
-    public ImmutableList<RStep<L>> resolutionSteps() {
+    public List<RStep<L>> resolutionSteps() {
         return resolutionSteps;
     }
 

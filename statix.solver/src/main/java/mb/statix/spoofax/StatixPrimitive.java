@@ -3,13 +3,14 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
@@ -23,9 +24,6 @@ import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.stratego.StrategoTerms;
@@ -69,7 +67,7 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
         final StrategoTerms strategoTerms = new StrategoTerms(factory);
         final ITerm term = strategoTerms.fromStratego(sterm);
         final List<ITerm> terms =
-                sterms.stream().map(strategoTerms::fromStratego).collect(ImmutableList.toImmutableList());
+                sterms.stream().map(strategoTerms::fromStratego).collect(ImList.Immutable.toImmutableList());
         final Optional<? extends ITerm> result = call(env, term, terms);
         return result.map(strategoTerms::toStratego);
     }
@@ -82,12 +80,12 @@ public abstract class StatixPrimitive extends AbstractPrimitive {
     ///////////////////////////////////////
 
     protected void reportOverlappingRules(final Spec spec) {
-        final ListMultimap<String, Rule> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
+        final Map<String, Set<Rule>> rulesWithEquivalentPatterns = spec.rules().getAllEquivalentRules();
         if(!rulesWithEquivalentPatterns.isEmpty()) {
             logger.error("+--------------------------------------+");
             logger.error("| FOUND RULES WITH EQUIVALENT PATTERNS |");
             logger.error("+--------------------------------------+");
-            for(Map.Entry<String, Collection<Rule>> entry : rulesWithEquivalentPatterns.asMap().entrySet()) {
+            for(Map.Entry<String, Set<Rule>> entry : rulesWithEquivalentPatterns.entrySet()) {
                 logger.error("| Overlapping rules for: {}", entry.getKey());
                 for(Rule rule : entry.getValue()) {
                     logger.error("| * {}", rule);

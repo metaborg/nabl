@@ -4,14 +4,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SetMultimap;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -73,8 +72,8 @@ public class CompletenessUtil {
             onTrue -> Unit.unit,
             onTry -> Unit.unit,
             onUser -> {
-                spec.scopeExtensions().get(onUser.name()).stream()
-                        .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
+                spec.scopeExtensions().get(onUser.name()).forEach(il ->
+                    criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
                 return Unit.unit;
             }
         ));
@@ -85,22 +84,22 @@ public class CompletenessUtil {
      * Return critical edges for this constraint.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> criticalEdges.add(CriticalEdge.of(s, l)));
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     /**
      * Return critical edges for this constraint, normalized against the given unifier.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> {
             scopeOrVar().match(s, unifier).ifPresent(scopeOrVar -> {
                 criticalEdges.add(CriticalEdge.of(scopeOrVar, l));
             });
         });
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     public static IMatcher<ITerm> scopeOrVar() {
@@ -211,7 +210,7 @@ public class CompletenessUtil {
             },
             cuser -> {
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
-                spec.get(cuser.name()).stream().forEach(il -> {
+                spec.get(cuser.name()).forEach(il -> {
                     final ITerm scopeOrVar;
                     if((scopeOrVar = scopeOrVar().match(cuser.args().get(il._1())).orElse(null)) != null) {
                         final EdgeOrData<ITerm> label = EdgeOrData.edge(il._2());

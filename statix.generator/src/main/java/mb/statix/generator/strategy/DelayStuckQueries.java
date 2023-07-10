@@ -1,10 +1,9 @@
 package mb.statix.generator.strategy;
 
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.metaborg.util.functions.Predicate2;
-
-import com.google.common.collect.Maps;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -39,7 +38,7 @@ public final class DelayStuckQueries extends SearchStrategy<SearchState, SearchS
         final IState.Immutable state = input.state();
         final ICompleteness.Immutable completeness = input.completeness();
 
-        final java.util.Map<IConstraint, Delay> delays = Maps.newHashMap();
+        final java.util.Map<IConstraint, Delay> delays = new HashMap<>();
         input.constraints().stream().filter(c -> c instanceof CResolveQuery).map(c -> (CResolveQuery) c)
                 .forEach(q -> checkDelay(ctx.spec(), q, state, completeness).ifPresent(d -> delays.put(q, d)));
 

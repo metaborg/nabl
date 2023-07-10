@@ -3,11 +3,10 @@ package mb.nabl2.terms.substitution;
 import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.metaborg.util.collection.CapsuleUtil;
-
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
@@ -30,9 +29,10 @@ public class FreshVars {
     }
 
     @SafeVarargs public FreshVars(java.util.Set<ITermVar>... preExistingVarSets) {
-        this.oldVarSets = Lists.newArrayList(preExistingVarSets);
+        this.oldVarSets = new ArrayList<>(preExistingVarSets.length);
         this.oldVars = CapsuleUtil.immutableSet();
         this.newVars = CapsuleUtil.immutableSet();
+        Collections.addAll(this.oldVarSets, preExistingVarSets);
     }
 
     public FreshVars(Iterable<ITermVar> preExistingVars) {

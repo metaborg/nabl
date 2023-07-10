@@ -1,5 +1,6 @@
 package mb.p_raffrayi;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -51,7 +52,7 @@ public interface ITypeCheckerContext<S, L, D> {
     /**
      * Initialize root scope.
      */
-    void initScope(S root, Iterable<L> labels, boolean shared);
+    void initScope(S root, Collection<L> labels, boolean shared);
 
     /**
      * Create fresh scope, declaring open edges and data, and sharing with sub type checkers.
@@ -162,7 +163,7 @@ public interface ITypeCheckerContext<S, L, D> {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 
-            @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean shared) {
+            @SuppressWarnings("unused") @Override public void initScope(S root, Collection<L> labels, boolean shared) {
                 throw new UnsupportedOperationException("Unsupported in sub-contexts.");
             }
 

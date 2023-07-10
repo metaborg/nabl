@@ -5,10 +5,10 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
 import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -30,7 +30,7 @@ public class STX_get_scopegraph extends StatixPrimitive {
             throws InterpreterException {
         // @formatter:off
         final List<SolverResult> analyses = M.cases(
-            M.blobValue(SolverResult.class).map(ImmutableList::of),
+            M.blobValue(SolverResult.class).map(ImList.Immutable::of),
             M.listElems(M.blobValue(SolverResult.class))
         ).match(term).orElseThrow(() -> new InterpreterException("Expected solver result."));
         // @formatter:on

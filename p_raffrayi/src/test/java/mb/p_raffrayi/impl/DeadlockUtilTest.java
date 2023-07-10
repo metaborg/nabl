@@ -2,11 +2,10 @@ package mb.p_raffrayi.impl;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 import org.junit.Test;
-
-import com.google.common.collect.Sets;
 
 import mb.p_raffrayi.impl.DeadlockUtils.GraphBuilder;
 import mb.p_raffrayi.impl.DeadlockUtils.IGraph;
@@ -22,8 +21,8 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1));
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -36,8 +35,8 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1));
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -51,9 +50,9 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1);
-        final HashSet<Integer> scc2 = Sets.newHashSet(2);
-        @SuppressWarnings("unchecked") final HashSet<HashSet<Integer>> clusters = Sets.newHashSet(scc1, scc2);
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1));
+        final HashSet<Integer> scc2 = new HashSet<>(Arrays.asList(2));
+        @SuppressWarnings("unchecked") final HashSet<HashSet<Integer>> clusters = new HashSet<>(Arrays.asList(scc1, scc2));
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
     }
@@ -66,8 +65,8 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1, 2);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1, 2));
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -84,8 +83,8 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1, 2);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1, 2));
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -103,8 +102,8 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1, 2, 3, 4, 5);
-        final HashSet<HashSet<Integer>> clusters = Sets.newHashSet();
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5));
+        final HashSet<HashSet<Integer>> clusters = new HashSet<HashSet<Integer>>();
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));
@@ -125,10 +124,10 @@ public class DeadlockUtilTest {
             .build();
         // @formatter:on
 
-        final HashSet<Integer> scc1 = Sets.newHashSet(1, 2, 3);
-        final HashSet<Integer> scc2 = Sets.newHashSet(4, 5, 6);
-        final HashSet<Integer> scc3 = Sets.newHashSet(8);
-        @SuppressWarnings("unchecked") final HashSet<HashSet<Integer>> clusters = Sets.newHashSet(scc1, scc2, scc3);
+        final HashSet<Integer> scc1 = new HashSet<>(Arrays.asList(1, 2, 3));
+        final HashSet<Integer> scc2 = new HashSet<>(Arrays.asList(4, 5, 6));
+        final HashSet<Integer> scc3 = new HashSet<>(Arrays.asList(8));
+        @SuppressWarnings("unchecked") final HashSet<HashSet<Integer>> clusters = new HashSet<>(Arrays.asList(scc1, scc2, scc3));
         clusters.add(scc1);
 
         assertEquals(clusters, DeadlockUtils.sccs(graph));

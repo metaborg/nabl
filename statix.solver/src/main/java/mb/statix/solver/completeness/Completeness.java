@@ -1,6 +1,7 @@
 package mb.statix.solver.completeness;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -8,8 +9,7 @@ import java.util.stream.Collectors;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
-
-import com.google.common.collect.Streams;
+import org.metaborg.util.stream.StreamUtil;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -37,7 +37,7 @@ public abstract class Completeness implements ICompleteness {
         return asMap().isEmpty();
     }
 
-    @Override public MultiSet<EdgeOrData<ITerm>> get(ITerm scopeOrVar, IUnifier unifier) {
+    @Override public MultiSet.Immutable<EdgeOrData<ITerm>> get(ITerm scopeOrVar, IUnifier unifier) {
         return getVarOrScope(scopeOrVar, unifier).map(sOV -> {
             return asMap().get(sOV);
         }).orElse(MultiSet.Immutable.of());
@@ -52,8 +52,8 @@ public abstract class Completeness implements ICompleteness {
         }).orElse(true);
     }
 
-    protected static java.util.Set<ITerm> getVarsOrScopes(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
-        return Streams.stream(varOrScopes).flatMap(t -> Streams.stream(getVarOrScope(t, unifier)))
+    protected static java.util.Set<ITerm> getVarsOrScopes(Collection<? extends ITerm> varOrScopes, IUnifier unifier) {
+        return StreamUtil.filterMap(varOrScopes.stream(), t -> getVarOrScope(t, unifier))
                 .collect(Collectors.toSet());
     }
 
@@ -94,11 +94,11 @@ public abstract class Completeness implements ICompleteness {
             return _completeness.freeze();
         }
 
-        @Override public ICompleteness.Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
+        @Override public ICompleteness.Immutable removeAll(Collection<? extends ITerm> varOrScopes, IUnifier unifier) {
             return new Completeness.Immutable(incomplete.removeAll(getVarsOrScopes(varOrScopes, unifier)));
         }
 
-        @Override public ICompleteness.Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier) {
+        @Override public ICompleteness.Immutable retainAll(Collection<? extends ITerm> varOrScopes, IUnifier unifier) {
             return new Completeness.Immutable(incomplete.retainAll(getVarsOrScopes(varOrScopes, unifier)));
         }
 

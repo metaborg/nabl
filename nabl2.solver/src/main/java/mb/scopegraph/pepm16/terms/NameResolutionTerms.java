@@ -2,13 +2,12 @@ package mb.scopegraph.pepm16.terms;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.scopegraph.pepm16.CriticalEdgeException;
@@ -34,7 +33,7 @@ public final class NameResolutionTerms {
     }
 
     private ITerm build() throws InterruptedException {
-        final List<ITerm> resolutions = Lists.newArrayList();
+        final List<ITerm> resolutions = new ArrayList<>();
         for(Occurrence ref : scopeGraph.getAllRefs()) {
             resolutions.add(buildRef(ref));
         }
@@ -45,9 +44,9 @@ public final class NameResolutionTerms {
         List<ITerm> paths;
         try {
             paths = nameResolution.resolve(ref, cancel, progress).stream().map(this::buildPath)
-                    .collect(ImmutableList.toImmutableList());
+                    .collect(ImList.Immutable.toImmutableList());
         } catch(CriticalEdgeException | StuckException e) {
-            paths = ImmutableList.of();
+            paths = ImList.Immutable.of();
         }
         final ITerm result;
         if(paths.isEmpty()) {

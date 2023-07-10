@@ -1,10 +1,12 @@
 package mb.scopegraph.oopsla20.reference;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.tuple.Tuple2;
 
@@ -19,7 +21,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
 
     @Override public abstract Map<Tuple2<S, L>, ConsList<S>> getEdges();
 
-    @Override public Iterable<S> getEdges(S scope, L label) {
+    @Override public Collection<S> getEdges(S scope, L label) {
         return getEdges().getOrDefault(Tuple2.of(scope, label), ConsList.nil());
     }
 
@@ -110,7 +112,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         }
 
         public static <S, L, D> ScopeGraph.Immutable<S, L, D> of() {
-            return new ScopeGraph.Immutable<>(Set.Immutable.of(), Map.Immutable.of(), Map.Immutable.of());
+            return new ScopeGraph.Immutable<>(CapsuleUtil.immutableSet(), CapsuleUtil.immutableMap(), Map.Immutable.of());
         }
 
         // ------------------------------------------------------------
@@ -183,7 +185,7 @@ public abstract class ScopeGraph<S, L, D> implements IScopeGraph<S, L, D> {
         }
 
         public static <S, L, D> ScopeGraph.Transient<S, L, D> of() {
-            return new ScopeGraph.Transient<>(Set.Transient.of(), Map.Transient.of(), Map.Transient.of());
+            return new ScopeGraph.Transient<>(CapsuleUtil.transientSet(), CapsuleUtil.transientMap(), Map.Transient.of());
         }
 
     }

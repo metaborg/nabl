@@ -1,17 +1,14 @@
 package mb.nabl2.terms.unification.ud;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
 import java.io.Serializable;
 import java.util.Optional;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple3;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -27,6 +24,8 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.terms.unification.u.IUnifier.Immutable;
 import mb.nabl2.terms.unification.u.IUnifier.Result;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class Diseq implements Serializable {
 
@@ -88,13 +87,14 @@ public class Diseq implements Serializable {
     }
 
     public Tuple3<Set<ITermVar>, ITerm, ITerm> toTuple() {
-        ImmutableList.Builder<ITerm> lefts = ImmutableList.builder();
-        ImmutableList.Builder<ITerm> rights = ImmutableList.builder();
-        for(ITermVar var : diseqs.domainSet()) {
+        final Set.Immutable<ITermVar> diseqsDomainSet = diseqs.domainSet();
+        final ImList.Mutable<ITerm> lefts = new ImList.Mutable<>(diseqsDomainSet.size());
+        final ImList.Mutable<ITerm> rights = new ImList.Mutable<>(diseqsDomainSet.size());
+        for(ITermVar var : diseqsDomainSet) {
             lefts.add(var);
             rights.add(diseqs.findTerm(var));
         }
-        return Tuple3.of(universals, B.newTuple(lefts.build()), B.newTuple(rights.build()));
+        return Tuple3.of(universals, B.newTuple(lefts.freeze()), B.newTuple(rights.freeze()));
     }
 
     /**

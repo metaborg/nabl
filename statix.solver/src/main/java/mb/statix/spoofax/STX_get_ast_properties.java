@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
 import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
@@ -32,7 +32,7 @@ public class STX_get_ast_properties extends StatixPropertyPrimitive {
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
         if(maybeIndex.isPresent()) {
             final TermIndex index = maybeIndex.get();
-            final ImmutableList.Builder<ITerm> props = ImmutableList.builder();
+            final ImList.Mutable<ITerm> props = ImList.Mutable.of();
             for(Map.Entry<Tuple2<TermIndex, ITerm>, ITermProperty> prop : analysis.state().termProperties()
                     .entrySet()) {
                 if(prop.getKey()._1().equals(index)) {
@@ -44,7 +44,7 @@ public class STX_get_ast_properties extends StatixPropertyPrimitive {
                 }
             }
 
-            return Optional.of(B.newList(props.build()));
+            return Optional.of(B.newList(props.freeze()));
         } else {
             return Optional.empty();
         }

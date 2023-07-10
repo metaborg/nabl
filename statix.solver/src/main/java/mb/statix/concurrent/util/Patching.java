@@ -8,9 +8,8 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IApplTerm;
@@ -280,13 +279,13 @@ public class Patching {
 
     public static Rule patch(Rule rule, IPatchCollection<Scope> patches) {
         final List<Pattern> params = rule.params();
-        ImmutableList.Builder<Pattern> newParamsBuilder = null;
+        ImList.Mutable<Pattern> newParamsBuilder = null;
         for(int i = 0; i < params.size(); i++) {
             final Pattern param = params.get(i);
             final Pattern newParam = patch(param, patches);
             if(newParam != null) {
                 if(newParamsBuilder == null) {
-                    newParamsBuilder = ImmutableList.builderWithExpectedSize(params.size());
+                    newParamsBuilder = new ImList.Mutable<>(params.size());
                     for(int j = 0; j < i; j++) {
                         newParamsBuilder.add(params.get(j));
                     }
@@ -305,7 +304,7 @@ public class Patching {
 
         Rule result = rule;
         if(newParamsBuilder != null) {
-            result = result.withParams(newParamsBuilder.build());
+            result = result.withParams(newParamsBuilder.freeze());
         }
         if(newBody != null) {
             result = result.withBody(newBody);
@@ -485,13 +484,13 @@ public class Patching {
             @Override public IConstraint caseUser(CUser c) {
                 final List<ITerm> args = c.args();
                 final int size = args.size();
-                ImmutableList.Builder<ITerm> newArgsBuilder = null;
+                ImList.Mutable<ITerm> newArgsBuilder = null;
                 for(int i = 0; i < size; i++) {
                     final ITerm arg = args.get(i);
                     final ITerm newArg = patch(arg, patches);
                     if(newArg != null) {
                         if(newArgsBuilder == null) {
-                            newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                            newArgsBuilder = new ImList.Mutable<>(size);
                             for(int j = 0; j < i; j++) {
                                 newArgsBuilder.add(args.get(j));
                             }
@@ -507,7 +506,7 @@ public class Patching {
                 }
 
                 // TODO Patch ownCriticalEdges?
-                return new CUser(c.name(), newArgsBuilder.build(), c.cause().orElse(null), c.message().orElse(null),
+                return new CUser(c.name(), newArgsBuilder.freeze(), c.cause().orElse(null), c.message().orElse(null),
                         c.ownCriticalEdges().orElse(null));
             }
         });
@@ -533,20 +532,20 @@ public class Patching {
                         return null;
                     }
 
-                    final ImmutableList<Pattern> newArgs =
-                            ImmutableList.of(P.newString(newScope.getResource(), arg1.getAttachments()),
+                    final ImList.Immutable<Pattern> newArgs =
+                        ImList.Immutable.of(P.newString(newScope.getResource(), arg1.getAttachments()),
                                     P.newString(newScope.getName(), arg2.getAttachments()));
                     return P.newAppl(SCOPE_OP, newArgs, appl.getAttachments());
                 }
             }
 
-            ImmutableList.Builder<Pattern> newArgsBuilder = null;
+            ImList.Mutable<Pattern> newArgsBuilder = null;
             for(int i = 0; i < size; i++) {
                 final Pattern arg = args.get(i);
                 final Pattern newArg = patch(arg, patches);
                 if(newArg != null) {
                     if(newArgsBuilder == null) {
-                        newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                        newArgsBuilder = new ImList.Mutable<>(size);
                         for(int j = 0; j < i; j++) {
                             newArgsBuilder.add(args.get(j));
                         }
@@ -561,7 +560,7 @@ public class Patching {
                 return null;
             }
 
-            return P.newAppl(appl.getOp(), newArgsBuilder.build(), appl.getAttachments());
+            return P.newAppl(appl.getOp(), newArgsBuilder.freeze(), appl.getAttachments());
         } else if(pattern instanceof ConsPattern) {
             final ConsPattern cons = (ConsPattern) pattern;
             Pattern head = patch(cons.getHead(), patches);
@@ -632,14 +631,14 @@ public class Patching {
 
                 final List<ITerm> args = appl.getArgs();
                 final int size = args.size();
-                ImmutableList.Builder<ITerm> newArgsBuilder = null;
+                ImList.Mutable<ITerm> newArgsBuilder = null;
 
                 for(int i = 0; i < size; i++) {
                     final ITerm arg = args.get(i);
                     final ITerm newArg = patch(arg, patches);
                     if(newArg != null) {
                         if(newArgsBuilder == null) {
-                            newArgsBuilder = ImmutableList.builderWithExpectedSize(size);
+                            newArgsBuilder = new ImList.Mutable<>(size);
                             for(int j = 0; j < i; j++) {
                                 newArgsBuilder.add(args.get(j));
                             }
@@ -654,7 +653,7 @@ public class Patching {
                     return null;
                 }
 
-                return B.newAppl(appl.getOp(), newArgsBuilder.build(), appl.getAttachments());
+                return B.newAppl(appl.getOp(), newArgsBuilder.freeze(), appl.getAttachments());
             }
 
         });

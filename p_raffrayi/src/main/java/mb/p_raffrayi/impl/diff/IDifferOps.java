@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public interface IDifferOps<S, L, D> {
 

@@ -5,12 +5,11 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collector;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.util.TermFormatter;
 
@@ -56,9 +55,9 @@ public enum QueryProject implements Serializable, Function1<ITerm, Optional<ITer
     public Collector<ITerm, ?, ? extends Collection<ITerm>> collector() {
         switch(this) {
             case FULL:
-                return ImmutableList.<ITerm>toImmutableList();
+                return ImList.Immutable.toImmutableList();
             default:
-                return ImmutableSet.toImmutableSet();
+                return CapsuleCollectors.toSet();
         }
     }
 

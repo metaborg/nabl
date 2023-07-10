@@ -2,6 +2,7 @@ package mb.scopegraph.oopsla20.diff;
 
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.collection.CapsuleUtil;
 
 import java.io.Serializable;

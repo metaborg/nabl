@@ -3,10 +3,11 @@ package mb.nabl2.constraints.base;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.ImmutableList;
-
+import io.usethesource.capsule.util.stream.CapsuleCollectors;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.terms.ITerm;
@@ -36,11 +37,11 @@ public final class BaseConstraints {
                     }),
             M.appl2(C_EXISTS, M.listElems(M.var()), (t, u) -> Constraints.matcher().match(t, u),
                     (c, vars, constraint) -> {
-                        return CExists.of(vars, constraint, MessageInfo.empty());
+                        return CExists.of(CapsuleUtil.toSet(vars), constraint, MessageInfo.empty());
                     }),
             M.appl2(C_NEW, M.listElems(M.var()), MessageInfo.matcherOnlyOriginTerm(),
                     (c, vars, origin) -> {
-                        return CNew.of(vars, origin);
+                        return CNew.of(CapsuleUtil.toSet(vars), origin);
                     })
             // @formatter:on
         );
@@ -76,7 +77,7 @@ public final class BaseConstraints {
                         e.getMessageInfo().apply(restrictedSubst::apply));
             },
             n -> {
-                return CNew.of(n.getNVars().stream().map(subst::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(subst::apply).collect(CapsuleCollectors.toSet()),
                         n.getMessageInfo().apply(subst::apply));
             }
         ));
@@ -100,7 +101,7 @@ public final class BaseConstraints {
                         e.getMessageInfo().apply(map::apply));
             },
             n -> {
-                return CNew.of(n.getNVars().stream().map(map::apply).collect(ImmutableList.toImmutableList()),
+                return CNew.of(n.getNVars().stream().map(map::apply).collect(CapsuleCollectors.toSet()),
                         n.getMessageInfo().apply(map::apply));
             }
         ));

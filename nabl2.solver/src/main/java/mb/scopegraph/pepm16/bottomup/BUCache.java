@@ -65,7 +65,7 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
             IRelation3<BUEnvKey<S, L>, Tuple3<L, O, IRegExpMatcher<L>>, BUEnvKey<S, L>> backimports,
             IRelation2<BUEnvKey<S, L>, CriticalEdge> openEdges) {
         final Map.Transient<BUEnvKey<S, L>, BUPathSet.Immutable<S, L, O, IDeclPath<S, L, O>>> _envs =
-                Map.Transient.of();
+                CapsuleUtil.transientMap();
         envs.forEach((e, ps) -> _envs.__put(e, ps.pathSet()));
         this.envKeys = CapsuleUtil.toMap(envKeys);
         this.pathKeys = CapsuleUtil.toMap(pathKeys);
@@ -83,10 +83,10 @@ class BUCache<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-        this.envKeys = Map.Immutable.of();
-        this.pathKeys = Map.Immutable.of();
-        this.envs = Map.Immutable.of();
-        this.completed = Set.Immutable.of();
+        this.envKeys = CapsuleUtil.immutableMap();
+        this.pathKeys = CapsuleUtil.immutableMap();
+        this.envs = CapsuleUtil.immutableMap();
+        this.completed = CapsuleUtil.immutableSet();
         this.backedges = HashTrieRelation3.Immutable.of();
         this.backimports = HashTrieRelation3.Immutable.of();
         this.openEdges = HashTrieRelation2.Immutable.of();

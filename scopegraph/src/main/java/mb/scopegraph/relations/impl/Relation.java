@@ -1,6 +1,7 @@
 package mb.scopegraph.relations.impl;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -10,8 +11,6 @@ import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.relations.ARelationDescription.Reflexivity;
@@ -36,9 +35,9 @@ public abstract class Relation<T> implements IRelation<T> {
 
     @Override public Set.Immutable<T> smaller(T t) {
         Set.Transient<T> ts = CapsuleUtil.transientSet();
-        smaller(t, ts, Sets.newHashSet());
+        smaller(t, ts, new HashSet<T>());
         if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
-            larger(t, ts, Sets.newHashSet());
+            larger(t, ts, new HashSet<T>());
         }
         if(getDescription().getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.__insert(t);
@@ -61,9 +60,9 @@ public abstract class Relation<T> implements IRelation<T> {
 
     @Override public Set.Immutable<T> larger(T t) {
         Set.Transient<T> ts = CapsuleUtil.transientSet();
-        larger(t, ts, Sets.newHashSet());
+        larger(t, ts, new HashSet<T>());
         if(getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
-            smaller(t, ts, Sets.newHashSet());
+            smaller(t, ts, new HashSet<T>());
         }
         if(getDescription().getReflexivity().equals(Reflexivity.REFLEXIVE)) {
             ts.__insert(t);
@@ -95,9 +94,9 @@ public abstract class Relation<T> implements IRelation<T> {
                     break;
             }
         }
-        boolean hit = contains(t1, t2, Sets.newHashSet());
+        boolean hit = contains(t1, t2, new HashSet<T>());
         if(!hit && getDescription().getSymmetry().equals(Symmetry.SYMMETRIC)) {
-            hit |= contains(t2, t1, Sets.newHashSet());
+            hit |= contains(t2, t1, new HashSet<T>());
         }
         return hit;
     }
@@ -150,7 +149,7 @@ public abstract class Relation<T> implements IRelation<T> {
             logger.warn("Lub must be called on partial-order, ignored.");
             return Optional.empty();
         }
-        java.util.Set<T> bounds = Sets.newHashSet();
+        java.util.Set<T> bounds = new HashSet<T>();
         bounds.addAll(larger(t1));
         bounds.retainAll(larger(t2));
         return bounds.stream().filter(l -> bounds.stream().allMatch(g -> contains(l, g))).findFirst();
@@ -161,7 +160,7 @@ public abstract class Relation<T> implements IRelation<T> {
             logger.warn("Glb must be called on partial-order, ignored.");
             return Optional.empty();
         }
-        java.util.Set<T> bounds = Sets.newHashSet();
+        java.util.Set<T> bounds = new HashSet<T>();
         bounds.addAll(smaller(t1));
         bounds.retainAll(smaller(t2));
         return bounds.stream().filter(g -> bounds.stream().allMatch(l -> contains(l, g))).findFirst();

@@ -190,7 +190,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Return a substitution that only retains the given variables in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
-        @Override IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars);
+        @Override IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Return a unifier with the given variable removed from the domain. Returns a substitution to eliminate the
@@ -202,7 +202,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
          * variable from terms. Note that removal never unifies terms or variables that were not already unified before.
          */
-        @Override IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars);
+        @Override IUniDisunifier.Result<ISubstitution.Immutable> removeAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Apply a variable renaming to this unifier.
@@ -328,7 +328,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Retain only the given variables in the domain of this unifier. Returns a substitution to eliminate the
          * removed variables from terms.
          */
-        @Override ISubstitution.Immutable retainAll(Iterable<ITermVar> vars);
+        @Override ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Remove the given variable from the domain of this unifier. Returns a substitution to eliminate the variable
@@ -340,7 +340,7 @@ public interface IUniDisunifier extends mb.nabl2.terms.unification.u.IUnifier {
          * Remove the given variables from the domain of this unifier. Returns a substitution to eliminate the variable
          * from terms.
          */
-        @Override ISubstitution.Immutable removeAll(Iterable<ITermVar> vars);
+        @Override ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.

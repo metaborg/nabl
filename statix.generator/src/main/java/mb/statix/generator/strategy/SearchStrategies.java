@@ -1,14 +1,13 @@
 package mb.statix.generator.strategy;
 
+import java.util.Collections;
 import java.util.Map;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Predicate1;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import mb.statix.constraints.CConj;
 import mb.statix.constraints.CUser;
@@ -55,7 +54,7 @@ public final class SearchStrategies {
 
     @SafeVarargs public static <I extends SearchState, O extends SearchState> Concat<I, O>
             concat(SearchStrategy<I, O>... ss) {
-        return concat(ImmutableList.copyOf(ss));
+        return concat(ImList.Immutable.copyOf(ss));
     }
 
     public static <I extends SearchState, O extends SearchState> Concat<I, O> concat(Iterable<SearchStrategy<I, O>> ss) {
@@ -133,11 +132,11 @@ public final class SearchStrategies {
     }
 
     public static Expand expand(Mode mode) {
-        return expand(mode, 1d, ImmutableMap.of());
+        return expand(mode, 1d, Collections.emptyMap());
     }
 
     public static Expand expand(Mode mode, RuleSet rules) {
-        return expand(mode, 1d, ImmutableMap.of(), rules);
+        return expand(mode, 1d, Collections.emptyMap(), rules);
     }
 
     public static Expand expand(Mode mode, double defaultWeight, Map<String, Double> weights) {

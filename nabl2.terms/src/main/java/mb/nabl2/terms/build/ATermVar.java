@@ -7,8 +7,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 
-import com.google.common.base.Preconditions;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -27,8 +25,9 @@ public abstract class ATermVar extends AbstractTerm implements ITermVar {
     @Value.Parameter @Override public abstract String getName();
 
     @Value.Check protected void check() {
-        Preconditions.checkState(!(getResource().isEmpty() && getName().isEmpty()),
-                "'resource' and 'name' cannot both be empty");
+        if (getResource().isEmpty() && getName().isEmpty()) {
+            throw new IllegalStateException("'resource' and 'name' cannot both be empty");
+        }
     }
 
     @Override public boolean isGround() {

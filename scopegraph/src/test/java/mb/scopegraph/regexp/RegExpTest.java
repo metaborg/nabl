@@ -1,12 +1,12 @@
 package mb.scopegraph.regexp;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.collect.Lists;
 
 import mb.scopegraph.regexp.impl.RegExpBuilder;
 
@@ -42,7 +42,7 @@ public class RegExpTest {
         IRegExpMatcher<Integer> m = RegExpMatcher.create(re);
         m = m.match(1);
         assertTrue(m.isAccepting());
-        m = m.match(Lists.newArrayList(1, 1, 1, 1, 1));
+        m = m.match(Arrays.asList(1, 1, 1, 1, 1));
         assertTrue(m.isAccepting());
         m = m.match(3);
         assertFalse(m.isAccepting());

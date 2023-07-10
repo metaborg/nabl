@@ -4,9 +4,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
@@ -21,9 +20,9 @@ public abstract class Messages implements IMessages {
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
         private static final long serialVersionUID = 42L;
 
-        private final ImmutableList<IMessageInfo> messages;
+        private final ImList.Immutable<IMessageInfo> messages;
 
-        private Immutable(ImmutableList<IMessageInfo> messages) {
+        private Immutable(ImList.Immutable<IMessageInfo> messages) {
             this.messages = messages;
         }
 
@@ -32,7 +31,7 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Transient melt() {
-            return new Messages.Transient(ImmutableList.<IMessageInfo>builder().addAll(messages));
+            return new Messages.Transient(messages.mutableCopy());
         }
 
         @Override public int hashCode() {
@@ -56,7 +55,7 @@ public abstract class Messages implements IMessages {
         }
 
         public static Messages.Immutable of() {
-            return new Messages.Immutable(ImmutableList.of());
+            return new Messages.Immutable(ImList.Immutable.of());
         }
 
         @Override public String toString() {
@@ -67,9 +66,9 @@ public abstract class Messages implements IMessages {
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private final ImmutableList.Builder<IMessageInfo> messages;
+        private final ImList.Mutable<IMessageInfo> messages;
 
-        private Transient(ImmutableList.Builder<IMessageInfo> messages) {
+        private Transient(ImList.Mutable<IMessageInfo> messages) {
             this.messages = messages;
         }
 
@@ -93,11 +92,11 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Immutable freeze() {
-            return new Messages.Immutable(messages.build());
+            return new Messages.Immutable(messages.freeze());
         }
 
         public static Messages.Transient of() {
-            return new Messages.Transient(ImmutableList.builder());
+            return new Messages.Transient(ImList.Mutable.of());
         }
 
     }

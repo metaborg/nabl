@@ -4,7 +4,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -20,7 +20,7 @@ public final class UnifierTerms {
 
     private ITerm build() {
         final List<ITerm> entries =
-                unifier.domainSet().stream().map(this::buildVar).collect(ImmutableList.toImmutableList());
+                unifier.domainSet().stream().map(this::buildVar).collect(ImList.Immutable.toImmutableList());
         return B.newAppl("Unifier", (ITerm) B.newList(entries));
     }
 

@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20.diff;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -8,16 +9,14 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -68,14 +67,12 @@ public class ScopeGraphDiffer<S, L, D> {
      * @return Updated differ state. Will always be an extension of {@code initialState}.
      */
     public DifferState.Immutable<S, L, D> doDiff(IScopeGraph.Immutable<S, L, D> current,
-        DifferState.Immutable<S, L, D> initialState, Multimap<S, EdgeOrData<L>> activations) {
+        DifferState.Immutable<S, L, D> initialState, MultiSetMap<S, EdgeOrData<L>> activations) {
         DifferState.Transient<S, L, D> state = initialState.melt();
 
         final Queue<EdgeMatch> worklist = new LinkedList<>();
 
-        activations.entries().forEach(activation -> {
-            S scope = activation.getKey();
-            EdgeOrData<L> label = activation.getValue();
+        activations.forEach((scope, label) -> {
             assertClosed(scope, label);
             label.match(() -> {
                 state.dataDelays().removeValues(scope).forEach(removedDelay -> {
@@ -120,7 +117,7 @@ public class ScopeGraphDiffer<S, L, D> {
         state.seenPreviousScopes().__insertAll(scopes.valueSet());
         final BiMap<S> newMatches;
         if((newMatches = canScopesMatch(state, scopes).orElse(null)) == null) {
-            return Tuple2.of(false, Lists.newLinkedList());
+            return Tuple2.of(false, new LinkedList<EdgeMatch>());
         }
         state.putAllMatchedScopes(newMatches);
         final Queue<EdgeMatch> newEdgeMatches = new LinkedList<>();
@@ -182,7 +179,7 @@ public class ScopeGraphDiffer<S, L, D> {
     private Queue<EdgeMatch> scheduleEdgeMatches(IScopeGraph.Immutable<S, L, D> current,
         DifferState.Transient<S, L, D> state, S currentSource, S previousSource, L label) {
 
-        final Set.Immutable<Edge<S, L>> currentEdges = Streams.stream(current.getEdges(currentSource, label))
+        final Set.Immutable<Edge<S, L>> currentEdges = current.getEdges(currentSource, label).stream()
             .map(currentTarget -> new Edge<>(currentSource, label, currentTarget)).collect(CapsuleCollectors.toSet());
         state.seenCurrentEdges().__insertAll(currentEdges);
 
@@ -196,7 +193,7 @@ public class ScopeGraphDiffer<S, L, D> {
             return new LinkedList<>();
         }
 
-        final Set.Immutable<Edge<S, L>> previousEdges = Streams.stream(previous.getEdges(previousSource, label))
+        final Set.Immutable<Edge<S, L>> previousEdges = previous.getEdges(previousSource, label).stream()
             .map(previousTarget -> new Edge<>(previousSource, label, previousTarget))
             .collect(CapsuleCollectors.toSet());
         state.seenPreviousEdges().__insertAll(previousEdges);
@@ -204,7 +201,7 @@ public class ScopeGraphDiffer<S, L, D> {
         Queue<EdgeMatch> newMatches = new LinkedList<>();
 
         for(Edge<S, L> currentEdge : currentEdges) {
-            final Map.Transient<Edge<S, L>, BiMap.Immutable<S>> matchingPreviousEdges = Map.Transient.of();
+            final Map.Transient<Edge<S, L>, BiMap.Immutable<S>> matchingPreviousEdges = CapsuleUtil.transientMap();
             for(Edge<S, L> previousEdge : previousEdges) {
                 final BiMap.Immutable<S> req;
                 if((req = matchScopes(current, currentEdge.target, previousEdge.target).orElse(null)) != null) {
@@ -278,13 +275,13 @@ public class ScopeGraphDiffer<S, L, D> {
     public ScopeGraphDiff<S, L, D> finalize(IScopeGraph.Immutable<S, L, D> current,
         DifferState.Immutable<S, L, D> initialState) {
         final DifferState.Transient<S, L, D> state = initialState.melt();
-        final Map.Transient<S, D> addedScopes = Map.Transient.of();
-        final Set.Transient<Edge<S, L>> addedEdges = Set.Transient.of();
+        final Map.Transient<S, D> addedScopes = CapsuleUtil.transientMap();
+        final Set.Transient<Edge<S, L>> addedEdges = CapsuleUtil.transientSet();
         finishDiff(current, diffOps::getCurrentScopes, state.seenCurrentScopes(), state.seenCurrentEdges(),
             state.matchedScopes().keySet(), state.matchedEdges().keySet(), addedScopes, addedEdges);
 
-        final Map.Transient<S, D> removedScopes = Map.Transient.of();
-        final Set.Transient<Edge<S, L>> removedEdges = Set.Transient.of();
+        final Map.Transient<S, D> removedScopes = CapsuleUtil.transientMap();
+        final Set.Transient<Edge<S, L>> removedEdges = CapsuleUtil.transientSet();
         finishDiff(previous, diffOps::getPreviousScopes, state.seenPreviousScopes(), state.seenPreviousEdges(),
             state.matchedScopes().valueSet(), state.matchedEdges().valueSet(), removedScopes, removedEdges);
 
@@ -295,12 +292,12 @@ public class ScopeGraphDiffer<S, L, D> {
     }
 
     private void finishDiff(IScopeGraph<S, L, D> scopeGraph, Function1<D, java.util.Set<S>> getScopes,
-        Iterable<S> seenScopes, Iterable<Edge<S, L>> seenEdges, java.util.Set<S> matchedScopes,
+        Collection<S> seenScopes, Collection<Edge<S, L>> seenEdges, java.util.Set<S> matchedScopes,
         java.util.Set<Edge<S, L>> matchedEdges, Map.Transient<S, D> missedScopes,
         Set.Transient<Edge<S, L>> missedEdges) {
 
-        final Deque<S> scopeList = Lists.newLinkedList(seenScopes);
-        final Deque<Edge<S, L>> edgeList = Lists.newLinkedList(seenEdges);
+        final Deque<S> scopeList = new ArrayDeque<>(seenScopes);
+        final Deque<Edge<S, L>> edgeList = new ArrayDeque<>(seenEdges);
 
         while(!scopeList.isEmpty() || !edgeList.isEmpty()) {
             while(!scopeList.isEmpty()) {
@@ -346,7 +343,7 @@ public class ScopeGraphDiffer<S, L, D> {
         final ScopeGraphDiffer<S, L, D> differ = new ScopeGraphDiffer<>(previous, diffOps, statusOps);
         final DifferState.Immutable<S, L, D> initialState = differ.initDiff(s0current, s0previous);
 
-        final Multimap<S, EdgeOrData<L>> initialActivations = ArrayListMultimap.create();
+        final MultiSetMap.Transient<S, EdgeOrData<L>> initialActivations = MultiSetMap.Transient.of();
         initialState.edgeDelays().forEach((s, l) -> initialActivations.put(s, EdgeOrData.edge(l)));
 
         final DifferState.Immutable<S, L, D> state = differ.doDiff(current, initialState, initialActivations);

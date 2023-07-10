@@ -3,18 +3,17 @@ package mb.nabl2.terms.unification;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.unification.UnifierTests.assertSame;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
 import org.junit.Test;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function0;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
-
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -29,7 +28,7 @@ public class PersistentUnifierStressTest {
     private final ITermVar c = B.newVar("", "c");
     private final ITermVar d = B.newVar("", "d");
     private final ITermVar e = B.newVar("", "e");
-    private final List<ITermVar> vars = ImmutableList.of(a, b, c, d, e);
+    private final List<ITermVar> vars = ImList.Immutable.of(a, b, c, d, e);
 
     private final String f = "f";
     private final String g = "g";
@@ -43,38 +42,35 @@ public class PersistentUnifierStressTest {
 
     private IUnifier.Immutable makeRandomUnifier1() {
         // @formatter:off
-        return makeRandomUnifier(ImmutableMultimap.<ITerm, ITerm>builder()
-                .put(a, b)
-                .put(c, b)
-                .put(b, d)
-                .build());
+        return makeRandomUnifier(SetMultimap.Immutable.<ITerm,ITerm>of()
+                .__insert(a, b)
+                .__insert(c, b)
+                .__insert(b, d));
         // @formatter:on
     }
 
     private IUnifier.Immutable makeRandomUnifier2() {
         // @formatter:off
-        return makeRandomUnifier(ImmutableMultimap.<ITerm, ITerm>builder()
-                .put(a, b)
-                .put(b, c)
-                .put(b, B.newAppl(f, x, d))
-                .put(d, B.newAppl(g, e))
-                .build());
+        return makeRandomUnifier(SetMultimap.Immutable.<ITerm,ITerm>of()
+                .__insert(a, b)
+                .__insert(b, c)
+                .__insert(b, B.newAppl(f, x, d))
+                .__insert(d, B.newAppl(g, e)));
         // @formatter:on
     }
 
     private IUnifier.Immutable makeRandomUnifier3() {
         // @formatter:off
-        return makeRandomUnifier(ImmutableMultimap.<ITerm, ITerm>builder()
-                .put(a, b)
-                .put(c, d)
-                .put(b, B.newAppl(f, x, d))
-                .put(e, B.newAppl(g, a))
-                .build());
+        return makeRandomUnifier(SetMultimap.Immutable.<ITerm,ITerm>of()
+                .__insert(a, b)
+                .__insert(c, d)
+                .__insert(b, B.newAppl(f, x, d))
+                .__insert(e, B.newAppl(g, a)));
         // @formatter:on
     }
 
-    private IUnifier.Immutable makeRandomUnifier(ImmutableMultimap<ITerm, ITerm> init) {
-        final List<Entry<ITerm, ITerm>> equalities = Lists.newArrayList(init.entries());
+    private IUnifier.Immutable makeRandomUnifier(SetMultimap.Immutable<ITerm, ITerm> init) {
+        final List<Entry<ITerm, ITerm>> equalities = new ArrayList<>(init.entrySet());
         final Random rnd = new Random(System.currentTimeMillis());
         try {
             IUnifier.Transient unifier = Unifiers.Immutable.of().melt();

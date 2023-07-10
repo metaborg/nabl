@@ -9,8 +9,7 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Predicate1;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -362,8 +361,8 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             return retainAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Sets.difference(domainSet(), ImmutableSet.copyOf(vars)));
+        @Override public IUniDisunifier.Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars) {
+            return removeAll(Set.Immutable.subtract(domainSet(), vars));
         }
 
         ///////////////////////////////////////////
@@ -374,7 +373,7 @@ public abstract class PersistentUniDisunifier extends BaseUniDisunifier implemen
             return removeAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public PersistentUniDisunifier.Result<ISubstitution.Immutable> removeAll(Set.Immutable<ITermVar> vars) {
             final BaseUnifier.ImmutableResult<ISubstitution.Immutable> r = unifier.removeAll(vars);
 
             final PersistentUnifier.Transient newUnifier = new PersistentUnifier.Transient(r.unifier());

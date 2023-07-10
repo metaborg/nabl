@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -45,7 +46,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
 
     @Override protected Optional<? extends ITerm> call(ITerm currentTerm, List<ITerm> argTerms,
             SemiIncrementalMultiFileSolver solver, ICancel cancel, IProgress progress) throws InterpreterException {
-        final Tuple2<MultiInitialResult, List<MultiUnitResult>> input = M.tuple2(M.blobValue(MultiInitialResult.class),
+        final Tuple2<MultiInitialResult, ImList.Immutable<MultiUnitResult>> input = M.tuple2(M.blobValue(MultiInitialResult.class),
                 M.listElems(M.blobValue(MultiUnitResult.class)), (t, ir, urs) -> {
                     return Tuple2.of(ir, urs);
                 }).match(currentTerm)

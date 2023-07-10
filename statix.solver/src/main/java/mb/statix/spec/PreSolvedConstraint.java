@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,14 +15,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -129,7 +128,7 @@ public class PreSolvedConstraint implements Serializable {
 
         vars = CapsuleUtil.toSet(subst.rename(vars));
         unifier = unifier.rename(subst);
-        constraints = constraints.stream().map(c -> c.apply(subst)).collect(ImmutableList.toImmutableList());
+        constraints = constraints.stream().map(c -> c.apply(subst)).collect(ImList.Immutable.toImmutableList());
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
@@ -139,7 +138,8 @@ public class PreSolvedConstraint implements Serializable {
 
 
     public IConstraint toConstraint() {
-        IConstraint newConstraint = Constraints.conjoin(Iterables.concat(StateUtil.asConstraint(unifier), constraints));
+        IConstraint newConstraint = Constraints.conjoin(
+            Iterables2.fromConcat(StateUtil.asConstraint(unifier), constraints));
         if(!vars.isEmpty() || (bodyCriticalEdges != null && !bodyCriticalEdges.isEmpty())) {
             newConstraint = new CExists(vars, newConstraint, cause, bodyCriticalEdges).withCause(cause);
         }
@@ -174,7 +174,7 @@ public class PreSolvedConstraint implements Serializable {
         if(!ren.isEmpty()) {
             unifier = unifier.rename(ren);
             constraints = constraints.stream().map(c -> c.apply(ren.asSubstitution()))
-                    .collect(ImmutableList.toImmutableList());
+                    .collect(ImList.Immutable.toImmutableList());
             if(bodyCriticalEdges != null) {
                 bodyCriticalEdges = bodyCriticalEdges.apply(ren);
             }
@@ -227,7 +227,7 @@ public class PreSolvedConstraint implements Serializable {
         if(!ren.isEmpty()) {
             unifier = unifier.rename(ren);
             constraints = constraints.stream().map(c -> c.apply(ren.asSubstitution()))
-                    .collect(ImmutableList.toImmutableList());
+                    .collect(ImList.Immutable.toImmutableList());
             if(bodyCriticalEdges != null) {
                 bodyCriticalEdges = bodyCriticalEdges.apply(ren);
             }
@@ -325,13 +325,13 @@ public class PreSolvedConstraint implements Serializable {
 
     private PreSolvedConstraint contradiction() {
         return new PreSolvedConstraint(CapsuleUtil.immutableSet(), PersistentUniDisunifier.Immutable.of(),
-                ImmutableList.of(new CFalse()), cause, bodyCriticalEdges == null ? null : Completeness.Immutable.of(),
+                ImList.Immutable.of(new CFalse()), cause, bodyCriticalEdges == null ? null : Completeness.Immutable.of(),
                 CapsuleUtil.immutableSet());
     }
 
     private static PreSolvedConstraint contradiction(IConstraint constraint) {
         return new PreSolvedConstraint(CapsuleUtil.immutableSet(), PersistentUniDisunifier.Immutable.of(),
-                ImmutableList.of(new CFalse()), constraint.cause().orElse(null),
+                ImList.Immutable.of(new CFalse()), constraint.cause().orElse(null),
                 constraint.bodyCriticalEdges().map(bce -> Completeness.Immutable.of()).orElse(null),
                 CapsuleUtil.immutableSet());
     }
@@ -427,7 +427,7 @@ public class PreSolvedConstraint implements Serializable {
             Collection<IConstraint> constraints, ICompleteness.Transient bodyCriticalEdges,
             Map<ITermVar, ITermVar> existentials, Collection<IConstraint> failures, Map<IConstraint, Delay> delays,
             @Nullable IConstraint cause, boolean returnOnFirstErrorOrDelay) {
-        final Deque<IConstraint> worklist = Lists.newLinkedList();
+        final Deque<IConstraint> worklist = new LinkedList<>();
         worklist.push(constraint);
         AtomicBoolean first = new AtomicBoolean(true);
         while(!worklist.isEmpty()) {

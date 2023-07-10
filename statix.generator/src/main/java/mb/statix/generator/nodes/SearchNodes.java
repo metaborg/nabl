@@ -2,10 +2,9 @@ package mb.statix.generator.nodes;
 
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.statix.generator.SearchState;
 
@@ -55,12 +54,12 @@ public class SearchNodes<O> implements SearchElement {
 
     @SafeVarargs public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
             SearchNode<O>... nodes) {
-        return of(parent, error, ImmutableList.copyOf(nodes).stream());
+        return of(parent, error, ImList.Immutable.copyOf(nodes).stream());
     }
 
     public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
             Iterable<SearchNode<O>> nodes) {
-        return of(parent, error, ImmutableList.copyOf(nodes).stream());
+        return of(parent, error, ImList.Immutable.copyOf(nodes).stream());
     }
 
     public static <O> SearchNodes<O> of(SearchNode<?> parent, Function0<String> error,
