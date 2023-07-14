@@ -3,10 +3,10 @@ package mb.p_raffrayi.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -33,6 +33,10 @@ import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
+import mb.scopegraph.patching.IPatchCollection;
+import mb.scopegraph.patching.PatchCollection;
+import mb.scopegraph.patching.Patcher;
+import mb.scopegraph.patching.Patcher.DataPatchCallback;
 
 class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
@@ -40,16 +44,21 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     private IScopeGraphLibrary<S, L, D> library;
 
+    private final @Nullable IUnitResult<S, L, D, ?> previousResult;
+
     private final List<IActorRef<? extends IUnit<S, L, D, Unit>>> workers;
 
     ScopeGraphLibraryUnit(IActor<? extends IUnit<S, L, D, Unit>> self,
             @Nullable IActorRef<? extends IUnit<S, L, D, ?>> parent, IUnitContext<S, L, D> context,
-            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library) {
+            Iterable<L> edgeLabels, IScopeGraphLibrary<S, L, D> library,
+            @Nullable IUnitResult<S, L, D, ?> previousResult) {
         super(self, parent, context, edgeLabels);
 
         // these are replaced once started
         this.library = library;
         this.workers = new ArrayList<>();
+
+        this.previousResult = previousResult;
     }
 
     protected void clearLibrary() {
@@ -70,11 +79,15 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
 
     @Override public IFuture<IUnitResult<S, L, D, Unit>> _start(List<S> rootScopes) {
         doStart(rootScopes);
-        buildScopeGraph(rootScopes);
+        if(previousResult == null) {
+            buildScopeGraph(rootScopes);
+        } else {
+            restoreScopeGraph(rootScopes);
+        }
         clearLibrary();
-        if(isDifferEnabled()) {
-            initDiffer(new MatchingDiffer<>(differOps(), differContext(d -> d)), Collections.emptyList(),
-                    Collections.emptyList());
+        if(isDifferEnabled() && previousResult != null) {
+            initDiffer(new MatchingDiffer<>(differOps(), differContext(d -> d)), rootScopes,
+                    previousResult.rootScopes());
         }
         startWorkers();
 
@@ -86,12 +99,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     private void buildScopeGraph(List<S> rootScopes) {
         final long t0 = System.currentTimeMillis();
 
-        final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
-
-        // initialize root scopes
-        for(S rootScope : rootScopes) {
-            doInitShare(self, rootScope, edges, false);
-        }
+        initRootScopes(rootScopes);
 
         // initialize library
         // Using context::makeScope assumes unique names in library
@@ -102,6 +110,51 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         this.scopes.__insertAll(libraryResult._1());
         scopeGraph.set(libraryResult._2());
 
+        closeRootScopes(rootScopes);
+
+        final long dt = System.currentTimeMillis() - t0;
+        logger.info("Initialized {} in {} ms", self.id(), dt);
+    }
+
+    private void restoreScopeGraph(List<S> rootScopes) {
+        initRootScopes(rootScopes);
+
+        final IPatchCollection.Transient<S> patches = PatchCollection.Transient.of();
+        final Iterator<S> previousScopes = previousResult.rootScopes().iterator();
+        for(S currentScope : rootScopes) {
+            patches.put(currentScope, previousScopes.next());
+        }
+
+        if(patches.isIdentity()) {
+            scopeGraph.set(previousResult.scopeGraph());
+        } else {
+            // @formatter:off
+            final Patcher<S, L, D> patcher = new Patcher.Builder<S, L, D>()
+                .patchSources(patches).patchEdgeTargets(patches)
+                .patchDatumSources(patches).patchDatums(patches, context::substituteScopes)
+                .build();
+            scopeGraph.set(patcher.apply(previousResult.scopeGraph(),
+                (s, t) -> Unit.unit,
+                (s_o, s_n, l, t_o, t_n, u) -> { },
+                DataPatchCallback.noop()
+            ));
+            // @formatter:on
+        }
+        this.scopes.__insertAll(previousResult.scopes());
+
+        closeRootScopes(rootScopes);
+    }
+
+    public void initRootScopes(List<S> rootScopes) {
+        final List<EdgeOrData<L>> edges = edgeLabels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
+
+        // initialize root scopes
+        for(S rootScope : rootScopes) {
+            doInitShare(self, rootScope, edges, false);
+        }
+    }
+
+    public void closeRootScopes(List<S> rootScopes) {
         // add root scope edges and close root scopes
         for(S rootScope : rootScopes) {
             for(L label : edgeLabels) {
@@ -112,9 +165,6 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                 doCloseLabel(self, rootScope, l);
             }
         }
-
-        final long dt = System.currentTimeMillis() - t0;
-        logger.info("Initialized {} in {} s", self.id(), TimeUnit.SECONDS.convert(dt, TimeUnit.MILLISECONDS));
     }
 
     private void startWorkers() {
@@ -175,11 +225,9 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     @Override public IFuture<IQueryAnswer<S, L, D>> _query(IActorRef<? extends IUnit<S, L, D, ?>> origin,
             ScopePath<S, L> path, IQuery<S, L, D> query, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv) {
         stats.incomingQueries += 1;
-        final IActorRef<? extends IUnit<S, L, D, Unit>> worker =
-                workers.get(stats.incomingQueries % workers.size());
+        final IActorRef<? extends IUnit<S, L, D, Unit>> worker = workers.get(stats.incomingQueries % workers.size());
 
-        final IFuture<IQueryAnswer<S, L, D>> result =
-                self.async(worker)._query(origin, path, query, dataWF, dataEquiv);
+        final IFuture<IQueryAnswer<S, L, D>> result = self.async(worker)._query(origin, path, query, dataWF, dataEquiv);
         final Query<S, L, D> token = Query.of(self, path, query, dataWF, dataEquiv, result);
         waitFor(token, worker);
         return result.whenComplete((r, ex) -> {
@@ -193,8 +241,8 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
         return _query(self.sender(TYPE), path, query, dataWF, dataEquiv);
     }
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         return CompletableFuture.completedFuture(ConfirmResult.confirm());
     }
 
@@ -212,8 +260,7 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
     }
 
     @Override public void _restart() {
-        // As part of the DataWf and DataLeq params of incoming queries, library the workers of a library unit
-        // can have outgoing queries. When these cause a deadlock, workers can receive a restart.
+        throw new UnsupportedOperationException("Not supported by static scope graph units.");
     }
 
     ///////////////////////////////////////////////////////////////////////////

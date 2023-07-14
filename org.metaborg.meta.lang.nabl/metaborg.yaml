@@ -19,8 +19,10 @@ pardonedLanguages:
 - Stratego-Sugar
 - SDF
 language:
+  sdf:
+    sdf2table: java
   stratego:
-    format: ctree
+    format: jar
     args:
     - -la
     - stratego-lib

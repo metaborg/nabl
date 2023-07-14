@@ -1,18 +1,16 @@
 package mb.nabl2.terms.build;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.util.List;
 import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 @Value.Immutable
 @Serial.Version(42L)
@@ -28,8 +26,8 @@ abstract class ASpecializedAppl extends AbstractApplTerm {
         return OP;
     }
 
-    @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
+    @Override public ImList.Immutable<ITerm> getArgs() {
+        return ImList.Immutable.of(B.newString(getFirstArg()), B.newInt(getSecondArg()));
     }
 
     @Override public IApplTerm withAttachments(IAttachments value) {

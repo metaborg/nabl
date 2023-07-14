@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.metaborg.util.future.IFuture;
@@ -24,7 +25,7 @@ public abstract class AbstractQueryTypeCheckerContext<S, L, D, R> implements ITy
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 
-    @SuppressWarnings("unused") @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+    @SuppressWarnings("unused") @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
         throw new UnsupportedOperationException("Unsupported in query context.");
     }
 

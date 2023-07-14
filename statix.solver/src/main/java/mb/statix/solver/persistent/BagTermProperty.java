@@ -1,6 +1,7 @@
 package mb.statix.solver.persistent;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 import org.metaborg.util.collection.ConsList;
 
@@ -26,7 +27,7 @@ public class BagTermProperty implements ITermProperty, Serializable {
         throw new UnsupportedOperationException("Bag property does not have a single value.");
     };
 
-    @Override public Iterable<ITerm> values() {
+    @Override public Collection<ITerm> values() {
         return values;
     }
 

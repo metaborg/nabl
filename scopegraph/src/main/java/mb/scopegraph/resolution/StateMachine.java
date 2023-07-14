@@ -1,21 +1,20 @@
 package mb.scopegraph.resolution;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableMap;
+import io.usethesource.capsule.Map;
 
 public class StateMachine<L> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableMap<String, State<L>> states;
+    private final Map.Immutable<String, State<L>> states;
 
     private final State<L> initial;
 
-    public StateMachine(Map<String, State<L>> states, State<L> initial) {
-        this.states = ImmutableMap.copyOf(states);
+    public StateMachine(Map.Immutable<String, State<L>> states, State<L> initial) {
+        this.states = states;
         this.initial = initial;
     }
 

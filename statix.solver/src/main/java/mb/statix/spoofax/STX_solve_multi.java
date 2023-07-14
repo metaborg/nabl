@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -21,10 +23,7 @@ import org.metaborg.util.unit.Unit;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IScopeImpl;
@@ -75,7 +74,7 @@ public class STX_solve_multi extends StatixPrimitive {
 
         final IScopeImpl<Scope, ITerm> scopeImpl = new ScopeImpl();
 
-        final List<ITerm> results = Lists.newArrayList();
+        final List<ITerm> results = new ArrayList<>();
         try {
             logger.info("Analyzing files");
 
@@ -206,20 +205,20 @@ public class STX_solve_multi extends StatixPrimitive {
 
         solveResult = solveResult.withState(solveResult.state().withScopeGraph(result.scopeGraph()));
 
-        final ImmutableMap.Builder<IConstraint, IMessage> messages =
-                ImmutableMap.<IConstraint, IMessage>builder().putAll(solveResult.messages());
+        final io.usethesource.capsule.Map.Transient<IConstraint, IMessage> messages = CapsuleUtil.transientMap();
+        messages.__putAll(solveResult.messages());
         if(result.result().analysis().exception() != null) {
             final Message message = new Message(MessageKind.ERROR,
-                    ImmutableList.of(new TextPart("Exception: " + result.result().analysis().exception().getMessage())),
-                    B.newTuple());
-            messages.put(new CFalse(message), message);
+                ImList.Immutable.of(new TextPart("Exception: " + result.result().analysis().exception().getMessage())),
+                B.newTuple());
+            messages.__put(new CFalse(message), message);
         }
         for(Throwable failure : result.failures()) {
             final Message message = new Message(MessageKind.ERROR,
-                    ImmutableList.of(new TextPart("Exception: " + failure.getMessage())), B.newTuple());
-            messages.put(new CFalse(message), message);
+                ImList.Immutable.of(new TextPart("Exception: " + failure.getMessage())), B.newTuple());
+            messages.__put(new CFalse(message), message);
         }
-        solveResult = solveResult.withMessages(messages.build());
+        solveResult = solveResult.withMessages(messages.freeze());
 
         return solveResult;
     }

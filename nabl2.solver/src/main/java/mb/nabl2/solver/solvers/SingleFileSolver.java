@@ -1,7 +1,6 @@
 package mb.nabl2.solver.solvers;
 
 import java.util.List;
-import java.util.Map;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
@@ -9,6 +8,7 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
@@ -121,7 +121,7 @@ public class SingleFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 

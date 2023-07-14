@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Map;
@@ -60,7 +61,7 @@ public class EmptyMemory<T> implements IMemoryView<T> {
     }
 
     @Override public Map.Immutable<T, Integer> asMap() {
-        return Map.Immutable.of();
+        return CapsuleUtil.immutableMap();
     }
 
     @Override public int size() {

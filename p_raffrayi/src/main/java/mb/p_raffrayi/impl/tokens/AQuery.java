@@ -11,7 +11,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.oopsla20.path.IScopePath;
 
-@Value.Immutable(prehash = false)
+@Value.Immutable(prehash = true)
 public abstract class AQuery<S, L, D> implements IWaitFor<S, L, D> {
 
     @Override @Value.Parameter public abstract IActorRef<? extends IUnit<S, L, D, ?>> origin();

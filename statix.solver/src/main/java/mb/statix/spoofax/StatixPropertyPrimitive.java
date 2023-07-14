@@ -1,9 +1,8 @@
 package mb.statix.spoofax;
 
-import static mb.nabl2.terms.build.TermBuild.B;
+import org.metaborg.util.collection.ImList;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
+import static mb.nabl2.terms.build.TermBuild.B;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.solver.ITermProperty;
@@ -38,8 +37,8 @@ public abstract class StatixPropertyPrimitive extends StatixPrimitive {
 
         switch(property.multiplicity()) {
             case BAG: {
-                return B.newList(Streams.stream(property.values()).map(analysis.state().unifier()::findRecursive)
-                        .collect(ImmutableList.toImmutableList()));
+                return B.newList(property.values().stream().map(analysis.state().unifier()::findRecursive)
+                        .collect(ImList.Immutable.toImmutableList()));
             }
             case SINGLETON: {
                 return analysis.state().unifier().findRecursive(property.value());

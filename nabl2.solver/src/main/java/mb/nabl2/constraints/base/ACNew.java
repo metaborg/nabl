@@ -1,10 +1,9 @@
 package mb.nabl2.constraints.base;
 
-import java.util.Set;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -16,7 +15,7 @@ import mb.nabl2.terms.ITerm;
 @Serial.Version(value = 42L)
 public abstract class ACNew implements IBaseConstraint {
 
-    @Value.Parameter public abstract Set<ITerm> getNVars();
+    @Value.Parameter public abstract Set.Immutable<ITerm> getNVars();
 
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 

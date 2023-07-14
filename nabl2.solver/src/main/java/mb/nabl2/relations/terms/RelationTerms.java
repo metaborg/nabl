@@ -3,12 +3,11 @@ package mb.nabl2.relations.terms;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.List;
-import java.util.Map;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.tuple.Tuple3;
 
-import com.google.common.collect.ImmutableMap;
-
+import io.usethesource.capsule.Map;
 import mb.nabl2.relations.variants.IVariantMatcher;
 import mb.nabl2.relations.variants.VariantRelationDescription;
 import mb.nabl2.terms.ITerm;
@@ -20,13 +19,13 @@ import mb.scopegraph.relations.RelationDescription;
 
 public class RelationTerms {
 
-    public static IMatcher<Map<String, VariantRelationDescription<ITerm>>> relations() {
+    public static IMatcher<Map.Immutable<String, VariantRelationDescription<ITerm>>> relations() {
         return M.listElems(relationDef(), (l, defs) -> {
-            ImmutableMap.Builder<String, VariantRelationDescription<ITerm>> relations = ImmutableMap.builder();
+            Map.Transient<String, VariantRelationDescription<ITerm>> relations = CapsuleUtil.transientMap();
             for(Tuple3<String, RelationDescription, List<IVariantMatcher<ITerm>>> def : defs) {
-                relations.put(def._1(), VariantRelationDescription.of(def._2(), def._3()));
+                relations.__put(def._1(), VariantRelationDescription.of(def._2(), def._3()));
             }
-            return relations.build();
+            return relations.freeze();
         });
     }
 

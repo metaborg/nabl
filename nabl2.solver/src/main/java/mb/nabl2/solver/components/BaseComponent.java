@@ -3,9 +3,8 @@ package mb.nabl2.solver.components;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.collect.Lists;
 
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
@@ -61,7 +60,7 @@ public class BaseComponent extends ASolver {
     }
 
     private SolveResult solve(CNew constraint) {
-        final List<IConstraint> constraints = Lists.newArrayList();
+        final List<IConstraint> constraints = new ArrayList<>();
         for(ITerm scope : constraint.getNVars()) {
             constraints.add(CEqual.of(scope, newScope(scope), constraint.getMessageInfo()));
         }

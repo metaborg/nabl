@@ -1,5 +1,6 @@
 package mb.nabl2.terms.matching;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -8,8 +9,6 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.CheckedFunction2;
 import org.metaborg.util.functions.CheckedFunction3;
 import org.metaborg.util.functions.CheckedFunction4;
-
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IConsTerm;
@@ -158,7 +157,7 @@ public class CheckedTermMatch {
                 CheckedFunction2<? super IListTerm, Iterable<T>, R, ? extends E> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).matchOrThrow(Terms.<Optional<R>, E>checkedCases(this::empty, list -> {
-                    List<T> ts = Lists.newArrayList();
+                    List<T> ts = new ArrayList<>();
                     for(ITerm t : ListTerms.iterable(list)) {
                         Optional<? extends T> o = m.matchOrThrow(t, unifier);
                         if(!o.isPresent()) {

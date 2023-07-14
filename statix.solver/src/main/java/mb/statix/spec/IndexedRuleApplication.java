@@ -19,8 +19,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
 
-import com.google.common.collect.Sets;
-
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.terms.ITerm;
@@ -194,7 +192,7 @@ public class IndexedRuleApplication {
             ira = new IndexedRuleApplication(spec, newParams, null, index);
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
-            final java.util.Set<ITermVar> newFreeVars = Sets.difference(residualConstraint.freeVars(), newParamVars);
+            final Set.Immutable<ITermVar> newFreeVars = residualConstraint.freeVars().__removeAll(newParamVars);
             if(!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }

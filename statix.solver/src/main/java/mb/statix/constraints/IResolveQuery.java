@@ -7,12 +7,15 @@ import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 
 public interface IResolveQuery extends IConstraint {
 
     QueryFilter filter();
 
     QueryMin min();
+
+    QueryProject project();
 
     ITerm scopeTerm();
 

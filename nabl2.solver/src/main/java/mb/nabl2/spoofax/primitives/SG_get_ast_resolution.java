@@ -6,11 +6,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.task.NullProgress;
 import org.metaborg.util.task.ThreadCancel;
 import org.spoofax.interpreter.core.InterpreterException;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
@@ -31,7 +30,7 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             throws InterpreterException {
         return TermIndex.get(term).flatMap(index -> {
             final Collection<Occurrence> refs = solution.astRefs().get(OccurrenceIndex.of(index));
-            final ImmutableList.Builder<ITerm> entriesBuilder = ImmutableList.builder();
+            final ImList.Mutable<ITerm> entriesBuilder = ImList.Mutable.of();
             try {
                 for(Occurrence ref : refs) {
                     try {
@@ -47,7 +46,7 @@ public class SG_get_ast_resolution extends AnalysisPrimitive {
             } catch(InterruptedException e) {
                 return Optional.empty();
             }
-            final List<ITerm> entries = entriesBuilder.build();
+            final List<ITerm> entries = entriesBuilder.freeze();
             if(entries.isEmpty()) {
                 return Optional.empty();
             }

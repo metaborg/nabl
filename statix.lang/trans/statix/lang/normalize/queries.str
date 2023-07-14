@@ -81,4 +81,5 @@ rules
     where t        := <conc;mk-Tuple>(in_wlds, out_ts);
           pt       := <mk-Tuple>([<mk-Wld(|PATH())>, t]);
           pts      := <mk-List>([pt])
-    where c        := CResolveQuery(rel, filter, min, st, pts, NoMessage())
+    where prj      := Project(PFull())
+    where c        := CResolveQuery(rel, filter, min, prj, st, pts, NoMessage())

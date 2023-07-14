@@ -3,8 +3,6 @@ package mb.nabl2.constraints.nameresolution;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
-import com.google.common.base.Preconditions;
-
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -27,7 +25,9 @@ public abstract class ACDeclProperty implements INameResolutionConstraint {
     @Value.Parameter @Override public abstract IMessageInfo getMessageInfo();
 
     @Value.Check public void check() {
-        Preconditions.checkArgument(getKey().isGround());
+        if (!getKey().isGround()) {
+          throw new IllegalArgumentException("Key is not ground");
+        }
     }
 
     @Override public <T> T match(Cases<T> cases) {

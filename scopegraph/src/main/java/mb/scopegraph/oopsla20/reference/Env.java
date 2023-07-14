@@ -4,11 +4,12 @@ import java.io.Serializable;
 import java.util.Iterator;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImmutableCollection;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 
-public class Env<S, L, D> implements Iterable<ResolutionPath<S, L, D>>, Serializable {
+public class Env<S, L, D> implements ImmutableCollection<ResolutionPath<S, L, D>>, Serializable {
 
     private static final long serialVersionUID = 42L;
 

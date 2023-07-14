@@ -5,8 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.google.common.collect.Iterables;
-
 import mb.scopegraph.relations.ARelationDescription.Reflexivity;
 import mb.scopegraph.relations.ARelationDescription.Symmetry;
 import mb.scopegraph.relations.ARelationDescription.Transitivity;
@@ -32,13 +30,13 @@ public class RelationTest {
     @Test public void testReflexive_ImplicitLargerRefl() throws RelationException {
         IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
-        assertTrue(Iterables.contains(r.larger(1), 1));
+        assertTrue(r.larger(1).contains(1));
     }
 
     @Test public void testReflexive_ImplicitSmallerRefl() throws RelationException {
         IRelation.Transient<Integer> r = Relation.Transient.of(RelationDescription.of(Reflexivity.REFLEXIVE,
                 Symmetry.NON_SYMMETRIC, Transitivity.NON_TRANSITIVE));
-        assertTrue(Iterables.contains(r.smaller(1), 1));
+        assertTrue(r.smaller(1).contains(1));
     }
 
     @Test(expected = ReflexivityException.class) public void testIrreflexive_ReflThrows() throws RelationException {
@@ -58,8 +56,8 @@ public class RelationTest {
                 Symmetry.NON_SYMMETRIC, Transitivity.TRANSITIVE));
         r.add(1, 2);
         r.add(2, 3);
-        assertFalse(Iterables.contains(r.larger(2), 2));
-        assertFalse(Iterables.contains(r.smaller(2), 2));
+        assertFalse(r.larger(2).contains(2));
+        assertFalse(r.smaller(2).contains(2));
     }
 
     @Test public void testNonreflexive_Refl() throws RelationException {

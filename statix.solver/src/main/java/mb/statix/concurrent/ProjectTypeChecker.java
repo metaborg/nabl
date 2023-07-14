@@ -33,13 +33,13 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
             @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
             runLibraries(context, project.libraries(), projectScope);
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>> groupResults =
             runGroups(context, project.groups(), Arrays.asList(projectScope));
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>> unitResults =
             runUnits(context, project.units(), Arrays.asList(projectScope));
 
         context.closeScope(projectScope);
@@ -53,7 +53,7 @@ public class ProjectTypeChecker extends AbstractTypeChecker<ProjectResult> {
             this::patch,
             (result, ex) -> {
                 return AggregateFuture.apply(libraryResults, groupResults, unitResults).thenApply(e -> {
-                    return ProjectResult.of(project.resource(), e._1(), e._2(), e._3(), result, ex);
+                    return ProjectResult.of(project.resource(), projectScope, e._1(), e._2(), e._3(), result, ex);
                 });
             })
             .whenComplete((r, __) -> {

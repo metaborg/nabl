@@ -21,23 +21,30 @@ public class Edge<S, L> implements Serializable {
         return source + " -" + label + "-> " + target;
     }
 
+    private volatile int hashCode;
+
     @Override public int hashCode() {
-    	return Objects.hashCode(source);
+        int result = hashCode;
+        if(result == 0) {
+            result = Objects.hash(source, label, target);
+            hashCode = result;
+        }
+        return result;
     }
 
     @Override public boolean equals(Object obj) {
-    	if (this == obj) {
-    		return true;
-    	} else if (obj == null || this.getClass() != obj.getClass()) {
-    		return false;
-    	}
+        if (this == obj) {
+            return true;
+        } else if (obj == null || this.getClass() != obj.getClass()) {
+            return false;
+        }
 
-    	@SuppressWarnings("unchecked")
-		Edge<S, L> other = (Edge<S, L>) obj;
+        @SuppressWarnings("unchecked")
+        Edge<S, L> other = (Edge<S, L>) obj;
 
-    	return Objects.equals(source, other.source)
-    		&& Objects.equals(label, other.label)
-    		&& Objects.equals(target, other.target);
+        return Objects.equals(source, other.source)
+            && Objects.equals(label, other.label)
+            && Objects.equals(target, other.target);
     }
 
 }

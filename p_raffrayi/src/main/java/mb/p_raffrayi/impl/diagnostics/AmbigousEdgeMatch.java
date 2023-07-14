@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diagnostics;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -9,15 +10,13 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.metaborg.util.collection.HashSetMultiTable;
-import org.metaborg.util.collection.MultiTable;
 import org.metaborg.util.functions.Action4;
 
-import com.google.common.collect.Lists;
-
+import mb.p_raffrayi.collection.HashSetMultiTable;
+import mb.p_raffrayi.collection.MultiTable;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public class AmbigousEdgeMatch<S, L, D> {
 
@@ -68,7 +67,7 @@ public class AmbigousEdgeMatch<S, L, D> {
     }
 
     private void analyzeEdge(BiMap.Immutable<S> matches, S scope, L label, Action4<S, L, S, S> onAmbiguousEdge) {
-        final List<S> targets = Lists.newArrayList(scopeGraph.getEdges(scope, label));
+        final List<S> targets = new ArrayList<>(scopeGraph.getEdges(scope, label));
         while(!targets.isEmpty()) {
             final S target = targets.remove(0);
             for(S other : targets) {

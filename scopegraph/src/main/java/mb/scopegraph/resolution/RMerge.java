@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.scopegraph.oopsla20.reference.ResolutionException;
 
@@ -12,17 +12,17 @@ public final class RMerge<L> implements RExp<L>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableList<RVar> envs;
+    private final ImList.Immutable<RVar> envs;
 
     public RMerge(Iterable<RVar> envs) {
-        this.envs = ImmutableList.copyOf(envs);
+        this.envs = ImList.Immutable.copyOf(envs);
     }
 
     public RMerge(RVar... envs) {
-        this.envs = ImmutableList.copyOf(envs);
+        this.envs = ImList.Immutable.of(envs);
     }
 
-    public ImmutableList<RVar> envs() {
+    public ImList.Immutable<RVar> envs() {
         return envs;
     }
 

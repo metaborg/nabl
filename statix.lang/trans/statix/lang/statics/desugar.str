@@ -59,7 +59,8 @@ rules
          ord    := <with-origin(|rt)> ResolveLt(rt);
          lord   := <with-origin(|rt)> LTrue();
          min    := <with-origin(|rt)> Min(ord, lord);
-         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
+         prj    := <with-origin(|rt)> Project(PFull());
+         c'     := CResolveQuery(rel, filter, min, prj, st, pst, msg)
 
   desugar-ref-shorthand: CResolveRefWithRel(rel, rt, st, pst, msg) -> c'
     with match  := <with-origin(|rt)> ResolveMatch(rt);
@@ -68,7 +69,8 @@ rules
          ord    := <with-origin(|rt)> ResolveLt(rt);
          lord   := <with-origin(|rt)> LTrue();
          min    := <with-origin(|rt)> Min(ord, lord);
-         c'     := CResolveQuery(rel, filter, min, st, pst, msg)
+         prj    := <with-origin(|rt)> Project(PFull());
+         c'     := CResolveQuery(rel, filter, min, prj, st, pst, msg)
 
 rules
 
@@ -94,6 +96,8 @@ rules
   desugar-query: Min_dep(ord, l) -> Min(ord, l)
   desugar-query: NamespaceMin_dep(ord) -> NamespaceMin(ord)
   desugar-query: NoNamespaceMin() -> NamespaceMin([])
+
+  desugar-query: NoProject() -> Project(PFull())
 
 rules
 

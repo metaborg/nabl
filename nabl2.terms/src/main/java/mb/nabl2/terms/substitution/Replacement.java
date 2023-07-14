@@ -1,15 +1,11 @@
 package mb.nabl2.terms.substitution;
 
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableList;
-
-import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.util.Set;
+import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IListTerm;
@@ -18,12 +14,14 @@ import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 public class Replacement implements IReplacement {
 
-    private final BiMap<ITerm, ITerm> replacement;
+    private final BiMap.Immutable<ITerm> replacement;
     private final boolean traverseSubTerms;
 
-    private Replacement(BiMap<ITerm, ITerm> replacement, boolean traverseSubTerms) {
+    private Replacement(BiMap.Immutable<ITerm> replacement, boolean traverseSubTerms) {
         this.replacement = replacement;
         this.traverseSubTerms = traverseSubTerms;
     }
@@ -37,7 +35,7 @@ public class Replacement implements IReplacement {
     }
 
     @Override public Set<ITerm> valueSet() {
-        return replacement.values();
+        return replacement.valueSet();
     }
 
     @Override public Set<? extends Entry<ITerm, ITerm>> entrySet() {
@@ -47,7 +45,7 @@ public class Replacement implements IReplacement {
     @Override public ITerm replace(ITerm term) {
         // TODO: require term to be ground????
         // TODO: disable subterm inclusion?
-        return replacement.getOrDefault(term, term);
+        return replacement.getKeyOrDefault(term, term);
     }
 
     @Override public ITerm apply(ITerm term) {
@@ -58,7 +56,7 @@ public class Replacement implements IReplacement {
                 if(!traverseSubTerms) {
                     return newAppl;
                 }
-                final ImmutableList<ITerm> newArgs;
+                final ImList.Immutable<ITerm> newArgs;
                 if((newArgs = Terms.applyLazy(newAppl.getArgs(), this::apply)) == null) {
                     return newAppl;
                 }
@@ -108,10 +106,10 @@ public class Replacement implements IReplacement {
     public static class Builder {
 
         private boolean traverseSubTerms = false;
-        private final BiMap<ITerm, ITerm> replacement;
+        private final BiMap.Transient<ITerm> replacement;
 
         private Builder() {
-            this.replacement = HashBiMap.create();
+            this.replacement = BiMap.Transient.of();
         }
 
         public boolean containsKey(ITermVar var) {
@@ -138,7 +136,7 @@ public class Replacement implements IReplacement {
         }
 
         public Replacement build() {
-            return new Replacement(replacement, traverseSubTerms);
+            return new Replacement(replacement.freeze(), traverseSubTerms);
         }
 
     }

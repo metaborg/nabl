@@ -10,8 +10,7 @@ import java.util.stream.Collectors;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.Streams;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -35,7 +34,7 @@ public class STX_get_scopegraph_data extends StatixPrimitive {
             M.tuple2(Scope.matcher(), StatixTerms.label(), (t, s, r) -> {
                 reportInvalidDataLabel(analysis, r);
                 final IUniDisunifier.Immutable unifier = state.unifier();
-                return B.newList(Streams.stream(state.scopeGraph().getEdges(s, r))
+                return B.newList(state.scopeGraph().getEdges(s, r).stream()
                         .map(state.scopeGraph()::getData)
                         .filter(Optional::isPresent)
                         .map(Optional::get)

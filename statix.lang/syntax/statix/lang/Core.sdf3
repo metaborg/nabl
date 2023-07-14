@@ -255,18 +255,24 @@ context-free syntax
     query [QueryTarget]
      [QueryFilter]
      [QueryMin]
+     [QueryProject]
       in [Term] |-> [Term][Message]
    ]
 
   QueryTarget.EOP = "()"
   QueryTarget     = RelRef
 
-  QueryFilter.Filter = < filter <LabelRE> and <HoConstraint>>
-  QueryMin.Min       = < min <LabelOrd> and <HoConstraint>>
+  QueryFilter.Filter   = < filter <LabelRE> and <HoConstraint>>
+  QueryMin.Min         = < min <LabelOrd> and <HoConstraint>>
+  QueryProject.Project = < project <ProjectTarget>>
+
+  ProjectTarget.PFull       = <*>
+  ProjectTarget.PTargetData = <dst, $>
+  ProjectTarget.PData       = <$>
 
 lexical syntax
 
-  Keyword = "query" | "in" | "filter" | "min" | "and"
+  Keyword = "query" | "in" | "filter" | "min" | "project" | "and"
 
 
 /******************************************************************

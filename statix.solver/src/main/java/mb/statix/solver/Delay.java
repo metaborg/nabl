@@ -4,8 +4,6 @@ import java.util.Collection;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.ImmutableSet;
-
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -81,13 +79,13 @@ public class Delay extends Throwable {
     }
 
     public static Delay of(Collection<Delay> delays) {
-        ImmutableSet.Builder<ITermVar> vars = ImmutableSet.builder();
-        ImmutableSet.Builder<CriticalEdge> scopes = ImmutableSet.builder();
+        Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
+        Set.Transient<CriticalEdge> scopes = CapsuleUtil.transientSet();
         delays.stream().forEach(d -> {
-            vars.addAll(d.vars());
-            scopes.addAll(d.criticalEdges());
+            vars.__insertAll(d.vars());
+            scopes.__insertAll(d.criticalEdges());
         });
-        return new Delay(vars.build(), scopes.build());
+        return new Delay(vars.freeze(), scopes.freeze());
     }
 
 }

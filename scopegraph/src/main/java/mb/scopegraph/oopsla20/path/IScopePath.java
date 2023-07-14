@@ -1,16 +1,12 @@
 package mb.scopegraph.oopsla20.path;
 
-public interface IScopePath<S, L> extends IPath<S, L>, Iterable<IStep<S, L>> {
+import org.metaborg.util.collection.ImmutableCollection;
+
+public interface IScopePath<S, L> extends IPath<S, L>, ImmutableCollection<IStep<S, L>> {
 
     S getSource();
 
     S getTarget();
-
-    default boolean isEmpty() {
-        return size() == 0;
-    }
-
-    int size();
 
     String toString(boolean includeSource, boolean includeTarget);
 

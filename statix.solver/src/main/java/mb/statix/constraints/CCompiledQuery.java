@@ -15,6 +15,7 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 
 public class CCompiledQuery extends AResolveQuery implements Serializable {
 
@@ -22,19 +23,19 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
 
     private final StateMachine<ITerm> stateMachine;
 
-    public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CCompiledQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
             StateMachine<ITerm> stateMachine) {
-        this(filter, min, scopeTerm, resultTerm, null, null, stateMachine);
+        this(filter, min, project, scopeTerm, resultTerm, null, null, stateMachine);
     }
 
-    public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm,
+    public CCompiledQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
             @Nullable IMessage message, StateMachine<ITerm> stateMachine) {
-        this(filter, min, scopeTerm, resultTerm, null, message, stateMachine);
+        this(filter, min, project, scopeTerm, resultTerm, null, message, stateMachine);
     }
 
-    public CCompiledQuery(QueryFilter filter, QueryMin min, ITerm scopeTerm, ITerm resultTerm, IConstraint cause,
-            IMessage message, StateMachine<ITerm> stateMachine) {
-        super(filter, min, scopeTerm, resultTerm, cause, message);
+    public CCompiledQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
+            IConstraint cause, IMessage message, StateMachine<ITerm> stateMachine) {
+        super(filter, min, project, scopeTerm, resultTerm, cause, message);
         this.stateMachine = stateMachine;
     }
 
@@ -52,21 +53,21 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
     }
 
     @Override public CCompiledQuery withCause(IConstraint cause) {
-        return new CCompiledQuery(filter, min, scopeTerm, resultTerm, cause, message, stateMachine);
+        return new CCompiledQuery(filter, min, project, scopeTerm, resultTerm, cause, message, stateMachine);
     }
 
     @Override public CCompiledQuery apply(Immutable subst) {
-        return new CCompiledQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+        return new CCompiledQuery(filter.apply(subst), min.apply(subst), project, subst.apply(scopeTerm),
                 subst.apply(resultTerm), cause, message == null ? null : message.apply(subst), stateMachine);
     }
 
     @Override public CCompiledQuery unsafeApply(Immutable subst) {
-        return new CCompiledQuery(filter.unsafeApply(subst), min.unsafeApply(subst), subst.apply(scopeTerm),
+        return new CCompiledQuery(filter.unsafeApply(subst), min.unsafeApply(subst), project, subst.apply(scopeTerm),
                 subst.apply(resultTerm), cause, message == null ? null : message.apply(subst), stateMachine);
     }
 
     @Override public CCompiledQuery apply(IRenaming subst) {
-        return new CCompiledQuery(filter.apply(subst), min.apply(subst), subst.apply(scopeTerm),
+        return new CCompiledQuery(filter.apply(subst), min.apply(subst), project, subst.apply(scopeTerm),
                 subst.apply(resultTerm), cause, message == null ? null : message.apply(subst), stateMachine);
     }
 
@@ -76,6 +77,8 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
         sb.append(filter.toString(termToString));
         sb.append(" ");
         sb.append(min.toString(termToString));
+        sb.append(" ");
+        sb.append(project.toString(termToString));
         sb.append(" in ");
         sb.append(termToString.format(scopeTerm));
         sb.append(" |-> ");
@@ -90,9 +93,9 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
             return false;
         CCompiledQuery that = (CCompiledQuery) o;
         return Objects.equals(filter, that.filter) && Objects.equals(min, that.min)
-                && Objects.equals(scopeTerm, that.scopeTerm) && Objects.equals(resultTerm, that.resultTerm)
-                && Objects.equals(cause, that.cause) && Objects.equals(message, that.message)
-                && Objects.equals(stateMachine, that.stateMachine);
+                && Objects.equals(project, that.project) && Objects.equals(scopeTerm, that.scopeTerm)
+                && Objects.equals(resultTerm, that.resultTerm) && Objects.equals(cause, that.cause)
+                && Objects.equals(message, that.message) && Objects.equals(stateMachine, that.stateMachine);
     }
 
     private volatile int hashCode;
@@ -100,7 +103,7 @@ public class CCompiledQuery extends AResolveQuery implements Serializable {
     @Override public int hashCode() {
         int result = hashCode;
         if(result == 0) {
-            result = Objects.hash(filter, min, scopeTerm, resultTerm, cause, message, stateMachine);
+            result = Objects.hash(filter, min, project, scopeTerm, resultTerm, cause, message, stateMachine);
             hashCode = result;
         }
         return result;

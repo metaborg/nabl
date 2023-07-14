@@ -3,6 +3,7 @@ package mb.nabl2.solver.components;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -11,9 +12,6 @@ import java.util.stream.Collectors;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.SetMultimap;
@@ -66,7 +64,7 @@ public class SetComponent extends ASolver {
         ITerm left = constraint.getLeft();
         ITerm right = constraint.getRight();
         if(!unifier().isGround(left) && unifier().isGround(right)) {
-            throw new VariableDelayException(Iterables.concat(unifier().getVars(left), unifier().getVars(right)));
+            throw new VariableDelayException(Iterables2.fromConcat(unifier().getVars(left), unifier().getVars(right)));
         }
         Optional<ISetProducer<ITerm>> maybeLeftSet = evaluator.match(left, unifier());
         Optional<ISetProducer<ITerm>> maybeRightSet = evaluator.match(right, unifier());
@@ -128,7 +126,7 @@ public class SetComponent extends ASolver {
             throw new InterruptedDelayException(e);
         }
         SetMultimap.Immutable<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
-        List<IElement<ITerm>> duplicates = Lists.newArrayList();
+        List<IElement<ITerm>> duplicates = new ArrayList<>();
         for(Object key : proj.keySet()) {
             Collection<IElement<ITerm>> values = proj.get(key);
             if(values.size() > 1) {
