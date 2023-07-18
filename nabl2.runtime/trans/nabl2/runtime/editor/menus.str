@@ -2,6 +2,7 @@ module nabl2/runtime/editor/menus
 
 imports
   libstratego-lib
+  libstratego-aterm
 
 imports
 
@@ -16,6 +17,9 @@ rules
 
   nabl2--debug-file-constraints =
     nabl2--debug-file-result(nabl2--debug-constraints|"constraints")
+
+  nabl2--debug-file-constraints-aterm =
+    nabl2--debug-file-result(nabl2--debug-constraints,pp-aterm|"constraints.aterm")
 
   nabl2--debug-file-scope-graph =
     nabl2--debug-file-result(nabl2--debug-scope-graph|"scope-graph")

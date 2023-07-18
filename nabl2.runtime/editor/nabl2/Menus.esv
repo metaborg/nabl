@@ -5,6 +5,7 @@ menus
   menu: "NaBL2 Analysis" (meta) (openeditor)
 
     action: "Debug file constraints"          = nabl2--debug-file-constraints (realtime)
+    action: "Debug file constraints (ATerm)"  = nabl2--debug-file-constraints-aterm (realtime)
     action: "Debug file scope graph"          = nabl2--debug-file-scope-graph (realtime)
     action: "Debug file scope graph (DOT)"    = nabl2--debug-file-scope-graph-dot (realtime)
     action: "Debug file name resolution"      = nabl2--debug-file-name-resolution (realtime)
