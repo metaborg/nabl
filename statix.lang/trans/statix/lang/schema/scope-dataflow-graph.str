@@ -12,16 +12,9 @@ imports
 
 signature
 
-  // Structure of Dataflow graph
-  sorts SDFGNode constructors
-    Variable : Var -> SDFGNode                  // Variable
-    PArg     : ConstraintId * int -> SDFGNode   // Predicate argument
-    CArg     : SortId       * int -> SDFGNode   // Constructor argument
-    RArg     : RelationId   * int -> SDFGNode   // Relation argument
-
   sorts SDFGEdge constructors
-    DEdge    : SDFGNode * SDFGNode -> SDFGEdge  // Directed Edge
-    UEdge    : SDFGNode * SDFGNode -> SDFGEdge  // Undirected Edge
+    DEdge    : ScopeKindVar * ScopeKindVar -> SDFGEdge  // Directed Edge
+    UEdge    : ScopeKindVar * ScopeKindVar -> SDFGEdge  // Undirected Edge
 
 rules
 
