@@ -1,0 +1,547 @@
+Constraints(
+  [ CConj(
+      CConj(
+        CAstProperty(TermIndex("", 21), Params(), CVar(".", "s-1"))
+      , CConj(
+          CNew([CVar("", "s_test-1")], TermIndex("", 21))
+        , CConj(
+            CGDirectEdge(
+              CVar("", "s_test-1")
+            , P()
+            , CVar(".", "s-1")
+            , TermIndex("", 21)
+            )
+          , CConj(
+              CAstProperty(
+                TermIndex("", 21)
+              , Property("scope")
+              , CVar("", "s_test-1")
+              )
+            , CConj(
+                CGDecl(
+                  Occurrence(Namespace("Barrier"), (), TermIndex("", 21))
+                , CVar("", "s_test-1")
+                , TermIndex("", 21)
+                )
+              , CConj(
+                  CGAssoc(
+                    Occurrence(Namespace("Barrier"), (), TermIndex("", 21))
+                  , Label("B")
+                  , CVar("", "s_test-1")
+                  , TermIndex("", 21)
+                  )
+                , CConj(
+                    CNew([CVar("", "s_syn-1")], TermIndex("", 21))
+                  , CConj(
+                      CGDirectEdge(
+                        CVar("", "s_test-1")
+                      , Label("LS")
+                      , CVar("", "s_syn-1")
+                      , TermIndex("", 21)
+                      )
+                    , CConj(
+                        CConj(
+                          CAstProperty(
+                            TermIndex("", 20)
+                          , Params()
+                          , (CVar("", "s_test-1"), CVar("", "s_syn-1"), CVar(".", "s-1"))
+                          )
+                        , CConj(
+                            CConj(
+                              CAstProperty(
+                                TermIndex("", 20)
+                              , Params()
+                              , (CVar("", "s_test-1"), CVar("", "s_syn-1"), CVar(".", "s-1"))
+                              )
+                            , CTrue(TermIndex("", 20))
+                            )
+                          , CConj(
+                              CDistinct(
+                                Projection("name")
+                              , Declarations(CVar("", "s_test-1"), Namespace("C"))
+                              , Message(
+                                  Error()
+                                , Formatted([Text("Duplicate constraint "), Term(NAME())])
+                                , NAME()
+                                )
+                              )
+                            , CConj(
+                                CDistinct(
+                                  Projection("name")
+                                , Declarations(CVar("", "s_test-1"), Namespace("Ns"))
+                                , Message(
+                                    Error()
+                                  , Formatted([Text("Duplicate namespace "), Term(NAME())])
+                                  , NAME()
+                                  )
+                                )
+                              , CConj(
+                                  CDistinct(
+                                    Projection("name")
+                                  , Declarations(CVar("", "s_test-1"), Namespace("NsQ"))
+                                  , Message(
+                                      Error()
+                                    , Formatted([Text("Duplicate resolution policy for namespace "), Term(NAME())])
+                                    , NAME()
+                                    )
+                                  )
+                                , CConj(
+                                    CDistinct(
+                                      Projection("name")
+                                    , Union(
+                                        Declarations(CVar("", "s_test-1"), Namespace("Rel"))
+                                      , Declarations(CVar("", "s_test-1"), Namespace("Edge"))
+                                      )
+                                    , Message(
+                                        Error()
+                                      , Formatted([Text("Duplicate label/relation "), Term(NAME())])
+                                      , NAME()
+                                      )
+                                    )
+                                  , CConj(
+                                      CSubsetEq(
+                                        Lsect(
+                                          Declarations(CVar("", "s_test-1"), Namespace("C"))
+                                        , Projection("name")
+                                        , Diff(
+                                            Reachables(CVar("", "s_test-1"), Namespace("C"))
+                                          , NoProjection()
+                                          , Declarations(CVar("", "s_test-1"), Namespace("C"))
+                                          )
+                                        )
+                                      , NoProjection()
+                                      , EmptySet()
+                                      , Message(
+                                          Warning()
+                                        , Formatted([Text("Shadows imported constraint "), Term(NAME())])
+                                        , NAME()
+                                        )
+                                      )
+                                    , CConj(
+                                        CSubsetEq(
+                                          Lsect(
+                                            Declarations(CVar("", "s_test-1"), Namespace("Ns"))
+                                          , Projection("name")
+                                          , Diff(
+                                              Reachables(CVar("", "s_test-1"), Namespace("Ns"))
+                                            , NoProjection()
+                                            , Declarations(CVar("", "s_test-1"), Namespace("Ns"))
+                                            )
+                                          )
+                                        , NoProjection()
+                                        , EmptySet()
+                                        , Message(
+                                            Warning()
+                                          , Formatted([Text("Shadows imported namespace "), Term(NAME())])
+                                          , NAME()
+                                          )
+                                        )
+                                      , CConj(
+                                          CSubsetEq(
+                                            Lsect(
+                                              Declarations(CVar("", "s_test-1"), Namespace("NsQ"))
+                                            , Projection("name")
+                                            , Diff(
+                                                Reachables(CVar("", "s_test-1"), Namespace("NsQ"))
+                                              , NoProjection()
+                                              , Declarations(CVar("", "s_test-1"), Namespace("NsQ"))
+                                              )
+                                            )
+                                          , NoProjection()
+                                          , EmptySet()
+                                          , Message(
+                                              Warning()
+                                            , Formatted([Text("Shadows imported resolution policy for namespace "), Term(NAME())])
+                                            , NAME()
+                                            )
+                                          )
+                                        , CConj(
+                                            CSubsetEq(
+                                              Lsect(
+                                                Union(
+                                                  Declarations(CVar("", "s_test-1"), Namespace("Rel"))
+                                                , Declarations(CVar("", "s_test-1"), Namespace("Edge"))
+                                                )
+                                              , Projection("name")
+                                              , Diff(
+                                                  Union(
+                                                    Reachables(CVar("", "s_test-1"), Namespace("Rel"))
+                                                  , Reachables(CVar("", "s_test-1"), Namespace("Edge"))
+                                                  )
+                                                , NoProjection()
+                                                , Union(
+                                                    Declarations(CVar("", "s_test-1"), Namespace("Rel"))
+                                                  , Declarations(CVar("", "s_test-1"), Namespace("Edge"))
+                                                  )
+                                                )
+                                              )
+                                            , NoProjection()
+                                            , EmptySet()
+                                            , Message(
+                                                Warning()
+                                              , Formatted([Text("Shadows imported edge label / relation "), Term(NAME())])
+                                              , NAME()
+                                              )
+                                            )
+                                          , CConj(
+                                              CDistinct(
+                                                Projection("name")
+                                              , Declarations(CVar("", "s_syn-1"), Namespace("Op"))
+                                              , Message(
+                                                  Error()
+                                                , Formatted([Text("Duplicate constructor "), Term(NAME())])
+                                                , NAME()
+                                                )
+                                              )
+                                            , CConj(
+                                                CDistinct(
+                                                  Projection("name")
+                                                , Declarations(CVar("", "s_syn-1"), Namespace("Sort"))
+                                                , Message(
+                                                    Error()
+                                                  , Formatted([Text("Duplicate sort "), Term(NAME())])
+                                                  , NAME()
+                                                  )
+                                                )
+                                              , CConj(
+                                                  CGoal(DistinctPatterns(CVar("", "localRules-1")), TermIndex("", 20))
+                                                , CConj(
+                                                    CEvalSet(
+                                                      CVar("", "localRules-1")
+                                                    , Declarations(CVar("", "s_syn-1"), Namespace("Rule"))
+                                                    , Message(Error(), Default(), TermIndex("", 20))
+                                                    )
+                                                  , CConj(
+                                                      CSubsetEq(
+                                                        Lsect(
+                                                          Declarations(CVar("", "s_syn-1"), Namespace("Sort"))
+                                                        , Projection("name")
+                                                        , Diff(
+                                                            Reachables(CVar("", "s_test-1"), Namespace("Sort"))
+                                                          , NoProjection()
+                                                          , Declarations(CVar("", "s_syn-1"), Namespace("Sort"))
+                                                          )
+                                                        )
+                                                      , NoProjection()
+                                                      , EmptySet()
+                                                      , Message(
+                                                          Error()
+                                                        , Formatted([Text("Duplicate of imported sort "), Term(NAME())])
+                                                        , NAME()
+                                                        )
+                                                      )
+                                                    , CConj(
+                                                        CSubsetEq(
+                                                          Lsect(
+                                                            Declarations(CVar("", "s_syn-1"), Namespace("Op"))
+                                                          , Projection("name")
+                                                          , Diff(
+                                                              Reachables(CVar("", "s_test-1"), Namespace("Op"))
+                                                            , NoProjection()
+                                                            , Declarations(CVar("", "s_syn-1"), Namespace("Op"))
+                                                            )
+                                                          )
+                                                        , NoProjection()
+                                                        , EmptySet()
+                                                        , Message(
+                                                            Error()
+                                                          , Formatted([Text("Duplicate of imported constructor "), Term(NAME())])
+                                                          , NAME()
+                                                          )
+                                                        )
+                                                      , CConj(
+                                                          CGoal(
+                                                            NoDuplicatePatterns(CVar("", "localRules-1"), CVar("", "importedRules-1"), ())
+                                                          , TermIndex("", 20)
+                                                          )
+                                                        , CEvalSet(
+                                                            CVar("", "importedRules-1")
+                                                          , Diff(
+                                                              Reachables(CVar("", "s_test-1"), Namespace("Rule"))
+                                                            , NoProjection()
+                                                            , Declarations(CVar("", "s_syn-1"), Namespace("Rule"))
+                                                            )
+                                                          , Message(Error(), Default(), TermIndex("", 20))
+                                                          )
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      , CConj(
+                          CConj(
+                            CAstProperty(TermIndex("", 18), Params(), CVar("", "s_test-1"))
+                          , CConj(
+                              CConj(
+                                CEqual(
+                                  CVar("", "ty-1")
+                                , CVar("", "ty-2")
+                                , Message(Error(), Default(), TermIndex("", 9))
+                                )
+                              , CConj(
+                                  CAstProperty(TermIndex("", 9), Type(), CVar("", "ty-1"))
+                                , CConj(
+                                    CAstProperty(TermIndex("", 9), Params(), CVar("", "s_test-1"))
+                                  , CConj(
+                                      CEqual(
+                                        CVar("", "ty-2")
+                                      , TUPLE(CVar("", "tys-1"))
+                                      , Message(Error(), Default(), TermIndex("", 9))
+                                      )
+                                    , CConj(
+                                        CAstProperty(TermIndex("", 9), Type(), CVar("", "ty-2"))
+                                      , CConj(
+                                          CAstProperty(TermIndex("", 9), Params(), CVar("", "s_test-1"))
+                                        , CConj(
+                                            CEqual(
+                                              CVar("", "tys-1")
+                                            , CListTail([CVar("", "ty-3")], CVar("", "tys-2"))
+                                            , Message(Error(), Default(), TermIndex("", 8))
+                                            )
+                                          , CConj(
+                                              CAstProperty(TermIndex("", 8), Type(), CVar("", "tys-1"))
+                                            , CConj(
+                                                CAstProperty(TermIndex("", 8), Params(), CVar("", "s_test-1"))
+                                              , CConj(
+                                                  CConj(
+                                                    CEqual(
+                                                      CVar("", "ty-3")
+                                                    , CVar("", "ty-4")
+                                                    , Message(Error(), Default(), TermIndex("", 1))
+                                                    )
+                                                  , CConj(
+                                                      CAstProperty(TermIndex("", 1), Type(), CVar("", "ty-3"))
+                                                    , CConj(
+                                                        CAstProperty(TermIndex("", 1), Params(), CVar("", "wld2-1"))
+                                                      , CTrue(TermIndex("", 1))
+                                                      )
+                                                    )
+                                                  )
+                                                , CConj(
+                                                    CEqual(
+                                                      CVar("", "tys-2")
+                                                    , CListTail([CVar("", "ty-5")], CVar("", "tys-3"))
+                                                    , Message(Error(), Default(), TermIndex("", 6))
+                                                    )
+                                                  , CConj(
+                                                      CAstProperty(TermIndex("", 6), Type(), CVar("", "tys-2"))
+                                                    , CConj(
+                                                        CAstProperty(TermIndex("", 6), Params(), CVar("", "s_test-1"))
+                                                      , CConj(
+                                                          CConj(
+                                                            CEqual(
+                                                              CVar("", "ty-5")
+                                                            , CVar("", "ty-6")
+                                                            , Message(Error(), Default(), TermIndex("", 2))
+                                                            )
+                                                          , CConj(
+                                                              CAstProperty(TermIndex("", 2), Type(), CVar("", "ty-5"))
+                                                            , CConj(
+                                                                CAstProperty(TermIndex("", 2), Params(), CVar("", "wld2-2"))
+                                                              , CTrue(TermIndex("", 2))
+                                                              )
+                                                            )
+                                                          )
+                                                        , CConj(
+                                                            CEqual(
+                                                              CVar("", "tys-3")
+                                                            , CListTail([CVar("", "ty-7")], CVar("", "tys-4"))
+                                                            , Message(Error(), Default(), TermIndex("", 5))
+                                                            )
+                                                          , CConj(
+                                                              CAstProperty(TermIndex("", 5), Type(), CVar("", "tys-3"))
+                                                            , CConj(
+                                                                CAstProperty(TermIndex("", 5), Params(), CVar("", "s_test-1"))
+                                                              , CConj(
+                                                                  CConj(
+                                                                    CEqual(
+                                                                      CVar("", "ty-7")
+                                                                    , CVar("", "ty-8")
+                                                                    , Message(Error(), Default(), TermIndex("", 3))
+                                                                    )
+                                                                  , CConj(
+                                                                      CAstProperty(TermIndex("", 3), Type(), CVar("", "ty-7"))
+                                                                    , CConj(
+                                                                        CAstProperty(TermIndex("", 3), Params(), CVar("", "wld2-3"))
+                                                                      , CTrue(TermIndex("", 3))
+                                                                      )
+                                                                    )
+                                                                  )
+                                                                , CConj(
+                                                                    CEqual(
+                                                                      CVar("", "tys-4")
+                                                                    , []
+                                                                    , Message(Error(), Default(), TermIndex("", 4))
+                                                                    )
+                                                                  , CConj(
+                                                                      CAstProperty(TermIndex("", 4), Type(), CVar("", "tys-4"))
+                                                                    , CConj(
+                                                                        CAstProperty(TermIndex("", 4), Params(), CVar("", "s_test-1"))
+                                                                      , CTrue(TermIndex("", 4))
+                                                                      )
+                                                                    )
+                                                                  )
+                                                                )
+                                                              )
+                                                            )
+                                                          )
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            , CConj(
+                                CConj(
+                                  CEqual(
+                                    CVar("", "ty-1")
+                                  , CVar("", "ty-9")
+                                  , Message(Error(), Default(), TermIndex("", 16))
+                                  )
+                                , CConj(
+                                    CAstProperty(TermIndex("", 16), Type(), CVar("", "ty-1"))
+                                  , CConj(
+                                      CAstProperty(TermIndex("", 16), Params(), CVar("", "s_test-1"))
+                                    , CConj(
+                                        CEqual(
+                                          CVar("", "ty-9")
+                                        , TUPLE(CVar("", "tys-5"))
+                                        , Message(Error(), Default(), TermIndex("", 16))
+                                        )
+                                      , CConj(
+                                          CAstProperty(TermIndex("", 16), Type(), CVar("", "ty-9"))
+                                        , CConj(
+                                            CAstProperty(TermIndex("", 16), Params(), CVar("", "s_test-1"))
+                                          , CConj(
+                                              CEqual(
+                                                CVar("", "tys-5")
+                                              , CListTail([CVar("", "ty-10")], CVar("", "tys-6"))
+                                              , Message(Error(), Default(), TermIndex("", 15))
+                                              )
+                                            , CConj(
+                                                CAstProperty(TermIndex("", 15), Type(), CVar("", "tys-5"))
+                                              , CConj(
+                                                  CAstProperty(TermIndex("", 15), Params(), CVar("", "s_test-1"))
+                                                , CConj(
+                                                    CConj(
+                                                      CEqual(
+                                                        CVar("", "ty-10")
+                                                      , CVar("", "ty-11")
+                                                      , Message(Error(), Default(), TermIndex("", 10))
+                                                      )
+                                                    , CConj(
+                                                        CAstProperty(TermIndex("", 10), Type(), CVar("", "ty-10"))
+                                                      , CConj(
+                                                          CAstProperty(TermIndex("", 10), Params(), CVar("", "wld2-4"))
+                                                        , CTrue(TermIndex("", 10))
+                                                        )
+                                                      )
+                                                    )
+                                                  , CConj(
+                                                      CEqual(
+                                                        CVar("", "tys-6")
+                                                      , CListTail([CVar("", "ty-12")], CVar("", "tys-7"))
+                                                      , Message(Error(), Default(), TermIndex("", 13))
+                                                      )
+                                                    , CConj(
+                                                        CAstProperty(TermIndex("", 13), Type(), CVar("", "tys-6"))
+                                                      , CConj(
+                                                          CAstProperty(TermIndex("", 13), Params(), CVar("", "s_test-1"))
+                                                        , CConj(
+                                                            CConj(
+                                                              CEqual(
+                                                                CVar("", "ty-12")
+                                                              , CVar("", "ty-13")
+                                                              , Message(Error(), Default(), TermIndex("", 11))
+                                                              )
+                                                            , CConj(
+                                                                CAstProperty(TermIndex("", 11), Type(), CVar("", "ty-12"))
+                                                              , CConj(
+                                                                  CAstProperty(TermIndex("", 11), Params(), CVar("", "wld2-5"))
+                                                                , CTrue(TermIndex("", 11))
+                                                                )
+                                                              )
+                                                            )
+                                                          , CConj(
+                                                              CEqual(
+                                                                CVar("", "tys-7")
+                                                              , []
+                                                              , Message(Error(), Default(), TermIndex("", 12))
+                                                              )
+                                                            , CConj(
+                                                                CAstProperty(TermIndex("", 12), Type(), CVar("", "tys-7"))
+                                                              , CConj(
+                                                                  CAstProperty(TermIndex("", 12), Params(), CVar("", "s_test-1"))
+                                                                , CTrue(TermIndex("", 12))
+                                                                )
+                                                              )
+                                                            )
+                                                          )
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              , CConj(
+                                  CAstProperty(TermIndex("", 17), Params(), CVar("", "s_test-1"))
+                                , CTrue(TermIndex("", 17))
+                                )
+                              )
+                            )
+                          )
+                        , CConj(
+                            CGDecl(
+                              Occurrence(Namespace("This"), (), TermIndex("", 21))
+                            , CVar("", "s_test-1")
+                            , TermIndex("", 21)
+                            )
+                          , CDeclProperty(
+                              Occurrence(Namespace("This"), (), TermIndex("", 21))
+                            , Property("qname")
+                            , ""
+                            , "!!"
+                            , Message(Error(), Default(), TermIndex("", 21))
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    , CTrue(TermIndex("", 21))
+    )
+  ]
+)
