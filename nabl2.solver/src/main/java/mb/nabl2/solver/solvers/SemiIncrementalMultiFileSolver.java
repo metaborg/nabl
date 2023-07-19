@@ -14,6 +14,7 @@ import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
+import mb.nabl2.log.Logger;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.solver.ISolution;
@@ -50,6 +51,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
+
+    private static final Logger log = Logger.logger(SemiIncrementalMultiFileSolver.class);
 
     public SemiIncrementalMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         super(nabl2Debug, callExternal);
@@ -144,10 +147,14 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 
-            return Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
+            Solution solution = Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                     messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
+
+            log.info("finish inter: ", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

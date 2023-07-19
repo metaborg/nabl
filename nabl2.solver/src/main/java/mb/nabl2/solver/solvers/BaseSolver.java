@@ -12,6 +12,7 @@ import org.metaborg.util.task.IProgress;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -40,6 +41,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseSolver {
+
+    private static final Logger log = Logger.logger(BaseSolver.class);
 
     protected final NaBL2DebugConfig nabl2Debug;
     protected final CallExternal callExternal;
@@ -94,8 +97,11 @@ public class BaseSolver {
             scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints(), unifier);
 
-            return GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
+            GraphSolution solution = GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
+            log.info("finish graph: ", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

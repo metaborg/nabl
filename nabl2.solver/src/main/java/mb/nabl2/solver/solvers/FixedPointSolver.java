@@ -124,6 +124,9 @@ public class FixedPointSolver {
                 });
 
                 messages.addAll(result.messages());
+                if(!result.messages().getAll().isEmpty()) {
+                    log.info("+ updated messages: ", messages);
+                }
 
                 result.constraints().forEach(constraints::addFirst);
 
@@ -143,12 +146,15 @@ public class FixedPointSolver {
         criticalEdgeDelays.values().forEach(unsolved::__insert);
         relationDelays.values().forEach(unsolved::__insert);
 
-        return SolveResult.builder()
+        final SolveResult result = SolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
                 .constraints(unsolved.freeze())
                 // @formatter:on
                 .build();
+
+        log.info("+ fixpoint: ", result);
+        return result;
     }
 
     public Observable<Step> step() {
