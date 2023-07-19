@@ -7,6 +7,8 @@ import java.util.Collection;
 import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
+import mb.nabl2.log.Logger;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.solver.ASolver;
@@ -21,6 +23,8 @@ import mb.scopegraph.pepm16.terms.Scope;
 
 public class NameSetsComponent extends ASolver {
 
+    private static final Logger log = Logger.logger(NameSetsComponent.class);
+
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
 
     public NameSetsComponent(SolverCore core, IEsopNameResolution<Scope, Label, Occurrence> nameResolution) {
@@ -33,19 +37,27 @@ public class NameSetsComponent extends ASolver {
         return M.<ISetProducer<ITerm>>cases(
             M.appl2("Declarations", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
                 Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.decls(scope);
-                return makeSet(decls, ns);
+                Immutable<IElement<ITerm>> declSet = makeSet(decls, ns);
+                log.debug("decl set: {}/{}: {}", scope, ns, declSet);
+                return declSet;
             }),
             M.appl2("References", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
                 Collection<Occurrence> refs = NameSetsComponent.this.nameResolution.refs(scope);
-                return makeSet(refs, ns);
+                Immutable<IElement<ITerm>> refSet = makeSet(refs, ns);
+                log.debug("ref set: {}/{}: {}", scope, ns, refSet);
+                return refSet;
             }),
             M.appl2("Visibles", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
                 Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.visible(scope, cancel, progress);
-                return makeSet(decls, ns);
+                Immutable<IElement<ITerm>> visSet = makeSet(decls, ns);
+                log.debug("vis set: {}/{}: {}", scope, ns, visSet);
+                return visSet;
             }),
             M.appl2("Reachables", Scope.matcher(), Namespace.matcher(), (t, scope, ns) -> () -> {
                 Collection<Occurrence> decls = NameSetsComponent.this.nameResolution.reachable(scope, cancel, progress);
-                return makeSet(decls, ns);
+                Immutable<IElement<ITerm>> reachSet = makeSet(decls, ns);
+                log.debug("reach set: {}/{}: {}", scope, ns, reachSet);
+                return reachSet;
             })
         );
         // @formatter:on
