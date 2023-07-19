@@ -125,7 +125,7 @@ public class FixedPointSolver {
 
                 messages.addAll(result.messages());
                 if(!result.messages().getAll().isEmpty()) {
-                    log.info("+ updated messages: ", messages);
+                    log.info("+ updated messages: {}", messages);
                 }
 
                 result.constraints().forEach(constraints::addFirst);
@@ -153,7 +153,7 @@ public class FixedPointSolver {
                 // @formatter:on
                 .build();
 
-        log.info("+ fixpoint: ", result);
+        log.info("+ fixpoint: {}", result);
         return result;
     }
 

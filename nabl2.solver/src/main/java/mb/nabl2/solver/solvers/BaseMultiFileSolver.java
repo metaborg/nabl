@@ -132,7 +132,7 @@ public class BaseMultiFileSolver extends BaseSolver {
                             messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
 
-            log.info("finish intra: ", solution);
+            log.info("finish intra: {}", solution);
 
             return solution;
         } catch(RuntimeException ex) {

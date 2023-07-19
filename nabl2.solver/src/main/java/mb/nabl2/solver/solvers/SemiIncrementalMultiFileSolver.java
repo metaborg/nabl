@@ -152,7 +152,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                     messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
 
-            log.info("finish inter: ", solution);
+            log.info("finish inter: {}", solution);
 
             return solution;
         } catch(RuntimeException ex) {

@@ -134,7 +134,7 @@ public class SingleFileSolver extends BaseSolver {
                             messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
 
-            log.info("finish single: ", solution);
+            log.info("finish single: {}", solution);
 
             return solution;
         } catch(RuntimeException ex) {

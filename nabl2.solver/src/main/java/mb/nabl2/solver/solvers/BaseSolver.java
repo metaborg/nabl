@@ -99,7 +99,7 @@ public class BaseSolver {
 
             GraphSolution solution = GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
-            log.info("finish graph: ", solution);
+            log.info("finish graph: {}", solution);
 
             return solution;
         } catch(RuntimeException ex) {
