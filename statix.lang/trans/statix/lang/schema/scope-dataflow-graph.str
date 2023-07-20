@@ -22,8 +22,8 @@ rules
 
   extract-sdfg(debug|glob*): spec -> schema
     with scope*  := <extract-scopes> spec
-    with edge*   := <extract-edges> spec
-    with decl*   := <extract-decls> spec
+    with edge*   := <extract-rule-edges> spec
+    with decl*   := <extract-rule-decls> spec
     with sdfg-c* := <extract-spec-sdfg> spec
     with schema  := <compute-schema(debug)> (scope*, edge*, decl*, sdfg-c*, glob*)
 
@@ -31,8 +31,12 @@ rules
 
   // Extract all scope graph assertions
   extract-scopes = collect-om(?CNew(<id>)); flatten-list; map(strip-annos)
-  extract-edges  = collect-om(CTellEdge(strip-annos, id, strip-annos))
-  extract-decls  = collect-om(CTellRel(id, topdown(strip-annos), strip-annos))
+
+  extract-rule-edges = collect-om({ name: ?Rule(name, _, <id>); extract-edges(|name) }); flatten-list
+  extract-rule-decls = collect-om({ name: ?Rule(name, _, <id>); extract-decls(|name) }); flatten-list
+
+  extract-edges(|rule)  = collect-om(CTellEdge(strip-annos, id, strip-annos); !(<id>, rule))
+  extract-decls(|rule)  = collect-om(CTellRel(id, topdown(strip-annos), strip-annos); !(<id>, rule))
 
 rules
 

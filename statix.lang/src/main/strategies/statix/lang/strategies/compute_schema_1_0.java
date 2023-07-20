@@ -42,6 +42,9 @@ public class compute_schema_1_0 extends Strategy {
         final ITermFactory TF = context.getFactory();
         final boolean debug = s_debug.invoke(context, current) != null;
 
+        context.invokeStrategy("debug_0_0", edges);
+        context.invokeStrategy("debug_0_0", decls);
+
         return new Command(TF, debug).run(types, edges, decls, constraints, globs);
     }
 
@@ -123,12 +126,12 @@ public class compute_schema_1_0 extends Strategy {
             log.info("*** Phase 2: close owned scopes ***");
             final Set<IStrategoTerm> downPreds = new HashSet<>();
             //    a. edges
-            for(IStrategoTerm var : edges.getSubterms()) {
-                closeOwned(mkVariable(var.getSubterm(0)), downPreds);
+            for(IStrategoTerm var_rule : edges.getSubterms()) {
+                closeOwned(mkVariable(var_rule.getSubterm(0).getSubterm(0)), downPreds);
             }
             //    b. decls
-            for(IStrategoTerm var : decls.getSubterms()) {
-                closeOwned(mkVariable(var.getSubterm(2)), downPreds);
+            for(IStrategoTerm var_rule : decls.getSubterms()) {
+                closeOwned(mkVariable(var_rule.getSubterm(0).getSubterm(2)), downPreds);
             }
             //    c. transitive
             for(IStrategoTerm pvar : downPreds) {
@@ -503,20 +506,26 @@ public class compute_schema_1_0 extends Strategy {
 
         // Phase 5. Build Schema Term
 
-        public IStrategoTerm buildEdgeTerm(IStrategoTerm edge) {
+        public IStrategoTerm buildEdgeTerm(IStrategoTerm edge_rule) {
+            final IStrategoTerm edge = edge_rule.getSubterm(0);
+            final IStrategoTerm rule = edge_rule.getSubterm(1);
+
             final IStrategoTerm src = mkVariable(edge.getSubterm(0));
             final IStrategoTerm lbl = edge.getSubterm(1);
             final IStrategoTerm tgt = mkVariable(edge.getSubterm(2));
 
-            return TF.makeAppl("SGEdge", buildScopeKindCardList(src), lbl, buildScopeKindCardList(tgt));
+            return TF.makeAppl("SGEdge", buildScopeKindCardList(src), lbl, buildScopeKindCardList(tgt), rule);
         }
 
-        public IStrategoTerm buildDeclTerm(IStrategoTerm decl) {
+        public IStrategoTerm buildDeclTerm(IStrategoTerm decl_rule) {
+            final IStrategoTerm decl = decl_rule.getSubterm(0);
+            final IStrategoTerm rule = decl_rule.getSubterm(1);
+
             final IStrategoTerm rel = decl.getSubterm(0);
             final IStrategoTerm args = decl.getSubterm(1);
             final IStrategoTerm scope = mkVariable(decl.getSubterm(2));
 
-            return TF.makeAppl("SGDecl", buildScopeKindCardList(scope), rel, buildDataList(args));
+            return TF.makeAppl("SGDecl", buildScopeKindCardList(scope), rel, buildDataList(args), rule);
         }
 
         public IStrategoList buildScopeKindCardList(IStrategoTerm var) {

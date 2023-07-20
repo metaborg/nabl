@@ -32,7 +32,7 @@ context-free syntax
     <{SGEdge "\n"}*>
   >
 
-  SGEdge.SGEdge = [{[{ScopeKindWithCard ", "}*]} =[Label]=> {[{ScopeKindWithCard ", "}*]}]
+  SGEdge.SGEdge = [{[{ScopeKindWithCard ", "}*]} =[Label]=> {[{ScopeKindWithCard ", "}*]} in [RuleName]]
 
 context-free sorts
 
@@ -46,7 +46,7 @@ context-free syntax
     <{SGDecl "\n"}*>
   >
 
-  SGDecl.SGDecl = [{[{ScopeKindWithCard ", "}*]} |=[Label]=> \[[{Data ", "}*]\]]
+  SGDecl.SGDecl = [{[{ScopeKindWithCard ", "}*]} |=[Label]=> \[[{Data ", "}*]\] in [RuleName]]
 
   Data.DData  = <data>
   Data.DScope = [scope {[{ScopeKindWithCard ", "}*]}]
