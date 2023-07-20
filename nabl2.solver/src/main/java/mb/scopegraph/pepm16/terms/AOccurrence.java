@@ -6,8 +6,7 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -44,8 +43,8 @@ public abstract class AOccurrence extends AbstractApplTerm implements IOccurrenc
         return OP;
     }
 
-    @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(getNamespace(), getName(), getIndex());
+    @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+        return ImList.Immutable.of(getNamespace(), getName(), getIndex());
     }
 
     public static IMatcher<Occurrence> matcher() {

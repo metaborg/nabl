@@ -1,5 +1,7 @@
 package mb.p_raffrayi;
 
+import java.util.stream.Collectors;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -28,5 +30,4 @@ public abstract class APRaffrayiSettings {
     public static PRaffrayiSettings incremental() {
         return PRaffrayiSettings.of(true, true, true, true);
     }
-
 }

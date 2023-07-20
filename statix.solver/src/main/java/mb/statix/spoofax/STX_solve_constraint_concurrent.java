@@ -5,12 +5,15 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.PRaffrayiSettings;
@@ -45,7 +48,7 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
     @Override protected SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) throws InterruptedException, ExecutionException {
         final IStatixProject project = StatixProject.builder().resource("").changed(true)
-                .rule(Rule.of("resolve", Arrays.asList(P.newWld()), constraint)).build();
+                .rule(Rule.of("resolve", ImList.Immutable.of(P.newWld()), constraint)).build();
         final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>> future =
                 Broker.run("", PRaffrayiSettings.of(false, false, false, false),
                         new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel, progress);
@@ -53,14 +56,17 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
         if(!result.allFailures().isEmpty() || result.result().analysis().exception() != null) {
             final SolverResult.Builder resultBuilder =
                     SolverResult.builder().spec(spec).state(State.of()).completeness(Completeness.Immutable.of());
+
+            final Map.Transient<IConstraint, IMessage> messages = CapsuleUtil.transientMap();
             if(result.result().analysis().exception() != null) {
                 logger.error("Failure solving constraint.", result.result().analysis().exception());
-                resultBuilder.putMessages(constraint, toMessage(result.result().analysis().exception()));
+                messages.__put(constraint, toMessage(result.result().analysis().exception()));
             }
             for(Throwable ex : result.allFailures()) {
                 logger.error("Failure solving constraint.", ex);
             }
 
+            resultBuilder.messages(messages.freeze());
             return resultBuilder.build();
         } else {
             final SolverResult resultConfig = result.result().analysis().solveResult();

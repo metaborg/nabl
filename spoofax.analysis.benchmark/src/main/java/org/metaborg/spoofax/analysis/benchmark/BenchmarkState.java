@@ -1,6 +1,7 @@
 package org.metaborg.spoofax.analysis.benchmark;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.commons.vfs2.FileObject;
@@ -20,8 +21,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-
-import com.google.common.collect.Lists;
 
 @State(Scope.Thread)
 public class BenchmarkState {
@@ -46,7 +45,7 @@ public class BenchmarkState {
             project = cli.getOrCreateCWDProject();
             context = S.contextService.getTemporary(project.location(), project, langImpl);
 
-            parseUnits = Lists.newArrayList();
+            parseUnits = new ArrayList<>();
             for(IdentifiedResource source : S.languagePathService.sourceFiles(project, langImpl)) {
                 FileObject resource = source.resource;
                 String text = S.sourceTextService.text(resource);

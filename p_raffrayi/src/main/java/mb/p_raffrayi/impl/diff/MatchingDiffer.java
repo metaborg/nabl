@@ -6,16 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.Multimap;
-
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -59,7 +58,7 @@ public class MatchingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
             Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches,
-            Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
+            Collection<S> openScopes, MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges) {
         if(!openScopes.isEmpty() || !openEdges.isEmpty() || !patches.isIdentity()) {
             throw new IllegalStateException("Cannot create matching differ with open scopes/edges.");
         }

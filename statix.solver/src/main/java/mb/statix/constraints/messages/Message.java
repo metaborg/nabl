@@ -8,11 +8,10 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -31,12 +30,12 @@ public class Message implements IMessage, Serializable {
 
 
     public Message(MessageKind kind) {
-        this(kind, ImmutableList.of(), null);
+        this(kind, ImList.Immutable.of(), null);
     }
 
     public Message(MessageKind kind, Iterable<IMessagePart> content, @Nullable ITerm origin) {
         this.kind = kind;
-        this.content = ImmutableList.copyOf(content);
+        this.content = ImList.Immutable.copyOf(content);
         this.origin = origin;
     }
 
@@ -60,14 +59,14 @@ public class Message implements IMessage, Serializable {
 
     @Override public IMessage apply(ISubstitution.Immutable subst) {
         final List<IMessagePart> newContent =
-                content.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+                content.stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
         final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
         return new Message(kind, newContent, newOrigin);
     }
 
     @Override public IMessage apply(IRenaming subst) {
         final List<IMessagePart> newContent =
-                content.stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
+                content.stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
         final ITerm newOrigin = origin != null ? subst.apply(origin) : null;
         return new Message(kind, newContent, newOrigin);
     }

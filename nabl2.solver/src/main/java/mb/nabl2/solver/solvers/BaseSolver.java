@@ -1,7 +1,6 @@
 package mb.nabl2.solver.solvers;
 
 import java.util.List;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -10,11 +9,10 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.common.collect.ImmutableSet;
-
-import io.usethesource.capsule.Set.Immutable;
+import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -43,6 +41,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseSolver {
+
+    private static final Logger log = Logger.logger(BaseSolver.class);
 
     protected final NaBL2DebugConfig nabl2Debug;
     protected final CallExternal callExternal;
@@ -83,7 +83,7 @@ public class BaseSolver {
             final FixedPointSolver solver = new FixedPointSolver(cancel, progress, component);
 
             solver.step().subscribe(r -> {
-                final Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
+                final Set.Immutable<ITermVar> vars = r.result.unifierDiff().domainSet();
                 if(!vars.isEmpty()) {
                     try {
                         final List<CriticalEdge> criticalEdges = scopeGraphReducer.update(vars);
@@ -97,15 +97,18 @@ public class BaseSolver {
             scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints(), unifier);
 
-            return GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
+            GraphSolution solution = GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
+            log.info("finish graph: {}", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }
 
     }
 
-    protected boolean seed(SeedResult result, IMessages.Transient messages, Set<IConstraint> constraints) {
+    protected boolean seed(SeedResult result, IMessages.Transient messages, java.util.Set<IConstraint> constraints) {
         boolean change = false;
         change |= messages.addAll(result.messages());
         change |= constraints.addAll(result.constraints());
@@ -118,7 +121,7 @@ public class BaseSolver {
 
         @Value.Parameter public abstract SolverConfig config();
 
-        @Value.Parameter public abstract ImmutableSet<IConstraint> constraints();
+        @Value.Parameter public abstract Set.Immutable<IConstraint> constraints();
 
         @Value.Parameter public abstract IUnifier.Immutable unifier();
 
@@ -138,7 +141,7 @@ public class BaseSolver {
 
         @Value.Parameter public abstract IMessages.Immutable messages();
 
-        @Value.Parameter public abstract ImmutableSet<IConstraint> constraints();
+        @Value.Parameter public abstract Set.Immutable<IConstraint> constraints();
 
     }
 

@@ -3,6 +3,7 @@ package mb.nabl2.terms.stratego;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.collection.ImList;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.io.TermFactoryVisitor;
@@ -123,7 +124,8 @@ public abstract class TermBuildVisitor implements TermVisitor {
         if(annos.isEmpty()) {
             return term;
         } else {
-            return term.withAttachments(Attachments.of(StrategoAnnotations.class, StrategoAnnotations.of(annos)));
+            return term.withAttachments(Attachments.of(StrategoAnnotations.class, StrategoAnnotations.of(
+                ImList.Immutable.copyOf(annos))));
         }
     }
 

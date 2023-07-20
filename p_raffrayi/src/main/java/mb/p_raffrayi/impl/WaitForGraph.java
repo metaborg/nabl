@@ -4,22 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Sets;
 
 public class WaitForGraph<P, T> {
 
     private static final ILogger logger = LoggerUtils.logger(WaitForGraph.class);
 
-    private Multiset<T> waitFors = HashMultiset.create();
-    private Map<P, Multiset<T>> waitForsByProcess = new HashMap<>();
+    private final MultiSet.Mutable<T> waitFors = new MultiSet.Mutable<>();
+    private final Map<P, MultiSet.Mutable<T>> waitForsByProcess = new HashMap<>();
 
-    private Multiset<P> waits = HashMultiset.create();
+    private final MultiSet.Mutable<P> waits = new MultiSet.Mutable<>();
 
     public boolean isWaiting() {
         return !waitFors.isEmpty() || !waits.isEmpty();
@@ -30,18 +27,18 @@ public class WaitForGraph<P, T> {
     }
 
     public boolean isWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, ImmutableMultiset.of()).contains(token);
+        return waitForsByProcess.getOrDefault(from, new MultiSet.Mutable<>()).contains(token);
     }
 
     public int countWaitingFor(P from, T token) {
-        return waitForsByProcess.getOrDefault(from, ImmutableMultiset.of()).count(token);
+        return waitForsByProcess.getOrDefault(from, new MultiSet.Mutable<>()).count(token);
     }
 
-    public Multiset<T> getTokens(P unit) {
-        return ImmutableMultiset.copyOf(waitForsByProcess.getOrDefault(unit, ImmutableMultiset.of()));
+    public MultiSet.Immutable<T> getTokens(P unit) {
+        return MultiSet.Immutable.copyOf(waitForsByProcess.getOrDefault(unit, new MultiSet.Mutable<>()));
     }
 
-    public Multiset<T> getTokens() {
+    public MultiSet<T> getTokens() {
         return waitFors;
     }
 
@@ -53,12 +50,12 @@ public class WaitForGraph<P, T> {
         boolean newDependency = !waitForsByProcess.containsKey(process) && !waits.contains(process);
         logger.debug("wait for {}/{}", process, token);
         waitFors.add(token);
-        waitForsByProcess.computeIfAbsent(process, __ -> HashMultiset.create()).add(token);
+        waitForsByProcess.computeIfAbsent(process, __ -> new MultiSet.Mutable<>()).add(token);
         return newDependency;
     }
 
     protected boolean granted(P process, T token) {
-        final Multiset<T> tokens = waitForsByProcess.get(process);
+        final MultiSet.Mutable<T> tokens = waitForsByProcess.get(process);
         if(tokens == null || !tokens.contains(token)) {
             logger.error("not waiting for granted {}/{}", process, token);
             throw new IllegalStateException("not waiting for granted " + process + "/" + token);

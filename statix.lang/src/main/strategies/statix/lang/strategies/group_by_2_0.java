@@ -1,18 +1,17 @@
 package statix.lang.strategies;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.spoofax.interpreter.terms.IStrategoTerm;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.TermUtils;
 import org.strategoxt.lang.Context;
 import org.strategoxt.lang.Strategy;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 
 public class group_by_2_0 extends Strategy {
 
@@ -23,17 +22,17 @@ public class group_by_2_0 extends Strategy {
         if(!TermUtils.isList(current)) {
             throw new java.lang.IllegalArgumentException("Expected list, got " + current);
         }
-        final Multimap<IStrategoTerm, IStrategoTerm> groups = HashMultimap.create();
+        final Map<IStrategoTerm, Set<IStrategoTerm>> groups = new HashMap<>();
         for(IStrategoTerm item : current.getAllSubterms()) {
             final IStrategoTerm key = getKey.invoke(context, item);
             if(key == null) {
                 continue;
             }
             final IStrategoTerm value = mapValue.invoke(context, item);
-            groups.put(key, value);
+            groups.computeIfAbsent(key, k -> new HashSet<>()).add(value);
         }
         final List<IStrategoTerm> groupTerms = new ArrayList<>();
-        for(Map.Entry<IStrategoTerm, Collection<IStrategoTerm>> entry : groups.asMap().entrySet()) {
+        for(Map.Entry<IStrategoTerm, Set<IStrategoTerm>> entry : groups.entrySet()) {
             groupTerms.add(TF.makeTuple(entry.getKey(), TF.makeList(entry.getValue())));
         }
         return TF.makeList(groupTerms);

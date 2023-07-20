@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -22,7 +23,7 @@ abstract class AApplTerm extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter @Override public abstract String getOp();
 
-    @Value.Parameter @Override public abstract List<ITerm> getArgs();
+    @Value.Parameter @Override public abstract ImList.Immutable<ITerm> getArgs();
 
     @Override public <T> T match(Cases<T> cases) {
         return cases.caseAppl(this);

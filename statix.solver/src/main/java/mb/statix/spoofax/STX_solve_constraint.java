@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;

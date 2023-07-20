@@ -2,7 +2,7 @@ package mb.statix.cli;
 
 import static mb.statix.constraints.Constraints.collectBase;
 import static mb.statix.generator.strategy.SearchStrategies.*;
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
 import java.util.List;
 import java.util.Map;
@@ -11,13 +11,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.SetMultimap;
-
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.CResolveQuery;
@@ -71,7 +70,7 @@ public class Paret {
 
     private SearchStrategy<SearchState, SearchState> searchExp() {
         // @formatter:off
-        final SetMultimap<String, Rule> fragments = makeFragments(spec);
+        final SetMultimap.Immutable<String, Rule> fragments = makeFragments(spec);
         return repeat(limit(10, fix(
             seq(selectConstraint(1))
             .$(match(
@@ -97,7 +96,7 @@ public class Paret {
 
     // @formatter:off
     private int defaultRuleWeight = 1;
-    private Map<String, Double> ruleWeights = ImmutableMap.<String, Double>builder()
+    private Map<String, Double> ruleWeights = new CapsuleUtil.MapBuilder()
         // TWEAK Disable operations until better inference in the solver
         .put("G-UnOp", 1.0)
         .put("G-BinOp", 1.0)
@@ -129,18 +128,18 @@ public class Paret {
     private Function1<CUser, Double> predWeights(SearchState state) {
         final IUnifier unifier = state.state().unifier();
         final Set<CriticalEdge> criticalEdges =
-                flatMap(state.delays().values().stream(), d -> d.criticalEdges().stream()).collect(Collectors.toSet());
+                state.delays().values().stream().flatMap(d -> d.criticalEdges().stream()).collect(Collectors.toSet());
         // @formatter:off
         final Stream<CUser> criticalPreds = StreamUtil.filterInstances(CUser.class, state.constraints().stream())
             .filter(c -> CompletenessUtil.criticalEdges(c, spec, unifier).stream().anyMatch(criticalEdges::contains));
-        final Set<ITermVar> criticalVars = flatMap(criticalPreds, c -> flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
+        final Set<ITermVar> criticalVars = lazyFlatMap(criticalPreds, c -> lazyFlatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()))
             .collect(Collectors.toSet());
         // @formatter:on
         return (c) -> {
             if(!c.name().matches(GEN_RE)) {
                 return 0.0;
             }
-            if(flatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
+            if(lazyFlatMap(c.args().stream(), arg -> unifier.getVars(arg).stream()).anyMatch(criticalVars::contains)) {
                 return 2.0;
             } else {
                 return 1.0;
@@ -163,7 +162,7 @@ public class Paret {
     }
 
     // @formatter:off
-    private Map<String, Double> idWeights = ImmutableMap.<String, Double>builder()
+    private io.usethesource.capsule.Map.Immutable<String, Double> idWeights = new CapsuleUtil.MapBuilder()
         // TWEAK Increase likelihood of duplicate choices, while still providing many identifiers
         .put("[ID-A]", 16.0)
         .put("[ID-B]", 8.0)
@@ -194,11 +193,11 @@ public class Paret {
         .build();
     // @formatter:on
 
-    private SetMultimap<String, Rule> makeFragments(Spec spec) {
+    private SetMultimap.Immutable<String, Rule> makeFragments(Spec spec) {
         log.info("Building fragments.");
-        final SetMultimap<String, Rule> fragments =
+        final SetMultimap.Immutable<String, Rule> fragments =
                 RuleUtil.makeFragments(spec.rules(), n -> n.matches(GEN_RE), (n, l) -> true, 2);
-        fragments.forEach((n, r) -> {
+        fragments.values().forEach(r -> {
             log.info(" * {}", r);
         });
         log.info("Built fragments.");

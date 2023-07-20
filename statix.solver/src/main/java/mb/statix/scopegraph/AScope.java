@@ -8,8 +8,7 @@ import java.util.Objects;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -34,8 +33,8 @@ public abstract class AScope extends AbstractApplTerm implements IScope, IApplTe
         return OP;
     }
 
-    @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getResource()), B.newString(getName()));
+    @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+        return ImList.Immutable.of(B.newString(getResource()), B.newString(getName()));
     }
 
     public static IMatcher<Scope> matcher() {

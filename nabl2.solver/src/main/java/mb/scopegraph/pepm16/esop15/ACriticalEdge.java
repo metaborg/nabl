@@ -14,4 +14,12 @@ public abstract class ACriticalEdge {
 
     @Value.Parameter public abstract ILabel label();
 
+    @Override public String toString() {
+         final StringBuilder b = new StringBuilder("CriticalEdge{");
+         b.append("scope=").append(scope());
+         b.append(", ");
+         b.append("label=").append(label());
+         return b.append('}').toString();
+    }
+
 }

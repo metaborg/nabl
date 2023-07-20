@@ -6,6 +6,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -15,8 +16,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
+import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -59,7 +59,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected list of constraints."));
         final double t0 = System.currentTimeMillis();
         final List<ITerm> results =
-                constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList());
+                constraints.stream().parallel().map(solveConstraint::apply).collect(ImList.Immutable.toImmutableList());
         final double dt = System.currentTimeMillis() - t0;
         logger.info("Files analyzed in {} s", (dt / 1_000d));
         return Optional.of(B.newList(results));

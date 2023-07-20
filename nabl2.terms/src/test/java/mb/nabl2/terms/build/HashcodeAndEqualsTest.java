@@ -1,10 +1,5 @@
 package mb.nabl2.terms.build;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,10 +8,14 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.ITerm;
+
+import static mb.nabl2.terms.build.TermBuild.B;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class HashcodeAndEqualsTest {
 
@@ -94,15 +93,15 @@ public class HashcodeAndEqualsTest {
     }
 
     @Test public void testEqualsIgnoresAttachmentKeys() {
-        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "a"));
-        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(Integer.class, 3));
+        ITerm t1 = B.newAppl("Ctor", ImList.Immutable.of(), Attachments.of(String.class, "a"));
+        ITerm t2 = B.newAppl("Ctor", ImList.Immutable.of(), Attachments.of(Integer.class, 3));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }
 
     @Test public void testEqualsIgnoresAttachmentValues() {
-        ITerm t1 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "a"));
-        ITerm t2 = B.newAppl("Ctor", ImmutableList.of(), Attachments.of(String.class, "b"));
+        ITerm t1 = B.newAppl("Ctor", ImList.Immutable.of(), Attachments.of(String.class, "a"));
+        ITerm t2 = B.newAppl("Ctor", ImList.Immutable.of(), Attachments.of(String.class, "b"));
         assertEquals(t1.hashCode(), t2.hashCode());
         assertTrue(t1.equals(t2));
     }

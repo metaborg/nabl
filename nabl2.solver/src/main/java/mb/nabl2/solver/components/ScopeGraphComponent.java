@@ -2,7 +2,7 @@ package mb.nabl2.solver.components;
 
 import java.util.Optional;
 
-import com.google.common.collect.Iterables;
+import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.scopegraph.CGDecl;
@@ -57,7 +57,7 @@ public class ScopeGraphComponent extends ASolver {
         final ITerm declTerm = c.getDeclaration();
         if(!(unifier().isGround(scopeTerm) && unifier().isGround(declTerm))) {
             throw new VariableDelayException(
-                    Iterables.concat(unifier().getVars(scopeTerm), unifier().getVars(declTerm)));
+                    Iterables2.fromConcat(unifier().getVars(scopeTerm), unifier().getVars(declTerm)));
         }
         Scope scope = Scope.matcher().match(scopeTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected a scope as first agument to " + c));
@@ -72,7 +72,7 @@ public class ScopeGraphComponent extends ASolver {
         final ITerm refTerm = c.getReference();
         if(!(unifier().isGround(scopeTerm) && unifier().isGround(refTerm))) {
             throw new VariableDelayException(
-                    Iterables.concat(unifier().getVars(scopeTerm), unifier().getVars(refTerm)));
+                    Iterables2.fromConcat(unifier().getVars(scopeTerm), unifier().getVars(refTerm)));
         }
         Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
@@ -119,7 +119,7 @@ public class ScopeGraphComponent extends ASolver {
         ITerm declTerm = c.getDeclaration();
         if(!(unifier().isGround(scopeTerm) && unifier().isGround(declTerm))) {
             throw new VariableDelayException(
-                    Iterables.concat(unifier().getVars(scopeTerm), unifier().getVars(declTerm)));
+                    Iterables2.fromConcat(unifier().getVars(scopeTerm), unifier().getVars(declTerm)));
         }
         Scope scope = Scope.matcher().match(scopeTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected a scope as third argument to " + c));
@@ -133,12 +133,12 @@ public class ScopeGraphComponent extends ASolver {
 
     private Optional<Scope> findScope(ITerm scopeTerm) {
         return Optional.of(scopeTerm).filter(unifier()::isGround).map(st -> Scope.matcher().match(st, unifier())
-                .orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
+                .<TypeException>orElseThrow(() -> new TypeException("Expected a scope, got " + st)));
     }
 
     private Optional<Occurrence> findOccurrence(ITerm occurrenceTerm) {
         return Optional.of(occurrenceTerm).filter(unifier()::isGround).map(ot -> Occurrence.matcher()
-                .match(ot, unifier()).orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
+                .match(ot, unifier()).<TypeException>orElseThrow(() -> new TypeException("Expected an occurrence, got " + ot)));
     }
 
 }

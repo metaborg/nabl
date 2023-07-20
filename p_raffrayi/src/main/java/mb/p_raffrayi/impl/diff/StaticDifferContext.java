@@ -1,5 +1,6 @@
 package mb.p_raffrayi.impl.diff;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.metaborg.util.future.CompletableFuture;
@@ -21,7 +22,7 @@ public class StaticDifferContext<S, L, D> implements IDifferContext<S, L, D> {
         this.dataOps = dataOps;
     }
 
-    @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+    @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
         return CompletableFuture.completedFuture(scopeGraph.getEdges(scope, label));
     }
 

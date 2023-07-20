@@ -1,16 +1,14 @@
 package mb.nabl2.util.collections;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.collection.SetMultimap;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 /**
  * Collection of indexed values. Values can be reindexed incrementally, and removed when their indices fully reduce.
@@ -19,16 +17,16 @@ public class IndexedBag<V, I> {
 
     public enum RemovalPolicy {
         ANY, // remove value from the collection when any of its indices are removed
-        ALL // remove value from the collection when all of its indices are removed
+        ALL // remove value from the collection when all of its indices are remonved
     }
 
     private final MultiSet.Transient<V> values;
-    private final Multimap<I, Entry> entries;
+    private final SetMultimap<I, Entry> entries;
     private final RemovalPolicy removalPolicy;
 
     public IndexedBag(RemovalPolicy removalPolicy) {
         this.values = MultiSet.Transient.of();
-        this.entries = HashMultimap.create();
+        this.entries = new SetMultimap<>();
         this.removalPolicy = removalPolicy;
     }
 
@@ -64,9 +62,9 @@ public class IndexedBag<V, I> {
     /**
      * Update indices using the normalize function, returning any values for which the index was fully reduced.
      */
-    public Collection<V> reindex(I index, Function1<I, ? extends Iterable<? extends I>> normalize) {
-        final Collection<Entry> entries = this.entries.removeAll(index).stream().collect(Collectors.toList());
-        final Set<I> newIndices = ImmutableSet.copyOf(normalize.apply(index));
+    public Collection<V> reindex(I index, Function1<I, ? extends Set<? extends I>> normalize) {
+        final Collection<Entry> entries = this.entries.remove(index);
+        final Set<? extends I> newIndices = normalize.apply(index);
         if(removalPolicy.equals(RemovalPolicy.ANY) && !newIndices.contains(index)) {
             for(Entry e : entries) {
                 e.indices.forEach(i -> this.entries.remove(i, e));
@@ -83,7 +81,7 @@ public class IndexedBag<V, I> {
                 }
             }
         }
-        return entries.stream().filter(e -> tryRemove(e)).map(v -> v.value).collect(Collectors.toList());
+        return entries.stream().filter(this::tryRemove).map(v -> v.value).collect(Collectors.toList());
     }
 
     private boolean tryRemove(Entry entry) {
@@ -99,11 +97,11 @@ public class IndexedBag<V, I> {
 
         public final V value;
 
-        public final Set<I> indices;
+        public final java.util.Set<I> indices;
 
         public Entry(V value) {
             this.value = value;
-            this.indices = Sets.newHashSet();
+            this.indices = new HashSet<I>();
         }
 
     }

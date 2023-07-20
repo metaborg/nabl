@@ -1,8 +1,8 @@
 package mb.nabl2.util.graph.graphimpl;
 
-import org.metaborg.util.collection.CapsuleUtil;
+import java.util.HashMap;
 
-import com.google.common.collect.Maps;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -22,8 +22,8 @@ public class LazySubGraph<V> implements IBiDirectionalGraphDataSource<V> {
     public LazySubGraph(IBiDirectionalGraphDataSource<V> graph, Iterable<V> nodesInSubGraph) {
         this.graph = graph;
         this.nodesInSubGraph = CapsuleUtil.toSet(nodesInSubGraph);
-        this.targetNodes = Maps.newHashMap();
-        this.sourceNodes = Maps.newHashMap();
+        this.targetNodes = new HashMap<>();
+        this.sourceNodes = new HashMap<>();
     }
 
     @Override public void attachObserver(IGraphObserver<V> observer) {

@@ -1,6 +1,6 @@
 package mb.nabl2.terms;
 
-import java.util.List;
+import org.metaborg.util.collection.ImList;
 
 public interface IApplTerm extends ITerm {
 
@@ -8,7 +8,7 @@ public interface IApplTerm extends ITerm {
 
     int getArity();
 
-    List<ITerm> getArgs();
+    ImList.Immutable<ITerm> getArgs();
 
     @Override IApplTerm withAttachments(IAttachments value);
 

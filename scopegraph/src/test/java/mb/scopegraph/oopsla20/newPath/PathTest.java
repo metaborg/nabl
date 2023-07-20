@@ -3,13 +3,12 @@ package mb.scopegraph.oopsla20.newPath;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.Test;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.Lists;
 
 import mb.scopegraph.oopsla20.path.IStep;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -25,7 +24,7 @@ public class PathTest {
         assertEquals(0, p.size());
         assertEquals(s1, p.getSource());
         assertEquals(s1, p.getTarget());
-        List<IStep<String, Unit>> steps = Lists.newArrayList(p);
+        List<IStep<String, Unit>> steps = new ArrayList<>(p);
         assertEquals(0, steps.size());
     }
 
@@ -34,7 +33,7 @@ public class PathTest {
         assertEquals(1, p.size());
         assertEquals(s1, p.getSource());
         assertEquals(s2, p.getTarget());
-        List<IStep<String, Unit>> steps = Lists.newArrayList(p);
+        List<IStep<String, Unit>> steps = new ArrayList<>(p);
         assertEquals(1, steps.size());
         assertEquals(s1, steps.get(0).getSource());
         assertEquals(s2, steps.get(0).getTarget());
@@ -46,7 +45,7 @@ public class PathTest {
         assertEquals(2, p.size());
         assertEquals(s1, p.getSource());
         assertEquals(s3, p.getTarget());
-        List<IStep<String, Unit>> steps = Lists.newArrayList(p);
+        List<IStep<String, Unit>> steps = new ArrayList<>(p);
         assertEquals(2, steps.size());
         assertEquals(s1, steps.get(0).getSource());
         assertEquals(s2, steps.get(0).getTarget());

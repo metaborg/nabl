@@ -1,17 +1,12 @@
 package mb.statix.spec;
 
-import java.util.Set;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 
 @Value.Immutable
@@ -20,15 +15,15 @@ public abstract class ASpec {
 
     @Value.Parameter public abstract RuleSet rules();
 
-    @Value.Parameter public abstract Set<ITerm> edgeLabels();
+    @Value.Parameter public abstract Set.Immutable<ITerm> edgeLabels();
 
-    @Value.Parameter public abstract Set<ITerm> dataLabels();
+    @Value.Parameter public abstract Set.Immutable<ITerm> dataLabels();
 
-    @Value.Lazy public Set<ITerm> allLabels() {
-        return Sets.union(edgeLabels(), dataLabels());
+    @Value.Lazy public Set.Immutable<ITerm> allLabels() {
+        return Set.Immutable.union(edgeLabels(), dataLabels());
     }
 
-    @Value.Parameter public abstract SetMultimap<String, Tuple2<Integer, ITerm>> scopeExtensions();
+    @Value.Parameter public abstract SetMultimap.Immutable<String, Tuple2<Integer, ITerm>> scopeExtensions();
 
     @Value.Default public boolean hasPrecomputedCriticalEdges() {
         return false;
@@ -41,8 +36,8 @@ public abstract class ASpec {
     }
 
     public static Spec of() {
-        return Spec.of(new RuleSet(ImmutableListMultimap.of()), ImmutableSet.of(), ImmutableSet.of(),
-                ImmutableSetMultimap.of());
+        return Spec.of(new RuleSet(CapsuleUtil.immutableMap()), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
+                SetMultimap.Immutable.of());
     }
 
 }

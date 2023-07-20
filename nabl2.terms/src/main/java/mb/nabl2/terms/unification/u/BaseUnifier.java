@@ -4,7 +4,10 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -15,10 +18,6 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -103,7 +102,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public ITerm findRecursive(final ITerm term) {
-        return findTermRecursive(term, Sets.newHashSet(), Maps.newHashMap());
+        return findTermRecursive(term, new HashSet<>(), new HashMap<>());
     }
 
     private ITerm findTermRecursive(final ITerm term, final java.util.Set<ITermVar> stack,
@@ -176,7 +175,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     private Iterable<ITerm> findRecursiveTerms(final Iterable<ITerm> terms, final java.util.Set<ITermVar> stack,
             final java.util.Map<ITermVar, ITerm> visited) {
-        List<ITerm> instances = Lists.newArrayList();
+        List<ITerm> instances = new ArrayList<>();
         for(ITerm term : terms) {
             instances.add(findTermRecursive(term, stack, visited));
         }
@@ -188,11 +187,11 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public boolean isCyclic(final ITerm term) {
-        return isCyclic(term.getVars(), Sets.newHashSet(), Maps.newHashMap());
+        return isCyclic(term.getVars(), new HashSet<ITermVar>(), new HashMap<ITermVar, Boolean>());
     }
 
     protected boolean isCyclic(final java.util.Set<ITermVar> vars) {
-        return isCyclic(vars, Sets.newHashSet(), Maps.newHashMap());
+        return isCyclic(vars, new HashSet<ITermVar>(), new HashMap<ITermVar, Boolean>());
     }
 
     private boolean isCyclic(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
@@ -229,7 +228,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public boolean isGround(final ITerm term) {
-        return isGround(term.getVars(), Sets.newHashSet(), Maps.newHashMap());
+        return isGround(term.getVars(), new HashSet<ITermVar>(), new HashMap<ITermVar, Boolean>());
     }
 
     private boolean isGround(final java.util.Set<ITermVar> vars, final java.util.Set<ITermVar> stack,
@@ -262,7 +261,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars(final ITerm term) {
         final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
-        getVars(term.getVars(), Lists.newLinkedList(), Sets.newHashSet(), vars);
+        getVars(term.getVars(), new LinkedList<ITermVar>(), new HashSet<ITermVar>(), vars);
         return vars.freeze();
     }
 
@@ -301,7 +300,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public TermSize size(final ITerm term) {
-        return size(term, Sets.newHashSet(), Maps.newHashMap());
+        return size(term, new HashSet<ITermVar>(), new HashMap<ITermVar, TermSize>());
     }
 
     private TermSize size(final ITerm term, final java.util.Set<ITermVar> stack,
@@ -376,11 +375,11 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
     ///////////////////////////////////////////
 
     @Override public String toString(final ITerm term, SpecializedTermFormatter specializedTermFormatter) {
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), -1, specializedTermFormatter);
+        return toString(term, new HashMap<ITermVar, String>(), new HashMap<ITermVar, String>(), -1, specializedTermFormatter);
     }
 
     @Override public String toString(final ITerm term, int depth, SpecializedTermFormatter specializedTermFormatter) {
-        return toString(term, Maps.newHashMap(), Maps.newHashMap(), depth, specializedTermFormatter);
+        return toString(term, new HashMap<ITermVar, String>(), new HashMap<ITermVar, String>(), depth, specializedTermFormatter);
     }
 
     private String toString(final ITerm term, final java.util.Map<ITermVar, String> stack,
@@ -642,7 +641,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars) {
             final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.retainAll(vars);
             unifier = result.unifier();
             return result.result();
@@ -654,7 +653,7 @@ public abstract class BaseUnifier implements IUnifier, Serializable {
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars) {
             final Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result = unifier.removeAll(vars);
             unifier = result.unifier();
             return result.result();

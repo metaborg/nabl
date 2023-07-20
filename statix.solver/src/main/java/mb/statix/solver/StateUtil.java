@@ -2,10 +2,9 @@ package mb.statix.solver;
 
 import java.util.List;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.u.IUnifier;
@@ -17,22 +16,22 @@ import mb.statix.constraints.CInequal;
 public class StateUtil {
 
     public static List<IConstraint> asConstraint(IUniDisunifier unifier) {
-        final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+        final ImList.Mutable<IConstraint> constraints = ImList.Mutable.of();
         buildEqualities(unifier, constraints::add);
         buildInequalities(unifier.disequalities(), constraints::add);
-        return constraints.build();
+        return constraints.freeze();
     }
 
     public static List<CEqual> asEqualities(IUnifier unifier) {
-        final ImmutableList.Builder<CEqual> constraints = ImmutableList.builder();
+        final ImList.Mutable<CEqual> constraints = ImList.Mutable.of();
         buildEqualities(unifier, constraints::add);
-        return constraints.build();
+        return constraints.freeze();
     }
 
     public static List<CInequal> asInequalities(IUniDisunifier unifier) {
-        final ImmutableList.Builder<CInequal> constraints = ImmutableList.builder();
+        final ImList.Mutable<CInequal> constraints = ImList.Mutable.of();
         buildInequalities(unifier.disequalities(), constraints::add);
-        return constraints.build();
+        return constraints.freeze();
     }
 
     private static void buildEqualities(IUnifier unifier, Action1<CEqual> add) {

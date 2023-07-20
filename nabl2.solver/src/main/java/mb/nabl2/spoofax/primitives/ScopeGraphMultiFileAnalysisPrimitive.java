@@ -24,6 +24,7 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.TermUtils;
 
 import mb.nabl2.config.NaBL2DebugConfig;
+import mb.nabl2.log.Logger;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.primitives.StrategyCalls.CallableStrategy;
@@ -35,6 +36,8 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 
     private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
+    private static final Logger celog = Logger.logger(CallExternal.class);
+
 
     public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
         super(name, 0, tvars);
@@ -70,11 +73,14 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
         final HashMap<String, SDefT> strCache = new HashMap<>();
         return (name, args) -> {
+            celog.debug("calling external {}({})", name, args);
             final IStrategoTerm arg = prepareArguments(args, strategoTerms, env.getFactory());
             try {
                 final CallableStrategy strategy = StrategyCalls.lookup(env, name, strCache);
                 final Optional<IStrategoTerm> result = strategy.call(arg);
-                return result.map(strategoTerms::fromStratego).map(ConstraintTerms::specialize);
+                final Optional<ITerm> resultTerm = result.map(strategoTerms::fromStratego).map(ConstraintTerms::specialize);
+                celog.debug("* result: {}", resultTerm);
+                return resultTerm;
             } catch(Exception ex) {
                 logger.warn("External call to '{}' failed.", ex, name);
                 return Optional.empty();

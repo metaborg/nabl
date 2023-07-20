@@ -1,7 +1,6 @@
 package mb.statix.concurrent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
@@ -9,6 +8,7 @@ import javax.annotation.Nullable;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 
 import mb.nabl2.terms.ITerm;
@@ -29,13 +29,13 @@ public abstract class ASolverState implements ITypeChecker.IState<Scope, ITerm, 
 
     @Value.Parameter public abstract ICompleteness.Immutable completeness();
 
-    @Value.Parameter public abstract java.util.Set<IConstraint> constraints();
+    @Value.Parameter public abstract Set.Immutable<IConstraint> constraints();
 
-    @Value.Parameter public abstract @Nullable Map<ITermVar, ITermVar> existentials();
+    @Value.Parameter public abstract @Nullable Map.Immutable<ITermVar, ITermVar> existentials();
 
-    @Value.Parameter public abstract List<ITermVar> updatedVars();
+    @Value.Parameter public abstract Set.Immutable<ITermVar> updatedVars();
 
-    @Value.Parameter public abstract Map<IConstraint, IMessage> failed();
+    @Value.Parameter public abstract Map.Immutable<IConstraint, IMessage> failed();
 
     @Value.Parameter public abstract Set.Immutable<CriticalEdge> delayedCloses();
 

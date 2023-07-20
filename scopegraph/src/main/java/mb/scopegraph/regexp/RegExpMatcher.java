@@ -1,18 +1,18 @@
 package mb.scopegraph.regexp;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
 import mb.scopegraph.regexp.impl.RegExpNormalizingBuilder;
 import mb.scopegraph.regexp.impl.RegExps;
@@ -64,27 +64,28 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
         final RegExpNormalizingBuilder<S> builder = new RegExpNormalizingBuilder<>(alphabet);
         final IRegExp<S> empty = builder.emptySet();
 
-        final List<Deriver<S>> derivers = Lists.newArrayList();
+        final List<Deriver<S>> derivers = new ArrayList<>();
         for(S symbol : alphabet) {
             derivers.add(new Deriver<>(symbol, builder));
         }
         final Deriver<S> defaultDeriver = new Deriver<>(null, builder);
 
-        final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions = Maps.newHashMap();
-        final Map<IRegExp<S>, IRegExp<S>> defaultTransitions = Maps.newHashMap();
-        final Map<IRegExp<S>, Set<IRegExp<S>>> reverseTransitions = Maps.newHashMap();
-        final Deque<IRegExp<S>> worklist = Queues.newArrayDeque();
+        final Map<IRegExp<S>, Map<S, IRegExp<S>>> stateTransitions = new HashMap<>();
+        final Map<IRegExp<S>, IRegExp<S>> defaultTransitions = new HashMap<>();
+        final Map<IRegExp<S>, Set<IRegExp<S>>> reverseTransitions = new HashMap<>();
+        final Deque<IRegExp<S>> worklist = new ArrayDeque<>();
         worklist.push(initial);
         worklist.push(empty);
         while(!worklist.isEmpty()) {
             final IRegExp<S> state = worklist.pop();
-            final Map<S, IRegExp<S>> transitions = Maps.newHashMapWithExpectedSize(derivers.size());
+            final Map<S, IRegExp<S>> transitions = new HashMap<>(Sets.hashCapacity(derivers.size()));
             if(!stateTransitions.containsKey(state)) {
                 for(Deriver<S> deriver : derivers) {
                     final IRegExp<S> nextState = builder.apply(deriver.apply(state));
                     Set<IRegExp<S>> reverseStates;
                     if((reverseStates = reverseTransitions.get(nextState)) == null) {
-                        reverseTransitions.put(nextState, (reverseStates = Sets.newHashSet()));
+                        reverseTransitions.put(nextState, (reverseStates =
+                            new HashSet<IRegExp<S>>()));
                     }
                     reverseStates.add(state);
                     transitions.put(deriver.getSymbol(), nextState);
@@ -94,7 +95,8 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
                     final IRegExp<S> defaultState = builder.apply(defaultDeriver.apply(state));
                     Set<IRegExp<S>> reverseStates;
                     if((reverseStates = reverseTransitions.get(defaultState)) == null) {
-                        reverseTransitions.put(defaultState, (reverseStates = Sets.newHashSet()));
+                        reverseTransitions.put(defaultState, (reverseStates =
+                            new HashSet<IRegExp<S>>()));
                     }
                     reverseStates.add(state);
                     defaultTransitions.put(state, defaultState);
@@ -110,8 +112,8 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
                 worklist.push(state);
             }
         }
-        final Set<IRegExp<S>> visited = Sets.newHashSet();
-        final Set<IRegExp<S>> nonFinal = Sets.newHashSet();
+        final Set<IRegExp<S>> visited = new HashSet<IRegExp<S>>();
+        final Set<IRegExp<S>> nonFinal = new HashSet<IRegExp<S>>();
         while(!worklist.isEmpty()) {
             final IRegExp<S> state = worklist.pop();
             if(!visited.contains(state)) {
@@ -125,10 +127,10 @@ public class RegExpMatcher<S> implements IRegExpMatcher<S>, Serializable {
             }
         }
         final Set<IRegExp<S>> isNullable =
-                stateTransitions.keySet().stream().filter(RegExps::isNullable).collect(ImmutableSet.toImmutableSet());
+                stateTransitions.keySet().stream().filter(RegExps::isNullable).collect(Collectors.toSet());
 
         // convert maps to object graph
-        Map<IRegExp<S>, State<S>> states = Maps.newHashMapWithExpectedSize(stateTransitions.size());
+        Map<IRegExp<S>, State<S>> states = new HashMap<>(Sets.hashCapacity(stateTransitions.size()));
         for(IRegExp<S> state : stateTransitions.keySet()) {
             final State<S> _state;
             states.put(state, _state = new State<>(state));

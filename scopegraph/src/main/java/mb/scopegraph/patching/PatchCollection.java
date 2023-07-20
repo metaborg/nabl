@@ -6,14 +6,14 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import org.metaborg.util.RefBool;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.metaborg.util.collection.Sets;
 
 import io.usethesource.capsule.Set;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
@@ -88,7 +88,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
     public static class Immutable<S> extends PatchCollection<S> implements IPatchCollection.Immutable<S> {
 
         @SuppressWarnings({ "rawtypes", "unchecked" }) private static final PatchCollection.Immutable EMPTY =
-                new PatchCollection.Immutable(BiMap.Immutable.of(), Set.Immutable.of());
+                new PatchCollection.Immutable(BiMap.Immutable.of(), CapsuleUtil.immutableSet());
 
         /**
          * Maps new scopes to old scopes.
@@ -353,7 +353,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
         }
 
         public static <S> PatchCollection.Transient<S> of() {
-            return new PatchCollection.Transient<>(BiMap.Transient.of(), Set.Transient.of());
+            return new PatchCollection.Transient<>(BiMap.Transient.of(), CapsuleUtil.transientSet());
         }
 
     }
@@ -372,7 +372,7 @@ public abstract class PatchCollection<S> implements IPatchCollection<S> {
 
     private static <S> void checkInvalidIdentities(java.util.Set<S> identities, java.util.Set<S> nonIdentities)
             throws InvalidPatchCompositionException {
-        final SetView<S> conflicts = Sets.intersection(nonIdentities, identities);
+        final java.util.Set<S> conflicts = CapsuleUtil.toSet(Sets.intersection(nonIdentities, identities));
         if(!conflicts.isEmpty()) {
             throw new InvalidPatchCompositionException("Match conflict for " + conflicts + ".");
         }

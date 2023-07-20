@@ -1,10 +1,10 @@
 package mb.statix.generator.util;
 
 import java.io.PrintStream;
+import java.util.Collections;
 
+import org.metaborg.util.Strings;
 import org.metaborg.util.functions.Action1;
-
-import com.google.common.base.Strings;
 
 public class StreamProgressPrinter implements IProgressPrinter {
 

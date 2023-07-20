@@ -1,17 +1,16 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.matching.TermPattern.P;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.Test;
+import org.metaborg.util.collection.ImList;
 
-import com.google.common.collect.Ordering;
+import static mb.nabl2.terms.matching.TermPattern.P;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unused")
 public class TermPatternOrderTest {
@@ -70,7 +69,8 @@ public class TermPatternOrderTest {
         Pattern p1 = a;
         Pattern p2 = P.newAppl(f, b);
         List<Pattern> ps = Arrays.asList(p1, p2);
-        List<Pattern> sps = Ordering.from(Pattern.leftRightOrdering.asComparator()).immutableSortedCopy(ps);
+        List<Pattern> sps =
+            ImList.Immutable.sortedCopyOf(ps, Pattern.leftRightOrdering.asComparator());
         assertArrayEquals(new Pattern[] { p2, p1 }, sps.toArray());
     }
 
@@ -78,7 +78,7 @@ public class TermPatternOrderTest {
         Pattern p1 = P.newAppl(f, P.newNil());
         Pattern p2 = P.newAppl(f, b);
         List<Pattern> ps = Arrays.asList(p1, p2);
-        List<Pattern> sps = Ordering.from(Pattern.leftRightOrdering.asComparator()).immutableSortedCopy(ps);
+        List<Pattern> sps = ImList.Immutable.sortedCopyOf(ps, Pattern.leftRightOrdering.asComparator());
         assertArrayEquals(new Pattern[] { p1, p2 }, sps.toArray());
     }
 
@@ -88,7 +88,7 @@ public class TermPatternOrderTest {
         Pattern p3 = P.newTuple(a, y);
         Pattern p4 = P.newTuple(a, b);
         List<Pattern> ps = Arrays.asList(p2, p4, p3, p1);
-        List<Pattern> sps = Ordering.from(Pattern.leftRightOrdering.asComparator()).immutableSortedCopy(ps);
+        List<Pattern> sps = ImList.Immutable.sortedCopyOf(ps, Pattern.leftRightOrdering.asComparator());
         assertArrayEquals(new Pattern[] { p1, p2, p3, p4 }, sps.toArray());
     }
 

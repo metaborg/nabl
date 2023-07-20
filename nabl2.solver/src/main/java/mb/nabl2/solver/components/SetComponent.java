@@ -3,6 +3,7 @@ package mb.nabl2.solver.components;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -12,10 +13,8 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.Set.Immutable;
 import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -25,6 +24,7 @@ import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
 import mb.nabl2.constraints.sets.ISetConstraint;
+import mb.nabl2.log.Logger;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
@@ -36,12 +36,15 @@ import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.InterruptedDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import static mb.nabl2.terms.matching.Transform.T;
 import mb.scopegraph.pepm16.CriticalEdgeException;
 import mb.scopegraph.pepm16.StuckException;
 
 public class SetComponent extends ASolver {
+
+    private static final Logger log = Logger.logger(SetComponent.class);
 
     private static final String NAME_OP = "NAME";
 
@@ -66,12 +69,15 @@ public class SetComponent extends ASolver {
         ITerm left = constraint.getLeft();
         ITerm right = constraint.getRight();
         if(!unifier().isGround(left) && unifier().isGround(right)) {
-            throw new VariableDelayException(Iterables.concat(unifier().getVars(left), unifier().getVars(right)));
+            Iterable<ITermVar> setVars = Iterables2.fromConcat(unifier().getVars(left), unifier().getVars(right));
+            log.debug("* delaying {}", setVars);
+            throw new VariableDelayException(setVars);
         }
         Optional<ISetProducer<ITerm>> maybeLeftSet = evaluator.match(left, unifier());
         Optional<ISetProducer<ITerm>> maybeRightSet = evaluator.match(right, unifier());
         if(!(maybeLeftSet.isPresent() && maybeRightSet.isPresent())) {
-            return SolveResult.empty();
+            log.debug("* not a set {}");
+            return SolveResult.empty(); // FIXME: error message when an argument is not a set?
         }
         final Set.Immutable<IElement<ITerm>> leftSet;
         final Set.Immutable<IElement<ITerm>> rightSet;
@@ -79,10 +85,12 @@ public class SetComponent extends ASolver {
             leftSet = maybeLeftSet.get().apply();
             rightSet = maybeRightSet.get().apply();
         } catch(CriticalEdgeException e) {
+            log.debug("* delaying - critical edge", e);
             throw new CriticalEdgeDelayException(e);
         } catch(StuckException e) {
             IMessageInfo message = constraint.getMessageInfo()
                     .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
+            log.debug("* failing - stuck", e);
             return SolveResult.messages(message);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
@@ -96,12 +104,14 @@ public class SetComponent extends ASolver {
             }
         }
         if(result.isEmpty()) {
+            log.debug("* succeed");
             return SolveResult.empty();
         } else {
             MessageContent content =
                     MessageContent.builder().append(B.newAppl(NAME_OP)).append(" not in ").append(right).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), result.freeze().values());
+            log.debug("* fail");
             return SolveResult.messages(messages);
         }
     }
@@ -109,18 +119,23 @@ public class SetComponent extends ASolver {
     private SolveResult solve(CDistinct constraint) throws DelayException {
         ITerm setTerm = constraint.getSet();
         if(!unifier().isGround(setTerm)) {
-            throw new VariableDelayException(unifier().getVars(setTerm));
+            final Immutable<ITermVar> setVars = unifier().getVars(setTerm);
+            log.debug("* delaying {}", setVars);
+            throw new VariableDelayException(setVars);
         }
         Optional<ISetProducer<ITerm>> maybeSet = evaluator.match(setTerm, unifier());
         if(!(maybeSet.isPresent())) {
+            log.debug("* not a set");
             return SolveResult.empty();
         }
         Set<IElement<ITerm>> set;
         try {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
+            log.debug("* delaying - critical edge", e);
             throw new CriticalEdgeDelayException(e);
         } catch(StuckException e) {
+            log.debug("* failing - stuck", e);
             IMessageInfo message = constraint.getMessageInfo()
                     .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
             return SolveResult.messages(message);
@@ -128,7 +143,7 @@ public class SetComponent extends ASolver {
             throw new InterruptedDelayException(e);
         }
         SetMultimap.Immutable<Object, IElement<ITerm>> proj = SetEvaluator.project(set, constraint.getProjection());
-        List<IElement<ITerm>> duplicates = Lists.newArrayList();
+        List<IElement<ITerm>> duplicates = new ArrayList<>();
         for(Object key : proj.keySet()) {
             Collection<IElement<ITerm>> values = proj.get(key);
             if(values.size() > 1) {
@@ -136,12 +151,14 @@ public class SetComponent extends ASolver {
             }
         }
         if(duplicates.isEmpty()) {
+            log.debug("* succeed");
             return SolveResult.empty();
         } else {
             MessageContent content = MessageContent.builder().append(B.newAppl(NAME_OP)).append(" has duplicates in ")
                     .append(setTerm).build();
             Iterable<IMessageInfo> messages =
                     makeMessages(constraint.getMessageInfo().withDefaultContent(content), duplicates);
+            log.debug("* fail");
             return SolveResult.messages(messages);
         }
     }
@@ -149,18 +166,23 @@ public class SetComponent extends ASolver {
     private SolveResult solve(CEvalSet constraint) throws DelayException {
         ITerm setTerm = constraint.getSet();
         if(!unifier().isGround(setTerm)) {
-            throw new VariableDelayException(unifier().getVars(setTerm));
+            Immutable<ITermVar> setVars = unifier().getVars(setTerm);
+            log.debug("* delaying {}", setVars);
+            throw new VariableDelayException(setVars);
         }
         Optional<ISetProducer<ITerm>> maybeSet = evaluator.match(setTerm, unifier());
         if(!(maybeSet.isPresent())) {
+            log.debug("* not a set");
             return SolveResult.empty();
         }
         Set<IElement<ITerm>> set;
         try {
             set = maybeSet.get().apply();
         } catch(CriticalEdgeException e) {
+            log.debug("* delaying - critical edge", e);
             throw new CriticalEdgeDelayException(e);
         } catch(StuckException e) {
+            log.debug("* failing - stuck", e);
             IMessageInfo message = constraint.getMessageInfo()
                     .withDefaultContent(MessageContent.builder().append("Name set is stuck.").build());
             return SolveResult.messages(message);

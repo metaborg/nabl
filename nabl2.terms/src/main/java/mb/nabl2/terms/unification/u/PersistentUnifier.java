@@ -2,6 +2,7 @@ package mb.nabl2.terms.unification.u;
 
 import java.io.Serializable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -10,15 +11,12 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.BagMap;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -40,11 +38,11 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
 
     private static final PersistentUnifier.Immutable FINITE_EMPTY = new PersistentUnifier.Immutable(true,
-            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), MultiSet.Immutable.of(),
             CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
 
     private static final PersistentUnifier.Immutable INFINITE_EMPTY = new PersistentUnifier.Immutable(false,
-            Map.Immutable.of(), Map.Immutable.of(), Map.Immutable.of(), MultiSet.Immutable.of(),
+            CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), CapsuleUtil.immutableMap(), MultiSet.Immutable.of(),
             CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
 
 
@@ -145,7 +143,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private final Predicate1<ITermVar> isRigid;
             private final Deque<Map.Entry<ITerm, ITerm>> worklist = new ArrayDeque<>();
-            private final List<ITermVar> result = Lists.newArrayList();
+            private final List<ITermVar> result = new ArrayList<>();
 
             public Unify(PersistentUnifier.Immutable unifier, ITerm left, ITerm right, Predicate1<ITermVar> isRigid) {
                 super(unifier);
@@ -188,13 +186,13 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             }
 
             private void occursCheck(final PersistentUnifier.Immutable unifier) throws OccursException {
-                final ImmutableSet.Builder<ITermVar> _cyclicVars = ImmutableSet.builderWithExpectedSize(0);
+                final Set.Transient<ITermVar> _cyclicVars = CapsuleUtil.transientSet();
                 for(ITermVar var : result) {
                     if(unifier.isCyclic(var)) {
-                        _cyclicVars.add(var);
+                        _cyclicVars.__insert(var);
                     }
                 }
-                final ImmutableSet<ITermVar> cyclicVars = _cyclicVars.build();
+                final Set.Immutable<ITermVar> cyclicVars = _cyclicVars.freeze();
                 if(!cyclicVars.isEmpty()) {
                     throw new OccursException(cyclicVars);
                 }
@@ -445,8 +443,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return retainAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars) {
-            return removeAll(Set.Immutable.subtract(domainSet(), CapsuleUtil.toSet(vars)));
+        @Override public IUnifier.Immutable.Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars) {
+            return removeAll(Set.Immutable.subtract(domainSet(), vars));
         }
 
         ///////////////////////////////////////////
@@ -457,7 +455,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return removeAll(CapsuleUtil.immutableSet(var));
         }
 
-        @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars) {
+        @Override public ImmutableResult<ISubstitution.Immutable> removeAll(Set.Immutable<ITermVar> vars) {
             return new RemoveAll(this, vars).apply();
         }
 
@@ -465,9 +463,9 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
 
             private final Set.Immutable<ITermVar> vars;
 
-            public RemoveAll(PersistentUnifier.Immutable unifier, Iterable<ITermVar> vars) {
+            public RemoveAll(PersistentUnifier.Immutable unifier, Set.Immutable<ITermVar> vars) {
                 super(unifier);
-                this.vars = CapsuleUtil.toSet(vars);
+                this.vars = vars;
             }
 
             public ImmutableResult<ISubstitution.Immutable> apply() {
@@ -482,7 +480,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
                 if(vars.isEmpty()) {
                     return subst.freeze();
                 }
-                final ListMultimap<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
+                final MultiSetMap.Transient<ITermVar, ITermVar> invReps = getInvReps(); // rep |-> [var]
                 for(ITermVar var : vars) {
                     ITermVar rep;
                     if((rep = removeRep(var)) != null) { // Case 1. Var _has_ a rep; var |-> rep
@@ -535,15 +533,15 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             if(renaming.isEmpty() || this.isEmpty()) {
                 return this;
             }
-            final Map.Transient<ITermVar, ITermVar> reps = Map.Transient.of();
+            final Map.Transient<ITermVar, ITermVar> reps = CapsuleUtil.transientMap();
             for(Entry<ITermVar, ITermVar> e : this.reps.get().entrySet()) {
                 reps.__put(renaming.rename(e.getKey()), renaming.rename(e.getValue()));
             }
-            final Map.Transient<ITermVar, Integer> ranks = Map.Transient.of();
+            final Map.Transient<ITermVar, Integer> ranks = CapsuleUtil.transientMap();
             for(Entry<ITermVar, Integer> e : this.ranks.entrySet()) {
                 ranks.__put(renaming.rename(e.getKey()), e.getValue());
             }
-            final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+            final Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
             for(Entry<ITermVar, ITerm> e : this.terms.entrySet()) {
                 terms.__put(renaming.rename(e.getKey()), renaming.apply(e.getValue()));
             }
@@ -576,7 +574,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             if(replacement.isEmpty() || this.isEmpty()) {
                 return this;
             }
-            final Map.Transient<ITermVar, ITerm> terms = Map.Transient.of();
+            final Map.Transient<ITermVar, ITerm> terms = CapsuleUtil.transientMap();
             for(Entry<ITermVar, ITerm> e : this.terms.entrySet()) {
                 terms.__put(e.getKey(), replacement.apply(e.getValue()));
             }
@@ -656,7 +654,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
         private final Set.Transient<ITermVar> varSetCache;
 
         Transient(boolean finite) {
-            this(finite, Map.Transient.of(), Map.Transient.of(), Map.Transient.of(), MultiSet.Transient.of(),
+            this(finite, CapsuleUtil.transientMap(), CapsuleUtil.transientMap(), CapsuleUtil.transientMap(), MultiSet.Transient.of(),
                     CapsuleUtil.transientSet(), CapsuleUtil.transientSet(), CapsuleUtil.transientSet());
         }
 
@@ -700,8 +698,8 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             return reps.get(var);
         }
 
-        protected ListMultimap<ITermVar, ITermVar> getInvReps() {
-            final ListMultimap<ITermVar, ITermVar> invReps = LinkedListMultimap.create();
+        protected MultiSetMap.Transient<ITermVar, ITermVar> getInvReps() {
+            final MultiSetMap.Transient<ITermVar, ITermVar> invReps = MultiSetMap.Transient.of();
             for(Entry<ITermVar, ITermVar> e : reps.entrySet()) {
                 invReps.put(e.getValue(), e.getKey());
             }

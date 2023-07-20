@@ -7,9 +7,8 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -53,16 +52,16 @@ public abstract class ALabel extends AbstractApplTerm implements ILabel, IApplTe
         }
     }
 
-    @Value.Lazy @Override public List<ITerm> getArgs() {
+    @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
         switch(getName()) {
             case D_OP:
             case R_OP:
             case I_OP:
             case P_OP:
             case Q_OP:
-                return ImmutableList.of();
+                return ImList.Immutable.of();
             default:
-                return ImmutableList.of((ITerm) B.newString(getName()));
+                return ImList.Immutable.of((ITerm) B.newString(getName()));
         }
     }
 

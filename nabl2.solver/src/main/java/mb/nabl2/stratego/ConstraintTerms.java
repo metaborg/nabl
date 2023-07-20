@@ -3,13 +3,12 @@ package mb.nabl2.stratego;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.metaborg.util.Ref;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
@@ -38,11 +37,11 @@ public class ConstraintTerms {
         ITerm newTerm = term.match(Terms.cases(
             appl -> {
                 final List<ITerm> args = appl.getArgs();
-                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                final ImList.Mutable<ITerm> newArgs = new ImList.Mutable<>(args.size());
                 for(ITerm arg : args) {
                     newArgs.add(specialize(arg));
                 }
-                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
+                return B.newAppl(appl.getOp(), newArgs.freeze(), term.getAttachments());
             },
             list -> specializeList(list),
             string -> string,
@@ -66,8 +65,8 @@ public class ConstraintTerms {
 
     private static IListTerm specializeList(IListTerm list) {
         // fromStrategoList
-        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
-        final List<IAttachments> attachments = Lists.newArrayListWithCapacity(list.getMinSize());
+        final List<ITerm> terms = new ArrayList<>(list.getMinSize());
+        final List<IAttachments> attachments = new ArrayList<>(list.getMinSize());
         final Ref<ITermVar> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
@@ -107,11 +106,11 @@ public class ConstraintTerms {
         return term.match(Terms.cases(
             appl -> {
                 final List<ITerm> args = appl.getArgs();
-                final ImmutableList.Builder<ITerm> newArgs = ImmutableList.builderWithExpectedSize(args.size());
+                final ImList.Mutable<ITerm> newArgs = new ImList.Mutable<>(args.size());
                 for(ITerm arg : args) {
                     newArgs.add(explicate(arg));
                 }
-                return B.newAppl(appl.getOp(), newArgs.build(), term.getAttachments());
+                return B.newAppl(appl.getOp(), newArgs.freeze(), term.getAttachments());
             },
             list -> explicate(list),
             string -> string,
@@ -124,8 +123,8 @@ public class ConstraintTerms {
 
     private static ITerm explicate(IListTerm list) {
         // toStrategoList
-        final List<ITerm> terms = Lists.newArrayListWithExpectedSize(list.getMinSize());
-        final List<IAttachments> attachments = Lists.newArrayListWithExpectedSize(list.getMinSize());
+        final List<ITerm> terms = new ArrayList<>(list.getMinSize());
+        final List<IAttachments> attachments = new ArrayList<>(list.getMinSize());
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             // @formatter:off
@@ -149,7 +148,7 @@ public class ConstraintTerms {
         }
         list = B.newList(terms, attachments);
         if(varTail.get() != null) {
-            return B.newAppl(LISTTAIL_CTOR, ImmutableList.of(list, varTail.get()));
+            return B.newAppl(LISTTAIL_CTOR, ImList.Immutable.of(list, varTail.get()));
         } else {
             return list;
         }

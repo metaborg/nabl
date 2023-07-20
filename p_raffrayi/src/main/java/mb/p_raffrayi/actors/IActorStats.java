@@ -1,9 +1,11 @@
 package mb.p_raffrayi.actors;
 
+import java.util.Collection;
+
 public interface IActorStats {
 
-    Iterable<String> csvHeaders();
+    Collection<String> csvHeaders();
 
-    Iterable<String> csvRow();
+    Collection<String> csvRow();
 
 }

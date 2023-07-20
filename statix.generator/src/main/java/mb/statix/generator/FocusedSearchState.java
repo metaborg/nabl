@@ -1,7 +1,5 @@
 package mb.statix.generator;
 
-import com.google.common.collect.ImmutableMap;
-
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
@@ -16,7 +14,7 @@ public class FocusedSearchState<C extends IConstraint> extends SearchState {
     private final Set.Immutable<IConstraint> unfocused;
 
     private FocusedSearchState(IState.Immutable state, Set.Immutable<IConstraint> constraints, C focus,
-            Map.Immutable<IConstraint, Delay> delays, ImmutableMap<ITermVar, ITermVar> existentials,
+            Map.Immutable<IConstraint, Delay> delays, Map.Immutable<ITermVar, ITermVar> existentials,
             ICompleteness.Immutable completeness) {
         super(state, constraints, delays, existentials, completeness);
         if(!constraints.contains(focus)) {

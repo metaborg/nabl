@@ -1,7 +1,7 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
@@ -9,12 +9,12 @@ import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
+import mb.nabl2.log.Logger;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
 import mb.nabl2.solver.ISolution;
@@ -51,6 +51,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
+
+    private static final Logger log = Logger.logger(SemiIncrementalMultiFileSolver.class);
 
     public SemiIncrementalMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         super(nabl2Debug, callExternal);
@@ -117,7 +119,7 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
 
         try {
             // seed unit solutions
-            final java.util.Set<IConstraint> constraints = Sets.newHashSet(initial.constraints());
+            final java.util.Set<IConstraint> constraints = new HashSet<>(initial.constraints());
             final IMessages.Transient messages = initial.messages().melt();
             for(ISolution unitSolution : unitSolutions) {
                 seed(astSolver.seed(unitSolution.astProperties(), message), messages, constraints);
@@ -141,14 +143,18 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             IProperties.Immutable<TermIndex, ITerm, ITerm> astResult = astSolver.finish();
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 
-            return Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
+            Solution solution = Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                     messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
+
+            log.info("finish inter: {}", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

@@ -3,6 +3,7 @@ package mb.p_raffrayi.actors.impl;
 import java.lang.reflect.Method;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.metaborg.util.functions.Function1;
@@ -13,8 +14,6 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.Sets;
 
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -45,7 +44,7 @@ public class ActorSystem implements IActorSystem, IActorInternal<Void> {
     }
 
     public ActorSystem(IActorScheduler scheduler) {
-        this.children = Sets.newHashSet();
+        this.children = new HashSet<IActorInternal<?>>();
         this.scheduler = scheduler;
         this.state = ActorSystemState.RUNNING;
         this.context = new ActorContext();

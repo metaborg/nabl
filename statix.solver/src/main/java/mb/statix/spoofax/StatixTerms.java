@@ -1,11 +1,9 @@
 package mb.statix.spoofax;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.nabl2.terms.matching.TermPattern.P;
-
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +12,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -23,17 +25,7 @@ import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.tuple.Tuple3;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IIntTerm;
 import mb.nabl2.terms.IListTerm;
@@ -44,7 +36,6 @@ import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
-import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.substitution.FreshVars;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.scopegraph.oopsla20.IScopeGraph;
@@ -108,6 +99,11 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+import static mb.nabl2.terms.matching.TermPattern.P;
+import static mb.nabl2.terms.matching.Transform.T;
+
 public class StatixTerms {
 
     private static final ILogger log = LoggerUtils.logger(StatixTerms.class);
@@ -170,7 +166,7 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<Tuple2<String, List<Pattern>>> head() {
+    public static IMatcher<Tuple2<String, ImList.Immutable<Pattern>>> head() {
         return M.appl2("C", constraintName(), M.listElems(pattern()), (h, name, patterns) -> {
             return Tuple2.of(name, patterns);
         });
@@ -202,7 +198,7 @@ public class StatixTerms {
                     return new CFalse(msg.orElse(null));
                 }),
                 M.appl3("CInequal", term(), term(), message(), (c, t1, t2, msg) -> {
-                    return new CInequal(ImmutableSet.of(), t1, t2, msg.orElse(null));
+                    return new CInequal(CapsuleUtil.immutableSet(), t1, t2, msg.orElse(null));
                 }),
                 M.appl1("CNew", M.listElems(term()), (c, ts) -> {
                     return Constraints.conjoin(ts.stream().map(s -> new CNew(s, s)).collect(Collectors.toList()));
@@ -222,7 +218,7 @@ public class StatixTerms {
                 M.appl3("CTellRel", label(), M.listElems(term()), term(), (c, rel, args, scope) -> {
                     final FreshVars f = new FreshVars(args.stream().flatMap(a -> a.getVars().stream()).collect(Collectors.toList()));
                     final ITermVar d = f.fresh("d");
-                    return (IConstraint) Constraints.exists(ImmutableSet.of(d), Constraints.conjoin(Iterables2.from(
+                    return (IConstraint) Constraints.exists(CapsuleUtil.immutableSet(d), Constraints.conjoin(Iterables2.from(
                         new CNew(d, B.newTuple(args, c.getAttachments())),
                         new CTellEdge(scope, rel, d)
                     )));
@@ -282,34 +278,36 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<Map<String, State<ITerm>>> states() {
+    public static IMatcher<io.usethesource.capsule.Map.Immutable<String, State<ITerm>>> states() {
         return M.listElems(state()).map(states -> {
-            final ImmutableMap.Builder<String, State<ITerm>> mapBuilder = ImmutableMap.builder();
+            final io.usethesource.capsule.Map.Transient<String, State<ITerm>> mapBuilder = CapsuleUtil.transientMap();
             for(Tuple2<String, State<ITerm>> state : states) {
-                mapBuilder.put(state._1(), state._2());
+                mapBuilder.__put(state._1(), state._2());
             }
-            return mapBuilder.build();
+            return mapBuilder.freeze();
         });
     }
 
     public static IMatcher<Tuple2<String, State<ITerm>>> state() {
         return M.appl3(STATE_OP, M.stringValue(), M.listElems(step()), rvar(), (appl, name, steps, var) -> {
             // @formatter:off
-            final ImmutableList<RStep<ITerm>> ss = steps.stream()
+            final ImList.Immutable<RStep<ITerm>> ss = steps.stream()
                     .map(Tuple3::_1)
-                    .collect(ImmutableList.toImmutableList());
+                    .collect(ImList.Immutable.toImmutableList());
             final boolean accepting = steps.stream().anyMatch(Tuple3::_2);
-            final ImmutableMap<ITerm, String> transitions = steps.stream()
+            final Stream<Tuple2<ITerm,String>> transitionStream = steps.stream()
                     .map(Tuple3::_3)
                     .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(ImmutableMap.toImmutableMap(Tuple2::_1, Tuple2::_2, (v1, v2) -> {
-                        if(!v1.equals(v2)) {
-                            throw new IllegalArgumentException("Conflicting states " + v1 + " and " + v2 + ".");
-                        }
-                        return v1;
-                    }));
-            // @formatter:off
+                    .map(Optional::get);
+            // @formatter:on
+            final io.usethesource.capsule.Map.Immutable<ITerm, String> transitions =
+                CapsuleUtil.collectToMap(transitionStream, Tuple2::_1, Tuple2::_2, (v1, v2) -> {
+                    if(!v1.equals(v2)) {
+                        throw new IllegalArgumentException(
+                            "Conflicting states " + v1 + " and " + v2 + ".");
+                    }
+                    return v1;
+                });
 
             return Tuple2.of(name, new State<ITerm>(ss, var, accepting, transitions));
         });
@@ -410,11 +408,11 @@ public class StatixTerms {
         // @formatter:on
     }
 
-    public static IMatcher<Multimap<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
+    public static IMatcher<SetMultimap.Immutable<String, Tuple2<Integer, ITerm>>> scopeExtensions() {
         return M.listElems(scopeExtension(), (t, exts) -> {
-            final ImmutableMultimap.Builder<String, Tuple2<Integer, ITerm>> extmap = ImmutableMultimap.builder();
-            exts.forEach(ext -> ext.apply(extmap::put));
-            return extmap.build();
+            final SetMultimap.Transient<String, Tuple2<Integer, ITerm>> extmap = SetMultimap.Transient.of();
+            exts.forEach(ext -> ext.apply(extmap::__insert));
+            return extmap.freeze();
         });
     }
 
@@ -423,8 +421,8 @@ public class StatixTerms {
                 (t, c, i, lbl) -> Tuple2.of(c, Tuple2.of(i - 1, lbl)));
     }
 
-    public static IMatcher<List<ITerm>> labels() {
-        return M.listElems(label());
+    public static IMatcher<io.usethesource.capsule.Set.Immutable<ITerm>> labels() {
+        return M.listElems(label()).map(CapsuleUtil::toSet);
     }
 
     public static IMatcher<ITerm> label() {
@@ -498,15 +496,15 @@ public class StatixTerms {
             M.appl(NOID_OP, t -> t),
             M.appl(WITHID_OP, t -> t),
             M.appl3(OCCURRENCE_OP, M.string(), M.listElems(m), positionTerm(), (t, ns, args, pos) -> {
-                List<ITerm> applArgs = ImmutableList.of(ns, B.newList(args), pos);
+                List<ITerm> applArgs = ImList.Immutable.of(ns, B.newList(args), pos);
                 return B.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
             }),
             M.appl1(PATH_EMPTY_OP, term(), (t, s) -> {
-                List<ITerm> applArgs = ImmutableList.of(s);
+                List<ITerm> applArgs = ImList.Immutable.of(s);
                 return B.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
             }),
             M.appl3(PATH_STEP_OP, term(), term(), term(), (t, p, l, s) -> {
-                List<ITerm> applArgs = ImmutableList.of(p, l, s);
+                List<ITerm> applArgs = ImList.Immutable.of(p, l, s);
                 return B.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
@@ -533,13 +531,13 @@ public class StatixTerms {
         return M.casesFix(m -> Iterables2.from(
             varTerm(),
             M.appl1("List", M.listElems((t, u) -> term().match(t, u)), (t, elems) -> {
-                final List<IAttachments> as = Lists.newArrayList();
+                final List<IAttachments> as = new ArrayList<>();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 as.add(t.getAttachments());
                 return B.newList(elems, as);
             }),
             M.appl2("ListTail", M.listElems((t, u) -> term().match(t, u)), m, (t, elems, tail) -> {
-                final List<IAttachments> as = Lists.newArrayList();
+                final List<IAttachments> as = new ArrayList<>();
                 elems.stream().map(ITerm::getAttachments).forEach(as::add);
                 return B.newListTail(elems, tail, as).withAttachments(t.getAttachments());
             })
@@ -579,15 +577,15 @@ public class StatixTerms {
                 return P.newInt(Integer.parseInt(integer), t.getAttachments());
             }),
             M.appl3(OCCURRENCE_OP, M.stringValue(), M.listElems(m), positionPattern(), (t, ns, args, pos) -> {
-                List<Pattern> applArgs = ImmutableList.of(P.newString(ns), P.newList(args), pos);
+                List<Pattern> applArgs = ImList.Immutable.of(P.newString(ns), P.newList(args), pos);
                 return P.newAppl(OCCURRENCE_OP, applArgs, t.getAttachments());
             }),
             M.appl1(PATH_EMPTY_OP, m, (t, s) -> {
-                List<Pattern> applArgs = ImmutableList.of(s);
+                List<Pattern> applArgs = ImList.Immutable.of(s);
                 return P.newAppl(PATH_EMPTY_OP, applArgs, t.getAttachments());
             }),
             M.appl3(PATH_STEP_OP, m, m, m, (t, p, l, s) -> {
-                List<Pattern> applArgs = ImmutableList.of(p, l, s);
+                List<Pattern> applArgs = ImList.Immutable.of(p, l, s);
                 return P.newAppl(PATH_STEP_OP, applArgs, t.getAttachments());
             })
         ));
@@ -634,7 +632,7 @@ public class StatixTerms {
     public static IMatcher<List<IMessagePart>> messageContent() {
         // @formatter:off
         return M.cases(
-            M.appl1("Str", M.stringValue(), (t, text) -> ImmutableList.of(new TextPart(Terms.unescapeString(text)))),
+            M.appl1("Str", M.stringValue(), (t, text) -> ImList.Immutable.of(new TextPart(Terms.unescapeString(text)))),
             M.appl1("Formatted", M.listElems(messagePart()), (t, parts) -> parts)
         );
         // @formatter:on
@@ -721,12 +719,12 @@ public class StatixTerms {
     public static IMatcher<IScopeGraph.Immutable<Scope, ITerm, ITerm>> scopeGraphEntries() {
         return M.listElems(scopeEntry(), (t, scopeEntries) -> {
             final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
-            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>> se : scopeEntries) {
+            for(Tuple3<Scope, Optional<ITerm>, Map<ITerm, ImList.Immutable<Scope>>> se : scopeEntries) {
                 Scope s = se._1();
                 if(se._2().isPresent()) {
                     scopeGraph.setDatum(s, se._2().get());
                 }
-                for(Entry<ITerm, List<Scope>> ee : se._3().entrySet()) {
+                for(Entry<ITerm, ImList.Immutable<Scope>> ee : se._3().entrySet()) {
                     final ITerm lbl = ee.getKey();
                     for(Scope tgt : ee.getValue()) {
                         scopeGraph.addEdge(s, lbl, tgt);
@@ -737,7 +735,7 @@ public class StatixTerms {
         });
     }
 
-    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, List<Scope>>>> scopeEntry() {
+    public static IMatcher<Tuple3<Scope, Optional<ITerm>, Map<ITerm, ImList.Immutable<Scope>>>> scopeEntry() {
         return M.tuple3(Scope.matcher(), M.option(M.term()), M.map(label(), M.listElems(Scope.matcher())),
                 (t, scope, maybeDatum, edges) -> {
                     return Tuple3.of(scope, maybeDatum, edges);
@@ -745,8 +743,8 @@ public class StatixTerms {
     }
 
     public static ITerm toTerm(IScopeGraph.Immutable<Scope, ITerm, ITerm> scopeGraph, IUnifier.Immutable unifier) {
-        final Map<Scope, ITerm> dataEntries = Maps.newHashMap(); // Scope * ITerm
-        final Map<Scope, ListMultimap<ITerm, Scope>> edgeEntries = Maps.newHashMap(); // Scope * (Label * Scope)
+        final Map<Scope, ITerm> dataEntries = new HashMap<>(); // Scope * ITerm
+        final Map<Scope, Map<ITerm, List<Scope>>> edgeEntries = new HashMap<>(); // Scope * (Label * Scope)
 
         scopeGraph.getData().forEach((s, d) -> {
             d = unifier.findRecursive(d);
@@ -754,19 +752,18 @@ public class StatixTerms {
         });
 
         scopeGraph.getEdges().forEach((src_lbl, tgt) -> {
-            ListMultimap<ITerm, Scope> edges = edgeEntries.getOrDefault(src_lbl.getKey(), LinkedListMultimap.create());
-            edges.putAll(src_lbl.getValue(), tgt);
-            edgeEntries.put(src_lbl.getKey(), edges);
+            final Map<ITerm, List<Scope>> edges = edgeEntries.computeIfAbsent(src_lbl.getKey(), k -> new HashMap<>());
+            edges.computeIfAbsent(src_lbl.getValue(), k -> new ArrayList<>()).addAll(tgt);
         });
 
-        final List<ITerm> scopeEntries = Lists.newArrayList(); // [Scope * ITerm? * [Label * [Scope]]]
+        final List<ITerm> scopeEntries = new ArrayList<>(); // [Scope * ITerm? * [Label * [Scope]]]
         for(Scope scope : Sets.union(edgeEntries.keySet(), dataEntries.keySet())) {
             final ITerm data = Optional.ofNullable(dataEntries.get(scope)).map(d -> B.newAppl("Some", d))
                     .orElse(B.newAppl("None"));
 
             final ITerm edges = Optional.ofNullable(edgeEntries.get(scope)).map(es -> {
-                final List<ITerm> lblTgts = Lists.newArrayList();
-                es.asMap().entrySet().forEach(ee -> {
+                final List<ITerm> lblTgts = new ArrayList<>();
+                es.entrySet().forEach(ee -> {
                     final ITerm lbl_tgt = B.newTuple(ee.getKey(), B.newList(explicateVars(ee.getValue())));
                     lblTgts.add(lbl_tgt);
                 });
@@ -800,17 +797,17 @@ public class StatixTerms {
                         final List<? extends ITerm> args = M.listElems().map(ts -> explode(ts)).match(appl.getArgs().get(1))
                                 .orElseThrow(() -> new IllegalArgumentException());
                         final ITerm pos = explodePosition(appl.getArgs().get(2));
-                        return B.newAppl(appl.getOp(), ImmutableList.of(ns, B.newList(args), pos), term.getAttachments());
+                        return B.newAppl(appl.getOp(), ImList.Immutable.of(ns, B.newList(args), pos), term.getAttachments());
                     }
                     default: {
                         final List<ITerm> args = explode(appl.getArgs());
-                        return B.newAppl("Op", ImmutableList.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
+                        return B.newAppl("Op", ImList.Immutable.of(B.newString(appl.getOp()), B.newList(args)), term.getAttachments());
                     }
                 }
             },
             list -> explode(list),
-            string -> B.newAppl("Str", ImmutableList.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
-            integer -> B.newAppl("Int", ImmutableList.of(B.newString(integer.toString())), term.getAttachments()),
+            string -> B.newAppl("Str", ImList.Immutable.of(B.newString(Terms.escapeString(string.getValue()))), term.getAttachments()),
+            integer -> B.newAppl("Int", ImList.Immutable.of(B.newString(integer.toString())), term.getAttachments()),
             blob -> B.newString(blob.toString(), term.getAttachments()),
             var -> explode(var)
         )).withAttachments(term.getAttachments());
@@ -819,8 +816,8 @@ public class StatixTerms {
 
     private static ITerm explode(IListTerm list) {
         // @formatter:off
-        final List<ITerm> terms = Lists.newArrayList();
-        final List<IAttachments> attachments = Lists.newArrayList();
+        final List<ITerm> terms = new ArrayList<>();
+        final List<IAttachments> attachments = new ArrayList<>();
         final Ref<ITerm> varTail = new Ref<>();
         while(list != null) {
             list = list.match(ListTerms.cases(
@@ -858,7 +855,7 @@ public class StatixTerms {
     }
 
     private static List<ITerm> explode(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explode).collect(ImmutableList.toImmutableList());
+        return Iterables2.stream(terms).map(StatixTerms::explode).collect(ImList.Immutable.toImmutableList());
     }
 
     private static ITerm explodePosition(ITerm pos) {
@@ -881,7 +878,7 @@ public class StatixTerms {
     }
 
     public static List<ITerm> explicateVars(Iterable<? extends ITerm> terms) {
-        return Iterables2.stream(terms).map(StatixTerms::explicateVars).collect(ImmutableList.toImmutableList());
+        return Iterables2.stream(terms).map(StatixTerms::explicateVars).collect(ImList.Immutable.toImmutableList());
     }
 
     ///////////////////////////////////////////////////////////////////////////

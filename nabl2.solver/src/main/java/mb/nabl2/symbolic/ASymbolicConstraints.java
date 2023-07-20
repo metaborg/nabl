@@ -2,6 +2,7 @@ package mb.nabl2.symbolic;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Function1;
 
 import io.usethesource.capsule.Set;
@@ -16,17 +17,17 @@ public abstract class ASymbolicConstraints implements ISymbolicConstraints {
     @Override @Value.Parameter public abstract Set.Immutable<ITerm> getGoals();
 
     @Override public SymbolicConstraints map(Function1<ITerm, ITerm> mapper) {
-        Set.Transient<ITerm> facts = Set.Transient.of();
+        Set.Transient<ITerm> facts = CapsuleUtil.transientSet();
         getFacts().stream().forEach(f -> facts.__insert(mapper.apply(f)));
 
-        Set.Transient<ITerm> goals = Set.Transient.of();
+        Set.Transient<ITerm> goals = CapsuleUtil.transientSet();
         getGoals().stream().forEach(g -> goals.__insert(mapper.apply(g)));
 
         return SymbolicConstraints.of(facts.freeze(), goals.freeze());
     }
 
     public static SymbolicConstraints of() {
-        return SymbolicConstraints.of(Set.Immutable.of(), Set.Immutable.of());
+        return SymbolicConstraints.of(CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet());
     }
 
 }

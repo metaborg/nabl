@@ -19,8 +19,8 @@ import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Match;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Report;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
-import mb.scopegraph.oopsla20.diff.BiMap.Immutable;
+import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.BiMap.Immutable;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 import static mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatchTest.Label.*;
