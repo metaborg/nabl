@@ -8,9 +8,11 @@ public class Logger {
     private static final ILogger log = LoggerUtils.logger(Logger.class);
 
     private final String name;
+    private final boolean enabled;
 
     public Logger(String name) {
         this.name = truncate(name);
+        enabled = !name.startsWith("mb.nabl2.solver.components");
     }
 
     public void debug(String message, Object... args) {
@@ -54,6 +56,9 @@ public class Logger {
     }
 
     private void log(String message, String level) {
+        if(!enabled) {
+            return;
+        }
         System.out.printf("%s %-32s | %s%n", level, name, message);
     }
 

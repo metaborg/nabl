@@ -22,6 +22,7 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.messages.MessageKind;
+import mb.nabl2.log.Logger;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.exceptions.SolverException;
@@ -39,6 +40,8 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
 
     @SuppressWarnings("unused") private static ILogger logger =
             LoggerUtils.logger(SG_solve_multi_final_constraint.class);
+
+    private static final Logger log = Logger.logger(SG_solve_multi_final_constraint.class);
 
     public SG_solve_multi_final_constraint() {
         super(SG_solve_multi_final_constraint.class.getSimpleName(), 0);
@@ -86,6 +89,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
         final ITerm warnings = MessageTerms.toTerms(messages.getWarnings(), solution.unifier());
         final ITerm notes = MessageTerms.toTerms(messages.getNotes(), solution.unifier());
         final ITerm resultTerm = B.newTuple(B.newBlob(result), errors, warnings, notes);
+        log.info("Returning - errors : {}", errors);
         return Optional.of(resultTerm);
     }
 
