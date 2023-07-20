@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SchemaEdge<K, L> {
+public class SchemaEdge<K, L, M> {
 
     private final Map<K, Cardinality> sources;
 
@@ -12,7 +12,9 @@ public class SchemaEdge<K, L> {
 
     private final L label;
 
-    private SchemaEdge(Map<K, Cardinality> sources, Map<K, Cardinality> targets, L label) {
+    private final M meta; // custom metadata attached to schema edge
+
+    private SchemaEdge(Map<K, Cardinality> sources, Map<K, Cardinality> targets, L label, M meta) {
         if(sources.isEmpty()) {
             throw new IllegalArgumentException("Cannot have empty scheme edge sources.");
         }
@@ -24,6 +26,7 @@ public class SchemaEdge<K, L> {
         this.sources = sources;
         this.targets = targets;
         this.label = label;
+        this.meta = meta;
     }
 
     public Map<K, Cardinality> getSources() {
@@ -38,11 +41,15 @@ public class SchemaEdge<K, L> {
         return label;
     }
 
-    public static <K, L> Builder<K, L> builder(L label) {
-        return new Builder<>(label);
+    public M getMeta() {
+        return meta;
     }
 
-    public static class Builder<K, L> {
+    public static <K, L, M> Builder<K, L, M> builder(L label, M meta) {
+        return new Builder<>(label, meta);
+    }
+
+    public static class Builder<K, L, M> {
 
         private final Map<K, Cardinality> sources = new HashMap<>();
 
@@ -50,22 +57,25 @@ public class SchemaEdge<K, L> {
 
         private final L label;
 
-        private Builder(L label) {
+        private final M meta;
+
+        private Builder(L label, M meta) {
             this.label = label;
+            this.meta = meta;
         }
 
-        public Builder<K, L> addSource(K node, Cardinality card) {
+        public Builder<K, L, M> addSource(K node, Cardinality card) {
             sources.put(node, card);
             return this;
         }
 
-        public Builder<K, L> addTarget(K node, Cardinality card) {
+        public Builder<K, L, M> addTarget(K node, Cardinality card) {
             targets.put(node, card);
             return this;
         }
 
-        public SchemaEdge<K, L> build() {
-            return new SchemaEdge<>(Collections.unmodifiableMap(sources), Collections.unmodifiableMap(targets), label);
+        public SchemaEdge<K, L, M> build() {
+            return new SchemaEdge<>(Collections.unmodifiableMap(sources), Collections.unmodifiableMap(targets), label, meta);
         }
 
     }

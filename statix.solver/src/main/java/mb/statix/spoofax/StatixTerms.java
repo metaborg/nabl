@@ -160,7 +160,7 @@ public class StatixTerms {
     public static IMatcher<String> ruleName() {
         // @formatter:off
         return M.<String>cases(
-            M.appl0("NoName", (t) -> ""),
+            // M.appl0("NoName", (t) -> ""),
             M.appl1("Name", M.stringValue(), (t, n) -> n)
         );
         // @formatter:on
@@ -918,38 +918,38 @@ public class StatixTerms {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public static IMatcher<Schema<ITerm, ITerm>> schema() {
+    public static IMatcher<Schema<ITerm, ITerm, String>> schema() {
         return M.req("SGSchema", M.appl3("SGSchema", schemaEdges(), schemaDecls(), M.term(),
                 (appl, edges, decls, vars) -> {
-                    final Schema.Builder<ITerm, ITerm> builder = Schema.newBuilder();
+                    final Schema.Builder<ITerm, ITerm, String> builder = Schema.newBuilder();
                     edges.forEach(builder::addEdge);
                     decls.forEach(builder::addDecl);
                     return builder.build();
                 }));
     }
 
-    private static IMatcher<List<SchemaEdge<ITerm, ITerm>>> schemaEdges() {
+    private static IMatcher<List<SchemaEdge<ITerm, ITerm, String>>> schemaEdges() {
         return M.req("SGEdges", M.appl1("SGEdges", M.listElems(schemaEdge()), (appl, edges) -> edges));
     }
 
-    private static IMatcher<SchemaEdge<ITerm, ITerm>> schemaEdge() {
-        return M.req("SGEdge", M.appl3("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()),
-                (appl, sources, lbl, targets) -> {
-                    final SchemaEdge.Builder<ITerm, ITerm> builder = SchemaEdge.builder(lbl);
+    private static IMatcher<SchemaEdge<ITerm, ITerm, String>> schemaEdge() {
+        return M.req("SGEdge", M.appl4("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()), ruleName(),
+                (appl, sources, lbl, targets, ruleName) -> {
+                    final SchemaEdge.Builder<ITerm, ITerm, String> builder = SchemaEdge.builder(lbl, ruleName);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     targets.forEach(k_c -> builder.addTarget(k_c._1(), k_c._2()));
                     return builder.build();
                 }));
     }
 
-    private static IMatcher<List<SchemaDecl<ITerm, ITerm>>> schemaDecls() {
+    private static IMatcher<List<SchemaDecl<ITerm, ITerm, String>>> schemaDecls() {
         return M.req("SGDecls", M.appl1("SGDecls", M.listElems(schemaDecl()), (appl, decls) -> decls));
     }
 
-    private static IMatcher<SchemaDecl<ITerm, ITerm>> schemaDecl() {
-        return M.req("SGDecl", M.appl3("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()),
-                (appl, sources, lbl, relKinds) -> {
-                    final SchemaDecl.Builder<ITerm, ITerm> builder = SchemaDecl.builder(lbl);
+    private static IMatcher<SchemaDecl<ITerm, ITerm, String>> schemaDecl() {
+        return M.req("SGDecl", M.appl4("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()), ruleName(),
+                (appl, sources, lbl, relKinds, ruleName) -> {
+                    final SchemaDecl.Builder<ITerm, ITerm, String> builder = SchemaDecl.builder(lbl, ruleName);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     IntStream.range(0, relKinds.size()).forEach(idx -> {
                         relKinds.get(idx).ifPresent(kcs -> kcs.forEach(k_c -> {
