@@ -37,6 +37,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleName;
 import mb.statix.spec.Spec;
 
 public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
@@ -48,7 +49,7 @@ public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
     @Override protected SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) throws InterruptedException, ExecutionException {
         final IStatixProject project = StatixProject.builder().resource("").changed(true)
-                .rule(Rule.of("resolve", ImList.Immutable.of(P.newWld()), constraint)).build();
+                .rule(Rule.of("resolve", RuleName.empty(), ImList.Immutable.of(P.newWld()), constraint)).build();
         final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>> future =
                 Broker.run("", PRaffrayiSettings.of(false, false, false, false),
                         new ProjectTypeChecker(project, spec, debug), new ScopeImpl(), spec.allLabels(), cancel, progress);

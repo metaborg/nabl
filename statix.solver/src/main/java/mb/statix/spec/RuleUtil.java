@@ -273,7 +273,7 @@ public class RuleUtil {
             return Optional.empty();
         }
 
-        return Optional.of(into.withLabel("").withBody(newBody));
+        return Optional.of(into.withLabel(RuleName.empty()).withBody(newBody));
     }
 
     private static IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
@@ -378,7 +378,7 @@ public class RuleUtil {
      * predicates.
      */
     public static SetMultimap.Immutable<String, Rule> makeFragments(RuleSet rules, Predicate1<String> includePredicate,
-            Predicate2<String, String> includeRule, int generations) {
+            Predicate2<String, RuleName> includeRule, int generations) {
         final SetMultimap.Transient<String, Rule> fragments = SetMultimap.Transient.of();
 
         // 1. make all rules unordered, and keep included rules
@@ -422,7 +422,7 @@ public class RuleUtil {
                     }
                 }, false).apply(r.body()).collect(Collectors.toList());
                 for(IConstraint c : cs) {
-                    final Rule f = r.withLabel("").withBody(new CExists(CapsuleUtil.immutableSet(), c));
+                    final Rule f = r.withLabel(RuleName.empty()).withBody(new CExists(CapsuleUtil.immutableSet(), c));
                     generation.__insert(name, hoist(f));
                 }
             }

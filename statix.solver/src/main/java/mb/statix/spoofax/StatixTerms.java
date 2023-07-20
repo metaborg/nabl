@@ -96,6 +96,7 @@ import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.QueryProject;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleName;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.Spec;
 
@@ -146,22 +147,22 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl3("Rule", ruleName(), head(), constraint(), (r, n, h, bc) -> {
-                return Rule.of(h._1(), h._2(), bc).withLabel(n);
+                return Rule.of(h._1(), n, h._2(), bc).withLabel(n);
             }),
             // DEPRECATED
             M.appl4("Rule", ruleName(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
                 log.warn("Rules with explicit local variables are deprecated.");
-                return Rule.of(h._1(), h._2(), new CExists(bvs, bc)).withLabel(n);
+                return Rule.of(h._1(), n, h._2(), new CExists(bvs, bc)).withLabel(n);
             })
         );
         // @formatter:on
     }
 
-    public static IMatcher<String> ruleName() {
+    public static IMatcher<RuleName> ruleName() {
         // @formatter:off
-        return M.<String>cases(
+        return M.<RuleName>cases(
             // M.appl0("NoName", (t) -> ""),
-            M.appl1("Name", M.stringValue(), (t, n) -> n)
+            M.appl1("Name", M.stringValue(), (t, n) -> RuleName.of(n))
         );
         // @formatter:on
     }
@@ -397,12 +398,12 @@ public class StatixTerms {
         // @formatter:off
         return M.cases(
             M.appl2("LLam", M.listElems(pattern()), constraint(), (t, ps, c) -> {
-                return Rule.of("", ps, c);
+                return Rule.of("", RuleName.empty(), ps, c);
             }),
             // DEPRECATED
             M.appl3("LLam", M.listElems(pattern()), M.listElems(varTerm()), constraint(), (t, ps, vs, c) -> {
                 log.warn("Lambdas with explicit local variables are deprecated.");
-                return Rule.of("", ps, new CExists(vs, c));
+                return Rule.of("", RuleName.empty(), ps, new CExists(vs, c));
             })
         );
         // @formatter:on
@@ -918,38 +919,38 @@ public class StatixTerms {
 
     ///////////////////////////////////////////////////////////////////////////
 
-    public static IMatcher<Schema<ITerm, ITerm, String>> schema() {
+    public static IMatcher<Schema<ITerm, ITerm, RuleName>> schema() {
         return M.req("SGSchema", M.appl3("SGSchema", schemaEdges(), schemaDecls(), M.term(),
                 (appl, edges, decls, vars) -> {
-                    final Schema.Builder<ITerm, ITerm, String> builder = Schema.newBuilder();
+                    final Schema.Builder<ITerm, ITerm, RuleName> builder = Schema.newBuilder();
                     edges.forEach(builder::addEdge);
                     decls.forEach(builder::addDecl);
                     return builder.build();
                 }));
     }
 
-    private static IMatcher<List<SchemaEdge<ITerm, ITerm, String>>> schemaEdges() {
+    private static IMatcher<List<SchemaEdge<ITerm, ITerm, RuleName>>> schemaEdges() {
         return M.req("SGEdges", M.appl1("SGEdges", M.listElems(schemaEdge()), (appl, edges) -> edges));
     }
 
-    private static IMatcher<SchemaEdge<ITerm, ITerm, String>> schemaEdge() {
+    private static IMatcher<SchemaEdge<ITerm, ITerm, RuleName>> schemaEdge() {
         return M.req("SGEdge", M.appl4("SGEdge", M.listElems(kindVar()), label(), M.listElems(kindVar()), ruleName(),
                 (appl, sources, lbl, targets, ruleName) -> {
-                    final SchemaEdge.Builder<ITerm, ITerm, String> builder = SchemaEdge.builder(lbl, ruleName);
+                    final SchemaEdge.Builder<ITerm, ITerm, RuleName> builder = SchemaEdge.builder(lbl, ruleName);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     targets.forEach(k_c -> builder.addTarget(k_c._1(), k_c._2()));
                     return builder.build();
                 }));
     }
 
-    private static IMatcher<List<SchemaDecl<ITerm, ITerm, String>>> schemaDecls() {
+    private static IMatcher<List<SchemaDecl<ITerm, ITerm, RuleName>>> schemaDecls() {
         return M.req("SGDecls", M.appl1("SGDecls", M.listElems(schemaDecl()), (appl, decls) -> decls));
     }
 
-    private static IMatcher<SchemaDecl<ITerm, ITerm, String>> schemaDecl() {
+    private static IMatcher<SchemaDecl<ITerm, ITerm, RuleName>> schemaDecl() {
         return M.req("SGDecl", M.appl4("SGDecl", M.listElems(kindVar()), label(), M.listElems(relKinds()), ruleName(),
                 (appl, sources, lbl, relKinds, ruleName) -> {
-                    final SchemaDecl.Builder<ITerm, ITerm, String> builder = SchemaDecl.builder(lbl, ruleName);
+                    final SchemaDecl.Builder<ITerm, ITerm, RuleName> builder = SchemaDecl.builder(lbl, ruleName);
                     sources.forEach(k_c -> builder.addSource(k_c._1(), k_c._2()));
                     IntStream.range(0, relKinds.size()).forEach(idx -> {
                         relKinds.get(idx).ifPresent(kcs -> kcs.forEach(k_c -> {
