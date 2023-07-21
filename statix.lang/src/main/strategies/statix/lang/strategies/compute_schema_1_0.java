@@ -15,7 +15,6 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.TermUtils;
 import org.strategoxt.lang.Context;
 import org.strategoxt.lang.Strategy;
-
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
@@ -41,9 +40,6 @@ public class compute_schema_1_0 extends Strategy {
 
         final ITermFactory TF = context.getFactory();
         final boolean debug = s_debug.invoke(context, current) != null;
-
-        context.invokeStrategy("debug_0_0", edges);
-        context.invokeStrategy("debug_0_0", decls);
 
         return new Command(TF, debug).run(types, edges, decls, constraints, globs);
     }
@@ -133,7 +129,11 @@ public class compute_schema_1_0 extends Strategy {
             for(IStrategoTerm var_rule : decls.getSubterms()) {
                 closeOwned(mkVariable(var_rule.getSubterm(0).getSubterm(2)), downPreds);
             }
-            //    c. transitive
+            //    c. owned
+            for(IStrategoTerm type : types) {
+                closeOwned(mkVariable(type), downPreds);
+            }
+            //    d. transitive
             for(IStrategoTerm pvar : downPreds) {
                 closeOwnedTransitive(pvar);
             }
@@ -380,11 +380,15 @@ public class compute_schema_1_0 extends Strategy {
                 }
             }
 
-            if(isPredicateArg(var)) {
-                downPreds.add(var);
+            for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).elementSet()) {
+                final Edge<IStrategoTerm> edge = Edge.forward(var, tgt, cg.directedEdges.count(var, tgt));
+                if(!ctx.visited(edge.invert())) {
+                    if(isPredicateArg(tgt) || isRelationArg(var)) {
+                        ctx.log("- down-pred {}.", tgt);
+                        downPreds.add(tgt);
+                    }
+                }
             }
-
-
         }
 
         private void closeOwnedTransitive(IStrategoTerm var) {
@@ -415,6 +419,8 @@ public class compute_schema_1_0 extends Strategy {
         }
 
         private void closeOwnedTransitiveDown(IStrategoTerm var, TraversalContext ctx) {
+            ctx.log("close trans {}.", var);
+
             if(isRelationArg(var) || isConstructorArg(var)) {
                 ctx.log("STOP: {} not closable.", var);
                 return;
@@ -424,7 +430,7 @@ public class compute_schema_1_0 extends Strategy {
                 return;
             }
 
-            if(isPredicateArg(var)
+            if((isPredicateArg(var) || isRelationArg(var))
                     && !cg.directedEdges.incomingEdges(var).elementSet().stream().anyMatch(nodeInfo::isClosed)) {
                 // No proof (yet) that _all_ inputs are closed.
                 ctx.log("STOP: {} not all inputs closed.", var);
@@ -462,7 +468,14 @@ public class compute_schema_1_0 extends Strategy {
 
         private void propagateRemoteTypes(IStrategoTerm var, TraversalContext ctx) {
             ctx.log("{}: propagating remote types.", var);
-            for(IStrategoTerm tgt : cg.directedEdges.outgoingEdges(var).addAll(cg.undirectedEdges.edges(var))) {
+
+            final HashSet<IStrategoTerm> targets = new HashSet<>();
+            targets.addAll(cg.directedEdges.outgoingEdges(var).elementSet());
+            targets.addAll(cg.undirectedEdges.edges(var).elementSet());
+            targets.addAll(cg.directedEdges.incomingEdges(var).elementSet());
+
+
+            for(IStrategoTerm tgt : targets) {
                 ctx.log("- target : {}", tgt);
                 if(nodeInfo.isClosed(tgt)) {
                     ctx.log("  STOP: {} closed.", tgt);
@@ -479,7 +492,7 @@ public class compute_schema_1_0 extends Strategy {
             }
         }
 
-        // Phase 3. Propagate unknown node info
+        // Phase 4. Propagate unknown node info
 
         private void propagateUnknown(IStrategoTerm var, IStrategoTerm type, TraversalContext ctx) {
             if(nodeInfo.hasCardinality(var, type)) {
@@ -739,6 +752,10 @@ public class compute_schema_1_0 extends Strategy {
             return closed.contains(var);
         }
 
+        public boolean isOpen(V var) {
+            return !closed.contains(var);
+        }
+
         public Cardinality setCardinality(V var, T type, Cardinality card) {
             if(isClosed(var)) {
                 throw new IllegalStateException(var + " is already closed.");
@@ -751,7 +768,7 @@ public class compute_schema_1_0 extends Strategy {
         }
     }
 
-    private static class Cardinality {
+    public static class Cardinality {
 
         public static final int INFINITE_BOUND = -1;
 
