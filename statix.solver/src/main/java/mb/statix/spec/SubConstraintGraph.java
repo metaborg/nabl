@@ -9,7 +9,7 @@ import io.usethesource.capsule.SetMultimap;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 
-public class SubConstraintGraph {
+class SubConstraintGraph {
 
     private final SetMultimap.Immutable<RuleName, String> subConstraints;
 

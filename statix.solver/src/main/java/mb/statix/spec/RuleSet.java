@@ -37,8 +37,10 @@ public final class RuleSet implements Serializable {
     /** The rules, ordered from most specific to least specific guard. */
     private final Map.Immutable<String, ImList.Immutable<Rule>> rules;
 
+    /** The rules, indexed by name. */
     private final Map.Immutable<RuleName, Rule> rulesByLabel;
 
+    /** Graph of rules using other predicates as sub-constraints. */
     private final SubConstraintGraph subConstraintGraph;
 
     /**
@@ -46,6 +48,16 @@ public final class RuleSet implements Serializable {
      * created.
      */
     private final HashMap<String, Set.Immutable<Rule>> independentRules = new HashMap<>();
+
+    /**
+     * Sub-constraints. If a rule name is not in this map, an independent version of its rules has not yet been created.
+     */
+    private final HashMap<RuleName, Map.Immutable<String, ImList.Immutable<Rule>>> subConstraints = new HashMap<>();
+
+    /**
+     * Invoking rules. If a rule name is not in this map, an independent version of its rules has not yet been created.
+     */
+    private final HashMap<String, Collection<Rule>> invokingRules = new HashMap<>();
 
     /**
      * Makes a new ruleset from the specified collection of rules.
@@ -140,12 +152,36 @@ public final class RuleSet implements Serializable {
     }
 
     /**
-     *
-     * @return the graph of all constraint invocations.
+     * Gets the subset of rules that may be a sub-set of the constraints initiated by {@code rule}.
+     * @param rule
+     *            the name of the rule to get all sub-constraints for.
+     * @return the subset of rules that may be a sub-set of {@code rule}
      */
-    public SubConstraintGraph getSubcConstraintGraph() {
-        return subConstraintGraph;
+    public Map.Immutable<String, ImList.Immutable<Rule>> subConstraints(RuleName rule) {
+        return subConstraints.computeIfAbsent(rule, _rule -> {
+            final Set.Immutable<String> subConstraintNames = subConstraintGraph.subConstraints(_rule);
+            final Map.Transient<String, ImList.Immutable<Rule>> _rules = rules.asTransient();
+            CapsuleUtil.filter(_rules, subConstraintNames::contains);
+            return _rules.freeze();
+        });
     }
+
+
+    /**
+     * Gets the subset of rules that may use a rule for predicate {@code constraint} as sub-constraint.
+     * @param rule
+     *            the name of the constraints to get all causing rules for
+     * @return the subset of rules that may be a cause of {@code constraint}
+     */
+    public Collection<Rule> invokingRules(String constraint) {
+        return invokingRules.computeIfAbsent(constraint, _constraint -> {
+            final Set.Immutable<RuleName> superRuleNames = subConstraintGraph.invokingRules(_constraint);
+            final Map.Transient<RuleName, Rule> _rules = rulesByLabel.asTransient();
+            CapsuleUtil.filter(_rules, superRuleNames::contains);
+            return _rules.freeze().values();
+        });
+    }
+
 
     /**
      * Gets a map of lists of rules, where the match order is reflected in (dis)equality constraints in the rule bodies.
