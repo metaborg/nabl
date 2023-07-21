@@ -211,7 +211,7 @@ public class compute_schema_1_0 extends Strategy {
                 newContext = ctx.withVisited(var);
             }
 
-            if(prevCard.equals(newCard)) {
+            if(prevCard.encloses(newCard)) {
                 // No new info, stop propagation
                 ctx.log("STOP: fixpoint.");
                 return;
@@ -782,7 +782,7 @@ public class compute_schema_1_0 extends Strategy {
         private final int upper;
 
         public Cardinality(int lower, int upper) {
-            if(upper != INFINITE_BOUND && lower > upper) {
+            if(!boundSmallerEq(lower, upper)) {
                 throw new IllegalArgumentException("Incompatible bounds: " + lower + " > " + upper);
             }
             if(lower < -1 || upper < -1) {
@@ -828,6 +828,14 @@ public class compute_schema_1_0 extends Strategy {
                 return INFINITE_BOUND;
             }
             return b * factor;
+        }
+
+        private boolean boundSmallerEq(int b1, int b2) {
+            return b2 == INFINITE_BOUND || (b1 != INFINITE_BOUND && b1 <= b2);
+        }
+
+        public boolean encloses(Cardinality other) {
+            return boundSmallerEq(this.lower, other.lower) && boundSmallerEq(other.upper, this.upper);
         }
 
         public IStrategoTerm makeTerm(ITermFactory TF) {
