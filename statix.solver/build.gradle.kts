@@ -3,8 +3,8 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
 val spoofax2Version: String by ext
+val spoofax2DevenvVersion: String by ext
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
@@ -13,9 +13,9 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api(compositeBuild("org.metaborg.util")) // API to expose logger framework.
-  api(compositeBuild("org.spoofax.terms"))
-  api(compositeBuild("org.spoofax.interpreter.core"))
+  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion") // API to expose logger framework.
+  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
+  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
   api(project(":nabl2.terms"))
   api(project(":scopegraph"))
   api(project(":p_raffrayi"))

@@ -4,14 +4,13 @@ plugins {
   `maven-publish`
 }
 
-// Replace source dependencies with overridden/local ones.
-fun compositeBuild(name: String) = "$group:$name:$version"
 val spoofax2Version: String by ext
+val spoofax2DevenvVersion: String by ext
 spoofaxLanguageSpecification {
   addSourceDependenciesFromMetaborgYaml.set(false)
 }
 dependencies {
-  sourceLanguage(compositeBuild("meta.lib.spoofax"))
+  sourceLanguage("org.metaborg.devenv:meta.lib.spoofax:$spoofax2DevenvVersion")
   sourceLanguage(project(":org.metaborg.meta.nabl2.shared"))
 }
 
