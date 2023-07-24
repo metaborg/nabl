@@ -3,10 +3,10 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
 // Used for refsyn: disabled by default
 fun kaptEnabled() = extra.has("kaptEnabled") && extra["kaptEnabled"] as Boolean
 val spoofax2Version: String by ext
+val spoofax2DevenvVersion: String by ext
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
@@ -19,9 +19,9 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  implementation(compositeBuild("org.metaborg.util"))
-  api(compositeBuild("org.spoofax.terms"))
-  api(compositeBuild("org.spoofax.interpreter.core"))
+  implementation("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
+  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
+  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
 
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
