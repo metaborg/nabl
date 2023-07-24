@@ -22,7 +22,10 @@ public final class ScopeGraphUtil {
         final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = sgEdges.entrySet().stream().collect(
             Collectors.groupingBy(
                 t -> t.getKey().getKey(), Collectors.mapping(
-                    t -> new AbstractMap.SimpleImmutableEntry<>(t.getKey().getValue(), t.getValue()), Collectors.toSet()
+                    t -> {
+                        final Map.Entry<L,Iterable<S>> result = new AbstractMap.SimpleImmutableEntry<>(t.getKey().getValue(), t.getValue());
+                        return result;
+                    }, Collectors.toSet()
                 )
             )
         );
