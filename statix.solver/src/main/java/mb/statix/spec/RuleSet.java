@@ -169,8 +169,8 @@ public final class RuleSet implements Serializable {
 
     /**
      * Gets the subset of rules that may use a rule for predicate {@code constraint} as sub-constraint.
-     * @param rule
-     *            the name of the constraints to get all causing rules for
+     * @param constraint
+     *                  the name of the constraints to get all causing rules for
      * @return the subset of rules that may be a cause of {@code constraint}
      */
     public Collection<Rule> invokingRules(String constraint) {
