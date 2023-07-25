@@ -3,8 +3,9 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
 val spoofax2Version: String by ext
+fun compositeBuild(name: String) = "$group:$name:$spoofax2Version"
+
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))

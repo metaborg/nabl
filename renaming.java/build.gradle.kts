@@ -4,7 +4,8 @@ plugins {
 }
 
 val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
+fun compositeBuild(name: String) = "$group:$name:$version"
+
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
@@ -13,9 +14,9 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
-  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
-  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
+  api(compositeBuild("org.metaborg.util"))
+  api(compositeBuild("org.spoofax.terms"))
+  api(compositeBuild("org.spoofax.interpreter.core"))
   api(project(":nabl2.terms"))
 
   api("io.usethesource:capsule")

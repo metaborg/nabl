@@ -3,23 +3,24 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
-// Used for refsyn: disabled by default
-fun kaptEnabled() = extra.has("kaptEnabled") && extra["kaptEnabled"] as Boolean
 val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
+fun compositeBuild(name: String) = "$group:$name:$version"
+// Used for refsyn: disabled by default
+//fun kaptEnabled() = extra.has("kaptEnabled") && extra["kaptEnabled"] as Boolean
+
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
   annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
   testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
-  if(kaptEnabled()) {
+/*  if(kaptEnabled()) {
     kapt(platform("org.metaborg:parent:$version"))
     kaptTest(platform("org.metaborg:parent:$version"))
-  }
+  }*/
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
+  api(compositeBuild("org.metaborg.util"))
   api(project(":scopegraph"))
 
   api("io.usethesource:capsule")
@@ -28,10 +29,10 @@ dependencies {
   // Annotation processing
   annotationProcessor("org.immutables:value")
   annotationProcessor("org.immutables:serial")
-  if(kaptEnabled()) {
+/*  if(kaptEnabled()) {
     kapt("org.immutables:value")
     kapt("org.immutables:serial")
-  }
+  }*/
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
   compileOnly("javax.annotation:javax.annotation-api")
@@ -45,10 +46,10 @@ dependencies {
   // Test Annotation processing
   testAnnotationProcessor("org.immutables:value")
   testAnnotationProcessor("org.immutables:serial")
-  if(kaptEnabled()) {
-    kaptTest("org.immutables:value")
-    kaptTest("org.immutables:serial")
-  }
+//  if(kaptEnabled()) {
+//    kaptTest("org.immutables:value")
+//    kaptTest("org.immutables:serial")
+//  }
   testCompileOnly("org.immutables:value")
   testCompileOnly("org.immutables:serial")
   testCompileOnly("javax.annotation:javax.annotation-api")

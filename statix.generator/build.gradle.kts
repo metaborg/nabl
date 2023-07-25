@@ -4,6 +4,7 @@ plugins {
 }
 
 val spoofax2Version: String by ext
+
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
