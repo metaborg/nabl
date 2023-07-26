@@ -19,7 +19,7 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
+  api("org.metaborg:org.metaborg.util:$spoofax2Version")
   api(project(":scopegraph"))
 
   api("io.usethesource:capsule")

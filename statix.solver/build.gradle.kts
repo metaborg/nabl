@@ -19,9 +19,9 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion") // API to expose logger framework.
-  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
-  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
+  api("org.metaborg:org.metaborg.util:$spoofax2Version") // API to expose logger framework.
+  api("org.metaborg:org.spoofax.terms:$spoofax2Version")
+  api("org.metaborg:org.spoofax.interpreter.core:$spoofax2Version")
   api(project(":nabl2.terms"))
   api(project(":scopegraph"))
   api(project(":p_raffrayi"))
