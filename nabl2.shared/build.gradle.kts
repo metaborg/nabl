@@ -5,12 +5,11 @@ plugins {
 }
 
 val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
 spoofaxLanguageSpecification {
   addSourceDependenciesFromMetaborgYaml.set(false)
 }
 dependencies {
-  sourceLanguage("org.metaborg.devenv:meta.lib.spoofax:$spoofax2DevenvVersion")
+  sourceLanguage("org.metaborg:meta.lib.spoofax:$spoofax2Version")
 }
 
 metaborg { // Do not create Java publication; this project is already published as a Spoofax 2 language.

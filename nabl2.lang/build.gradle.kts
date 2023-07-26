@@ -5,12 +5,11 @@ plugins {
 }
 
 val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
 spoofaxLanguageSpecification {
   addSourceDependenciesFromMetaborgYaml.set(false)
 }
 dependencies {
-  sourceLanguage("org.metaborg.devenv:meta.lib.spoofax:$spoofax2DevenvVersion")
+  sourceLanguage("org.metaborg:meta.lib.spoofax:$spoofax2Version")
   sourceLanguage(project(":org.metaborg.meta.nabl2.shared"))
 }
 
