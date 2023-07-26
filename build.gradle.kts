@@ -10,7 +10,8 @@ val spoofax2Version: String = System.getProperty("spoofax2Version")
 val spoofax2BaselineVersion: String = System.getProperty("spoofax2BaselineVersion")
 val spoofax2DevenvVersion: String = System.getProperty("spoofax2DevenvVersion")
 allprojects {
-  group = "org.metaborg.devenv"
+  group = "org.metaborg"
+  version = spoofax2Version
   ext["spoofax2Version"] = spoofax2Version
   ext["spoofax2BaselineVersion"] = spoofax2BaselineVersion
   ext["spoofax2DevenvVersion"] = spoofax2DevenvVersion
