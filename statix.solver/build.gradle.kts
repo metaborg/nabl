@@ -1,6 +1,6 @@
 plugins {
-  id("org.metaborg.gradle.config.java-library") version("0.4.7")
-  id("org.metaborg.gradle.config.junit-testing") version("0.4.7")
+  id("org.metaborg.gradle.config.java-library")
+  id("org.metaborg.gradle.config.junit-testing")
 }
 
 // Used for refsyn: disabled by default
