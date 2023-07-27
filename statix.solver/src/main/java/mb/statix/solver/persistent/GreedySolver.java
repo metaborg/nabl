@@ -6,13 +6,11 @@ import static mb.statix.constraints.Constraints.disjoin;
 import static mb.statix.solver.persistent.Solver.INCREMENTAL_CRITICAL_EDGES;
 import static mb.statix.solver.persistent.Solver.RETURN_ON_FIRST_ERROR;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SortedSet;
 
 import javax.annotation.Nullable;
 
@@ -83,8 +81,7 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.QueryProject;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
-import mb.statix.solver.tracer.EmptyTracer.Empty;
-import mb.statix.spec.ASpec;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
@@ -93,7 +90,7 @@ import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 import mb.statix.spoofax.StatixTerms;
 
-class GreedySolver {
+class GreedySolver<TR extends SolverTracer.IResult<TR>> {
 
     private static final Set.Immutable<ITermVar> NO_UPDATED_VARS = CapsuleUtil.immutableSet();
     private static final ImList.Immutable<IConstraint> NO_NEW_CONSTRAINTS = ImList.Immutable.of();
@@ -121,6 +118,8 @@ class GreedySolver {
     private Set.Transient<CriticalEdge> removedEdges = CapsuleUtil.transientSet();
     private io.usethesource.capsule.Map.Transient<IConstraint, IMessage> failed = CapsuleUtil.transientMap();
 
+    private final SolverTracer<TR> tracer;
+
     private Set.Immutable<ITermVar> updatedVars() {
         final Set.Immutable<ITermVar> updatedVars = this.updatedVars.freeze();
         this.updatedVars = updatedVars.asTransient();
@@ -143,7 +142,7 @@ class GreedySolver {
     private int criticalEdges = 0;
 
     public GreedySolver(Spec spec, IState.Immutable state, IConstraint initialConstraint, IsComplete _isComplete,
-            IDebugContext debug, IProgress progress, ICancel cancel, int flags) {
+            IDebugContext debug, IProgress progress, ICancel cancel, SolverTracer<TR> tracer, int flags) {
         if(INCREMENTAL_CRITICAL_EDGES && !spec.hasPrecomputedCriticalEdges()) {
             debug.warn("Leaving precomputing critical edges to solver may result in duplicate work.");
             this.spec = spec.precomputeCriticalEdges();
@@ -170,12 +169,13 @@ class GreedySolver {
         this.params = new ConstraintContext(isComplete, debug);
         this.progress = progress;
         this.cancel = new RateLimitedCancel(cancel, CANCEL_RATE);
+        this.tracer = tracer;
         this.flags = flags;
     }
 
     public GreedySolver(Spec spec, IState.Immutable state, Iterable<IConstraint> constraints,
             Map<IConstraint, Delay> delays, ICompleteness.Immutable completeness, IsComplete _isComplete,
-            IDebugContext debug, IProgress progress, ICancel cancel, int flags) {
+            IDebugContext debug, IProgress progress, ICancel cancel, SolverTracer<TR> tracer, int flags) {
         this.spec = spec;
         this.state = state;
         this.debug = debug;
@@ -190,10 +190,11 @@ class GreedySolver {
         this.params = new ConstraintContext(isComplete, debug);
         this.progress = progress;
         this.cancel = new RateLimitedCancel(cancel, CANCEL_RATE);
+        this.tracer = tracer;
         this.flags = flags;
     }
 
-    public SolverResult<Empty> solve() throws InterruptedException {
+    public SolverResult<TR> solve() throws InterruptedException {
         debug.debug("Solving constraints");
 
         IConstraint constraint;
@@ -212,7 +213,7 @@ class GreedySolver {
         return finishSolve();
     }
 
-    protected SolverResult<Empty> finishSolve() {
+    protected SolverResult<TR> finishSolve() {
         final io.usethesource.capsule.Map.Immutable<IConstraint, Delay> delayed = constraints.delayed();
         debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
@@ -223,7 +224,7 @@ class GreedySolver {
         }
 
         final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
-        return SolverResult.of(spec, state, Empty.of(), failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
+        return SolverResult.of(spec, state, tracer.result(), failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
                 .withTotalSolved(solved).withTotalCriticalEdges(criticalEdges);
     }
 
@@ -280,6 +281,8 @@ class GreedySolver {
             }
         }
 
+        tracer.onConstraintSolved(constraint, newState);
+
         return true;
     }
 
@@ -289,6 +292,7 @@ class GreedySolver {
         if(subDebug.isEnabled(Level.Debug)) {
             subDebug.debug("Delayed: {}", Solver.toString(constraint, state.unifier()));
         }
+        tracer.onConstraintDelayed(constraint, state);
         return true;
     }
 
@@ -296,6 +300,7 @@ class GreedySolver {
         final IMessage message = MessageUtil.findClosestMessage(constraint);
         failed.__put(constraint, message);
         removeCompleteness(constraint);
+        tracer.onConstraintFailed(constraint, state);
         return message.kind() != MessageKind.ERROR || (flags & RETURN_ON_FIRST_ERROR) == 0;
     }
 
@@ -345,6 +350,7 @@ class GreedySolver {
             return queue(constraint);
         }
 
+        tracer.onTrySolveConstraint(constraint, state);
         if(debug.isEnabled(Level.Debug)) {
             debug.debug("Solving {}",
                     constraint.toString(Solver.shallowTermFormatter(state.unifier(), Solver.TERM_FORMAT_DEPTH)));
