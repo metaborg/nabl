@@ -41,6 +41,7 @@ import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.tracer.EmptyTracer;
 import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.solver.tracer.SolverTracer;
+import mb.statix.solver.tracer.SolverTracer.IResult;
 import mb.statix.spec.PreSolvedConstraint;
 import mb.statix.spec.Spec;
 
@@ -64,10 +65,17 @@ public class Solver {
         return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress, flags);
     }
 
+    public static <TR extends IResult<TR>> SolverResult<TR> solve(final Spec spec, final IState.Immutable state,
+            final IConstraint constraint, final IsComplete isComplete, final IDebugContext debug, final ICancel cancel,
+            IProgress progress, SolverTracer<TR> tracer, int flags)
+            throws InterruptedException {
+        return new GreedySolver<>(spec, state, constraint, isComplete, debug, progress, cancel, tracer, flags).solve();
+    }
+
     public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
             throws InterruptedException {
-        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
+        return solve(spec, state, constraint, isComplete, debug, cancel, progress, new EmptyTracer(), flags);
     }
 
     public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
@@ -77,12 +85,20 @@ public class Solver {
                 (s, l, st) -> true, debug, progress, cancel, flags);
     }
 
+    public static <TR extends IResult<TR>> SolverResult<TR> solve(final Spec spec, final IState.Immutable state,
+            final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
+            final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
+            IProgress progress, ICancel cancel, SolverTracer<TR> tracer, int flags) throws InterruptedException {
+        return new GreedySolver<>(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                tracer, flags).solve();
+    }
+
     public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
             IProgress progress, ICancel cancel, int flags) throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
-                flags).solve();
+        return solve(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                new EmptyTracer(), flags);
     }
 
     public static IFuture<SolverResult<Empty>> solveConcurrent(IConstraint constraint, Spec spec,
