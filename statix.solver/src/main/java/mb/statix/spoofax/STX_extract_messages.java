@@ -27,7 +27,7 @@ public class STX_extract_messages extends StatixPrimitive {
             throws InterpreterException {
 
         final IStatixProjectConfig config = getConfig(term);
-        final SolverResult result = getResult(term);
+        final SolverResult<?> result = getResult(term);
         final IUniDisunifier unifier = result.state().unifier();
 
         final List<ITerm> errorList = new ArrayList<>();

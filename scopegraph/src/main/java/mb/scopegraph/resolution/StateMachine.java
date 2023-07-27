@@ -2,6 +2,7 @@ package mb.scopegraph.resolution;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Set;
 
 import io.usethesource.capsule.Map;
 
@@ -28,6 +29,10 @@ public class StateMachine<L> implements Serializable {
             throw new IllegalStateException("Unknown state '" + name + "'.");
         }
         return result;
+    }
+
+    public Set<String> stateIds() {
+        return states.keySet();
     }
 
     @Override public String toString() {

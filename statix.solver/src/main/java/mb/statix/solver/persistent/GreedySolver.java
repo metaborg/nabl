@@ -83,6 +83,7 @@ import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.QueryProject;
 import mb.statix.solver.query.ResolutionDelayException;
 import mb.statix.solver.store.BaseConstraintStore;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.spec.ASpec;
 import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
@@ -192,7 +193,7 @@ class GreedySolver {
         this.flags = flags;
     }
 
-    public SolverResult solve() throws InterruptedException {
+    public SolverResult<Empty> solve() throws InterruptedException {
         debug.debug("Solving constraints");
 
         IConstraint constraint;
@@ -211,7 +212,7 @@ class GreedySolver {
         return finishSolve();
     }
 
-    protected SolverResult finishSolve() {
+    protected SolverResult<Empty> finishSolve() {
         final io.usethesource.capsule.Map.Immutable<IConstraint, Delay> delayed = constraints.delayed();
         debug.debug("Solved constraints with {} failed and {} remaining constraint(s).", failed.size(),
                 constraints.delayedSize());
@@ -222,7 +223,7 @@ class GreedySolver {
         }
 
         final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
-        return SolverResult.of(spec, state, failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
+        return SolverResult.of(spec, state, Empty.of(), failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
                 .withTotalSolved(solved).withTotalCriticalEdges(criticalEdges);
     }
 

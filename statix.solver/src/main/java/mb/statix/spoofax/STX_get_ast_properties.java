@@ -27,7 +27,7 @@ public class STX_get_ast_properties extends StatixPropertyPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final SolverResult<?> analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final Optional<TermIndex> maybeIndex = TermIndex.get(term);
         if(maybeIndex.isPresent()) {

@@ -54,8 +54,6 @@ public class FastNameResolution<S, L, D> implements INameResolution<S, L, D> {
         return env_L(allLabels, re, path, specifics, cancel);
     }
 
-    // FIXME Use caching of single label environments to prevent recalculation in case of diamonds in
-    // the graph
     private Env<S, L, D> env_L(Set.Immutable<EdgeOrData<L>> L, LabelWF<L> re, ScopePath<S, L> path,
             Iterable<ResolutionPath<S, L, D>> specifics, ICancel cancel)
             throws ResolutionException, InterruptedException {
