@@ -4,16 +4,15 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.relations.variants.IVariance;
 import mb.nabl2.relations.variants.IVariantMatcher;
@@ -46,7 +45,7 @@ public class VariantMatchers {
 
         @Override public Optional<List<IArg<ITerm>>> match(ITerm t) {
             return M.listElems(M.term(), (l, list) -> {
-                List<IVariantMatcher.IArg<ITerm>> args = Lists.newArrayList();
+                List<IVariantMatcher.IArg<ITerm>> args = new ArrayList<>();
                 for(ITerm arg : list) {
                     args.add(Arg.of(variance, arg));
                 }
@@ -85,19 +84,19 @@ public class VariantMatchers {
         private static final long serialVersionUID = 42L;
 
         private final String op;
-        private final ImmutableList<IVariance> variances;
+        private final ImList.Immutable<IVariance> variances;
 
         public OpVariant(String op, Iterable<IVariance> variances) {
             this.op = op;
-            this.variances = ImmutableList.copyOf(variances);
+            this.variances = ImList.Immutable.copyOf(variances);
         }
 
         @Override public Optional<List<IArg<ITerm>>> match(ITerm t) {
             return IMatcher.flatten(M.appl(op, appl -> {
                 return Optionals.when(variances.size() == appl.getArity()).map(eq -> {
-                    return (List<IArg<ITerm>>) Lists.newArrayList(Iterables2.zip(variances, appl.getArgs(), (v, a) -> {
-                        return (IVariantMatcher.IArg<ITerm>) Arg.of(v, a);
-                    }));
+                    final List<IArg<ITerm>> result = new ArrayList<>();
+                    Iterables2.zip(variances, appl.getArgs(), Arg::of).forEach(arg -> result.add(arg));
+                    return result;
                 });
             })).match(t);
         }

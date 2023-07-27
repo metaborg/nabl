@@ -14,7 +14,8 @@
     with = "with*",
     defaults = @Value.Immutable(builder = true, copy = true, lazyhash = true),
     // prevent generation of javax.annotation.*; bogus entry, because empty list = allow all
-    allowedClasspathAnnotations = {Override.class}
+    allowedClasspathAnnotations = {Override.class},
+    jdkOnly = true
 )
 // @formatter:on
 package mb.p_raffrayi;

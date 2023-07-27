@@ -1,26 +1,25 @@
 package mb.p_raffrayi.impl.diff;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.metaborg.util.collection.BiMap;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -42,7 +41,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     private final ICompletableFuture<ScopeGraphDiff<S, L, D>> diffResult = new CompletableFuture<>();
 
-    private final Queue<S> worklist = Lists.newLinkedList();
+    private final Queue<S> worklist = new LinkedList<>();
     private final AtomicBoolean typeCheckerFinished = new AtomicBoolean();
     private final AtomicInteger nesting = new AtomicInteger(0);
 
@@ -63,7 +62,7 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
             Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches,
-            Collection<S> openScopes, Multimap<S, EdgeOrData<L>> openEdges) {
+            Collection<S> openScopes, MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges) {
         throw new IllegalStateException("Adding differ cannot be used with initial scopegraph.");
     }
 
@@ -97,8 +96,8 @@ public class AddingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
             if(differOps.ownOrSharedScope(scope)) {
                 for(L lbl : edgeLabels) {
-                    IFuture<Iterable<S>> edgesFuture = context.getEdges(scope, lbl);
-                    K<Iterable<S>> processEdges = targets -> {
+                    IFuture<Collection<S>> edgesFuture = context.getEdges(scope, lbl);
+                    K<Collection<S>> processEdges = targets -> {
                         targets.forEach(target -> {
                             addedEdges.__insert(new Edge<S, L>(scope, lbl, target));
                             worklist.add(target);

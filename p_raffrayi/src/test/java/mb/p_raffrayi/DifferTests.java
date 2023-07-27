@@ -3,6 +3,7 @@ package mb.p_raffrayi;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -11,14 +12,12 @@ import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
 
-import com.google.common.collect.ImmutableSet;
-
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.impl.Result;
 import mb.p_raffrayi.impl.UnitResult;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
@@ -128,7 +127,7 @@ public class DifferTests extends PRaffrayiTestBase {
         IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, R, EmptyI>> childResult = UnitResult.<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, R, EmptyI>>builder()
             .id("/./sub")
             .scopeGraph(previousGraph)
-            .result(Result.of(null, null, previousGraph, ImmutableSet.of()))
+            .result(Result.of(null, null, previousGraph, Collections.emptySet()))
             .addRootScopes(prevRoot)
             .build();
         // @formatter:on
@@ -137,7 +136,7 @@ public class DifferTests extends PRaffrayiTestBase {
         IUnitResult<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyResult, EmptyI>> parentResult = UnitResult.<Scope, Integer, IDatum, Result<Scope, Integer, IDatum, EmptyResult, EmptyI>>builder()
             .id("/.")
             .scopeGraph(previousGraph) // TODO: remove data?
-            .result(Result.of(null, null, ScopeGraph.Immutable.of(), ImmutableSet.of()))
+            .result(Result.of(null, null, ScopeGraph.Immutable.of(), Collections.emptySet()))
             .putSubUnitResults("sub", childResult)
             .build();
         // @formatter:on

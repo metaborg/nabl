@@ -6,15 +6,15 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 
-import com.google.common.collect.ImmutableList;
-
 public class Terms {
 
     public static final String TUPLE_OP = "";
+    public static final String VAR_OP = "nabl2.Var";
 
     // SAFE
 
@@ -355,14 +355,14 @@ public class Terms {
      * Apply the given function to the list of terms. Returns a list of results iff any of the subterms changed
      * identity, otherwise returns null.
      */
-    public static @Nullable ImmutableList<ITerm> applyLazy(List<ITerm> terms, Function1<ITerm, ITerm> f) {
-        ImmutableList.Builder<ITerm> newTerms = null;
+    public static @Nullable ImList.Immutable<ITerm> applyLazy(List<ITerm> terms, Function1<ITerm, ITerm> f) {
+        ImList.Mutable<ITerm> newTerms = null;
         for(int i = 0; i < terms.size(); i++) {
             ITerm term = terms.get(i);
             ITerm newTerm = f.apply(term);
             if(newTerm != term || newTerms != null) {
                 if(newTerms == null) {
-                    newTerms = ImmutableList.builderWithExpectedSize(terms.size());
+                    newTerms = new ImList.Mutable<>(terms.size());
                     for(int j = 0; j < i; j++) {
                         newTerms.add(terms.get(j));
                     }
@@ -370,7 +370,7 @@ public class Terms {
                 newTerms.add(newTerm);
             }
         }
-        return newTerms == null ? null : newTerms.build();
+        return newTerms == null ? null : newTerms.freeze();
     }
 
 }

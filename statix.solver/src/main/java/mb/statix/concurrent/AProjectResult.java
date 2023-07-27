@@ -1,15 +1,12 @@
 package mb.statix.concurrent;
 
-import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.base.MoreObjects;
-
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
@@ -25,11 +22,11 @@ public abstract class AProjectResult<TR extends SolverTracer.IResult<TR>> implem
 
     @Value.Parameter public abstract Scope rootScope();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
+    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>> groupResults();
+    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>> groupResults();
 
-    @Value.Parameter public abstract Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>> unitResults();
+    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>> unitResults();
 
     @Override @Value.Parameter public abstract @Nullable SolverResult<TR> solveResult();
 
@@ -37,14 +34,18 @@ public abstract class AProjectResult<TR extends SolverTracer.IResult<TR>> implem
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper("ProjectResult")
-          .omitNullValues()
-          .add("resource", resource())
-          .add("groupResults", groupResults())
-          .add("unitResults", unitResults())
-          .add("solveResult", solveResult())
-          .add("exception", exception())
-          .toString();
+        final StringBuilder b = new StringBuilder();
+        b.append("ProjectResult{")
+            .append("resource=").append(resource())
+            .append(", groupResults=").append(groupResults())
+            .append(", unitResults=").append(unitResults());
+        if(solveResult() != null) {
+            b.append(", solveResult=").append(solveResult());
+        }
+        if(exception() != null) {
+            b.append(", exception=").append(exception());
+        }
+        return b.append('}').toString();
     }
 
 }

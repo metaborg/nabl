@@ -46,8 +46,8 @@ signature
     : list(string) -> Key
 
     ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
-    FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
-    NoCustomAnalysis : CustomAnalysis
+    FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomUnitAnalysis * CustomFinalAnalysis -> AnalysisResult
+    NoCustomAnalysis : CustomUnitAnalysis
 
     FileSpec : List(String) * List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
     Spec     : List(Label) * List(Label) * Label * List(Rule) * List(ID, Integer, Label) -> Spec
@@ -116,7 +116,7 @@ rules // single file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
              ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> a
-             ; file-analysis := FileAnalysis(a, a, custom-analysis)
+             ; file-analysis := FileAnalysis(a, a, custom-analysis, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
@@ -141,7 +141,7 @@ rules // single file elaboration
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
-             ; file-analysis := FileAnalysis(a, a, NoCustomAnalysis())
+             ; file-analysis := FileAnalysis(a, a, NoCustomAnalysis(), NoCustomAnalysis())
       \})> (resource-ast'*, solve-result*)
 
 rules // multi file analysis (new)
@@ -406,17 +406,17 @@ rules // multi file analysis
             (resource, Full(ast'', file-analysis, [], [], []))
           with ast'' := <post> ast'
              ; custom-file-analysis := <analyze-unit> (resource, ast', file-state)
-             ; file-analysis := FileAnalysis(file-state, None(), custom-file-analysis)
+             ; file-analysis := FileAnalysis(file-state, None(), custom-file-analysis, NoCustomAnalysis())
       \})> (resource-ast'*, initial-file-state*)
       //
       // 4. Combine and solve all partial solution
       //
-    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _, _))))> change*
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _, _, _))))> change*
     ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
     ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state, custom-analysis)
-    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id), id, id, id)))> initial-file-result*
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id, !custom-analysis), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
           project-result := Full(project-ast, project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
@@ -584,7 +584,7 @@ rules
   ; map((id, extract-analysis))
 
   stx--get-analysis =
-    ( ?FileAnalysis(_, <id>, _) + ?ProjectAnalysis(_, _, _, <id>, _)
+    ( ?FileAnalysis(_, <id>, _, _) + ?ProjectAnalysis(_, _, _, <id>, _)
    <+ ?FileAnalysis(_, _, _, SubAnalysis(_, _, <id>, _, _)) + ?ProjectAnalysis(<id>, _, _) // cstx
     )
 
@@ -593,9 +593,11 @@ rules
       ?ProjectAnalysis(_, <id>, _)
     )
 
-  stx--get-custom-file-analysis = ?FileAnalysis(_, _, <id>)
+  stx--get-custom-file-analysis = ?FileAnalysis(_, _, <id>, _)
 
-  stx--get-custom-analysis = ?ProjectAnalysis(_, _, _, _, <id>) + ?ProjectAnalysis(_, _, <id>)
+  stx--get-custom-analysis =
+      ?ProjectAnalysis(_, _, _, _, <id>) + ?ProjectAnalysis(_, _, <id>)
+    + ?FileAnalysis(_, _, _, <id>)
 
   stx--is-debug-custom-enabled =
     prim("SG_is_debug_custom_enabled")

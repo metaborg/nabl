@@ -4,6 +4,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
@@ -16,7 +17,7 @@ public class SetEvaluator {
         // @formatter:off
         return M.<ISetProducer<T>>casesFix(m -> Iterables2.from(
             elemMatcher,
-            M.appl0("EmptySet", (t) -> () -> Set.Immutable.of()),
+            M.appl0("EmptySet", (t) -> () -> CapsuleUtil.immutableSet()),
             M.appl2("Union", m, m, (t, leftSet, rightSet) -> () -> {
                 final Set.Immutable<IElement<T>> _leftSet = leftSet.apply();
                 final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
@@ -27,7 +28,7 @@ public class SetEvaluator {
                 final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
                 SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
                 SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
-                Set.Transient<IElement<T>> result = Set.Transient.of();
+                Set.Transient<IElement<T>> result = CapsuleUtil.transientSet();
                 for(Object key : leftProj.keySet()) {
                     if(rightProj.containsKey(key)) {
                         result.__insertAll(leftProj.get(key));
@@ -41,7 +42,7 @@ public class SetEvaluator {
                 final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
                 SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
                 SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
-                Set.Transient<IElement<T>> result = Set.Transient.of();
+                Set.Transient<IElement<T>> result = CapsuleUtil.transientSet();
                 for(Object key : leftProj.keySet()) {
                     if(rightProj.containsKey(key)) {
                         result.__insertAll(leftProj.get(key));
@@ -54,7 +55,7 @@ public class SetEvaluator {
                 final Set.Immutable<IElement<T>> _rightSet = rightSet.apply();
                 SetMultimap.Immutable<Object,IElement<T>> leftProj = project(_leftSet, proj);
                 SetMultimap.Immutable<Object,IElement<T>> rightProj = project(_rightSet, proj);
-                Set.Transient<IElement<T>> result = Set.Transient.of();
+                Set.Transient<IElement<T>> result = CapsuleUtil.transientSet();
                 for(Object key : leftProj.keySet()) {
                     if(!rightProj.containsKey(key)) {
                         result.__insertAll(leftProj.get(key));

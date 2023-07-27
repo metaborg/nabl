@@ -1,26 +1,26 @@
 package mb.nabl2.terms.matching;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import org.metaborg.util.collection.Sets;
 
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -43,7 +43,7 @@ public abstract class Pattern implements Serializable {
         return attachments;
     }
 
-    public abstract Set<ITermVar> getVars();
+    public abstract java.util.Set<ITermVar> getVars();
 
     public abstract boolean isConstructed();
 
@@ -53,7 +53,7 @@ public abstract class Pattern implements Serializable {
 
     public MaybeNotInstantiated<Optional<ISubstitution.Immutable>> match(ITerm term, IUnifier.Immutable unifier) {
         final ISubstitution.Transient subst = PersistentSubstitution.Transient.of();
-        final List<ITermVar> stuckVars = Lists.newArrayList();
+        final List<ITermVar> stuckVars = new ArrayList<>();
         final Eqs eqs = new Eqs() {
 
             @Override public void add(ITermVar var, ITerm pattern) {
@@ -76,7 +76,7 @@ public abstract class Pattern implements Serializable {
 
     /**
      * Match terms against a pattern and generate additional equalities that result from the match.
-     * 
+     *
      * Fresh variables are generated for unmatched variables in the patterns. As a result, the resulting substitution
      * has entries for all the variables in the patterns, and no pattern variables escape in the equalities.
      */
@@ -84,9 +84,9 @@ public abstract class Pattern implements Serializable {
         // substitution from pattern variables to unifier variables
         final ISubstitution.Transient _subst = PersistentSubstitution.Transient.of();
         // equalities between unifier terms
-        final List<Tuple2<ITermVar, ITerm>> termEqs = Lists.newArrayList();
+        final List<Tuple2<ITermVar, ITerm>> termEqs = new ArrayList<>();
         // equalities between unifier variables and patterns
-        final List<Tuple2<ITermVar, Pattern>> patternEqs = Lists.newArrayList();
+        final List<Tuple2<ITermVar, Pattern>> patternEqs = new ArrayList<>();
 
         // match
         final Eqs eqs = new Eqs() {
@@ -105,19 +105,18 @@ public abstract class Pattern implements Serializable {
         }
 
         // generate fresh unifier variables for unmatched pattern variables
-        final Set<ITermVar> freeVars = Sets.difference(getVars(), _subst.domainSet()).immutableCopy();
-        for(ITermVar v : freeVars) {
-            _subst.put(v, fresh.freshVar(v));
+        for(ITermVar freeVar : Sets.difference(getVars(), _subst.domainSet())) {
+            _subst.put(freeVar, fresh.freshVar(freeVar));
         }
         final ISubstitution.Immutable subst = _subst.freeze();
 
         // create equalities between unifier terms from pattern equalities
-        final ImmutableSet.Builder<ITermVar> stuckVars = ImmutableSet.builder();
-        final ImmutableList.Builder<Tuple2<ITerm, ITerm>> allEqs = ImmutableList.builder();
+        final Set.Transient<ITermVar> stuckVars = CapsuleUtil.transientSet();
+        final ImList.Mutable<Tuple2<ITerm, ITerm>> allEqs = new ImList.Mutable<>(termEqs.size());
         for(Tuple2<ITermVar, ITerm> termEq : termEqs) {
             final ITermVar leftVar = termEq._1();
             final ITerm rightTerm = termEq._2();
-            stuckVars.add(leftVar);
+            stuckVars.__insert(leftVar);
             allEqs.add(Tuple2.of(leftVar, rightTerm));
         }
         for(Tuple2<ITermVar, Pattern> patternEq : patternEqs) {
@@ -125,11 +124,11 @@ public abstract class Pattern implements Serializable {
             final ITerm rightTerm = patternEq._2().asTerm((v, t) -> {
                 allEqs.add(Tuple2.of(subst.apply(v), subst.apply(t)));
             }, (v) -> v.orElseGet(() -> fresh.freshWld()));
-            stuckVars.add(leftVar);
+            stuckVars.__insert(leftVar);
             allEqs.add(Tuple2.of(leftVar, subst.apply(rightTerm)));
         }
 
-        return Optional.of(new MatchResult(subst, stuckVars.build(), allEqs.build()));
+        return Optional.of(new MatchResult(subst, stuckVars.freeze(), allEqs.freeze()));
     }
 
     protected abstract boolean matchTerm(ITerm term, ISubstitution.Transient subst, IUnifier.Immutable unifier,
@@ -158,11 +157,11 @@ public abstract class Pattern implements Serializable {
     public abstract Pattern eliminateWld(Function0<ITermVar> fresh);
 
     public Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> asTerm(Function1<Optional<ITermVar>, ITermVar> fresh) {
-        final ImmutableList.Builder<Tuple2<ITermVar, ITerm>> eqs = ImmutableList.builder();
+        final ImList.Mutable<Tuple2<ITermVar, ITerm>> eqs = new ImList.Mutable<>(1);
         final ITerm term = asTerm((v, t) -> {
             eqs.add(Tuple2.of(v, t));
         }, fresh);
-        return Tuple2.of(term, eqs.build());
+        return Tuple2.of(term, eqs.freeze());
     }
 
     protected abstract ITerm asTerm(Action2<ITermVar, ITerm> equalities, Function1<Optional<ITermVar>, ITermVar> fresh);
@@ -188,7 +187,7 @@ public abstract class Pattern implements Serializable {
 
         /**
          * Compares two patterns for generality.
-         * 
+         *
          * If two patterns are comparable, it return an integer indicating which patterns is more general.
          * <ul>
          * <li>If the first pattern is more specific than the second, c < 0.
@@ -198,7 +197,7 @@ public abstract class Pattern implements Serializable {
          * </ul>
          * When used as an ordering (e.g., using asComparator) patterns are sorted such that more general patterns
          * appear after more specific.
-         * 
+         *
          */
         public Optional<Integer> compare(Pattern p1, Pattern p2) {
             return Optional.ofNullable(compare(p1, p2, new AtomicInteger(), new HashMap<>(), new HashMap<>()));
@@ -223,20 +222,8 @@ public abstract class Pattern implements Serializable {
                         c = compare(it1.next(), it2.next(), pos, vars1, vars2);
                     }
                     return c;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 1;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
-                    return null;
+                    return compareVar(p1, p2, pos, vars1, vars2);
                 }
             } else if(p1 instanceof ConsPattern) {
                 final ConsPattern cons1 = (ConsPattern) p1;
@@ -248,78 +235,30 @@ public abstract class Pattern implements Serializable {
                         c = compare(cons1.getTail(), cons2.getTail(), pos, vars1, vars2);
                     }
                     return c;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 1;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
-                    return null;
+                    return compareVar(p1, p2, pos, vars1, vars2);
                 }
             } else if(p1 instanceof NilPattern) {
                 if(p2 instanceof NilPattern) {
                     return 0;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 1;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
-                    return null;
+                    return compareVar(p1, p2, pos, vars1, vars2);
                 }
             } else if(p1 instanceof StringPattern) {
                 final StringPattern string1 = (StringPattern) p1;
                 if(p2 instanceof StringPattern) {
                     final StringPattern string2 = (StringPattern) p2;
                     return string1.getValue().equals(string2.getValue()) ? 0 : null;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 1;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
-                    return null;
+                    return compareVar(p1, p2, pos, vars1, vars2);
                 }
             } else if(p1 instanceof IntPattern) {
                 final IntPattern integer1 = (IntPattern) p1;
                 if(p2 instanceof IntPattern) {
                     final IntPattern integer2 = (IntPattern) p2;
                     return integer1.getValue() == integer2.getValue() ? 0 : null;
-                } else if(p2 instanceof PatternVar) {
-                    final PatternVar var2 = (PatternVar) p2;
-                    if(boundAt(var2, vars2) >= 0) {
-                        return 1;
-                    } else {
-                        bind(var2.getVar(), vars2, pos.getAndIncrement());
-                        return -1;
-                    }
-                } else if(p2 instanceof PatternAs) {
-                    final PatternAs as2 = (PatternAs) p2;
-                    bind(as2.getVar(), vars2, pos.get());
-                    return compare(p1, as2.getPattern(), pos, vars1, vars2);
                 } else {
-                    return null;
+                    return compareVar(p1, p2, pos, vars1, vars2);
                 }
             } else if(p1 instanceof PatternVar) {
                 final PatternVar var1 = (PatternVar) p1;
@@ -355,6 +294,25 @@ public abstract class Pattern implements Serializable {
             }
         }
 
+        private Integer compareVar(Pattern p1, Pattern p2, AtomicInteger pos, Map<ITermVar, Integer> vars1,
+                Map<ITermVar, Integer> vars2) {
+            if(p2 instanceof PatternVar) {
+                final PatternVar var2 = (PatternVar) p2;
+                if(boundAt(var2, vars2) == -1) {
+                    bind(var2.getVar(), vars2, pos.getAndIncrement());
+                }
+                return -1;
+            } else if(p2 instanceof PatternAs) {
+                final PatternAs as2 = (PatternAs) p2;
+                bind(as2.getVar(), vars2, pos.get());
+                return compare(p1, as2.getPattern(), pos, vars1, vars2);
+            } else {
+                return null;
+            }
+        }
+
+        // Binding positions of variables.
+
         private int boundAt(PatternVar vp, Map<ITermVar, Integer> vars) {
             final @Nullable ITermVar v = vp.getVar();
             if(v == null) {
@@ -378,10 +336,10 @@ public abstract class Pattern implements Serializable {
 
         /**
          * Return a comparator for patterns.
-         * 
+         *
          * Can be used to order patterns. It cannot not differentiate between incomparable patterns, and equivalent
          * patterns: both return 0.
-         * 
+         *
          * Note: this comparator imposes orderings that are inconsistent with equals.
          */
         public java.util.Comparator<Pattern> asComparator() {

@@ -2,12 +2,9 @@ package mb.nabl2.terms.unification;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-
-import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -58,10 +55,19 @@ public class UnificationPerformanceTest {
 
     private static IUnifier testUnify(int n) {
         final IUnifier.Transient unifier = Unifiers.Immutable.of().melt();
-        final ITerm left = B.newTuple(
-                Iterables.concat(createVars(X, n), createTuples(Y, n), Iterables2.singleton(createVar(X, n))));
-        final ITerm right = B.newTuple(
-                Iterables.concat(createTuples(X, n), createVars(Y, n), Iterables2.singleton(createVar(Y, n))));
+
+        final List<ITerm> leftElems = new ArrayList<>(2*n+1);
+        createVars(X, n, leftElems);
+        createTuples(Y, n, leftElems);
+        leftElems.add(createVar(X, n));
+
+        final List<ITerm> rightElems = new ArrayList<>(2*n+1);
+        createTuples(X, n, rightElems);
+        createVars(Y, n, rightElems);
+        rightElems.add(createVar(Y, n));
+
+        final ITerm left = B.newTuple(leftElems);
+        final ITerm right = B.newTuple(rightElems);
         try {
             unifier.unify(left, right).orElseThrow(() -> new IllegalArgumentException());
         } catch(OccursException e) {
@@ -76,16 +82,14 @@ public class UnificationPerformanceTest {
         return unifier.freeze();
     }
 
-    private static List<ITerm> createVars(String name, int n) {
-        List<ITerm> vars = Lists.newArrayListWithExpectedSize(n);
+    private static List<ITerm> createVars(String name, int n, List<ITerm> vars) {
         for(int i = 1; i <= n; i++) {
             vars.add(createVar(name, i));
         }
         return vars;
     }
 
-    private static List<ITerm> createTuples(String name, int n) {
-        List<ITerm> tups = Lists.newArrayListWithExpectedSize(n);
+    private static List<ITerm> createTuples(String name, int n, List<ITerm> tups) {
         for(int i = 1; i <= n; i++) {
             tups.add(createTuple(name, i));
         }

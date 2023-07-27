@@ -4,14 +4,14 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
+import mb.nabl2.log.Logger;
 
 public abstract class Messages implements IMessages {
 
@@ -19,11 +19,13 @@ public abstract class Messages implements IMessages {
     }
 
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
+
+        private static final Logger log = Logger.logger(Messages.Immutable.class);
         private static final long serialVersionUID = 42L;
 
-        private final ImmutableList<IMessageInfo> messages;
+        private final ImList.Immutable<IMessageInfo> messages;
 
-        private Immutable(ImmutableList<IMessageInfo> messages) {
+        private Immutable(ImList.Immutable<IMessageInfo> messages) {
             this.messages = messages;
         }
 
@@ -32,7 +34,8 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Transient melt() {
-            return new Messages.Transient(ImmutableList.<IMessageInfo>builder().addAll(messages));
+            log.info("- melt {}: {}", System.identityHashCode(this), messages);
+            return new Messages.Transient(messages.mutableCopy());
         }
 
         @Override public int hashCode() {
@@ -56,7 +59,7 @@ public abstract class Messages implements IMessages {
         }
 
         public static Messages.Immutable of() {
-            return new Messages.Immutable(ImmutableList.of());
+            return new Messages.Immutable(ImList.Immutable.of());
         }
 
         @Override public String toString() {
@@ -67,37 +70,43 @@ public abstract class Messages implements IMessages {
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private final ImmutableList.Builder<IMessageInfo> messages;
+        private static final Logger log = Logger.logger(Messages.Transient.class);
 
-        private Transient(ImmutableList.Builder<IMessageInfo> messages) {
+        private final ImList.Mutable<IMessageInfo> messages;
+
+        private Transient(ImList.Mutable<IMessageInfo> messages) {
             this.messages = messages;
         }
 
         @Override public boolean add(IMessageInfo message) {
             messages.add(message);
+            log.info("- added {}: {}", message, messages);
             return true;
         }
 
         @Override public boolean addAll(Iterable<? extends IMessageInfo> messages) {
             boolean change = false;
             for(IMessageInfo message : messages) {
-                this.messages.add(message);
-                change |= true;
+                change |= add(message);
             }
             return change;
         }
 
         @Override public boolean addAll(IMessages.Immutable other) {
-            messages.addAll(other.getAll());
-            return !other.getAll().isEmpty();
+            return messages.addAll(other.getAll());
         }
 
         @Override public Messages.Immutable freeze() {
-            return new Messages.Immutable(messages.build());
+            log.info("- freeze {}: {}", System.identityHashCode(this), messages);
+            return new Messages.Immutable(messages.freeze());
         }
 
         public static Messages.Transient of() {
-            return new Messages.Transient(ImmutableList.builder());
+            return new Messages.Transient(ImList.Mutable.of());
+        }
+
+        @Override public String toString() {
+            return messages.toString();
         }
 
     }

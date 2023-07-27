@@ -1,5 +1,6 @@
 package mb.p_raffrayi.nameresolution;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.metaborg.util.future.CompletableFuture;
@@ -40,7 +41,7 @@ public class StateMachineQuery<S, L, D> implements IQuery<S, L, D> {
                 return context.externalEnv(path, new StateMachineQuery<>(stateMachine, state), cancel);
             }
 
-            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
                 return context.getEdges(scope, label);
             }
 

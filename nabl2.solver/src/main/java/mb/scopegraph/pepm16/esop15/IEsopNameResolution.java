@@ -2,8 +2,6 @@ package mb.scopegraph.pepm16.esop15;
 
 import org.metaborg.util.functions.Predicate2;
 
-import com.google.common.annotations.Beta;
-
 import mb.scopegraph.pepm16.ILabel;
 import mb.scopegraph.pepm16.INameResolution;
 import mb.scopegraph.pepm16.IOccurrence;
@@ -12,7 +10,6 @@ import mb.scopegraph.pepm16.IScope;
 import mb.scopegraph.pepm16.bottomup.BUNameResolution;
 import mb.scopegraph.pepm16.esop15.lazy.EsopNameResolution;
 
-@Beta
 public interface IEsopNameResolution<S extends IScope, L extends ILabel, O extends IOccurrence>
         extends INameResolution<S, L, O> {
 

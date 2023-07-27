@@ -3,11 +3,10 @@ package mb.nabl2.terms.matching;
 import java.util.Arrays;
 import java.util.List;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITermVar;
 
@@ -91,7 +90,7 @@ public abstract class MaybeNotInstantiated<T> {
         private final List<ITermVar> vars;
 
         private NotInstantiated(Iterable<? extends ITermVar> vars) {
-            this.vars = ImmutableList.copyOf(vars);
+            this.vars = ImList.Immutable.copyOf(vars);
         }
 
         @Override public <R> R match(Function1<T, R> onResult, Function1<List<ITermVar>, R> onException) {

@@ -1,6 +1,6 @@
 package mb.statix.generator.strategy;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -22,7 +22,7 @@ public final class For<I extends SearchState, O extends SearchState> extends Sea
     }
 
     @Override public SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
-        final Stream<SearchNode<O>> nodes = flatMap(IntStream.range(0, n).boxed(),
+        final Stream<SearchNode<O>> nodes = lazyFlatMap(IntStream.range(0, n).boxed(),
                 i -> s.apply(ctx, node).nodes());
         return SearchNodes.of(node, this::toString, nodes);
     }

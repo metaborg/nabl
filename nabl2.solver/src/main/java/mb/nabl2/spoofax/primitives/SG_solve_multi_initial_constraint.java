@@ -7,14 +7,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.Constraints;
@@ -30,7 +30,7 @@ import mb.nabl2.spoofax.analysis.IResult;
 import mb.nabl2.spoofax.analysis.MultiInitialResult;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.scopegraph.pepm16.terms.Scope;
 
@@ -52,7 +52,7 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
                     return Tuple2.of(params, C);
                 }).match(currentTerm).orElseThrow(() -> new InterpreterException("Current term is not (params, C)."));
         final ITerm params = input._1();
-        final List<IConstraint> constraints = ImmutableList.of(input._2());
+        final Set.Immutable<IConstraint> constraints = CapsuleUtil.immutableSet(input._2());
 
         final Set.Immutable<ITermVar> globalVars = params.getVars();
         final Fresh.Transient globalFresh = Fresh.Transient.of();

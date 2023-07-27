@@ -1,16 +1,16 @@
 package mb.statix.generator;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map.Entry;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Function2;
+import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -35,11 +35,11 @@ public class SearchState {
     protected final IState.Immutable state;
     protected final Set.Immutable<IConstraint> constraints;
     protected final Map.Immutable<IConstraint, Delay> delays;
-    protected final ImmutableMap<ITermVar, ITermVar> existentials;
+    protected final Map.Immutable<ITermVar, ITermVar> existentials;
     protected final ICompleteness.Immutable completeness;
 
     protected SearchState(IState.Immutable state, Set.Immutable<IConstraint> constraints,
-            Map.Immutable<IConstraint, Delay> delays, ImmutableMap<ITermVar, ITermVar> existentials,
+            Map.Immutable<IConstraint, Delay> delays, Map.Immutable<ITermVar, ITermVar> existentials,
             ICompleteness.Immutable completeness) {
         this.state = state;
         this.constraints = constraints;
@@ -61,11 +61,11 @@ public class SearchState {
     }
 
     public Iterable<IConstraint> constraintsAndDelays() {
-        return Iterables.concat(constraints, delays.keySet());
+        return Iterables2.fromConcat(constraints, delays.keySet());
     }
 
-    public ImmutableMap<ITermVar, ITermVar> existentials() {
-        return existentials != null ? existentials : ImmutableMap.of();
+    public Map.Immutable<ITermVar, ITermVar> existentials() {
+        return existentials != null ? existentials : CapsuleUtil.immutableMap();
     }
 
     public ICompleteness.Immutable completeness() {
@@ -80,7 +80,7 @@ public class SearchState {
     public SearchState update(Spec spec, Iterable<IConstraint> add, Iterable<IConstraint> remove) {
         final ICompleteness.Transient completeness = this.completeness.melt();
         final Set.Transient<IConstraint> constraints = this.constraints.asTransient();
-        final java.util.Set<CriticalEdge> removedEdges = Sets.newHashSet();
+        final java.util.Set<CriticalEdge> removedEdges = new HashSet<CriticalEdge>();
         add.forEach(c -> {
             if(constraints.__insert(c)) {
                 completeness.add(c, spec, state.unifier());
@@ -91,7 +91,7 @@ public class SearchState {
                 removedEdges.addAll(completeness.remove(c, spec, state.unifier()));
             }
         });
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         this.delays.forEach((c, d) -> {
             if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
                 constraints.__insert(c);
@@ -119,8 +119,8 @@ public class SearchState {
      * Replace the current state and constraints by the result from solving.
      */
     public SearchState replace(SolverResult result) {
-        final Set.Transient<IConstraint> constraints = Set.Transient.of();
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         result.delays().forEach((c, d) -> {
             if(d.criticalEdges().isEmpty()) {
                 constraints.__insert(c);
@@ -128,7 +128,7 @@ public class SearchState {
                 delays.__put(c, d);
             }
         });
-        final ImmutableMap<ITermVar, ITermVar> existentials =
+        final Map.Immutable<ITermVar, ITermVar> existentials =
                 this.existentials == null ? result.existentials() : this.existentials;
         return new SearchState(result.state(), constraints.freeze(), delays.freeze(), existentials,
                 result.completeness());
@@ -139,10 +139,10 @@ public class SearchState {
         return new SearchState(state, constraints, delays, existentials, completeness);
     }
 
-    public static SearchState of(Spec spec, IState.Immutable state, Iterable<? extends IConstraint> constraints) {
+    public static SearchState of(Spec spec, IState.Immutable state, Collection<? extends IConstraint> constraints) {
         final ICompleteness.Transient completeness = Completeness.Transient.of();
         completeness.addAll(constraints, spec, state.unifier());
-        return new SearchState(state, CapsuleUtil.toSet(constraints), Map.Immutable.of(), null, completeness.freeze());
+        return new SearchState(state, CapsuleUtil.toSet(constraints), CapsuleUtil.immutableMap(), null, completeness.freeze());
     }
 
     public void print(Action1<String> printLn, Function2<ITerm, IUniDisunifier, String> pp) {

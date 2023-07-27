@@ -1,5 +1,6 @@
 package mb.scopegraph.oopsla20;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -27,7 +28,7 @@ public interface IScopeGraph<S, L, D> {
      *
      * @return the map of pairs of scopes and labels and the scopes each scope-label pair point to
      */
-    Map<? extends Entry<S, L>, ? extends Iterable<S>> getEdges();
+    Map<? extends Entry<S, L>, ? extends Collection<S>> getEdges();
 
     /**
      * Gets all scopes from the given scope that have the specified label.
@@ -36,7 +37,7 @@ public interface IScopeGraph<S, L, D> {
      * @param label the label
      * @return the iterable of edges with the specified label starting at the specified scope
      */
-    Iterable<S> getEdges(S scope, L label);
+    Collection<S> getEdges(S scope, L label);
 
     /**
      * Gets the map of all data in the scope graph.

@@ -1,15 +1,14 @@
 package mb.statix.generator.strategy;
 
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function0;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -21,12 +20,12 @@ public final class Concat<I extends SearchState, O extends SearchState> extends 
     private final List<SearchStrategy<I, O>> ss;
 
     Concat(Iterable<SearchStrategy<I, O>> ss) {
-        this.ss = ImmutableList.copyOf(ss);
+        this.ss = ImList.Immutable.copyOf(ss);
     }
 
     @Override protected SearchNodes<O> doApply(SearchContext ctx, SearchNode<I> node) {
-        final List<Function0<String>> descs = Lists.newArrayList();
-        final Stream<SearchNode<O>> nodes = flatMap(ss.stream(), s -> {
+        final List<Function0<String>> descs = new ArrayList<>();
+        final Stream<SearchNode<O>> nodes = lazyFlatMap(ss.stream(), s -> {
             final SearchNodes<O> sn = s.apply(ctx, node);
             descs.add(sn::desc);
             return sn.nodes();

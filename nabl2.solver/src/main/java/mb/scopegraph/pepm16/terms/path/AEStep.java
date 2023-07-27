@@ -2,6 +2,7 @@ package mb.scopegraph.pepm16.terms.path;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
 import org.metaborg.util.iterators.Iterables2;
 
@@ -27,7 +28,7 @@ abstract class AEStep<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     @Value.Lazy @Override public Set.Immutable<O> getImports() {
-        return Set.Immutable.of();
+        return CapsuleUtil.immutableSet();
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
@@ -35,7 +36,7 @@ abstract class AEStep<S extends IScope, L extends ILabel, O extends IOccurrence>
     }
 
     @Value.Lazy @Override public Set.Immutable<S> getScopes() {
-        return Set.Immutable.of(getSource(), getTarget());
+        return CapsuleUtil.immutableSet(getSource(), getTarget());
     }
 
     @Value.Lazy @Override public ConsList<L> getLabels() {

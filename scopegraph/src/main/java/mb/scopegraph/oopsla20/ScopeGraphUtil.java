@@ -3,12 +3,12 @@ package mb.scopegraph.oopsla20;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.metaborg.util.collection.Sets;
 
 public final class ScopeGraphUtil {
 
@@ -17,16 +17,19 @@ public final class ScopeGraphUtil {
     }
 
     public static <S, L, D> String toString(IScopeGraph<S, L, D> scopeGraph, Function1<D, D> instantiateData) {
-     // @formatter:off
-        final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = scopeGraph.getEdges().entrySet().stream()
-                .collect(Collectors.groupingBy(t -> t.getKey().getKey(), Collectors.mapping(
-                        t -> new AbstractMap.SimpleImmutableEntry<L, Iterable<S>>(t.getKey().getValue(), t.getValue()), Collectors.toSet())));
+        // @formatter:off
+        final Map<? extends Map.Entry<S, L>, ? extends Iterable<S>> sgEdges = scopeGraph.getEdges();
+        final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = sgEdges.entrySet().stream().collect(
+            Collectors.groupingBy(
+                t -> t.getKey().getKey(), Collectors.mapping(
+                    t -> new AbstractMap.SimpleImmutableEntry<>(t.getKey().getValue(), t.getValue()), Collectors.toSet()
+                )
+            )
+        );
         // @formatter:off
 
-        final SetView<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
-
         final StringBuilder sb = new StringBuilder();
-        for(S source : scopes) {
+        for(S source : Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet())) {
             sb.append(source);
             if(scopeGraph.getData(source).isPresent()) {
                 sb.append(" : ");

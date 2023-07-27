@@ -5,12 +5,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 
 /**
  * Implementation of Chandy et al.'s communication deadlock detection algorithm ([1], §4).
@@ -38,18 +36,18 @@ public class ChandyMisraHaas<P> {
 
     private State state;
 
-    private final Multiset<P> latest;
+    private final MultiSet.Transient<P> latest;
     private final Map<P, P> engager;
-    private final Multiset<P> num;
+    private final MultiSet.Transient<P> num;
     private Map<P, Set<P>> wait;
 
     public ChandyMisraHaas(Host<P> self, Action1<java.util.Set<P>> deadlockHandler) {
         this.self = self;
         this.deadlockHandler = deadlockHandler;
         this.state = State.EXECUTING;
-        this.latest = HashMultiset.create();
+        this.latest = MultiSet.Transient.of();
         this.engager = new HashMap<>();
-        this.num = HashMultiset.create();
+        this.num = MultiSet.Transient.of();
         this.wait = new HashMap<>();
     }
 
@@ -69,7 +67,7 @@ public class ChandyMisraHaas<P> {
         for(P j : S) {
             self/*i*/.query(j, i, c);
         }
-        num.setCount(i, S.size());
+        num.set(i, S.size());
         return true;
     }
 
@@ -105,15 +103,16 @@ public class ChandyMisraHaas<P> {
         final P k = self.process();
         int c = latest.count(i);
         if(m > c) {
-            latest.setCount(i, m);
+            latest.set(i, m);
             engager.put(i, j);
             wait.computeIfAbsent(i, __ -> new HashSet<>()).add(k);
             final java.util.Set<P> S = self/*k*/.dependentSet();
             for(P r : S) {
                 self/*k*/.query(r, i, m);
             }
-            num.setCount(i, S.size());
+            num.set(i, S.size());
         } else if(wait.containsKey(i) && m == c) {
+            self.assertOnActorThread();
             self/*k*/.reply(j, i, m, wait.put(i, new HashSet<>()));
         }
     }
@@ -140,6 +139,7 @@ public class ChandyMisraHaas<P> {
                 units.add(r);
             }
             if(num.remove(i, 1) == 1) {
+                self.assertOnActorThread();
                 final java.util.Set<P> Q = wait.put(i, new HashSet<>());
                 if(i.equals(k)) {
                     logger.debug("{} deadlocked with {}", self, Q);
@@ -183,6 +183,8 @@ public class ChandyMisraHaas<P> {
          *            Replying hosts R.
          */
         void reply(P k, P i, int m, java.util.Set<P> R);
+
+        void assertOnActorThread();
 
     }
 

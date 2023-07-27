@@ -4,15 +4,14 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.tuple.Tuple2;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -21,13 +20,13 @@ import mb.nabl2.terms.substitution.ISubstitution;
 
 public class FunctionTerms {
 
-    public static IMatcher<Map<String, PartialFunction1<ITerm, ITerm>>> functions() {
+    public static IMatcher<Map.Immutable<String, PartialFunction1<ITerm, ITerm>>> functions() {
         return M.listElems(function(), (l, funDefs) -> {
-            ImmutableMap.Builder<String, PartialFunction1<ITerm, ITerm>> functions = ImmutableMap.builder();
+            Map.Transient<String, PartialFunction1<ITerm, ITerm>> functions = CapsuleUtil.transientMap();
             for(Tuple2<String, Eval> funDef : funDefs) {
-                functions.put(funDef._1(), funDef._2());
+                functions.__put(funDef._1(), funDef._2());
             }
-            return functions.build();
+            return functions.freeze();
         });
     }
 
@@ -52,7 +51,7 @@ public class FunctionTerms {
         private final List<Tuple2<Pattern, ITerm>> cases;
 
         private Eval(List<Tuple2<Pattern, ITerm>> cases) {
-            this.cases = ImmutableList.copyOf(cases);
+            this.cases = ImList.Immutable.copyOf(cases);
         }
 
         @Override public Optional<ITerm> apply(ITerm term) {

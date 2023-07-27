@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -157,7 +158,7 @@ public class ScopeGraphDifferTest extends BaseDifferTest {
             this.rand = new Random();
         }
 
-        @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+        @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
             return signal().thenCompose(__ -> inner.getEdges(scope, label));
         }
 

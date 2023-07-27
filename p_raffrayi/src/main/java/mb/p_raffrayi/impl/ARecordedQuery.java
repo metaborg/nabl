@@ -1,13 +1,12 @@
 package mb.p_raffrayi.impl;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IRecordedQuery;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
@@ -21,7 +20,7 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract S source();
 
-    @Override @Value.Parameter public abstract Set<S> datumScopes();
+    @Override @Value.Parameter public abstract java.util.Set<S> datumScopes();
 
     @Override @Value.Parameter public abstract LabelWf<L> labelWf();
 
@@ -31,22 +30,22 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
 
     @Override @Value.Parameter public abstract boolean includePatches();
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, Set<S> datumScopes, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> scopePath, java.util.Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf, Env<S, L, D> result, boolean predicate) {
         return RecordedQuery.of(scopePath.getTarget(), datumScopes, labelWf, dataWf, result.isEmpty(), predicate);
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, java.util.Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf, Env<S, L, D> result) {
         return of(path, datumScopes, labelWf, dataWf, result, true);
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(S scope, Set<S> datumScopes, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(S scope, java.util.Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf, Env<S, L, D> result) {
         return RecordedQuery.of(scope, datumScopes, labelWf, dataWf, result);
     }
 
-    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, Set<S> datumScopes, LabelWf<L> labelWf,
+    public static <S, L, D> RecordedQuery<S, L, D> of(ScopePath<S, L> path, java.util.Set<S> datumScopes, LabelWf<L> labelWf,
             DataWf<S, L, D> dataWf) {
         return RecordedQuery.of(path.getTarget(), datumScopes, labelWf, dataWf, false, true);
     }
@@ -81,12 +80,12 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
     private Optional<RecordedQuery.Builder<S, L, D>> patchDatumScopes(IPatchCollection.Immutable<S> patches,
             final Optional<RecordedQuery.Builder<S, L, D>> builder) {
         if(hasOverlap(datumScopes(), patches.patchDomain())) {
-            final ImmutableSet.Builder<S> newScopes = ImmutableSet.builder();
+            final Set.Transient<S> newScopes = CapsuleUtil.transientSet();
             for(S scope : datumScopes()) {
-                newScopes.add(patches.patch(scope));
+                newScopes.__insert(patches.patch(scope));
             }
             return Optional.of(builder.orElseGet(() -> RecordedQuery.<S, L, D>builder().from(this))
-                    .datumScopes(newScopes.build()));
+                    .datumScopes(newScopes.freeze()));
         }
         return builder;
     }
@@ -99,9 +98,9 @@ public abstract class ARecordedQuery<S, L, D> implements IRecordedQuery<S, L, D>
         return Optional.empty();
     }
 
-    private boolean hasOverlap(final Set<S> set1, final Set<S> set2) {
-        final Set<S> smaller;
-        final Set<S> larger;
+    private boolean hasOverlap(final java.util.Set<S> set1, final java.util.Set<S> set2) {
+        final java.util.Set<S> smaller;
+        final java.util.Set<S> larger;
 
         if(set2.size() < set1.size()) {
             smaller = set2;

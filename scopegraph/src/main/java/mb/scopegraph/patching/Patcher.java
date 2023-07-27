@@ -5,7 +5,7 @@ import java.util.Map;
 import org.metaborg.util.functions.Function2;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
 
 public class Patcher<S, L, D> {

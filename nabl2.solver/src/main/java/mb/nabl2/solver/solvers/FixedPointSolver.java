@@ -1,23 +1,23 @@
 package mb.nabl2.solver.solvers;
 
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.List;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.ILogger;
-import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.RateLimitedCancel;
 
-import com.google.common.collect.Lists;
-
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.base.CConj;
+import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
@@ -36,8 +36,10 @@ import mb.scopegraph.pepm16.esop15.CriticalEdge;
 
 public class FixedPointSolver {
 
-    @SuppressWarnings("unused")
-    private static final ILogger log = LoggerUtils.logger(FixedPointSolver.class);
+//    @SuppressWarnings("unused")
+//    private static final ILogger log = LoggerUtils.logger(FixedPointSolver.class);
+
+    private static final Logger log = Logger.logger(FixedPointSolver.class);
 
     private final PublishSubject<Step> stepSubject;
 
@@ -53,25 +55,25 @@ public class FixedPointSolver {
         this.stepSubject = PublishSubject.create();
     }
 
-    public SolveResult solve(Iterable<? extends IConstraint> initialConstraints, Ref<IUnifier.Immutable> unifier)
+    public SolveResult solve(Collection<? extends IConstraint> initialConstraints, Ref<IUnifier.Immutable> unifier)
             throws InterruptedException {
         final IMessages.Transient messages = Messages.Transient.of();
 
-        final Deque<IConstraint> constraints = Lists.newLinkedList(initialConstraints);
+        final Deque<IConstraint> constraints = new ArrayDeque<>(initialConstraints);
         final IndexedBag<IConstraint, CriticalEdge> criticalEdgeDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, String> relationDelays = new IndexedBag<>(RemovalPolicy.ALL);
         final IndexedBag<IConstraint, ITermVar> variableDelays = new IndexedBag<>(RemovalPolicy.ANY);
-        final List<IConstraint> unsolved = Lists.newArrayList();
+        final Set.Transient<IConstraint> unsolved = CapsuleUtil.transientSet();
 
         final Action1<Iterable<CriticalEdge>> resolveCriticalEdges = es -> {
             es.forEach(e -> {
-                Collection<IConstraint> newConstraints = criticalEdgeDelays.reindex(e, ce -> Iterables2.empty());
+                Collection<IConstraint> newConstraints = criticalEdgeDelays.reindex(e, ce -> CapsuleUtil.immutableSet());
                 newConstraints.forEach(constraints::addFirst);
             });
         };
         final Action1<Iterable<String>> resolveRelation = names -> {
             names.forEach(name -> {
-                Collection<IConstraint> newConstraints = relationDelays.reindex(name, ce -> Iterables2.empty());
+                Collection<IConstraint> newConstraints = relationDelays.reindex(name, ce -> CapsuleUtil.immutableSet());
                 newConstraints.forEach(constraints::addFirst);
             });
         };
@@ -91,11 +93,14 @@ public class FixedPointSolver {
 
                 final SolveResult result;
                 try {
+                    boolean l = !(constraint instanceof CConj);
+                    if(l) { log.debug("solving {}", constraint); }
                     result = component.apply(constraint);
+                    if(l) { log.debug("result {}", result); }
                 } catch(InterruptedDelayException e) {
                     throw e.getCause();
                 } catch(UnconditionalDelayExpection e) {
-                    unsolved.add(constraint);
+                    unsolved.__insert(constraint);
                     unconditionalDelayCount++;
                     continue;
                 } catch(CriticalEdgeDelayException e) {
@@ -119,6 +124,9 @@ public class FixedPointSolver {
                 });
 
                 messages.addAll(result.messages());
+                if(!result.messages().getAll().isEmpty()) {
+                    log.info("+ updated messages: {}", messages);
+                }
 
                 result.constraints().forEach(constraints::addFirst);
 
@@ -133,17 +141,20 @@ public class FixedPointSolver {
         //log.info("Solved {} with {} delays, {} var delays, {} critical edge delays, {} relation delays", solvedCount,
         //        unconditionalDelayCount, variableDelayCount, criticalEdgeDelayCount, relationDelayCount);
 
-        unsolved.addAll(constraints);
-        unsolved.addAll(variableDelays.values());
-        unsolved.addAll(criticalEdgeDelays.values());
-        unsolved.addAll(relationDelays.values());
+        constraints.forEach(unsolved::__insert);
+        variableDelays.values().forEach(unsolved::__insert);
+        criticalEdgeDelays.values().forEach(unsolved::__insert);
+        relationDelays.values().forEach(unsolved::__insert);
 
-        return SolveResult.builder()
+        final SolveResult result = SolveResult.builder()
         // @formatter:off
                 .messages(messages.freeze())
-                .constraints(unsolved)
+                .constraints(unsolved.freeze())
                 // @formatter:on
                 .build();
+
+        log.info("+ fixpoint: {}", result);
+        return result;
     }
 
     public Observable<Step> step() {

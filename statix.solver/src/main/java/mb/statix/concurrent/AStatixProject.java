@@ -1,12 +1,12 @@
 package mb.statix.concurrent;
 
-import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
 
 import org.immutables.value.Value;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.tracer.SolverTracer;
@@ -21,11 +21,11 @@ public abstract class AStatixProject<TR  extends SolverTracer.IResult<TR>> imple
 
     @Value.Parameter @Override public abstract Optional<Rule> rule();
 
-    @Value.Parameter @Override public abstract Map<String, IStatixGroup> groups();
+    @Value.Parameter @Override public abstract Map.Immutable<String, IStatixGroup> groups();
 
-    @Value.Parameter @Override public abstract Map<String, IStatixUnit> units();
+    @Value.Parameter @Override public abstract Map.Immutable<String, IStatixUnit> units();
 
-    @Value.Parameter @Override public abstract Map<String, IStatixLibrary> libraries();
+    @Value.Parameter @Override public abstract Map.Immutable<String, IStatixLibrary> libraries();
 
     @Value.Parameter @Override public abstract boolean changed();
 

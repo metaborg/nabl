@@ -4,14 +4,12 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
@@ -46,8 +44,8 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
         return OP;
     }
 
-    @Value.Lazy @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(B.newString(getResource()), B.newInt(getId()));
+    @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+        return ImList.Immutable.of(B.newString(getResource()), B.newInt(getId()));
     }
 
     public static IMatcher<TermIndex> matcher() {

@@ -3,6 +3,7 @@ package mb.statix.concurrent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.metaborg.util.future.AggregateFuture;
 import org.metaborg.util.future.IFuture;
@@ -10,7 +11,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.base.Supplier;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.IUnitResult;
@@ -40,13 +40,13 @@ public class ProjectTypeChecker<TR extends SolverTracer.IResult<TR>> extends Abs
             @SuppressWarnings("unused") List<Scope> rootScopes) {
         final Scope projectScope = makeSharedScope(context, "s_prj");
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Unit>>> libraryResults =
             runLibraries(context, project.libraries(), projectScope);
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>>> groupResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>>> groupResults =
             runGroups(context, project.groups(), Arrays.asList(projectScope));
 
-        final IFuture<Map<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>>> unitResults =
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>>> unitResults =
             runUnits(context, project.units(), Arrays.asList(projectScope));
 
         context.closeScope(projectScope);

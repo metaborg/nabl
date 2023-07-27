@@ -8,9 +8,8 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -43,7 +42,7 @@ public class CUser implements IConstraint, Serializable {
     public CUser(String name, Iterable<? extends ITerm> args, @Nullable IConstraint cause, @Nullable IMessage message,
             @Nullable ICompleteness.Immutable ownCriticalEdges) {
         this.name = name;
-        this.args = ImmutableList.copyOf(args);
+        this.args = ImList.Immutable.copyOf(args);
         this.cause = cause;
         this.message = message;
         this.ownCriticalEdges = ownCriticalEdges;
@@ -90,7 +89,7 @@ public class CUser implements IConstraint, Serializable {
     }
 
     @Override public Set.Immutable<ITermVar> getVars() {
-        final Set.Transient<ITermVar> vars = Set.Transient.of();
+        final Set.Transient<ITermVar> vars = CapsuleUtil.transientSet();
         for(ITerm a : args) {
             vars.__insertAll(a.getVars());
         }

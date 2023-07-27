@@ -1,11 +1,8 @@
 package mb.p_raffrayi;
 
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.stream.Collectors;
-
-import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.Streams;
 
 public class PRaffrayiUtil {
 
@@ -21,8 +18,8 @@ public class PRaffrayiUtil {
         }
     }
 
-    private static String formatLine(String id, Iterable<String> cells) {
-        return Streams.stream(Iterables2.cons(id, cells)).collect(Collectors.joining(","));
+    private static String formatLine(String id, Collection<String> cells) {
+        return id + "," + cells.stream().collect(Collectors.joining(","));
     }
 
 }

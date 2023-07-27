@@ -232,7 +232,7 @@ public interface IUnifier {
          * Return a substitution that only retains the given variables in the domain. Also returns a substitution to
          * eliminate the removed variables from terms.
          */
-        Result<ISubstitution.Immutable> retainAll(Iterable<ITermVar> vars);
+        Result<ISubstitution.Immutable> retainAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Return a unifier with the given variable removed from the domain. Returns a substitution to eliminate the
@@ -244,7 +244,7 @@ public interface IUnifier {
          * Return a unifier with the given variables removed from the domain. Returns a substitution to eliminate the
          * variable from terms. Note that removal never unifies terms or variables that were not already unified before.
          */
-        Result<ISubstitution.Immutable> removeAll(Iterable<ITermVar> vars);
+        Result<ISubstitution.Immutable> removeAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Apply a variable renaming to this unifier.
@@ -333,7 +333,7 @@ public interface IUnifier {
          * Retain only the given variables in the domain of this unifier. Returns a substitution to eliminate the
          * removed variables from terms.
          */
-        ISubstitution.Immutable retainAll(Iterable<ITermVar> vars);
+        ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Remove the given variable from the domain of this unifier. Returns a substitution to eliminate the variable
@@ -345,7 +345,7 @@ public interface IUnifier {
          * Remove the given variables from the domain of this unifier. Returns a substitution to eliminate the variable
          * from terms.
          */
-        ISubstitution.Immutable removeAll(Iterable<ITermVar> vars);
+        ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars);
 
         /**
          * Return immutable version of this unifier. The transient unifier cannot be used anymore after this call.

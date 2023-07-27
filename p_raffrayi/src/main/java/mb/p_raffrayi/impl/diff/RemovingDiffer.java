@@ -7,16 +7,15 @@ import java.util.Optional;
 import java.util.Queue;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSetMap;
 import org.metaborg.util.future.CompletableFuture;
 import org.metaborg.util.future.IFuture;
-
-import com.google.common.collect.Multimap;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
@@ -67,7 +66,7 @@ public class RemovingDiffer<S, L, D> implements IScopeGraphDiffer<S, L, D> {
 
     @Override public IFuture<ScopeGraphDiff<S, L, D>> diff(Immutable<S, L, D> initiallyMatchedGraph,
             Collection<S> scopes, Collection<S> sharedScopes, IPatchCollection.Immutable<S> patches, Collection<S> openScopes,
-            Multimap<S, EdgeOrData<L>> openEdges) {
+            MultiSetMap.Immutable<S, EdgeOrData<L>> openEdges) {
         throw new IllegalStateException("Removing differ cannot be used with initial scopegraph.");
     }
 

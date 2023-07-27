@@ -1,19 +1,15 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermMatch.M;
-
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -21,17 +17,20 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermMatch.M;
+
 public class Transform {
 
     public static final T T = new T();
 
     public static class T {
 
-        public static Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {
+        public Function1<ITerm, ITerm> sometd(PartialFunction1<ITerm, ITerm> m) {
             // @formatter:off
             return term -> m.apply(term).orElseGet(() -> term.match(Terms.cases(
                 (appl) -> {
-                    final ImmutableList<ITerm> newArgs;
+                    final ImList.Immutable<ITerm> newArgs;
                     if((newArgs = Terms.applyLazy(appl.getArgs(), sometd(m)::apply)) == null) {
                         return appl;
                     }
@@ -55,7 +54,7 @@ public class Transform {
                 // @formatter:off
                 ITerm next = term.match(Terms.<ITerm>cases(
                     (appl) -> {
-                        final ImmutableList<ITerm> newArgs;
+                        final ImList.Immutable<ITerm> newArgs;
                         if((newArgs = Terms.applyLazy(appl.getArgs(), somebu(m)::apply)) == null) {
                             return appl;
                         }
@@ -76,9 +75,9 @@ public class Transform {
             };
         }
 
-        public static <R> Function1<ITerm, Collection<R>> collecttd(PartialFunction1<ITerm, ? extends R> m) {
+        public <R> Function1<ITerm, Collection<R>> collecttd(PartialFunction1<ITerm, ? extends R> m) {
             return term -> {
-                List<R> results = Lists.newArrayList();
+                List<R> results = new ArrayList<>();
                 M.<Unit>casesFix(f -> Iterables2.<IMatcher<? extends Unit>>from(
                 // @formatter:off
                     (t, u) -> m.apply(t).map(r -> {
@@ -112,7 +111,7 @@ public class Transform {
             };
         }
 
-        public static Function1<ITerm, ITerm> maybe(PartialFunction1<ITerm, ITerm> m) {
+        public Function1<ITerm, ITerm> maybe(PartialFunction1<ITerm, ITerm> m) {
             return term -> m.apply(term).orElse(term);
         }
 
