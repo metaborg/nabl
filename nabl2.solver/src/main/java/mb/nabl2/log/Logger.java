@@ -12,7 +12,7 @@ public class Logger {
 
     public Logger(String name) {
         this.name = truncate(name);
-        enabled = !name.startsWith("mb.nabl2.solver.components");
+        enabled = !name.startsWith("mb.nabl2.solver");
     }
 
     public void debug(String message, Object... args) {
