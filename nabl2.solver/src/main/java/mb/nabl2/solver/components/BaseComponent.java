@@ -6,6 +6,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.log.PrintlineLogger;
+
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.base.CConj;
@@ -14,7 +16,6 @@ import mb.nabl2.constraints.base.CNew;
 import mb.nabl2.constraints.base.IBaseConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
@@ -26,7 +27,7 @@ import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseComponent extends ASolver {
 
-    private final static Logger log = Logger.logger(BaseComponent.class);
+    private final static PrintlineLogger log = PrintlineLogger.logger(BaseComponent.class);
 
     public BaseComponent(SolverCore core) {
         super(core);

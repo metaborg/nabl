@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.unit.Unit;
 
 import io.usethesource.capsule.Set;
@@ -24,7 +25,6 @@ import mb.nabl2.constraints.sets.CDistinct;
 import mb.nabl2.constraints.sets.CEvalSet;
 import mb.nabl2.constraints.sets.CSubsetEq;
 import mb.nabl2.constraints.sets.ISetConstraint;
-import mb.nabl2.log.Logger;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.sets.SetEvaluator;
@@ -44,7 +44,7 @@ import mb.scopegraph.pepm16.StuckException;
 
 public class SetComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(SetComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(SetComponent.class);
 
     private static final String NAME_OP = "NAME";
 

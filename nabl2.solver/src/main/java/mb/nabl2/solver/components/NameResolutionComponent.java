@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
@@ -20,7 +21,6 @@ import mb.nabl2.constraints.nameresolution.CAssoc;
 import mb.nabl2.constraints.nameresolution.CDeclProperty;
 import mb.nabl2.constraints.nameresolution.CResolve;
 import mb.nabl2.constraints.nameresolution.INameResolutionConstraint;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -45,7 +45,7 @@ import mb.scopegraph.pepm16.terms.path.Paths;
 
 public class NameResolutionComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(NameResolutionComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(NameResolutionComponent.class);
 
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;

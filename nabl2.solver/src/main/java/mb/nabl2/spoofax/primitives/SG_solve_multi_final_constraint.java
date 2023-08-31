@@ -12,6 +12,7 @@ import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
@@ -22,7 +23,6 @@ import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
 import mb.nabl2.constraints.messages.MessageKind;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.exceptions.SolverException;
@@ -41,7 +41,7 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
     @SuppressWarnings("unused") private static ILogger logger =
             LoggerUtils.logger(SG_solve_multi_final_constraint.class);
 
-    private static final Logger log = Logger.logger(SG_solve_multi_final_constraint.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(SG_solve_multi_final_constraint.class);
 
     public SG_solve_multi_final_constraint() {
         super(SG_solve_multi_final_constraint.class.getSimpleName(), 0);

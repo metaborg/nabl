@@ -5,10 +5,10 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.Collection;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
-import mb.nabl2.log.Logger;
 import mb.nabl2.sets.IElement;
 import mb.nabl2.sets.ISetProducer;
 import mb.nabl2.solver.ASolver;
@@ -23,7 +23,7 @@ import mb.scopegraph.pepm16.terms.Scope;
 
 public class NameSetsComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(NameSetsComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(NameSetsComponent.class);
 
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
 

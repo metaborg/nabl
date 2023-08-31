@@ -8,6 +8,7 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.RateLimitedCancel;
@@ -17,7 +18,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.base.CConj;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.exceptions.CriticalEdgeDelayException;
@@ -39,7 +39,7 @@ public class FixedPointSolver {
 //    @SuppressWarnings("unused")
 //    private static final ILogger log = LoggerUtils.logger(FixedPointSolver.class);
 
-    private static final Logger log = Logger.logger(FixedPointSolver.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(FixedPointSolver.class);
 
     private final PublishSubject<Step> stepSubject;
 

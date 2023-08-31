@@ -1,11 +1,12 @@
 package mb.nabl2.solver.components;
 
+import org.metaborg.util.log.PrintlineLogger;
+
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
 import mb.nabl2.constraints.relations.CEvalFunction;
 import mb.nabl2.constraints.relations.IRelationConstraint;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SolveResult;
 import mb.nabl2.solver.SolverCore;
@@ -18,7 +19,7 @@ import mb.scopegraph.relations.IFunctionName;
 
 public class ExternalRelationComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(ExternalRelationComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(ExternalRelationComponent.class);
 
     public ExternalRelationComponent(SolverCore core) {
         super(core);

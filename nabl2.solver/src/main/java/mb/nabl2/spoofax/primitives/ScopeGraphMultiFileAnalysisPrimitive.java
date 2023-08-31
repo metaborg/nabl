@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullCancel;
@@ -24,7 +25,6 @@ import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.util.TermUtils;
 
 import mb.nabl2.config.NaBL2DebugConfig;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.solvers.CallExternal;
 import mb.nabl2.solver.solvers.SemiIncrementalMultiFileSolver;
 import mb.nabl2.spoofax.primitives.StrategyCalls.CallableStrategy;
@@ -36,7 +36,7 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 
     private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
-    private static final Logger celog = Logger.logger(CallExternal.class);
+    private static final PrintlineLogger celog = PrintlineLogger.logger(CallExternal.class);
 
 
     public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
