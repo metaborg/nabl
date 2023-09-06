@@ -1,10 +1,10 @@
 plugins {
   `java-library`
-  id("org.metaborg.gradle.config.junit-testing") version("0.4.7")
+  id("org.metaborg.gradle.config.junit-testing")
 }
 
 // Used for refsyn: disabled by default
-fun kaptEnabled() = extra.has("kaptEnabled") && extra["kaptEnabled"] as Boolean
+//fun kaptEnabled() = extra.has("kaptEnabled") && extra["kaptEnabled"] as Boolean
 val spoofax2Version: String by ext
 val spoofax2DevenvVersion: String by ext
 dependencies {
@@ -12,10 +12,10 @@ dependencies {
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
   annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
   testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
-  if(kaptEnabled()) {
-    kapt(platform("org.metaborg:parent:$version"))
-    kaptTest(platform("org.metaborg:parent:$version"))
-  }
+//  if(kaptEnabled()) {
+//    kapt(platform("org.metaborg:parent:$version"))
+//    kaptTest(platform("org.metaborg:parent:$version"))
+//  }
 
   // !! Update dependencies in pom.xml as well
 
@@ -32,10 +32,10 @@ dependencies {
   // Annotation processing
   annotationProcessor("org.immutables:value")
   annotationProcessor("org.immutables:serial")
-  if(kaptEnabled()) {
-    kapt("org.immutables:value")
-    kapt("org.immutables:serial")
-  }
+//  if(kaptEnabled()) {
+//    kapt("org.immutables:value")
+//    kapt("org.immutables:serial")
+//  }
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
   compileOnly("javax.annotation:javax.annotation-api")
@@ -50,10 +50,10 @@ dependencies {
   // Test Annotation processing
   testAnnotationProcessor("org.immutables:value")
   testAnnotationProcessor("org.immutables:serial")
-  if(kaptEnabled()) {
-    kaptTest("org.immutables:value")
-    kaptTest("org.immutables:serial")
-  }
+//  if(kaptEnabled()) {
+//    kaptTest("org.immutables:value")
+//    kaptTest("org.immutables:serial")
+//  }
   testCompileOnly("org.immutables:value")
   testCompileOnly("org.immutables:serial")
   testCompileOnly("javax.annotation:javax.annotation-api")
