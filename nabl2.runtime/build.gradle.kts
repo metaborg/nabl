@@ -1,5 +1,5 @@
 plugins {
-  id("org.metaborg.gradle.config.java-library")
+  `java-library`
   id("org.metaborg.devenv.spoofax.gradle.langspec")
   `maven-publish`
 }

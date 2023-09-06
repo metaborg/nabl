@@ -12,6 +12,13 @@ allprojects {
   ext["spoofax2Version"] = spoofax2Version
   ext["spoofax2BaselineVersion"] = spoofax2BaselineVersion
   ext["spoofax2DevenvVersion"] = spoofax2DevenvVersion
+
+  java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+    withSourcesJar()
+    withJavadocJar()
+  }
+
 }
 
 subprojects {
