@@ -6,12 +6,12 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.log.Logger;
 
 public abstract class Messages implements IMessages {
 
@@ -20,7 +20,7 @@ public abstract class Messages implements IMessages {
 
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
 
-        private static final Logger log = Logger.logger(Messages.Immutable.class);
+        private static final PrintlineLogger log = PrintlineLogger.logger(Messages.Immutable.class);
         private static final long serialVersionUID = 42L;
 
         private final ImList.Immutable<IMessageInfo> messages;
@@ -70,7 +70,7 @@ public abstract class Messages implements IMessages {
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private static final Logger log = Logger.logger(Messages.Transient.class);
+        private static final PrintlineLogger log = PrintlineLogger.logger(Messages.Transient.class);
 
         private final ImList.Mutable<IMessageInfo> messages;
 

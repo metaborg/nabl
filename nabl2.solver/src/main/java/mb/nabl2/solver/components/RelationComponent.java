@@ -10,6 +10,7 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
@@ -23,7 +24,6 @@ import mb.nabl2.constraints.relations.CBuildRelation;
 import mb.nabl2.constraints.relations.CCheckRelation;
 import mb.nabl2.constraints.relations.CEvalFunction;
 import mb.nabl2.constraints.relations.IRelationConstraint;
-import mb.nabl2.log.Logger;
 import mb.nabl2.relations.terms.FunctionName.RelationFunctions;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -45,7 +45,7 @@ import mb.scopegraph.relations.RelationException;
 
 public class RelationComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(AstComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(AstComponent.class);
 
     private final Predicate1<String> isComplete;
 

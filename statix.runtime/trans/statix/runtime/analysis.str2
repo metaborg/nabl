@@ -115,7 +115,7 @@ rules // single file analysis
             (resource, Full(ast'', file-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*]))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
-             ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> a
+             ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> (ast', a)
              ; file-analysis := FileAnalysis(a, a, custom-analysis, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 

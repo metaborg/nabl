@@ -6,13 +6,13 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ISolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -42,7 +42,7 @@ import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseSolver {
 
-    private static final Logger log = Logger.logger(BaseSolver.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(BaseSolver.class);
 
     protected final NaBL2DebugConfig nabl2Debug;
     protected final CallExternal callExternal;

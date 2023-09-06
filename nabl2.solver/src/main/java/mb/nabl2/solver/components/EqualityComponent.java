@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
@@ -13,7 +14,6 @@ import mb.nabl2.constraints.equality.CInequal;
 import mb.nabl2.constraints.equality.IEqualityConstraint;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -29,7 +29,7 @@ import mb.nabl2.unification.UnificationMessages;
 
 public class EqualityComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(EqualityComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(EqualityComponent.class);
 
     private final Ref<IUnifier.Immutable> unifier;
 

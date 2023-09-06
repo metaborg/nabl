@@ -2,12 +2,13 @@ package mb.nabl2.solver.components;
 
 import java.util.Optional;
 
+import org.metaborg.util.log.PrintlineLogger;
+
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.ast.CAstProperty;
 import mb.nabl2.constraints.ast.IAstConstraint;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
-import mb.nabl2.log.Logger;
 import mb.nabl2.solver.ASolver;
 import mb.nabl2.solver.SeedResult;
 import mb.nabl2.solver.SolveResult;
@@ -18,7 +19,7 @@ import mb.nabl2.util.collections.IProperties;
 
 public class AstComponent extends ASolver {
 
-    private static final Logger log = Logger.logger(AstComponent.class);
+    private static final PrintlineLogger log = PrintlineLogger.logger(AstComponent.class);
 
     private final IProperties.Transient<TermIndex, ITerm, ITerm> properties;
 
