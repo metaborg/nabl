@@ -38,6 +38,7 @@ allprojects {
     }
   }
 
+  // Use the org.metaborg:*:2.6.0-SNAPSHOT dependencies instead of the Spoofax 3 dependencies
   configurations.all {
     resolutionStrategy.eachDependency {
       if (requested.group == "org.metaborg.devenv") {
