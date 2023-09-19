@@ -1,6 +1,10 @@
 package mb.statix.spec;
 
-public class RuleName {
+import java.io.Serializable;
+
+public class RuleName implements Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final String name;
 
