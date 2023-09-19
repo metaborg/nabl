@@ -9,7 +9,11 @@ import io.usethesource.capsule.SetMultimap;
 import mb.statix.constraints.Constraints;
 import mb.statix.solver.IConstraint;
 
-class SubConstraintGraph {
+import java.io.Serializable;
+
+class SubConstraintGraph implements Serializable {
+
+    private static final long serialVersionUID = 42L;
 
     private final SetMultimap.Immutable<RuleName, String> subConstraints;
 
