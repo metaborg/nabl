@@ -23,7 +23,7 @@
 			<artifactId>scopegraph</artifactId>
 			<version>${metaborg-version}</version>
 		</dependency>
-		<dependency>
+    <dependency>
 			<groupId>io.usethesource</groupId>
 			<artifactId>capsule</artifactId>
 		</dependency>

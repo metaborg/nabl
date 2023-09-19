@@ -17,7 +17,6 @@ dependencies {
   api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
   api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
   api(project(":nabl2.terms"))
-
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 

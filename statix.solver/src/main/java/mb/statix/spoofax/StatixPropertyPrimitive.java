@@ -34,6 +34,7 @@ public abstract class StatixPropertyPrimitive extends StatixPrimitive {
     }
 
     protected static ITerm instantiateValue(ITermProperty property, SolverResult<?> analysis) {
+
         switch(property.multiplicity()) {
             case BAG: {
                 return B.newList(property.values().stream().map(analysis.state().unifier()::findRecursive)

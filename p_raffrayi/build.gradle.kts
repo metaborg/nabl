@@ -15,7 +15,6 @@ dependencies {
 
   api("org.metaborg:org.metaborg.util:$spoofax2Version")
   api(project(":scopegraph"))
-
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 

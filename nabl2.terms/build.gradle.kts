@@ -16,7 +16,6 @@ dependencies {
   implementation("org.metaborg:org.metaborg.util:$spoofax2Version")
   api("org.metaborg:org.spoofax.terms:$spoofax2Version")
   api("org.metaborg:org.spoofax.interpreter.core:$spoofax2Version")
-
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 

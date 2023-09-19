@@ -36,6 +36,9 @@ rules // analysis
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
 
+  stx-evaluate-with-initial-state(|a, c-name): in* -> out
+    where (out, s, [], _, _) := <stx--evaluate-with-initial-state(|a, c-name)> in*
+
   stx-analysis-has-errors = stx--analysis-has-errors
 
 rules // ast

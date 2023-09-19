@@ -19,7 +19,6 @@ dependencies {
   api(project(":nabl2.terms"))
   api(project(":scopegraph"))
   api(project(":p_raffrayi"))
-
   api("io.usethesource:capsule")
   compileOnly("com.google.code.findbugs:jsr305")
 
