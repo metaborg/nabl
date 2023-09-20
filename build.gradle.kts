@@ -17,7 +17,6 @@ allprojects {
   ext["spoofax2DevenvVersion"] = spoofax2DevenvVersion
 
   java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(11)) // Java 8 gives GC overhead limit exceeded
     withSourcesJar()
     withJavadocJar()
   }
