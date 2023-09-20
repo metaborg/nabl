@@ -46,26 +46,6 @@ dependencies {
   // !! Update dependencies in pom.xml as well
 }
 
-// Ugh, need to encode sourcesJar due to multiple gradle.config plugins
-metaborg {
-  javaCreateSourcesJar = false
-}
-
-tasks {
-  sourcesJar {
-    dependsOn("classes")
-    from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).allJava)
-    archiveClassifier.set("sources")
-  }
-  assemble {
-    dependsOn("sourcesJar")
-  }
-}
-
-artifacts {
-  add(Dependency.DEFAULT_CONFIGURATION, tasks.getByName("sourcesJar"))
-}
-
 // Copy test resources into classes directory, to make them accessible as classloader resources at runtime.
 val copyTestResourcesTask = tasks.create<Copy>("copyTestResources") {
   from("$projectDir/src/test/resources")

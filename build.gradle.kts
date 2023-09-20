@@ -44,6 +44,27 @@ allprojects {
       }
     }
   }
+
+  // Ugh, need to encode sourcesJar due to multiple gradle.config plugins
+  metaborg {
+    javaCreateSourcesJar = false
+  }
+
+  val sourcesJar = tasks.getByName<Jar>("sourcesJar") {
+    dependsOn("classes")
+    from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).allJava)
+    archiveClassifier.set("sources")
+  }
+  tasks {
+    assemble {
+      dependsOn("sourcesJar")
+    }
+  }
+
+  artifacts {
+    add(Dependency.DEFAULT_CONFIGURATION, sourcesJar)
+  }
+
 }
 
 subprojects {
