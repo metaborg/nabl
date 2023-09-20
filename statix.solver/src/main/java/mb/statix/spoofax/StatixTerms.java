@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import mb.nabl2.terms.matching.TermMatch;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -134,10 +135,16 @@ public class StatixTerms {
     public static final String RVAR_OP = "RVar";
 
     public static IMatcher<Spec> spec() {
-        return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
-                (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
-                    return Spec.of(rules, edgeLabels, dataLabels, ext).precomputeCriticalEdges();
-                });
+        final IMatcher<Spec> specMatcher = M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
+            (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
+                return Spec.of(rules, edgeLabels, dataLabels, ext).precomputeCriticalEdges();
+            });
+        return (term, unifier) -> {
+            TermMatch.log = true;
+            Optional<Spec> result = specMatcher.match(term, unifier);
+            TermMatch.log = false;
+            return result;
+        };
     }
 
     public static IMatcher<RuleSet> rules() {
@@ -147,11 +154,11 @@ public class StatixTerms {
     public static IMatcher<Rule> rule() {
         // @formatter:off
         return M.cases(
-            M.appl3("Rule", ruleName(), head(), constraint(), (r, n, h, bc) -> {
+            M.appl3("Rule", M.req("Rulename", ruleName()), M.req("RuleHead", head()), M.req("Constraint", constraint()), (r, n, h, bc) -> {
                 return Rule.of(h._1(), n, h._2(), bc).withLabel(n);
             }),
             // DEPRECATED
-            M.appl4("Rule", ruleName(), head(), M.listElems(varTerm()), constraint(), (r, n, h, bvs, bc) -> {
+            M.appl4("Rule", M.req("Rulename", ruleName()), M.req("RuleHead", head()), M.listElems(M.req("VarTerm", varTerm())), M.req("Constraint", constraint()), (r, n, h, bvs, bc) -> {
                 log.warn("Rules with explicit local variables are deprecated.");
                 return Rule.of(h._1(), n, h._2(), new CExists(bvs, bc)).withLabel(n);
             })
