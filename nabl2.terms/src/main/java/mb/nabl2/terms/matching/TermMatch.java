@@ -40,9 +40,6 @@ import static mb.nabl2.terms.Terms.TUPLE_OP;
 
 public class TermMatch {
 
-    public static boolean log = false;
-    private static final TermFormatter logFormatter = new UnifierFormatter(Unifiers.Immutable.of(), 3);
-
     public static final M M = new M();
 
     public static class M {
@@ -517,10 +514,6 @@ public class TermMatch {
         Optional<T> match(ITerm term, IUnifier unifier);
 
         default Optional<T> match(ITerm term) {
-            if(log) {
-                final String termStr = logFormatter.format(term) + ";";
-                System.out.println("match: " + termStr.substring(0, Math.min(200, termStr.length() - 1)));
-            }
             return match(term, Unifiers.Immutable.of());
         }
 
