@@ -2,15 +2,16 @@ package mb.nabl2.solver;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.CheckedFunction1;
+import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.solver.exceptions.DelayException;
 import mb.nabl2.solver.exceptions.UnconditionalDelayExpection;
@@ -22,6 +23,8 @@ import mb.nabl2.terms.unification.u.IUnifier;
 
 @FunctionalInterface
 public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, DelayException> {
+
+    static final PrintlineLogger log = PrintlineLogger.logger(ISolver.class);
 
     default void update(@SuppressWarnings("unused") Collection<ITermVar> vars) {
         // ignore by default
@@ -111,6 +114,9 @@ public interface ISolver extends CheckedFunction1<IConstraint, SolveResult, Dela
 
     public static ISolver defer() {
         return c -> {
+            if(c instanceof CEqual) {
+                log.debug("deferring constraint: {}", c);
+            }
             throw new UnconditionalDelayExpection();
         };
     }
