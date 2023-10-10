@@ -6,6 +6,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
@@ -40,6 +41,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseSolver {
+
+    private static final PrintlineLogger log = PrintlineLogger.logger(BaseSolver.class);
 
     protected final NaBL2DebugConfig nabl2Debug;
     protected final CallExternal callExternal;
@@ -94,8 +97,11 @@ public class BaseSolver {
             scopeGraphReducer.updateAll();
             final SolveResult solveResult = solver.solve(initial.constraints(), unifier);
 
-            return GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
+            GraphSolution solution = GraphSolution.of(initial.config(), astSolver.finish(), scopeGraphSolver.finish(),
                     equalitySolver.finish(), solveResult.messages(), solveResult.constraints());
+            log.info("finish graph: {}", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

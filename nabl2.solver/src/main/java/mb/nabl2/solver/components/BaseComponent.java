@@ -6,6 +6,8 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.metaborg.util.log.PrintlineLogger;
+
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.base.CConj;
@@ -24,6 +26,8 @@ import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseComponent extends ASolver {
+
+    private final static PrintlineLogger log = PrintlineLogger.logger(BaseComponent.class);
 
     public BaseComponent(SolverCore core) {
         super(core);
@@ -52,7 +56,11 @@ public class BaseComponent extends ASolver {
             tsubst.put(var, newVar(var));
         });
         final ISubstitution.Immutable subst = tsubst.freeze();
-        return SolveResult.constraints(Constraints.substitute(constraint.getConstraint(), subst));
+        final IConstraint cc = Constraints.substitute(constraint.getConstraint(), subst);
+        log.debug("exists {}", constraint);
+        log.debug("* subst {}", subst);
+        log.debug("* result {}", cc);
+        return SolveResult.constraints(cc);
     }
 
     private ITermVar newVar(ITermVar var) {
@@ -61,8 +69,10 @@ public class BaseComponent extends ASolver {
 
     private SolveResult solve(CNew constraint) {
         final List<IConstraint> constraints = new ArrayList<>();
-        for(ITerm scope : constraint.getNVars()) {
-            constraints.add(CEqual.of(scope, newScope(scope), constraint.getMessageInfo()));
+        for(ITerm scopeVar : constraint.getNVars()) {
+            final Scope scope = newScope(scopeVar);
+            log.debug("new {} |-> {}", constraint, scope);
+            constraints.add(CEqual.of(scopeVar, scope, constraint.getMessageInfo()));
         }
         return SolveResult.constraints(constraints);
     }

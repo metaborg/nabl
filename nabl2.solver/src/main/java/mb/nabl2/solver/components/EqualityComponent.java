@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
@@ -21,11 +22,14 @@ import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.solver.messages.IMessages;
 import mb.nabl2.solver.messages.Messages;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.unification.OccursException;
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.nabl2.unification.UnificationMessages;
 
 public class EqualityComponent extends ASolver {
+
+    private static final PrintlineLogger log = PrintlineLogger.logger(EqualityComponent.class);
 
     private final Ref<IUnifier.Immutable> unifier;
 
@@ -40,11 +44,13 @@ public class EqualityComponent extends ASolver {
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();
             if(!unifier.unify(solution).isPresent()) {
+                log.debug("seeding failed: {}", message);
                 messages.add(message.withContent(MessageContent.of("Unification failed.")));
             } else {
                 this.unifier.set(unifier.freeze());
             }
         } catch(OccursException e) {
+            log.debug("seeding failed: {}", message);
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
         }
@@ -73,11 +79,13 @@ public class EqualityComponent extends ASolver {
         if(unifyResult != null) {
             final SolveResult solveResult = SolveResult.builder().unifierDiff(unifyResult).build();
             this.unifier.set(unifier.freeze());
+            log.debug("unification succeeded {}", unifyResult);
             return solveResult;
         } else {
             final MessageContent content = UnificationMessages.getError(left, right);
             final IMessageInfo message = (constraint.getMessageInfo().withDefaultContent(content));
             final SolveResult solveResult = SolveResult.messages(message);
+            log.debug("unification failed {}", content.toString(t -> this.unifier.get().findRecursive(t).toString()));
             return solveResult;
         }
     }
@@ -87,14 +95,18 @@ public class EqualityComponent extends ASolver {
         final ITerm right = constraint.getRight();
         Optional<? extends IUnifier.Immutable> result = unifier().diff(left, right);
         if(!result.isPresent()) {
+            log.debug("dis-unification succeeded");
             return SolveResult.empty();
         } else if(result.get().isEmpty()) {
             MessageContent content = MessageContent.builder().append(constraint.getLeft().toString()).append(" and ")
                     .append(constraint.getRight().toString()).append(" must be inequal, but are not.").build();
             IMessageInfo message = constraint.getMessageInfo().withDefaultContent(content);
+            log.debug("dis-unification failed {} == {}", constraint.getLeft(), constraint.getRight());
             return SolveResult.messages(message);
         } else {
-            throw new VariableDelayException(Iterables2.fromConcat(unifier().getVars(left), unifier().getVars(right)));
+            final Iterable<ITermVar> termVars = Iterables2.fromConcat(unifier().getVars(left), unifier().getVars(right));
+            log.debug("dis-unification delayed {}", termVars);
+            throw new VariableDelayException(termVars);
         }
     }
 

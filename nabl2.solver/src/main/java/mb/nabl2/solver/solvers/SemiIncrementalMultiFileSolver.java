@@ -6,6 +6,7 @@ import java.util.List;
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
@@ -13,6 +14,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -50,6 +52,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
+
+    private static final PrintlineLogger log = PrintlineLogger.logger(SemiIncrementalMultiFileSolver.class);
 
     public SemiIncrementalMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         super(nabl2Debug, callExternal);
@@ -130,6 +134,15 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 messages.addAll(unitSolution.messages());
             }
 
+
+            if(log.enabled()) {
+                log.debug("start solverInter; equality constraints: ");
+                constraints.stream()
+                    .filter(CEqual.class::isInstance)
+                    .forEach(c -> log.debug("* {}", c));
+            }
+
+
             // solve constraints
             scopeGraphReducer.updateAll();
             hasRelationBuildConstraints.addAll(constraints);
@@ -144,10 +157,14 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 
-            return Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
+            Solution solution = Solution.of(config, astResult, nameResolutionResult.scopeGraph(),
                     nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                     messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
+
+            log.info("finish inter: {}", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

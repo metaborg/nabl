@@ -10,9 +10,11 @@ import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.iterators.Iterables2;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set.Immutable;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
@@ -34,6 +36,7 @@ import mb.nabl2.solver.exceptions.FunctionUndefinedException;
 import mb.nabl2.solver.exceptions.RelationDelayException;
 import mb.nabl2.solver.exceptions.VariableDelayException;
 import mb.nabl2.terms.ITerm;
+import mb.nabl2.terms.ITermVar;
 import mb.scopegraph.relations.IFunctionName;
 import mb.scopegraph.relations.IRelation;
 import mb.scopegraph.relations.IRelationName;
@@ -41,6 +44,8 @@ import mb.scopegraph.relations.RelationException;
 
 
 public class RelationComponent extends ASolver {
+
+    private static final PrintlineLogger log = PrintlineLogger.logger(AstComponent.class);
 
     private final Predicate1<String> isComplete;
 
@@ -118,9 +123,11 @@ public class RelationComponent extends ASolver {
         return c.getRelation().match(IRelationName.Cases.of(
             name -> {
                 try {
+                    log.debug("adding relation {}({}, {})", name, left, right);
                     relation(name).add(left, right);
                 } catch(RelationException e) {
                     final IMessageInfo message = c.getMessageInfo().withDefaultContent(MessageContent.of(e.getMessage()));
+                    log.debug("failure adding relation", e);
                     return SolveResult.messages(message);
                 }
                 return SolveResult.empty();
@@ -134,8 +141,10 @@ public class RelationComponent extends ASolver {
 
     public SolveResult solve(CCheckRelation c) throws DelayException {
         if(!(unifier().isGround(c.getLeft()) && unifier().isGround(c.getRight()))) {
-            throw new VariableDelayException(
-                Iterables2.fromConcat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight())));
+            final Iterable<ITermVar> argVars =
+                    Iterables2.fromConcat(unifier().getVars(c.getLeft()), unifier().getVars(c.getRight()));
+            log.debug("delaying, {} incomplete", argVars);
+            throw new VariableDelayException(argVars);
         }
         final ITerm left = unifier().findRecursive(c.getLeft());
         final ITerm right = unifier().findRecursive(c.getRight());
@@ -143,13 +152,16 @@ public class RelationComponent extends ASolver {
         return c.getRelation().matchOrThrow(IRelationName.CheckedCases.of(
             name -> {
                 if(!isComplete.test(name)) {
+                    log.debug("delaying, {} incomplete", name);
                     throw new RelationDelayException(name);
                 }
                 if(relation(name).contains(left, right)) {
+                    log.debug("success ({}, {}) in {}", left, right, name);
                     return SolveResult.empty();
                 } else {
                     IMessageInfo message = c.getMessageInfo().withDefaultContent(
                             MessageContent.builder().append(left).append(" and ").append(right).append(" not in ").append(name).build());
+                    log.debug("failure ({}, {}) not in {}", left, right, name);
                     return SolveResult.messages(message);
                 }
             },
@@ -166,7 +178,9 @@ public class RelationComponent extends ASolver {
 
     public SolveResult solve(CEvalFunction c) throws DelayException {
         if(!unifier().isGround(c.getTerm())) {
-            throw new VariableDelayException(unifier().getVars(c.getTerm()));
+            Immutable<ITermVar> argVars = unifier().getVars(c.getTerm());
+            log.debug("delaying, {} incomplete", argVars);
+            throw new VariableDelayException(argVars);
         }
         final ITerm term = unifier().findRecursive(c.getTerm());
         // @formatter:off
@@ -176,15 +190,19 @@ public class RelationComponent extends ASolver {
                 if(fun == null) {
                     throw new FunctionUndefinedException("Function " + name + " undefined.");
                 }
+                log.debug("calling {}({})", name, term);
                 Optional<ITerm> result = fun.apply(term);
                 IMessageInfo message = c.getMessageInfo().withDefaultContent(
                         MessageContent.builder().append(name).append(" failed on ").append(term).build());
                 return result.map(ret -> {
+                    log.debug("* result: {}", ret);
                     return SolveResult.constraints(CEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 }).orElse(SolveResult.messages(message));
             },
             extName -> {
+                log.debug("calling external {}({})", extName, term);
                 return callExternal(extName, term).map(ret -> {
+                    log.debug("* result: {}", ret);
                     return SolveResult.constraints(CEqual.of(c.getResult(), ret, c.getMessageInfo()));
                 }).orElse(SolveResult.messages(c.getMessageInfo()));
             }
