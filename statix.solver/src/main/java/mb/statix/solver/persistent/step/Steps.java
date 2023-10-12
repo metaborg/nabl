@@ -8,7 +8,7 @@ public class Steps {
 
     private Steps() { }
 
-    public <R> IStep.Cases<R> cases(
+    public static <R> IStep.Cases<R> cases(
             Function1<CArithStep, R> onArith,
             Function1<CAstIdStep, R> onAstId,
             Function1<CAstPropertyStep, R> onAstProperty,
@@ -85,8 +85,11 @@ public class Steps {
         };
     }
 
+    public static <R> CasesBuilder<R> cases() {
+        return new CasesBuilder<>();
+    }
 
-    public class CasesBuilder<R> {
+    public static class CasesBuilder<R> {
         private @Nullable Function1<CArithStep, R> onArith;
         private @Nullable Function1<CAstIdStep, R> onAstId;
         private @Nullable Function1<CAstPropertyStep, R> onAstProperty;
@@ -254,7 +257,11 @@ public class Steps {
 
     // Step Result Utilities
 
-    public boolean isSuccess(StepResult result) {
+    public static boolean isSuccess(IStep step) {
+        return isSuccess(step.result());
+    }
+
+    public static boolean isSuccess(StepResult result) {
         return result.match(
                 (st, uvs, ncs, cpl, nes) -> true,
                 ex -> false,
