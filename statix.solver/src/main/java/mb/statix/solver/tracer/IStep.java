@@ -15,9 +15,9 @@ public interface IStep {
 
         R caseArith(CArithStep step);
 
-        R caseAstId(ACAstIdStep step);
+        R caseAstId(CAstIdStep step);
 
-        R caseAstProperty(ACAstPropertyStep step);
+        R caseAstProperty(CAstPropertyStep step);
 
         R caseConj(CConjStep step);
 
@@ -31,7 +31,7 @@ public interface IStep {
 
         R caseNew(CNewStep step);
 
-        R caseResolveQuery(AAResolveQueryStep step);
+        R caseResolveQuery(AResolveQueryStep step);
 
         R caseTellEdge(CTellEdgeStep step);
 

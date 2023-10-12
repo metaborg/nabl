@@ -20,7 +20,7 @@ public abstract class AAResolveQueryStep implements IStep {
     @Value.Parameter public abstract @Nullable Env<Scope, ITerm, ITerm> answer();
 
     @Override public <R> R match(Cases<R> cases) {
-        return cases.caseResolveQuery((AAResolveQueryStep) this);
+        return cases.caseResolveQuery((AResolveQueryStep) this);
     }
 
 }
