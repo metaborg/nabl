@@ -27,8 +27,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
 
-import com.google.common.collect.Streams;
-
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
@@ -128,8 +126,8 @@ public class Statix {
             return Optional.empty();
         }
 
-        return Streams.stream(output.analysisResults().iterator())
-                .filter(r -> r.source().getName().equals(resource.getName())).findFirst();
+        return output.analysisResults().stream()
+            .filter(r -> r.source().getName().equals(resource.getName())).findFirst();
     }
 
     private FileObject findProjectDir(FileObject resource) throws MetaborgException {

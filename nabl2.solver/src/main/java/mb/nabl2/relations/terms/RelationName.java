@@ -7,8 +7,7 @@ import java.util.List;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -47,8 +46,8 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
             return getName().isEmpty() ? OP0 : OP1;
         }
 
-        @Value.Lazy @Override public List<ITerm> getArgs() {
-            return getName().isEmpty() ? ImmutableList.of() : ImmutableList.of((ITerm) B.newString(getName()));
+        @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+            return getName().isEmpty() ? ImList.Immutable.of() : ImList.Immutable.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<NamedRelation> matcher() {
@@ -117,8 +116,8 @@ public abstract class RelationName extends AbstractApplTerm implements IRelation
             return OP;
         }
 
-        @Value.Lazy @Override public List<ITerm> getArgs() {
-            return ImmutableList.of((ITerm) B.newString(getName()));
+        @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+            return ImList.Immutable.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<ExtRelation> matcher() {

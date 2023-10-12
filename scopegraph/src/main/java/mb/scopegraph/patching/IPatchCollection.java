@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public interface IPatchCollection<S> {
 
@@ -46,6 +46,8 @@ public interface IPatchCollection<S> {
      * @return Range of non-identity patches.
      */
     Set<S> patchRange();
+
+    void assertConsistent() throws InvalidPatchCompositionException;
 
     interface Immutable<S> extends IPatchCollection<S> {
 

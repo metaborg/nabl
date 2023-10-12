@@ -2,7 +2,9 @@ package mb.statix.cli;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -15,8 +17,6 @@ import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.Lists;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -109,7 +109,7 @@ public class StatixGenerate {
         });
 
         log.info("Generating random terms.");
-        final List<SearchState> results = Lists.newArrayList(resultStream.limit(COUNT).iterator());
+        final List<SearchState> results = resultStream.limit(COUNT).collect(Collectors.toList());
         progress.done();
         results.forEach(s -> {
             System.out.println(pretty.apply(s));

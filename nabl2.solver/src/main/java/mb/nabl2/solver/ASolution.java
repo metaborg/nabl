@@ -1,14 +1,12 @@
 package mb.nabl2.solver;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.CapsuleUtil;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -39,20 +37,20 @@ public abstract class ASolution implements ISolution {
 
     @Value.Parameter @Override public abstract IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    @Value.Lazy @Override public Multimap<OccurrenceIndex, Occurrence> astDecls() {
-        final ImmutableMultimap.Builder<OccurrenceIndex, Occurrence> astDecls = ImmutableMultimap.builder();
+    @Value.Lazy @Override public SetMultimap.Immutable<OccurrenceIndex, Occurrence> astDecls() {
+        final SetMultimap.Transient<OccurrenceIndex, Occurrence> astDecls = SetMultimap.Transient.of();
         scopeGraph().getAllDecls().forEach(o -> {
-            astDecls.put(o.getIndex(), o);
+            astDecls.__insert(o.getIndex(), o);
         });
-        return astDecls.build();
+        return astDecls.freeze();
     }
 
-    @Value.Lazy @Override public Multimap<OccurrenceIndex, Occurrence> astRefs() {
-        final ImmutableMultimap.Builder<OccurrenceIndex, Occurrence> astRefs = ImmutableMultimap.builder();
+    @Value.Lazy @Override public SetMultimap.Immutable<OccurrenceIndex, Occurrence> astRefs() {
+        final SetMultimap.Transient<OccurrenceIndex, Occurrence> astRefs = SetMultimap.Transient.of();
         scopeGraph().getAllRefs().forEach(o -> {
-            astRefs.put(o.getIndex(), o);
+            astRefs.__insert(o.getIndex(), o);
         });
-        return astRefs.build();
+        return astRefs.freeze();
     }
 
     @Override public IEsopNameResolution<Scope, Label, Occurrence> nameResolution() {
@@ -68,7 +66,7 @@ public abstract class ASolution implements ISolution {
 
     @Value.Parameter @Override public abstract IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties();
 
-    @Value.Parameter @Override public abstract Map<String, IVariantRelation.Immutable<ITerm>> relations();
+    @Value.Parameter @Override public abstract Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relations();
 
     @Value.Parameter @Override public abstract IUnifier.Immutable unifier();
 
@@ -76,12 +74,12 @@ public abstract class ASolution implements ISolution {
 
     @Value.Parameter @Override public abstract IMessages.Immutable messages();
 
-    @Value.Parameter @Override public abstract java.util.Set<IConstraint> constraints();
+    @Value.Parameter @Override public abstract Set.Immutable<IConstraint> constraints();
 
     public static ISolution of(SolverConfig config) {
         return Solution.of(config, Properties.Immutable.of(), EsopScopeGraph.Immutable.of(), Properties.Immutable.of(),
                 VariantRelations.immutableOf(config.getRelations()), Unifiers.Immutable.of(),
-                mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), Collections.emptySet());
+                mb.nabl2.symbolic.SymbolicConstraints.of(), Messages.Immutable.of(), CapsuleUtil.immutableSet());
     }
 
 }

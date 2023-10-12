@@ -1,7 +1,5 @@
 package mb.p_raffrayi.impl;
 
-import static com.google.common.collect.Streams.stream;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,6 +17,8 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.collection.MultiSetMap;
+import org.metaborg.util.collection.SetMultimap;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.future.AggregateFuture;
@@ -31,10 +31,6 @@ import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
@@ -82,7 +78,7 @@ import mb.p_raffrayi.nameresolution.StateMachineQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;
@@ -162,7 +158,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             if(this.state.equals(UnitState.RELEASED) || this.state.equals(UnitState.DONE)
                     && this.stateTransitionTrace.equals(TransitionTrace.RELEASED)) {
                 final D result = previousResult.result().analysis().getExternalRepresentation(datum);
-                return CompletableFuture.completedFuture(context.substituteScopes(result, resultPatches.patches().invert()));
+                return CompletableFuture
+                        .completedFuture(context.substituteScopes(result, resultPatches.patches().invert()));
             }
             final IFuture<D> future = typeChecker.getExternalDatum(datum);
             if(future.isDone()) {
@@ -251,8 +248,8 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     // IUnit2UnitProtocol interface, called by IUnit implementations
     ///////////////////////////////////////////////////////////////////////////
 
-    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+    @Override public IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
         assertConfirmationEnabled();
         stats.incomingConfirmations++;
         final IActorRef<? extends IUnit<S, L, D, ?>> sender = self.sender(TYPE);
@@ -264,7 +261,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 // Cannot immediately confirm on `Release.instance` exception
                 // because subunits might change edges in shared scopes.
                 confirmation.getConfirmation(new ConfirmationContext(sender))
-                        .confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
+                        .confirm(scope, labelWF, dataWF, prevEnvEmpty).whenComplete(result::complete);
             }
         });
         return result;
@@ -403,16 +400,20 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         assertActive();
 
         final IFuture<IUnitResult<S, L, D, Unit>> result = this.<Unit>doAddSubUnit(id, (subself, subcontext) -> {
-            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library);
-        }, rootScopes, true)._2();
+            IUnitResult<S, L, D, ?> previousResult =
+                    this.previousResult != null ? this.previousResult.subUnitResults().get(id) : null;
 
+            return new ScopeGraphLibraryUnit<>(subself, self, subcontext, edgeLabels, library, previousResult);
+        }, rootScopes, false)._2();
+
+        this.addedUnitIds.__insert(id);
         return ifActive(whenContextActive(result));
     }
 
-    @Override public void initScope(S root, Iterable<L> labels, boolean sharing) {
+    @Override public void initScope(S root, Collection<L> labels, boolean sharing) {
         assertActive();
 
-        final List<EdgeOrData<L>> edges = stream(labels).map(EdgeOrData::edge).collect(Collectors.toList());
+        final List<EdgeOrData<L>> edges = labels.stream().map(EdgeOrData::edge).collect(Collectors.toList());
 
         doInitShare(self, root, edges, sharing);
     }
@@ -509,9 +510,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     }
 
     @Override public IFuture<? extends java.util.Set<IResolutionPath<S, L, D>>> query(S scope,
-            StateMachine<L> stateMachine, LabelWf<L> labelWf, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
+            StateMachine<L> stateMachine, DataWf<S, L, D> dataWF, DataLeq<S, L, D> dataEquiv,
             DataWf<S, L, D> dataWfInternal, DataLeq<S, L, D> dataEquivInternal) {
-        return query(scope, new StateMachineQuery<>(stateMachine, labelWf), dataWF, dataEquiv, dataWfInternal,
+        return query(scope, new StateMachineQuery<>(stateMachine), dataWF, dataEquiv, dataWfInternal,
                 dataEquivInternal);
     }
 
@@ -615,6 +616,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             Set.Immutable<IRecordedQuery<S, L, D>> removedQueries, IPatchCollection.Immutable<S> resultPatches,
             IPatchCollection.Immutable<S> globalPatches) {
         assertIncrementalEnabled();
+        resultPatches.assertConsistent();
+        globalPatches.assertConsistent();
+
         if(state == UnitState.UNKNOWN) {
             logger.debug("{} releasing.", this);
             logger.trace("Patches: result: {}; global: {}.", resultPatches, globalPatches);
@@ -640,11 +644,11 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
             final Collection<S> openScopes =
                     this.addedUnitIds.isEmpty() ? Collections.emptySet() : previousResult.rootScopes();
-            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
-                    previousResult.result().sharedScopes(), localPatches, openScopes, ImmutableMultimap.of());
             if(isConfirmationEnabled()) {
                 this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
             }
+            initDiffer(differ, previousResult.scopeGraph(), previousResult.scopes(),
+                    previousResult.result().sharedScopes(), localPatches, openScopes, MultiSetMap.Immutable.of());
 
             logger.debug("Rebuilding scope graph.");
             // @formatter:off
@@ -672,24 +676,34 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             // initialize all scopes that are pending, and close all open labels.
             // these should be set by the now reused scopegraph.
             logger.debug("Close pending tokens.");
-            ownTokens().forEach(wf -> {
-                // @formatter:off
-                wf.visit(IWaitFor.cases(
-                    initScope -> doInitShare(self, initScope.scope(), CapsuleUtil.immutableSet(), false),
-                    closeScope -> {},
-                    closeLabel -> doCloseLabel(self, closeLabel.scope(), closeLabel.label()),
-                    query -> {},
-                    pQuery -> {},
-                    confirm -> {},
-                    match -> {},
-                    result -> {},
-                    typeCheckerState -> {},
-                    differResult -> {},
-                    differState -> {},
-                    envDifferState -> {},
-                    unitAdd -> {}
-                ));
-                // @formatter:on
+            final HashSet<S> initScopes = new HashSet<>();
+            final SetMultimap<S, EdgeOrData<L>> closeEdges = new SetMultimap<>();
+
+            // @formatter:off
+            final IWaitFor.Cases<S, L, D> cases = IWaitFor.cases(
+                initScope -> initScopes.add(initScope.scope()),
+                closeScope -> {},
+                closeLabel -> closeEdges.put(closeLabel.scope(), closeLabel.label()),
+                query -> {},
+                pQuery -> {},
+                confirm -> {},
+                match -> {},
+                result -> {},
+                typeCheckerState -> {},
+                differResult -> {},
+                differState -> {},
+                envDifferState -> {},
+                unitAdd -> {}
+            );
+            // @formatter:on
+            for(IWaitFor<S, L, D> wf : ownTokens()) {
+                wf.visit(cases);
+            }
+            for(S scope : initScopes) {
+                doInitShare(self, scope, Collections.emptySet(), false);
+            }
+            closeEdges.entries().forEach((Map.Entry<S, EdgeOrData<L>> entry) -> {
+                doCloseLabel(self, entry.getKey(), entry.getValue());
             });
 
             pendingExternalDatums.asMap().forEach((d, futures) -> futures.elementSet().forEach(future -> {
@@ -734,10 +748,14 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     final IDifferContext<S, L, D> differContext = new StaticDifferContext<>(previousResult.scopeGraph(),
                             previousResult.scopes(), new DifferDataOps());
 
+                    if(isConfirmationEnabled()) {
+                        this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
+                    }
+
                     if(external) {
                         final StateCapture<S, L, D, T> capture = previousResult.result().localState();
-                        final java.util.Set<S> openScopes = Sets.union(capture.openScopes().elementSet(),
-                                capture.unInitializedScopes().elementSet());
+                        final java.util.Set<S> openScopes = CapsuleUtil.toSet(Sets.union(capture.openScopes().elementSet(),
+                                capture.unInitializedScopes().elementSet()));
 
                         initDiffer(new ScopeGraphDiffer<>(context, differContext, differOps, edgeLabels),
                                 capture.scopeGraph(), capture.scopes(), previousResult.result().sharedScopes(),
@@ -749,9 +767,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 } else {
                     initDiffer(new AddingDiffer<>(context, differOps, edgeLabels), Collections.emptyList(),
                             Collections.emptyList());
-                }
-                if(isConfirmationEnabled()) {
-                    this.envDiffer = new IndexedEnvDiffer<>(new EnvDiffer<>(envDifferContext, differOps()));
                 }
             }
             pendingExternalDatums.asMap().forEach((d, futures) -> {
@@ -818,13 +833,16 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
     private final IEnvDifferContext<S, L, D> envDifferContext = new IEnvDifferContext<S, L, D>() {
 
         @Override public IFuture<ScopeDiff<S, L, D>> scopeDiff(S previousScope, L label) {
+            final IFuture<ScopeDiff<S, L, D>> result = differ.scopeDiff(previousScope, label);
+            if(result.isDone()) {
+                return result;
+            }
             final ICompletableFuture<ScopeDiff<S, L, D>> future = new CompletableFuture<>();
             final DifferState<S, L, D> state = DifferState.ofDiff(self, previousScope, label, future);
             waitFor(state, self);
-            differ.scopeDiff(previousScope, label).whenComplete(future::complete);
+            result.whenComplete(future::complete);
             future.whenComplete((r, ex) -> {
                 granted(state, self);
-                resume(); // FIXME necessary?
             });
             return future;
         }
@@ -861,10 +879,9 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                     new NameResolutionQuery<>(labelWf, labelOrder, edgeLabels), dataWf, dataEquiv);
         }
 
-        @Override public IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(ScopePath<S, L> path,
-                LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
+        @Override public IFuture<Optional<ConfirmResult<S, L, D>>> externalConfirm(S scope, LabelWf<L> labelWF,
+                DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
             logger.debug("{} try external confirm.", this);
-            final S scope = path.getTarget();
             return getOwner(scope).thenCompose(owner -> {
                 if(owner.equals(self)) {
                     logger.debug("{} local confirm.", this);
@@ -874,10 +891,10 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
                 final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
                 final Confirm<S, L, D> confirm = Confirm.of(self, scope, labelWF, dataWF, result);
                 waitFor(confirm, owner);
-                self.async(owner)._confirm(path, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
+                self.async(owner)._confirm(scope, labelWF, dataWF, prevEnvEmpty).whenComplete((v, ex) -> {
                     logger.trace("{} rec external confirm: {}.", this, v);
                     granted(confirm, owner);
-                    resume();
+                    resume(); // necessary!
                     if(ex == Release.instance) {
                         logger.debug("{} got release, confirming.", this);
                         result.complete(ConfirmResult.confirm());
@@ -892,19 +909,21 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             });
         }
 
-        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(ScopePath<S, L> path, LabelWf<L> labelWf) {
+        @Override public IFuture<IEnvDiff<S, L, D>> envDiff(S scope, LabelWf<L> labelWf) {
             assertConfirmationEnabled();
-            logger.debug("{} local env diff: {}/{}.", this, path.getTarget(), labelWf);
+            logger.debug("{} local env diff: {}/{}.", this, scope, labelWf);
             return whenDifferActivated.thenCompose(__ -> {
+                final IFuture<IEnvDiff<S, L, D>> result = envDiffer.diff(scope, labelWf);
+                if(result.isDone()) {
+                    return result;
+                }
                 final ICompletableFuture<IEnvDiff<S, L, D>> future = new CompletableFuture<>();
-                final EnvDifferState<S, L, D> state =
-                        EnvDifferState.of(sender, path.getTarget(), path.scopeSet(), labelWf, future);
+                final EnvDifferState<S, L, D> state = EnvDifferState.of(sender, scope, labelWf, future);
                 waitFor(state, self);
-                envDiffer.diff(path.getTarget(), path.scopeSet(), labelWf).whenComplete(future::complete);
+                result.whenComplete(future::complete);
                 future.whenComplete((r, ex) -> {
-                    logger.debug("{} granted local env diff: {}/{}: {}.", this, path.getTarget(), labelWf, r);
+                    logger.debug("{} granted local env diff: {}/{}: {}.", this, scope, labelWf, r);
                     granted(state, self);
-                    resume(); // FIXME needed?
                 });
                 return future;
             });
@@ -922,7 +941,6 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
 
                 result.whenComplete((__, ex) -> {
                     granted(differState, owner);
-                    resume();
                 });
 
                 return result;
@@ -958,28 +976,34 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
         this.edgeLabels.forEach(lbl -> _edgeLabels.__insert(EdgeOrData.edge(lbl)));
         final Set.Immutable<EdgeOrData<L>> edgeLabels = _edgeLabels.freeze();
 
+        final MultiSet.Transient<S> unInitializedScopes = MultiSet.Transient.of();
+        final MultiSet.Transient<S> openScopes = MultiSet.Transient.of();
+        final MultiSetMap.Transient<S, EdgeOrData<L>> openEdges = MultiSetMap.Transient.of();
+
         for(S scope : scopes) {
             final int initCount = countWaitingFor(InitScope.of(self, scope), self);
             for(int i = 0; i < initCount; i++) {
-                builder.addUnInitializedScopes(scope);
+                unInitializedScopes.add(scope);
             }
 
             final int closeCount = countWaitingFor(CloseScope.of(self, scope), self);
             for(int i = 0; i < closeCount; i++) {
-                builder.addOpenScopes(scope);
+                openScopes.add(scope);
             }
 
             for(EdgeOrData<L> label : edgeLabels) {
                 final int closeLabelCount = countWaitingFor(CloseLabel.of(self, scope, label), self);
                 for(int i = 0; i < closeLabelCount; i++) {
-                    builder.putOpenEdges(scope, label);
+                    openEdges.put(scope, label);
                 }
             }
         }
 
-        final MultiSet.Transient<String> counters = MultiSet.Transient.of();
-        counters.addAll(this.scopeNameCounters);
-        builder.scopeNameCounters(counters.freeze());
+        builder.unInitializedScopes(unInitializedScopes.freeze());
+        builder.openScopes(openScopes.freeze());
+        builder.openEdges(openEdges.freeze());
+
+        builder.scopeNameCounters(MultiSet.Immutable.copyOf(this.scopeNameCounters));
 
         final Set.Transient<String> stableIdentities = CapsuleUtil.transientSet();
         stableIdentities.__insertAll(usedStableScopes);
@@ -1034,7 +1058,7 @@ class TypeCheckerUnit<S, L, D, R extends IOutput<S, L, D>, T extends IState<S, L
             final boolean ownedScope = context.scopeId(currentScope).equals(self.id());
             // @formatter:off
             final java.util.Set<EdgeOrData<L>> edges = edgeLabels.stream()
-                .filter(label -> !Iterables.isEmpty(snapshot.scopeGraph().getEdges(previousScope, label)))
+                .filter(label -> !snapshot.scopeGraph().getEdges(previousScope, label).isEmpty())
                 .map(EdgeOrData::edge)
                 .collect(Collectors.toCollection(HashSet::new));
             // @formatter:on

@@ -2,7 +2,7 @@ package mb.nabl2.solver.exceptions;
 
 import java.util.Arrays;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.constraints.messages.IMessageInfo;
 
@@ -13,7 +13,7 @@ public class UnsatisfiableException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    private final ImmutableList<IMessageInfo> messages;
+    private final ImList.Immutable<IMessageInfo> messages;
 
     public UnsatisfiableException(IMessageInfo... messages) {
         this(null, Arrays.asList(messages));
@@ -29,11 +29,11 @@ public class UnsatisfiableException extends Exception {
 
     public UnsatisfiableException(Throwable cause, Iterable<IMessageInfo> messages) {
         super("", cause);
-        this.messages = ImmutableList.copyOf(messages);
+        this.messages = ImList.Immutable.copyOf(messages);
         assert !this.messages.isEmpty();
     }
 
-    public ImmutableList<IMessageInfo> getMessages() {
+    public ImList.Immutable<IMessageInfo> getMessages() {
         return messages;
     }
 

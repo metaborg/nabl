@@ -4,14 +4,13 @@ import java.util.Set;
 
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 
 public interface IRecordedQuery<S, L, D> {
 
     // -- Properties --
 
-    ScopePath<S, L> scopePath();
+    S source();
 
     Set<S> datumScopes();
 

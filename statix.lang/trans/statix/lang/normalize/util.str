@@ -194,7 +194,7 @@ rules
   + ?CFalse(<id>)
   + ?CEqual(_, _, <id>)
   + ?CInequal(_, _, <id>)
-  + ?CResolveQuery(_, _, _, _, _, <id>)
+  + ?CResolveQuery(_, _, _, _, _, _, <id>)
   + !NoMessage()
 
   is-scope = ?Rule(_, _, _)
@@ -267,7 +267,7 @@ rules
   fail-C = !CFalse(Message(Error(), Str("Statix spec had errors"), NoOrigin()))
 
   empty-LabelRE = !Empty()
-  
+
   empty-LabelOrd = ![]
 
 rules

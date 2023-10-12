@@ -28,4 +28,6 @@ public interface IMessage {
 
     IMessage apply(IRenaming subst);
 
+    IMessage withKind(MessageKind kind);
+
 }

@@ -129,7 +129,8 @@ rules
                              ?(resource, ast)
                            ; ( UnitResult(ast', a', error*, warning*, note*) :=
                                    <analyze> AnalyzeUnit(resource, ast, cancel, progress)
-                             < !(resource, Full(ast', CompatUnitAnalysis(a', a'), error*, warning*, note*))
+                             < ( where(!error*; debug(!"[INFO] - constraint-analysis-compat @ Sin | "))
+                               ; !(resource, Full(ast', CompatUnitAnalysis(a', a'), error*, warning*, note*)))
                              + !(resource, Failed())
                              )
                            })> ast*
@@ -169,6 +170,7 @@ rules
       end
     ; FinalResult(final-analysis, error*, warning*, note*) :=
           <analyze> AnalyzeFinal(project-resource, project-initial-analysis, unit-initial-analysis*, cancel, progress)
+    ; <debug(!"[INFO] - constraint-analysis-compat @ Mul | ")> error*
     ; project-analysis := CompatProjectAnalysis(project-initial-analysis, final-analysis)
     ; unit-result-changed* := <map((id, Full(id, CompatUnitAnalysis(id, !final-analysis), id, id, id) + ?Failed()))> unit-initial-result-changed*
     ; unit-result-cached* := <map((id, Update(CompatUnitAnalysis(id, !final-analysis), id, id, id)))> unit-initial-result-cached*

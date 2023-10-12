@@ -338,3 +338,100 @@ test label order is respected [[
       typeOfDecl : string -> int
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test project all is respected [[
+  resolve {s0 s1 s2 s3}
+    new s0 s1 s2 s3,
+    s0 -P-> s1,
+    s0 -P-> s2,
+    s1 -P-> s3,
+    s2 -P-> s3,
+    query r
+          filter P* and { "x" }
+          project *
+          in s0 |-> _ : list((path * (string * int)))
+  signature
+    name-resolution
+      labels P
+  relations
+      r : string -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test project target and data is respected [[
+  resolve {s0 s1 s2 s3}
+    new s0 s1 s2 s3,
+    s0 -P-> s1,
+    s0 -P-> s2,
+    s1 -P-> s3,
+    s2 -P-> s3,
+    query r
+          filter P* and { "x" }
+          project dst, $
+          in s0 |-> _ : list((scope * (string * int)))
+  signature
+    name-resolution
+      labels P
+  relations
+      r : string -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test project target and data behaves as set [[
+  resolve {s0 s1 s2 s3}
+    new s0 s1 s2 s3,
+    s0 -P-> s1,
+    s0 -P-> s2,
+    s1 -P-> s3,
+    s2 -P-> s3,
+    !r[1] in s3,
+    query r
+          filter P*
+          project dst, $
+          in s0 |-> [(_, 1)]
+  signature
+    name-resolution
+      labels P
+  relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test project data is respected [[
+  resolve {s0 s1 s2 s3}
+    new s0 s1 s2 s3,
+    s0 -P-> s1,
+    s0 -P-> s2,
+    s1 -P-> s3,
+    s2 -P-> s3,
+    query r
+          filter P* and { "x" }
+          project $
+          in s0 |-> _ : list((string * int))
+  signature
+    name-resolution
+      labels P
+  relations
+      r : string -> int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()
+
+test project data behaves as set [[
+  resolve {s0 s1 s2 s3}
+    new s0 s1 s2 s3,
+    s0 -P-> s1,
+    s0 -P-> s2,
+    s1 -P-> s3,
+    s2 -P-> s3,
+    !r[1] in s3,
+    query r
+          filter P*
+          project $
+          in s0 |-> [1]
+  signature
+    name-resolution
+      labels P
+  relations
+      r : int
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

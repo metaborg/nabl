@@ -16,7 +16,7 @@ import io.usethesource.capsule.Set;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.p_raffrayi.impl.diff.ScopeDiff;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.diff.Edge;
 
 public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
@@ -31,11 +31,15 @@ public class EnvDiffer<S, L, D> implements IEnvDiffer<S, L, D> {
         this.context = context;
     }
 
-    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {
+    @Override public IFuture<IEnvDiff<S, L, D>> diff(S scope, LabelWf<L> labelWf) {
+        return diff(scope, CapsuleUtil.immutableSet(scope), labelWf);
+    }
+
+    private IFuture<IEnvDiff<S, L, D>> diff(S scope, Set.Immutable<S> seenScopes, LabelWf<L> labelWf) {
         logger.debug("Computing env diff for {} ~ {}.", scope, labelWf);
         if(!differOps.ownScope(scope)) {
             logger.debug("{} external", scope);
-            return CompletableFuture.completedFuture(EnvDiff.empty());
+            return CompletableFuture.completedFuture(EnvDiffs.empty());
         }
 
         return context.match(scope).thenCompose(match_opt -> {

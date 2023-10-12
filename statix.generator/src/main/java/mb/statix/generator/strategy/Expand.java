@@ -1,9 +1,9 @@
 package mb.statix.generator.strategy;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -11,15 +11,11 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import org.metaborg.util.collection.Cache;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
@@ -62,7 +58,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         this.rules = rules;
     }
 
-    final Cache<String, java.util.Map<Rule, Double>> cache = CacheBuilder.newBuilder().maximumSize(1000).build();
+    final Cache<String, java.util.Map<Rule, Double>> cache = new Cache<>(1000);
 
     @Override protected SearchNodes<SearchState> doApply(SearchContext ctx,
             SearchNode<FocusedSearchState<CUser>> node) {
@@ -74,7 +70,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
                 predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE);
 
-        final List<Pair<SearchNode<SearchState>, Double>> newNodes = Lists.newArrayList();
+        final List<Pair<SearchNode<SearchState>, Double>> newNodes = new ArrayList<>();
         results.forEach(result -> {
             final Rule rule = result._1();
             final Optional<SearchState> output = updateSearchState(ctx, predicate, result._2(), input);
@@ -117,24 +113,20 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
      * Return a map with ordered keys mapping rules to their weights.
      */
     private java.util.Map<Rule, Double> getWeightedRules(SearchContext ctx, String name) {
-        try {
-            return cache.get(name, () -> {
-                RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
-                final ImmutableSet<Rule> rs = rules.getOrderIndependentRules(name);
-                final java.util.Map<String, Long> rcs =
-                        rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
-                // ImmutableMap iterates over keys in insertion-order
-                final ImmutableMap.Builder<Rule, Double> ruleWeights = ImmutableMap.builder();
-                rs.forEach(r -> {
-                    long count = rcs.getOrDefault(r.label(), 1L);
-                    double weight = ruleWeight.apply(r, count);
-                    ruleWeights.put(r, weight);
-                });
-                return ruleWeights.build();
+        return cache.computeIfAbsent(name, k -> {
+            RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
+            final Set.Immutable<Rule> rs = rules.getOrderIndependentRules(name);
+            final java.util.Map<String, Long> rcs =
+                    rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
+            // ImmutableMap iterates over keys in insertion-order
+            final Map.Transient<Rule, Double> ruleWeights = CapsuleUtil.transientMap();
+            rs.forEach(r -> {
+                long count = rcs.getOrDefault(r.label(), 1L);
+                double weight = ruleWeight.apply(r, count);
+                ruleWeights.__put(r, weight);
             });
-        } catch(ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+            return ruleWeights.freeze();
+        });
     }
 
     private Optional<SearchState> updateSearchState(SearchContext ctx, IConstraint predicate, ApplyResult result,
@@ -154,7 +146,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         java.util.Set<CriticalEdge> removedEdges = completeness.remove(predicate, ctx.spec(), applyUnifier);
 
         // update delays
-        final Map.Transient<IConstraint, Delay> delays = Map.Transient.of();
+        final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
         input.delays().forEach((c, d) -> {
             if(!Sets.intersection(d.criticalEdges(), removedEdges).isEmpty()) {
                 constraints.__insert(c);

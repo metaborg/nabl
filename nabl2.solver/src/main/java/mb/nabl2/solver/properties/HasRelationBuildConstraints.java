@@ -1,7 +1,7 @@
 package mb.nabl2.solver.properties;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.IConstraint;
@@ -11,10 +11,10 @@ import mb.scopegraph.relations.IRelationName;
 
 public class HasRelationBuildConstraints {
 
-    private final Multiset<String> relations;
+    private final MultiSet.Transient<String> relations;
 
     public HasRelationBuildConstraints() {
-        this.relations = HashMultiset.create();
+        this.relations = MultiSet.Transient.of();
     }
 
     public void add(IConstraint constraint) {
@@ -68,33 +68,33 @@ public class HasRelationBuildConstraints {
     public Set.Immutable<String> remove(IConstraint constraint) {
         // @formatter:off
         return constraint.match(IConstraint.Cases.of(
-            c -> Set.Immutable.of(),
+            c -> CapsuleUtil.immutableSet(),
             c -> c.match(IBaseConstraint.Cases.of(
-                t -> Set.Immutable.of(),
-                f -> Set.Immutable.of(),
+                t -> CapsuleUtil.immutableSet(),
+                f -> CapsuleUtil.immutableSet(),
                 cc -> Set.Immutable.union(remove(cc.getLeft()), remove(cc.getRight())),
                 e -> remove(e.getConstraint()),
-                n -> Set.Immutable.of()
+                n -> CapsuleUtil.immutableSet()
             )),
-            c -> Set.Immutable.of(),
-            c -> Set.Immutable.of(),
-            c -> Set.Immutable.of(),
+            c -> CapsuleUtil.immutableSet(),
+            c -> CapsuleUtil.immutableSet(),
+            c -> CapsuleUtil.immutableSet(),
             c -> c.match(IRelationConstraint.Cases.of(
                 br -> br.getRelation().match(IRelationName.Cases.of(
                     name -> {
-                        if(relations.remove(name) && relations.count(name) == 0) {
-                            return Set.Immutable.of(name);
+                        if(relations.remove(name) > 0 && relations.count(name) == 0) {
+                            return CapsuleUtil.immutableSet(name);
                         } else {
-                            return Set.Immutable.of();
+                            return CapsuleUtil.immutableSet();
                         }
                     },
-                    extName -> Set.Immutable.of()
+                    extName -> CapsuleUtil.immutableSet()
                 )),
-                cr -> Set.Immutable.of(),
-                ev -> Set.Immutable.of()
+                cr -> CapsuleUtil.immutableSet(),
+                ev -> CapsuleUtil.immutableSet()
             )),
-            c -> Set.Immutable.of(),
-            c -> Set.Immutable.of()
+            c -> CapsuleUtil.immutableSet(),
+            c -> CapsuleUtil.immutableSet()
         ));
         // @formatter:on
     }

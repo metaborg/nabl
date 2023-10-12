@@ -1,13 +1,14 @@
 package mb.nabl2.terms.matching;
 
-import static mb.nabl2.terms.Terms.TUPLE_OP;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.metaborg.util.Ref;
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Function2;
 import org.metaborg.util.functions.Function3;
@@ -17,9 +18,6 @@ import org.metaborg.util.functions.Function6;
 import org.metaborg.util.functions.Function7;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IApplTerm;
@@ -35,6 +33,8 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.unification.Unifiers;
 import mb.nabl2.terms.unification.u.IUnifier;
+
+import static mb.nabl2.terms.Terms.TUPLE_OP;
 
 public class TermMatch {
 
@@ -300,19 +300,19 @@ public class TermMatch {
             return listElems(M.term());
         }
 
-        public <T> IMatcher<List<T>> listElems(IMatcher<T> m) {
+        public <T> IMatcher<ImList.Immutable<T>> listElems(IMatcher<T> m) {
             return listElems(m, (t, ts) -> ts);
         }
 
         public <T, R> IMatcher<R> listElems(IMatcher<T> m,
-                Function2<? super IListTerm, ? super ImmutableList<T>, R> f) {
+                Function2<? super IListTerm, ? super ImList.Immutable<T>, R> f) {
             return (term, unifier) -> {
                 return unifier.findTerm(term).match(Terms.<Optional<R>>cases(this::empty, list -> {
-                    List<Optional<T>> os = Lists.newArrayList();
+                    List<Optional<T>> os = new ArrayList<>();
                     for(ITerm t : ListTerms.iterable(list)) {
                         os.add(m.match(t, unifier));
                     }
-                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImmutableList.copyOf(ts)));
+                    return Optionals.sequence(os).map(ts -> (R) f.apply(list, ImList.Immutable.copyOf(ts)));
                 }, this::empty, this::empty, this::empty, this::empty));
             };
         }
@@ -476,7 +476,7 @@ public class TermMatch {
 
         public <K, V> IMatcher<Map.Immutable<K, V>> map(IMatcher<K> keyMatcher, IMatcher<V> valueMatcher) {
             return listElems(tuple2(keyMatcher, valueMatcher, (e, k, v) -> Tuple2.of(k, v)), (t, es) -> {
-                Map.Transient<K, V> map = Map.Transient.of();
+                Map.Transient<K, V> map = CapsuleUtil.transientMap();
                 for(Tuple2<K, V> e : es) {
                     final K key = e._1();
                     if(map.containsKey(key)) {

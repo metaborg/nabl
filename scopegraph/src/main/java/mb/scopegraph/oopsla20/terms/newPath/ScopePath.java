@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
 
 import io.usethesource.capsule.Set;
@@ -26,7 +27,7 @@ public class ScopePath<S, L> implements IScopePath<S, L>, Serializable {
     // FIXME add hashCode?
 
     public ScopePath(S source) {
-        this(source, null, 0, Set.Immutable.of(source));
+        this(source, null, 0, CapsuleUtil.immutableSet(source));
     }
 
     ScopePath(S source, Path<S, L> path, int size, Set.Immutable<S> scopeSet) {

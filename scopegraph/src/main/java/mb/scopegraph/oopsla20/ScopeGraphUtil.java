@@ -4,13 +4,11 @@ import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
 
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.metaborg.util.collection.Sets;
 
 public final class ScopeGraphUtil {
 
@@ -28,12 +26,10 @@ public final class ScopeGraphUtil {
                 )
             )
         );
-        // @formatter:off
-
-        final SetView<S> scopes = Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet());
+        // @formatter:on
 
         final StringBuilder sb = new StringBuilder();
-        for(S source : scopes) {
+        for(S source : Sets.union(groupedScopes.keySet(), scopeGraph.getData().keySet())) {
             sb.append(source);
             if(scopeGraph.getData(source).isPresent()) {
                 sb.append(" : ");

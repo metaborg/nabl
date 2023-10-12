@@ -1,23 +1,20 @@
 package mb.nabl2.terms.unification;
 
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-
+import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 
 public class OccursException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    private final Set<ITermVar> vars;
+    private final Set.Immutable<ITermVar> vars;
 
-    public OccursException(Iterable<ITermVar> vars) {
+    public OccursException(Set.Immutable<ITermVar> vars) {
         super("occurs", null, false, false);
-        this.vars = ImmutableSet.copyOf(vars);
+        this.vars = vars;
     }
 
-    public Set<ITermVar> vars() {
+    public Set.Immutable<ITermVar> vars() {
         return vars;
     }
 

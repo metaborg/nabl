@@ -34,8 +34,7 @@ public interface IUnit2UnitProtocol<S, L, D> {
     IFuture<IQueryAnswer<S, L, D>> _queryPrevious(ScopePath<S, L> path, IQuery<S, L, D> query, DataWf<S, L, D> dataWF,
             DataLeq<S, L, D> dataEquiv);
 
-    IFuture<ConfirmResult<S, L, D>> _confirm(ScopePath<S, L> path, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
-            boolean prevEnvEmpty);
+    IFuture<ConfirmResult<S, L, D>> _confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF, boolean prevEnvEmpty);
 
     IFuture<Optional<S>> _match(S previousScope);
 

@@ -1,5 +1,6 @@
 package statix.lang.strategies;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.terms.IStrategoTerm;
@@ -15,10 +17,6 @@ import org.spoofax.terms.util.TermUtils;
 import org.strategoxt.lang.Context;
 import org.strategoxt.lang.Strategy;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Streams;
 
 import io.usethesource.capsule.Set;
 
@@ -37,8 +35,8 @@ public class set_fixed_point_0_1 extends Strategy {
         if(!TermUtils.isList(current)) {
             throw new java.lang.IllegalArgumentException("Expected list of equations, got " + current);
         }
-        final HashMap<IStrategoTerm, Eq> eqs = Maps.newHashMap();
-        final Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values = Maps.newHashMap();
+        final HashMap<IStrategoTerm, Eq> eqs = new HashMap<>();
+        final Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values = new HashMap<>();
         for(IStrategoTerm varEq : current.getAllSubterms()) {
             if(!TermUtils.isTuple(varEq, 2)) {
                 throw new java.lang.IllegalArgumentException(
@@ -60,7 +58,7 @@ public class set_fixed_point_0_1 extends Strategy {
             }
         }
 
-        final List<IStrategoTerm> resultTerms = Lists.newArrayList();
+        final List<IStrategoTerm> resultTerms = new ArrayList<>();
         values.forEach((var, set) -> {
             resultTerms.add(TF.makeTuple(var, TF.makeList(set)));
         });
@@ -79,14 +77,14 @@ public class set_fixed_point_0_1 extends Strategy {
             if(!TermUtils.isList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
-            return new Union(Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
+            return new Union(components.getSubterms().stream().map(t -> parse(t)).collect(ImList.toImmutableList()));
         } else if(TermUtils.isAppl(term, "Intersection", 1)) {
             final IStrategoTerm components = term.getSubterm(0);
             if(!TermUtils.isList(components) || components.getSubtermCount() == 0) {
                 throw new IllegalArgumentException("Expected equations, got " + components);
             }
             return new Intersection(
-                    Streams.stream(components).map(t -> parse(t)).collect(ImmutableList.toImmutableList()));
+                    components.getSubterms().stream().map(t -> parse(t)).collect(ImList.toImmutableList()));
         } else {
             return new Var(term);
         }
@@ -111,7 +109,7 @@ public class set_fixed_point_0_1 extends Strategy {
         private final List<Eq> components;
 
         public Union(Iterable<Eq> components) {
-            this.components = ImmutableList.copyOf(components);
+            this.components = ImList.Immutable.copyOf(components);
         }
 
         @Override public Set.Immutable<IStrategoTerm> apply(Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values) {
@@ -130,7 +128,7 @@ public class set_fixed_point_0_1 extends Strategy {
         private final List<Eq> components;
 
         public Intersection(Iterable<Eq> components) {
-            this.components = ImmutableList.copyOf(components);
+            this.components = ImList.Immutable.copyOf(components);
         }
 
         @Override public Set.Immutable<IStrategoTerm> apply(Map<IStrategoTerm, Set.Immutable<IStrategoTerm>> values) {

@@ -19,12 +19,12 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
-class IntPattern extends Pattern {
+public final class IntPattern extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final int value;
 
-    public IntPattern(int value, IAttachments attachments) {
+    IntPattern(int value, IAttachments attachments) {
         super(attachments);
         this.value = value;
     }

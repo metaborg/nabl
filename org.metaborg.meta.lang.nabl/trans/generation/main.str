@@ -70,3 +70,9 @@ rules // modules
     ImportWildcard(m) -> ImportWildcard($[signatures/[m']])
     where
       m' := <left-match; implode-string> (<explode-string> m, <explode-string> "syntax/")
+
+strategies
+
+  // HACK: Need to locally redefine the congruence for Assign/2 which is defined in both libstrc and lib-java-front
+
+  internal Assign(x, y) = ?Assign(a, b){a*}; !Assign(<x> a, <y> b){a*}

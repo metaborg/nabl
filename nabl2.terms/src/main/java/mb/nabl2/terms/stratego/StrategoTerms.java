@@ -8,7 +8,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
-import mb.nabl2.terms.matching.TermMatch;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -21,9 +21,6 @@ import org.spoofax.interpreter.terms.IStrategoTuple;
 import org.spoofax.interpreter.terms.ITermFactory;
 import org.spoofax.terms.StrategoPlaceholder;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -31,6 +28,8 @@ import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
 import mb.nabl2.terms.matching.VarProvider;
+
+import static mb.nabl2.terms.build.TermBuild.B;
 
 public class StrategoTerms {
 
@@ -79,8 +78,8 @@ public class StrategoTerms {
     }
 
     private IStrategoTerm toStrategoList(IListTerm list, boolean varsToPlhdrs) {
-        final LinkedList<IStrategoTerm> terms = Lists.newLinkedList();
-        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
+        final LinkedList<IStrategoTerm> terms = new LinkedList<>();
+        final LinkedList<IAttachments> attachments = new LinkedList<>();
         while(list != null) {
             attachments.push(list.getAttachments());
             // @formatter:off
@@ -150,20 +149,20 @@ public class StrategoTerms {
                     return B.newVar(resource, name, attachments);
                 } else {
                     final IStrategoTerm[] subTerms = appl.getAllSubterms();
-                    final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                    final ImList.Mutable<ITerm> args = new ImList.Mutable<>(subTerms.length);
                     for(IStrategoTerm subTerm : subTerms) {
                         args.add(fromStratego(subTerm, varProvider));
                     }
-                    return B.newAppl(appl.getConstructor().getName(), args.build(), attachments);
+                    return B.newAppl(appl.getConstructor().getName(), args.freeze(), attachments);
                 }
             },
             tuple -> {
                 final IStrategoTerm[] subTerms = tuple.getAllSubterms();
-                final ImmutableList.Builder<ITerm> args = ImmutableList.builderWithExpectedSize(subTerms.length);
+                final ImList.Mutable<ITerm> args = new ImList.Mutable<>(subTerms.length);
                 for(IStrategoTerm subTerm : subTerms) {
                     args.add(fromStratego(subTerm, varProvider));
                 }
-                return B.newTuple(args.build(), attachments);
+                return B.newTuple(args.freeze(), attachments);
             },
             list -> fromStrategoList(list, varProvider),
             integer -> B.newInt(integer.intValue(), attachments),
@@ -183,8 +182,8 @@ public class StrategoTerms {
     }
 
     private IListTerm fromStrategoList(IStrategoList list, @Nullable VarProvider varProvider) {
-        final LinkedList<ITerm> terms = Lists.newLinkedList();
-        final LinkedList<IAttachments> attachments = Lists.newLinkedList();
+        final LinkedList<ITerm> terms = new LinkedList<>();
+        final LinkedList<IAttachments> attachments = new LinkedList<>();
         while(!list.isEmpty()) {
             terms.add(fromStratego(list.head(), varProvider));
             attachments.push(getAttachments(list));
@@ -207,7 +206,7 @@ public class StrategoTerms {
 
         final IStrategoList annos = term.getAnnotations();
         if(!annos.isEmpty()) {
-            b.put(StrategoAnnotations.class, StrategoAnnotations.of(annos));
+            b.put(StrategoAnnotations.class, StrategoAnnotations.of(ImList.Immutable.copyOf(annos)));
         }
 
         return b.build();

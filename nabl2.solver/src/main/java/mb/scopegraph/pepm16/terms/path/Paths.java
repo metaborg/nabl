@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.google.common.collect.Lists;
-
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.scopegraph.pepm16.ILabel;
@@ -89,7 +87,7 @@ public final class Paths {
     }
 
     private static List<ITerm> toTerms(IScopePath<Scope, Label, Occurrence> path) {
-        List<ITerm> steps = Lists.newArrayList();
+        List<ITerm> steps = new ArrayList<>();
         for(IStep<Scope, Label, Occurrence> step : path) {
             steps.add(step.match(IStep.ICases.of(
             // @formatter:off

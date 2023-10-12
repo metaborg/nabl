@@ -19,21 +19,21 @@ import mb.nabl2.terms.substitution.IRenaming;
 import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.unification.u.IUnifier;
 
-class PatternVar extends Pattern {
+public final class PatternVar extends Pattern {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable ITermVar var;
 
-    public PatternVar() {
+    PatternVar() {
         super(Attachments.empty());
         this.var = null;
     }
 
-    public PatternVar(String name) {
+    PatternVar(String name) {
         this(TermBuild.B.newVar("", name));
     }
 
-    public PatternVar(ITermVar var) {
+    PatternVar(ITermVar var) {
         super(var != null ? var.getAttachments() : Attachments.empty());
         if(var == null) {
             throw new IllegalArgumentException();

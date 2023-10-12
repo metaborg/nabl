@@ -1,6 +1,6 @@
 package mb.statix.generator;
 
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
@@ -19,7 +19,7 @@ public class RandomTermGenerator {
     public RandomTermGenerator(Spec spec, IConstraint constraint, SearchStrategy<SearchState, SearchState> strategy,
             SearchLogger<SearchState, SearchState> log) {
         this.spec = spec;
-        this.initState = SearchState.of(spec, State.of(), ImmutableList.of(constraint));
+        this.initState = SearchState.of(spec, State.of(), ImList.Immutable.of(constraint));
         this.strategy = strategy;
         this.log = log;
     }

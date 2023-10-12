@@ -85,3 +85,12 @@ test match right-specific rule with as-patterns [[
     f(x@[_], _) :- false.
 ]] analysis succeeds
    run evaluate-test to SUCCEEDS()
+
+test prefer constant over non-linear variable [[
+resolve f(8, 8)
+  rules
+    f: int * int
+    f(x, x) :- false.
+    f(_, 8) :- true.
+]] analysis succeeds
+   run evaluate-test to SUCCEEDS()

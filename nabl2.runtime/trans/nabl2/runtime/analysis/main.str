@@ -6,7 +6,7 @@ imports
 imports
 
   nabl2/api
- 
+
   signatures/nabl2/shared/common/-
   signatures/nabl2/shared/constraints/-
   nabl2/shared/-
@@ -63,7 +63,7 @@ rules // single file analysis
            (custom-error*, custom-warning*, custom-note*, a') := ([], [], [], a)
          end;
          nabl2--collection-info-msg(|$[Finished analyzing [resource]]);
-         error*   := [constraint-error*, custom-error*];
+         error*   := <debug(!"[INFO] - nabl2--analyze-compat_1_0 @ Unit | ")> [constraint-error*, custom-error*];
          warning* := [constraint-warning*, custom-warning*];
          note*    := [constraint-note*, custom-note*]
 
@@ -114,7 +114,7 @@ rules // multi file analysis
                ([], [], [], final-analysis)
          end;
          nabl2--collection-info-msg(|$[Finished analyzing [resource]]);
-         error*   := [constraint-error*, custom-error*];
+         error*   := <debug(!"[INFO] - nabl2--analyze-compat_1_0 @ Fin  | ")> [constraint-error*, custom-error*];
          warning* := [constraint-warning*, custom-warning*];
          note*    := [constraint-note*, custom-note*]
 

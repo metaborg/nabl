@@ -24,7 +24,6 @@ import mb.p_raffrayi.impl.envdiff.AddedEdge;
 import mb.p_raffrayi.impl.envdiff.RemovedEdge;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.scopegraph.ecoop21.LabelWf;
-import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.scopegraph.patching.PatchCollection;
 
@@ -44,7 +43,7 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
     @Override public IFuture<ConfirmResult<S, L, D>> confirm(IRecordedQuery<S, L, D> query) {
         logger.debug("Confirming {}.", query);
         CompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
-        confirm(query.scopePath(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
+        confirm(query.source(), query.labelWf(), query.dataWf(), query.empty()).whenComplete((r, ex) -> {
             if(ex != null) {
                 result.completeExceptionally(ex);
                 return;
@@ -74,29 +73,30 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         return result;
     }
 
-    @Override public IFuture<ConfirmResult<S, L, D>> confirm(ScopePath<S, L> path, LabelWf<L> labelWF,
-            DataWf<S, L, D> dataWF, boolean prevEnvEmpty) {
-        return context.externalConfirm(path, labelWF, dataWF, prevEnvEmpty).thenCompose(conf -> {
+    @Override public IFuture<ConfirmResult<S, L, D>> confirm(S scope, LabelWf<L> labelWF, DataWf<S, L, D> dataWF,
+            boolean prevEnvEmpty) {
+        return context.externalConfirm(scope, labelWF, dataWF, prevEnvEmpty).thenCompose(conf -> {
             return conf.map(CompletableFuture::completedFuture)
-                    .orElseGet(() -> localConfirm(path, labelWF, dataWF, prevEnvEmpty));
+                    .orElseGet(() -> localConfirm(scope, labelWF, dataWF, prevEnvEmpty));
         });
     }
 
-    private IFuture<ConfirmResult<S, L, D>> localConfirm(ScopePath<S, L> path, LabelWf<L> labelWf,
-            DataWf<S, L, D> dataWf, boolean prevEnvEmpty) {
+    private IFuture<ConfirmResult<S, L, D>> localConfirm(S scope, LabelWf<L> labelWf, DataWf<S, L, D> dataWf,
+            boolean prevEnvEmpty) {
         final ICompletableFuture<ConfirmResult<S, L, D>> result = new CompletableFuture<>();
-        context.envDiff(path, labelWf).whenComplete((envDiff, ex) -> {
+        context.envDiff(scope, labelWf).whenComplete((envDiff, ex) -> {
             if(ex != null) {
-                logger.error("Environment diff for {}/{} failed.", path, labelWf, ex);
+                logger.error("Environment diff for {}/{} failed.", scope, labelWf, ex);
                 result.completeExceptionally(ex);
             } else {
-                logger.debug("Environment diff for {}/{} completed.", path, labelWf, ex);
+                logger.debug("Environment diff for {}/{} completed.", scope, labelWf, ex);
                 logger.trace("value: {}.", envDiff);
                 final ArrayList<IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>>> futures =
                         new ArrayList<>();
 
                 // Include patches of path into patch set
-                futures.add(CompletableFuture.completedFuture(SC.of(ConfirmResult.confirm(PatchCollection.Immutable.of(envDiff.patches())))));
+                futures.add(CompletableFuture.completedFuture(
+                        SC.of(ConfirmResult.confirm(PatchCollection.Immutable.of(envDiff.patches())))));
                 final LazyFuture<Optional<DataWf<S, L, D>>> patchedDataWf = new LazyFuture<>(() -> patchDataWf(dataWf));
 
                 // Verify each added/removed edge.
@@ -137,7 +137,8 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         final Set.Transient<IRecordedQuery<S, L, D>> addedQueries = CapsuleUtil.transientSet();
         addedQueries.__insertAll(transitiveQueries);
         addedQueries.__insertAll(predicateQueries);
-        return SC.of(ConfirmResult.confirm(addedQueries.freeze(), CapsuleUtil.immutableSet(), PatchCollection.Immutable.of()));
+        return SC.of(ConfirmResult.confirm(addedQueries.freeze(), CapsuleUtil.immutableSet(),
+                PatchCollection.Immutable.of()));
     }
 
     protected SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>> acceptRemoved(
@@ -149,7 +150,8 @@ abstract class BaseConfirmation<S, L, D> implements IConfirmation<S, L, D> {
         final Set.Transient<IRecordedQuery<S, L, D>> removedQueries = CapsuleUtil.transientSet();
         removedQueries.__insertAll(transitiveQueries);
         removedQueries.__insertAll(predicateQueries);
-        return SC.of(ConfirmResult.confirm(CapsuleUtil.immutableSet(), removedQueries.freeze(), PatchCollection.Immutable.of()));
+        return SC.of(ConfirmResult.confirm(CapsuleUtil.immutableSet(), removedQueries.freeze(),
+                PatchCollection.Immutable.of()));
     }
 
     protected IFuture<SC<ConfirmResult<S, L, D>, ConfirmResult<S, L, D>>> denyFuture() {

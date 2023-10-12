@@ -33,13 +33,13 @@ rules
       <+ decl* := []
 
   normalize-functional-query:
-      c@CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), st, pts, msg) -> c'
+      c@CResolveQuery(rel, Filter(wf, lwf), Min(ord, lord), prj, st, pts, msg) -> c'
     where ty@FUN(in_tys, out_ty) := <norm-get-ast-type> rel
     with ty'   := <fun-to-pred-type> ty;
          rel'  := <norm-set-ast-type(|ty')> rel;
          lwf'  := <normalize-functional-wf(|in_tys,out_ty)> lwf;
          lord' := <normalize-functional-ord(|in_tys,out_ty)> lord;
-         c'    := CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), st, pts, msg)
+         c'    := CResolveQuery(rel', Filter(wf, lwf'), Min(ord, lord'), prj, st, pts, msg)
       <+ c' := <fail-C>
 
   normalize-functional-wf(|in_tys,out_ty): LLam([p], c) -> wf

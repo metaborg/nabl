@@ -1,28 +1,26 @@
 package mb.nabl2.terms.substitution;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-
-import java.util.Collections;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.ImList;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+
 public class Renaming implements IRenaming {
 
-    private final BiMap<ITermVar, ITermVar> renaming;
+    private final BiMap.Immutable<ITermVar> renaming;
 
-    private Renaming(BiMap<ITermVar, ITermVar> renaming) {
+    private Renaming(BiMap.Immutable<ITermVar> renaming) {
         this.renaming = renaming;
     }
 
@@ -35,7 +33,7 @@ public class Renaming implements IRenaming {
     }
 
     @Override public Set<ITermVar> valueSet() {
-        return renaming.values();
+        return renaming.valueSet();
     }
 
     @Override public Set<? extends Entry<ITermVar, ITermVar>> entrySet() {
@@ -43,14 +41,14 @@ public class Renaming implements IRenaming {
     }
 
     @Override public ITermVar rename(ITermVar var) {
-        return renaming.getOrDefault(var, var);
+        return renaming.getKeyOrDefault(var, var);
     }
 
     @Override public ITerm apply(ITerm term) {
         // @formatter:off
         return term.match(Terms.cases(
             appl -> {
-                final ImmutableList<ITerm> newArgs;
+                final ImList.Immutable<ITerm> newArgs;
                 if((newArgs = Terms.applyLazy(appl.getArgs(), this::apply)) == null) {
                     return appl;
                 }
@@ -75,12 +73,12 @@ public class Renaming implements IRenaming {
         // @formatter:on
     }
 
-    @Override public Map<ITermVar, ITermVar> asMap() {
-        return Collections.unmodifiableMap(renaming);
+    @Override public Map.Immutable<ITermVar, ITermVar> asMap() {
+        return renaming.asMap();
     }
 
     @Override public ISubstitution.Immutable asSubstitution() {
-        return PersistentSubstitution.Immutable.of(renaming);
+        return PersistentSubstitution.Immutable.of(renaming.asMap());
     }
 
     @Override public String toString() {
@@ -94,10 +92,10 @@ public class Renaming implements IRenaming {
 
     public static class Builder {
 
-        private final BiMap<ITermVar, ITermVar> renaming;
+        private final BiMap.Transient<ITermVar> renaming;
 
         private Builder() {
-            this.renaming = HashBiMap.create();
+            this.renaming = BiMap.Transient.of();
         }
 
         public boolean containsKey(ITermVar var) {
@@ -116,7 +114,7 @@ public class Renaming implements IRenaming {
         }
 
         public Renaming build() {
-            return new Renaming(renaming);
+            return new Renaming(renaming.freeze());
         }
 
     }

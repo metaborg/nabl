@@ -1,6 +1,7 @@
 package mb.statix.solver.persistent;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IReplacement;
@@ -24,7 +25,7 @@ public class SingletonTermProperty implements ITermProperty, Serializable {
         return value;
     };
 
-    @Override public Iterable<ITerm> values() {
+    @Override public Collection<ITerm> values() {
         throw new UnsupportedOperationException("Singleton property does not support multiple values.");
     }
 
