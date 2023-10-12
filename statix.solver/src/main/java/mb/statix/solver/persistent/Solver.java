@@ -13,6 +13,8 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
@@ -56,6 +58,12 @@ public class Solver {
     public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
 
     public static final int ERROR_TRACE_TERM_DEPTH = 4;
+
+    public static final io.usethesource.capsule.Set.Immutable<ITermVar> NO_UPDATED_VARS = CapsuleUtil.immutableSet();
+    public static final ImList.Immutable<IConstraint> NO_NEW_CONSTRAINTS = ImList.Immutable.of();
+    public static final Completeness.Immutable NO_NEW_CRITICAL_EDGES =
+            Completeness.Immutable.of();
+    public static final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> NO_EXISTENTIALS = CapsuleUtil.immutableMap();
 
     private Solver() {
     }

@@ -1,6 +1,7 @@
 package mb.statix.solver.tracer;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 import mb.statix.concurrent.StatixSolver;
 import mb.statix.solver.IConstraint;
@@ -32,6 +33,15 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
 
     public void onTrySolveConstraint(IConstraint constraint, IState.Immutable state) {
 
+    }
+
+    public Optional<StepResult> onStep(IStep step, IState.Immutable oldState) {
+        step.result().visit(
+                (ns, up, nc, nce, ne) -> onConstraintSolved(step.constraint(), ns),
+                ex -> onConstraintFailed(step.constraint(), oldState),
+                dl -> onConstraintDelayed(step.constraint(), oldState)
+        );
+        return Optional.empty();
     }
 
     public void onConstraintSolved(IConstraint constraint, IState.Immutable state) {
