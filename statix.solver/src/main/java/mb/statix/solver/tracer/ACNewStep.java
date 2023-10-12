@@ -18,4 +18,8 @@ public abstract class ACNewStep implements IStep {
 
     @Value.Parameter public abstract @Nullable ITerm scopeData();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseNew((CNewStep) this);
+    }
+
 }

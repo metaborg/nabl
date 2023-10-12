@@ -16,4 +16,8 @@ public abstract class ACArithStep implements IStep {
 
     @Value.Parameter @Override public abstract StepResult result();
 
+    @Override
+    public <R> R match(Cases<R> cases) {
+        return cases.caseArith((CArithStep) this);
+    }
 }

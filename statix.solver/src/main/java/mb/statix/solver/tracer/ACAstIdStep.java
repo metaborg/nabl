@@ -26,4 +26,8 @@ public abstract class ACAstIdStep implements IStep {
         return Optional.ofNullable(index()).flatMap(Scope.matcher()::match);
     }
 
+    @Override
+    public <R> R match(Cases<R> cases) {
+        return cases.caseAstId((CAstIdStep) this);
+    }
 }

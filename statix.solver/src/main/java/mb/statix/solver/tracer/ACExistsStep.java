@@ -19,4 +19,8 @@ public abstract class ACExistsStep implements IStep {
 
     @Value.Parameter public abstract Map.Immutable<ITermVar, ITermVar> existentials();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseExists((CExistsStep) this);
+    }
+
 }

@@ -22,4 +22,8 @@ public abstract class ACTellEdgeStep implements IStep {
         return constraint().label();
     }
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTellEdge((CTellEdgeStep) this);
+    }
+
 }

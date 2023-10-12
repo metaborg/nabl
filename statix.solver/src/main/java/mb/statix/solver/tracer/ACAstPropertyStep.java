@@ -33,4 +33,8 @@ public abstract class ACAstPropertyStep implements IStep {
         return constraint().property();
     }
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseAstProperty((CAstPropertyStep) this);
+    }
+
 }

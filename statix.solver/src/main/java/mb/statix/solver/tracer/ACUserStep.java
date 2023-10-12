@@ -15,4 +15,8 @@ public abstract class ACUserStep implements IStep {
 
     @Value.Parameter public abstract @Nullable ApplyResult applyResult();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseUser((CUserStep) this);
+    }
+
 }

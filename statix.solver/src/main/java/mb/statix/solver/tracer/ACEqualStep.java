@@ -15,4 +15,7 @@ public abstract class ACEqualStep implements IStep {
 
     @Value.Parameter public abstract @Nullable IUnifier.Result<IUnifier.Immutable> unifierResult();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseEqual((CEqualStep) this);
+    }
 }

@@ -16,4 +16,8 @@ public abstract class ACFalseStep implements IStep {
 
     @Value.Parameter @Override public abstract StepResult result();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseFalse((CFalseStep) this);
+    }
+
 }

@@ -10,4 +10,8 @@ public abstract class ACTrueStep implements IStep {
 
     @Value.Parameter @Override public abstract StepResult result();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseTrue((CTrueStep) this);
+    }
+
 }

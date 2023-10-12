@@ -17,4 +17,8 @@ public abstract class ACInequalStep implements IStep {
 
     @Value.Parameter public abstract @Nullable IUnifier.Result<Optional<Diseq>> unifierResult();
 
+    @Override public <R> R match(Cases<R> cases) {
+        return cases.caseInequal((CInequalStep) this);
+    }
+
 }
