@@ -1,4 +1,4 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CTellEdge;

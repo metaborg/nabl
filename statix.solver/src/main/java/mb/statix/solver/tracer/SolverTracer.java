@@ -8,6 +8,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.IState;
 import mb.statix.solver.IState.Immutable;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.persistent.step.IStep;
+import mb.statix.solver.persistent.step.StepResult;
 
 /**
  * Tracers allow to observe the behavior of a Statix solver externally. When an {@link SolverTracer} instance is passed

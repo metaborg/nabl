@@ -1,4 +1,4 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.CEqual;

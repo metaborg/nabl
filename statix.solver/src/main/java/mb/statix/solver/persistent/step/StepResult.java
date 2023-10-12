@@ -1,4 +1,4 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;

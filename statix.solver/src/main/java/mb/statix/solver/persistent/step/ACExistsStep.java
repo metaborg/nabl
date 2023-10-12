@@ -1,14 +1,9 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import io.usethesource.capsule.Map;
-import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
 import mb.statix.constraints.CExists;
-import mb.statix.solver.IConstraint;
-import mb.statix.solver.IState;
 import org.immutables.value.Value;
-
-import java.util.Collection;
 
 @Value.Immutable
 public abstract class ACExistsStep implements IStep {

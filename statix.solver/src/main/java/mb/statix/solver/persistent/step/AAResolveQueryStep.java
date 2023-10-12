@@ -1,14 +1,12 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import mb.nabl2.terms.ITerm;
 import mb.scopegraph.oopsla20.reference.Env;
-import mb.scopegraph.oopsla20.terms.newPath.ResolutionPath;
 import mb.statix.constraints.IResolveQuery;
 import mb.statix.scopegraph.Scope;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 
 @Value.Immutable
 public abstract class AAResolveQueryStep implements IStep {

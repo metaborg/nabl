@@ -1,4 +1,4 @@
-package mb.statix.solver.tracer;
+package mb.statix.solver.persistent.step;
 
 import mb.statix.constraints.CTrue;
 import org.immutables.value.Value;
