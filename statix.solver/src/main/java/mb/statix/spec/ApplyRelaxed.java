@@ -36,7 +36,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
 
         // match and create equality constraints
         final FreshVars fresh = new FreshVars(freeVars);
-        final VarProvider freshProvider = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
+        final VarProvider freshProvider = VarProvider.of(fresh::fresh, () -> fresh.fresh("_"));
         final MatchResult matchResult;
         if((matchResult = P.matchWithEqs(rule.params(), args, unifier, freshProvider).orElse(null)) == null) {
             return Optional.empty();
@@ -89,7 +89,8 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
 
         // construct result
         final ApplyResult applyResult = ApplyResult.of(diseq, newBody,
-                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
+                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of(),
+                matchResult.substitution());
 
         return Optional.of(applyResult);
     }

@@ -19,7 +19,7 @@ class ApplyStrict extends ApplyMode<Delay> {
             IConstraint cause, Safety safety) throws Delay {
         final ISubstitution.Immutable subst;
         if((subst =
-                P.match(rule.params(), args, unifier).orElseThrow(vars -> Delay.ofVars(vars)).orElse(null)) == null) {
+                P.match(rule.params(), args, unifier).orElseThrow(Delay::ofVars).orElse(null)) == null) {
             return Optional.empty();
         }
         final IConstraint newBody;
@@ -31,7 +31,8 @@ class ApplyStrict extends ApplyMode<Delay> {
         final ICompleteness.Immutable newBodyCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(subst);
         final ApplyResult applyResult = ApplyResult.of(Optional.empty(), newBody,
-                newBodyCriticalEdges != null ? newBodyCriticalEdges : Completeness.Immutable.of());
+                newBodyCriticalEdges != null ? newBodyCriticalEdges : Completeness.Immutable.of(),
+                subst);
         return Optional.of(applyResult);
     }
 
