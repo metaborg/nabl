@@ -43,6 +43,14 @@ public class CConj implements IConstraint, Serializable {
         return right;
     }
 
+    public CConj withLeft(IConstraint left) {
+        return new CConj(left, right, cause);
+    }
+
+    public CConj withRight(IConstraint right) {
+        return new CConj(left, right, cause);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
