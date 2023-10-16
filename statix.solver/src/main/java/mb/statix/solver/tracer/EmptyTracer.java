@@ -1,5 +1,7 @@
 package mb.statix.solver.tracer;
 
+import mb.statix.solver.IState;
+
 public class EmptyTracer extends SolverTracer<EmptyTracer.Empty> {
 
     public static class Empty implements SolverTracer.IResult<Empty> {
@@ -28,7 +30,7 @@ public class EmptyTracer extends SolverTracer<EmptyTracer.Empty> {
         return this;
     }
 
-    @Override public Empty result() {
+    @Override public Empty result(IState.Immutable state) {
         return Empty.instance;
     }
 

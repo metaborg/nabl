@@ -234,7 +234,7 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
         }
 
         final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(Solver.NO_EXISTENTIALS);
-        return SolverResult.of(spec, state, tracer.result(), failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
+        return SolverResult.of(spec, state, tracer.result(state), failed(), delayed, existentials, updatedVars(), removedEdges(), completeness)
                 .withTotalSolved(solved).withTotalCriticalEdges(criticalEdges);
     }
 
