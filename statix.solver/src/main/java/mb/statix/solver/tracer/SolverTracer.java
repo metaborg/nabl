@@ -29,7 +29,7 @@ public abstract class SolverTracer<R extends SolverTracer.IResult<R>> {
      */
     public abstract SolverTracer<R> subTracer();
 
-    public abstract R result();
+    public abstract R result(IState.Immutable state);
 
     // Constraint solving event callbacks
 

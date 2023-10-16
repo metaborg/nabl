@@ -323,7 +323,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         final Set.Immutable<CriticalEdge> removedEdges = CapsuleUtil.immutableSet();
         final ICompleteness.Immutable completeness = Completeness.Immutable.of();
         final SolverResult<TR> result =
-                SolverResult.of(spec, state, tracer.result(), failed(), delayed, existentials, updatedVars(), removedEdges, completeness);
+                SolverResult.of(spec, state, tracer.result(state), failed(), delayed, existentials, updatedVars(), removedEdges, completeness);
         return result;
     }
 
