@@ -154,15 +154,23 @@ public abstract class StepResult {
 
     public interface OnSuccess<R, E extends Throwable> {
 
-        R apply(IState.Immutable newState, Set.Immutable<ITermVar> updatedVars,
-                Collection<IConstraint> newConstraints, ICompleteness.Immutable newCriticalEdges,
-                Map.Immutable<ITermVar, ITermVar> existentials) throws E;
+        R apply(
+                IState.Immutable newState,
+                Set.Immutable<ITermVar> updatedVars,
+                Collection<IConstraint> newConstraints,
+                ICompleteness.Immutable newCriticalEdges,
+                Map.Immutable<ITermVar, ITermVar> existentials
+        ) throws E;
     }
 
     public interface OnSuccessAction  {
-        void apply(IState.Immutable newState, Set.Immutable<ITermVar> updatedVars,
-                Collection<IConstraint> newConstraints, ICompleteness.Immutable newCriticalEdges,
-                io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> existentials);
+        void apply(
+                IState.Immutable newState,
+                Set.Immutable<ITermVar> updatedVars,
+                Collection<IConstraint> newConstraints,
+                ICompleteness.Immutable newCriticalEdges,
+                Map.Immutable<ITermVar, ITermVar> existentials
+        );
     }
 
 }
