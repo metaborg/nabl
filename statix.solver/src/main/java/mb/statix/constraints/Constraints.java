@@ -437,7 +437,7 @@ public final class Constraints {
             c -> {
                 if(recurseInLogicalScopes) {
                     final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
-                    return body.map(b -> c.withArguments(b);
+                    return body.map(b -> c.withArguments(b));
                 } else {
                     return Optional.of(c);
                 }
