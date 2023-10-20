@@ -17,7 +17,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CConj implements IConstraint, Serializable {
+public final class CConj implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IConstraint left;
@@ -29,6 +29,7 @@ public class CConj implements IConstraint, Serializable {
         this(left, right, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
         this.left = left;
         this.right = right;
@@ -41,6 +42,10 @@ public class CConj implements IConstraint, Serializable {
 
     public IConstraint right() {
         return right;
+    }
+
+    public CConj withArguments(IConstraint left, IConstraint right) {
+        return new CConj(left, right, cause);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -61,8 +66,8 @@ public class CConj implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            left.getVars(),
-            right.getVars()
+                left.getVars(),
+                right.getVars()
         );
     }
 
@@ -106,24 +111,31 @@ public class CConj implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CConj cConj = (CConj) o;
-        return Objects.equals(left, cConj.left) && Objects.equals(right, cConj.right)
-                && Objects.equals(cause, cConj.cause);
+        final CConj that = (CConj)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.left, that.left)
+            && Objects.equals(this.right, that.right)
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(left, right, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                left,
+                right,
+                cause
+        );
     }
 
 }

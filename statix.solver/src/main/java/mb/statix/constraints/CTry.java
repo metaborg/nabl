@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CTry implements IConstraint, Serializable {
+public final class CTry implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IConstraint constraint;
@@ -30,10 +30,12 @@ public class CTry implements IConstraint, Serializable {
         this(constraint, null, null);
     }
 
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CTry(IConstraint constraint, @Nullable IMessage message) {
         this(constraint, null, message);
     }
 
+    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
     public CTry(IConstraint constraint, @Nullable IConstraint cause, @Nullable IMessage message) {
         this.constraint = constraint;
         this.cause = cause;
@@ -42,6 +44,10 @@ public class CTry implements IConstraint, Serializable {
 
     public IConstraint constraint() {
         return constraint;
+    }
+
+    public CTry withArguments(IConstraint constraint) {
+        return new CTry(constraint, cause, message);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -84,21 +90,33 @@ public class CTry implements IConstraint, Serializable {
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         constraint.visitFreeVars(onFreeVar);
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
     }
 
     @Override public CTry apply(ISubstitution.Immutable subst) {
-        return new CTry(constraint.apply(subst), cause, message == null ? null : message.apply(subst));
+        return new CTry(
+                constraint.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public CTry unsafeApply(ISubstitution.Immutable subst) {
-        return new CTry(constraint.unsafeApply(subst), cause, message == null ? null : message.apply(subst));
+        return new CTry(
+                constraint.unsafeApply(subst),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public CTry apply(IRenaming subst) {
-        return new CTry(constraint.apply(subst), cause, message == null ? null : message.apply(subst));
+        return new CTry(
+                constraint.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -114,24 +132,31 @@ public class CTry implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CTry cTry = (CTry) o;
-        return Objects.equals(constraint, cTry.constraint) && Objects.equals(cause, cTry.cause)
-                && Objects.equals(message, cTry.message);
+        final CTry that = (CTry)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.constraint, that.constraint)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(constraint, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                constraint,
+                cause,
+                message
+        );
     }
 
 }

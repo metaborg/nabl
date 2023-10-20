@@ -24,11 +24,18 @@ public abstract class AResolveQuery implements IResolveQuery {
     protected final ITerm scopeTerm;
     protected final ITerm resultTerm;
 
-    @Nullable protected final IConstraint cause;
-    @Nullable protected final IMessage message;
+    protected final @Nullable IConstraint cause;
+    protected final @Nullable IMessage message;
 
-    public AResolveQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
-            @Nullable IConstraint cause, @Nullable IMessage message) {
+    protected AResolveQuery(
+            QueryFilter filter,
+            QueryMin min,
+            QueryProject project,
+            ITerm scopeTerm,
+            ITerm resultTerm,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message
+    ) {
         this.filter = filter;
         this.min = min;
         this.project = project;
@@ -90,10 +97,9 @@ public abstract class AResolveQuery implements IResolveQuery {
         filter.getDataWF().visitFreeVars(onFreeVar);
         min.getDataEquiv().visitFreeVars(onFreeVar);
         resultTerm.getVars().forEach(onFreeVar::apply);
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
-
     }
 
     @Override public String toString() {

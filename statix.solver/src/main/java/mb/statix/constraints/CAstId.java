@@ -17,7 +17,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CAstId implements IConstraint, Serializable {
+public final class CAstId implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm term;
@@ -29,6 +29,7 @@ public class CAstId implements IConstraint, Serializable {
         this(term, idTerm, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
         this.term = term;
         this.idTerm = idTerm;
@@ -41,6 +42,10 @@ public class CAstId implements IConstraint, Serializable {
 
     public ITerm idTerm() {
         return idTerm;
+    }
+
+    public CAstId withArguments(ITerm term, ITerm idTerm) {
+        return new CAstId(term, idTerm, cause);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -61,8 +66,8 @@ public class CAstId implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            term.getVars(),
-            idTerm.getVars()
+                term.getVars(),
+                idTerm.getVars()
         );
     }
 
@@ -86,7 +91,7 @@ public class CAstId implements IConstraint, Serializable {
     }
 
     @Override public CAstId unsafeApply(ISubstitution.Immutable subst) {
-        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+        return apply(subst);
     }
 
     @Override public CAstId apply(IRenaming subst) {
@@ -108,24 +113,31 @@ public class CAstId implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CAstId cAstId = (CAstId) o;
-        return Objects.equals(term, cAstId.term) && Objects.equals(idTerm, cAstId.idTerm)
-                && Objects.equals(cause, cAstId.cause);
+        final CAstId that = (CAstId)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.term, that.term)
+            && Objects.equals(this.idTerm, that.idTerm)
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(term, idTerm, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                term,
+                idTerm,
+                cause
+        );
     }
 
 }
