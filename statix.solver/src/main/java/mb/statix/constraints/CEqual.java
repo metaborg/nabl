@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CEqual implements IConstraint, Serializable {
+public final class CEqual implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm term1;
@@ -31,14 +31,17 @@ public class CEqual implements IConstraint, Serializable {
         this(term1, term2, null, null);
     }
 
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CEqual(ITerm term1, ITerm term2, @Nullable IMessage message) {
         this(term1, term2, null, message);
     }
 
+    // Do not call this constructor. This is used in the solver. Call withArguments() or withCause() instead.
     public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause) {
         this(term1, term2, cause, null);
     }
 
+    // Do not call this constructor. Call withArguments(), withCause, or withMessage() instead.
     public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause, @Nullable IMessage message) {
         this.term1 = term1;
         this.term2 = term2;
@@ -52,6 +55,10 @@ public class CEqual implements IConstraint, Serializable {
 
     public ITerm term2() {
         return term2;
+    }
+
+    public CEqual withArguments(ITerm term1, ITerm term2) {
+        return new CEqual(term1, term2, cause, message);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -80,8 +87,8 @@ public class CEqual implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            term1.getVars(),
-            term2.getVars()
+                term1.getVars(),
+                term2.getVars()
         );
     }
 
@@ -98,21 +105,31 @@ public class CEqual implements IConstraint, Serializable {
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         term1.getVars().forEach(onFreeVar::apply);
         term2.getVars().forEach(onFreeVar::apply);
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
     }
 
     @Override public CEqual apply(ISubstitution.Immutable subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
+        return new CEqual(
+                subst.apply(term1),
+                subst.apply(term2),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public CEqual unsafeApply(ISubstitution.Immutable subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
+        return apply(subst);
     }
 
     @Override public CEqual apply(IRenaming subst) {
-        return new CEqual(subst.apply(term1), subst.apply(term2), cause, message == null ? null : message.apply(subst));
+        return new CEqual(
+                subst.apply(term1),
+                subst.apply(term2),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -128,24 +145,33 @@ public class CEqual implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CEqual cEqual = (CEqual) o;
-        return Objects.equals(term1, cEqual.term1) && Objects.equals(term2, cEqual.term2)
-                && Objects.equals(cause, cEqual.cause) && Objects.equals(message, cEqual.message);
+        final CEqual that = (CEqual)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.term1, that.term1)
+            && Objects.equals(this.term2, that.term2)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(term1, term2, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                term1,
+                term2,
+                cause,
+                message
+        );
     }
 
 }

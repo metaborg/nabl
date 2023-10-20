@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CFalse implements IConstraint, Serializable {
+public final class CFalse implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable IConstraint cause;
@@ -28,13 +28,22 @@ public class CFalse implements IConstraint, Serializable {
         this(null, null);
     }
 
+    // This constructor is primarily used to reconstruct this object from a Statix term. Call withMessage() instead.
     public CFalse(@Nullable IMessage message) {
         this(null, message);
     }
 
-    public CFalse(@Nullable IConstraint cause, @Nullable IMessage message) {
+    // Do not call this constructor. Call withCause() or withMessage() instead.
+    public CFalse(
+            @Nullable IConstraint cause,
+            @Nullable IMessage message
+    ) {
         this.cause = cause;
         this.message = message;
+    }
+
+    public CFalse withArguments() {
+        return new CFalse(cause, message);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -76,7 +85,7 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
     }
@@ -86,7 +95,7 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst));
+        return apply(subst);
     }
 
     @Override public CFalse apply(IRenaming subst) {
@@ -102,23 +111,29 @@ public class CFalse implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CFalse cFalse = (CFalse) o;
-        return Objects.equals(cause, cFalse.cause) && Objects.equals(message, cFalse.message);
+        final CFalse that = (CFalse)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                cause,
+                message
+        );
     }
 
 }

@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
-public class CTellEdge implements IConstraint, Serializable {
+public final class CTellEdge implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm sourceTerm;
@@ -32,8 +32,14 @@ public class CTellEdge implements IConstraint, Serializable {
         this(sourceTerm, label, targetTerm, null, null);
     }
 
-    public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm, @Nullable IConstraint cause,
-            @Nullable ICompleteness.Immutable ownCriticalEdges) {
+    // Do not call this constructor. Call withArguments(), withCause(), or withOwnCriticalEdges() instead.
+    public CTellEdge(
+            ITerm sourceTerm,
+            ITerm label,
+            ITerm targetTerm,
+            @Nullable IConstraint cause,
+            @Nullable ICompleteness.Immutable ownCriticalEdges
+    ) {
         this.sourceTerm = sourceTerm;
         this.label = label;
         this.targetTerm = targetTerm;
@@ -51,6 +57,10 @@ public class CTellEdge implements IConstraint, Serializable {
 
     public ITerm targetTerm() {
         return targetTerm;
+    }
+
+    public CTellEdge withArguments(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, ownCriticalEdges);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -79,8 +89,8 @@ public class CTellEdge implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            sourceTerm.getVars(),
-            targetTerm.getVars()
+                sourceTerm.getVars(),
+                targetTerm.getVars()
         );
     }
 
@@ -100,18 +110,27 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return new CTellEdge(
+                subst.apply(sourceTerm),
+                label,
+                subst.apply(targetTerm),
+                cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
     }
 
     @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return apply(subst);
     }
 
     @Override public CTellEdge apply(IRenaming subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return new CTellEdge(
+                subst.apply(sourceTerm),
+                label,
+                subst.apply(targetTerm),
+                cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -129,24 +148,33 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CTellEdge cTellEdge = (CTellEdge) o;
-        return Objects.equals(sourceTerm, cTellEdge.sourceTerm) && Objects.equals(label, cTellEdge.label)
-                && Objects.equals(targetTerm, cTellEdge.targetTerm) && Objects.equals(cause, cTellEdge.cause);
+        CTellEdge that = (CTellEdge)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.sourceTerm, that.sourceTerm)
+            && Objects.equals(this.label, that.label)
+            && Objects.equals(this.targetTerm, that.targetTerm)
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(sourceTerm, label, targetTerm, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                sourceTerm,
+                label,
+                targetTerm,
+                cause
+        );
     }
 
 }

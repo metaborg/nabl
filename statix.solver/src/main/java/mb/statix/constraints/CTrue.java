@@ -17,7 +17,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CTrue implements IConstraint, Serializable {
+public final class CTrue implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable IConstraint cause;
@@ -26,8 +26,13 @@ public class CTrue implements IConstraint, Serializable {
         this(null);
     }
 
+    // Do not call this constructor. Call withCause() instead.
     public CTrue(@Nullable IConstraint cause) {
         this.cause = cause;
+    }
+
+    public CTrue withArguments() {
+        return new CTrue(cause);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -68,7 +73,7 @@ public class CTrue implements IConstraint, Serializable {
     }
 
     @Override public CTrue unsafeApply(@SuppressWarnings("unused") ISubstitution.Immutable subst) {
-        return this;
+        return apply(subst);
     }
 
     @Override public CTrue apply(@SuppressWarnings("unused") IRenaming subst) {
@@ -84,23 +89,27 @@ public class CTrue implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CTrue cTrue = (CTrue) o;
-        return Objects.equals(cause, cTrue.cause);
+        final CTrue that = (CTrue)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                cause
+        );
     }
 
 }

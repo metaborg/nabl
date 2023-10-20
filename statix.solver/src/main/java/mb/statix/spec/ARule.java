@@ -88,7 +88,7 @@ public abstract class ARule {
 
     public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
-        if(freeVars == null) {
+        if(result == null) {
             final Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
             doVisitFreeVars(_freeVars::__insert);
             result = _freeVars.freeze();

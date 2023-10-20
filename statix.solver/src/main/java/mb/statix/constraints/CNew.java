@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
-public class CNew implements IConstraint, Serializable {
+public final class CNew implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm scopeTerm;
@@ -31,8 +31,13 @@ public class CNew implements IConstraint, Serializable {
         this(scopeTerm, datumTerm, null, null);
     }
 
-    public CNew(ITerm scopeTerm, ITerm datumTerm, @Nullable IConstraint cause,
-            @Nullable ICompleteness.Immutable ownCriticalEdges) {
+    // Do not call this constructor. Call withArguments(), withCause(), or withOwnCriticalEdges() instead.
+    public CNew(
+            ITerm scopeTerm,
+            ITerm datumTerm,
+            @Nullable IConstraint cause,
+            @Nullable ICompleteness.Immutable ownCriticalEdges
+    ) {
         this.scopeTerm = scopeTerm;
         this.datumTerm = datumTerm;
         this.cause = cause;
@@ -47,6 +52,10 @@ public class CNew implements IConstraint, Serializable {
         return datumTerm;
     }
 
+    public CNew withArguments(ITerm scopeTerm, ITerm datumTerm) {
+        return new CNew(scopeTerm, datumTerm, cause, ownCriticalEdges);
+    }
+
     @Override public <R> R match(Cases<R> cases) {
         return cases.caseNew(this);
     }
@@ -57,8 +66,8 @@ public class CNew implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            scopeTerm.getVars(),
-            datumTerm.getVars()
+                scopeTerm.getVars(),
+                datumTerm.getVars()
         );
     }
 
@@ -94,18 +103,25 @@ public class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew apply(ISubstitution.Immutable subst) {
-        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return new CNew(
+                subst.apply(scopeTerm),
+                subst.apply(datumTerm),
+                cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
     }
 
     @Override public CNew unsafeApply(ISubstitution.Immutable subst) {
-        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return apply(subst);
     }
 
     @Override public CNew apply(IRenaming subst) {
-        return new CNew(subst.apply(scopeTerm), subst.apply(datumTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return new CNew(
+                subst.apply(scopeTerm),
+                subst.apply(datumTerm),
+                cause,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -122,24 +138,31 @@ public class CNew implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CNew cNew = (CNew) o;
-        return Objects.equals(scopeTerm, cNew.scopeTerm) && Objects.equals(datumTerm, cNew.datumTerm)
-                && Objects.equals(cause, cNew.cause);
+        final CNew that = (CNew)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.scopeTerm, that.scopeTerm)
+            && Objects.equals(this.datumTerm, that.datumTerm)
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(scopeTerm, datumTerm, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                scopeTerm,
+                datumTerm,
+                cause
+        );
     }
 
 }

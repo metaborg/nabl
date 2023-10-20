@@ -19,7 +19,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
-public class CExists implements IConstraint, Serializable {
+public final class CExists implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Set.Immutable<ITermVar> vars;
@@ -34,17 +34,29 @@ public class CExists implements IConstraint, Serializable {
         this(vars, constraint, null, null, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause) {
         this(vars, constraint, cause, null, null);
     }
 
-    public CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause,
-            ICompleteness.Immutable bodyCriticalEdges) {
+    // Do not call this constructor. Call withArguments(), withCause(), or withBodyCriticalEdges() instead.
+    public CExists(
+            Iterable<ITermVar> vars,
+            IConstraint constraint,
+            @Nullable IConstraint cause,
+            ICompleteness.Immutable bodyCriticalEdges
+    ) {
         this(vars, constraint, cause, bodyCriticalEdges, null);
     }
 
-    private CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause,
-            @Nullable ICompleteness.Immutable bodyCriticalEdges, @Nullable Set.Immutable<ITermVar> freeVars) {
+    // Private so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CExists(
+            Iterable<ITermVar> vars,
+            IConstraint constraint,
+            @Nullable IConstraint cause,
+            @Nullable ICompleteness.Immutable bodyCriticalEdges,
+            @Nullable Set.Immutable<ITermVar> freeVars
+    ) {
         this.vars = CapsuleUtil.toSet(vars);
         this.constraint = constraint;
         this.cause = cause;
@@ -62,6 +74,10 @@ public class CExists implements IConstraint, Serializable {
     }
 
     public CExists withConstraint(IConstraint constraint) {
+        return withArguments(vars, constraint);
+    }
+
+    public CExists withArguments(Iterable<ITermVar> vars, IConstraint constraint) {
         return new CExists(vars, constraint, cause, bodyCriticalEdges, null);
     }
 
@@ -92,14 +108,14 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            vars,
-            constraint.getVars()
+                vars,
+                constraint.getVars()
         );
     }
 
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
-        if(result == null) {
+        if (result == null) {
             Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
             doVisitFreeVars(_freeVars::__insert);
             result = _freeVars.freeze();
@@ -114,7 +130,7 @@ public class CExists implements IConstraint, Serializable {
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         constraint.visitFreeVars(v -> {
-            if(!vars.contains(v)) {
+            if (!vars.contains(v)) {
                 onFreeVar.apply(v);
             }
         });
@@ -123,7 +139,7 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public CExists apply(ISubstitution.Immutable subst) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars).retainAll(freeVars());
-        if(localSubst.isEmpty()) {
+        if (localSubst.isEmpty()) {
             return this;
         }
 
@@ -131,7 +147,7 @@ public class CExists implements IConstraint, Serializable {
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
         Set.Immutable<ITermVar> freeVars = this.freeVars;
 
-        if(freeVars != null) {
+        if (freeVars != null) {
             // before renaming is included in localSubst
             // note that this is only correct because of .retainAll(freeVars()) above, or it might include too much!
             freeVars = freeVars.__removeAll(localSubst.domainSet()).__insertAll(localSubst.rangeSet());
@@ -141,12 +157,12 @@ public class CExists implements IConstraint, Serializable {
         final IRenaming ren = fresh.fresh(vars);
         final Set.Immutable<ITermVar> vars = fresh.fix();
 
-        if(!ren.isEmpty()) {
+        if (!ren.isEmpty()) {
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
         constraint = constraint.apply(localSubst);
-        if(bodyCriticalEdges != null) {
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
@@ -155,7 +171,7 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars);
-        if(localSubst.isEmpty()) {
+        if (localSubst.isEmpty()) {
             return this;
         }
 
@@ -163,7 +179,7 @@ public class CExists implements IConstraint, Serializable {
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
 
         constraint = constraint.unsafeApply(localSubst);
-        if(bodyCriticalEdges != null) {
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
@@ -177,7 +193,7 @@ public class CExists implements IConstraint, Serializable {
 
         vars = CapsuleUtil.toSet(subst.rename(vars));
         constraint = constraint.apply(subst);
-        if(bodyCriticalEdges != null) {
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
 
@@ -198,27 +214,31 @@ public class CExists implements IConstraint, Serializable {
 
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CExists cExists = (CExists) o;
+        final CExists that = (CExists)o;
         // @formatter:off
-        return Objects.equals(vars, cExists.vars)
-                && Objects.equals(constraint, cExists.constraint)
-                && Objects.equals(cause, cExists.cause);
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.vars, that.vars)
+            && Objects.equals(this.constraint, that.constraint)
+            && Objects.equals(this.cause, that.cause);
         // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(vars, constraint, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                vars,
+                constraint,
+                cause
+        );
     }
 
 }

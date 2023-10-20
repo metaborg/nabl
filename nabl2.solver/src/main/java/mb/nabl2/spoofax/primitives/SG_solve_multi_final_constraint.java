@@ -19,6 +19,7 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.InterpreterException;
 
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.constraints.messages.MessageContent;
 import mb.nabl2.constraints.messages.MessageInfo;
@@ -80,6 +81,13 @@ public class SG_solve_multi_final_constraint extends ScopeGraphMultiFileAnalysis
 //                    Actions.sourceTerm("")));
 //            solution = solution.withMessages(messages.freeze());
 //        }
+
+        if(log.enabled()) {
+            log.debug("finish multi_final; deferred equality constraints: ");
+            solution.constraints().stream()
+                .filter(CEqual.class::isInstance)
+                .forEach(c -> log.debug("* {}", c));
+        }
 
         final List<IConstraint> constraints = Stream.concat(initialResult.constraints().stream(),
                 unitResults.stream().flatMap(ur -> ur.constraints().stream())).collect(Collectors.toList());
