@@ -17,10 +17,10 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CAstProperty implements IConstraint, Serializable {
+public final class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static enum Op {
+    public enum Op {
         SET {
             @Override public String toString() {
                 return ":=";
@@ -44,6 +44,7 @@ public class CAstProperty implements IConstraint, Serializable {
         this(idTerm, property, op, value, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value, @Nullable IConstraint cause) {
         this.idTerm = idTerm;
         this.property = property;
@@ -68,6 +69,10 @@ public class CAstProperty implements IConstraint, Serializable {
         return value;
     }
 
+    public CAstProperty withArguments(ITerm idTerm, ITerm property, Op op, ITerm value) {
+        return new CAstProperty(idTerm, property, op, value, cause);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
@@ -86,8 +91,8 @@ public class CAstProperty implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            idTerm.getVars(),
-            value.getVars()
+                idTerm.getVars(),
+                value.getVars()
         );
     }
 
@@ -111,7 +116,7 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return apply(subst);
     }
 
     @Override public CAstProperty apply(IRenaming subst) {
@@ -134,24 +139,35 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CAstProperty that = (CAstProperty) o;
-        return Objects.equals(idTerm, that.idTerm) && Objects.equals(property, that.property) && op == that.op
-                && Objects.equals(value, that.value) && Objects.equals(cause, that.cause);
+        final CAstProperty that = (CAstProperty)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.idTerm, that.idTerm)
+            && Objects.equals(this.property, that.property)
+            && this.op == that.op
+            && Objects.equals(this.value, that.value)
+            && Objects.equals(this.cause, that.cause);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(idTerm, property, op, value, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                idTerm,
+                property,
+                op,
+                value,
+                cause
+        );
     }
 
 }

@@ -149,7 +149,7 @@ public class CompletenessUtil {
             cconj -> {
                 final IConstraint newLeft = precomputeCriticalEdges(cconj.left(), spec, criticalEdge);
                 final IConstraint newRight = precomputeCriticalEdges(cconj.right(), spec, criticalEdge);
-                return new CConj(newLeft, newRight, cconj.cause().orElse(null));
+                return cconj.withArguments(newLeft, newRight);
             },
             cequal -> cequal,
             cexists -> {
@@ -161,7 +161,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return cexists.withConstraint(newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
+                return cexists.withArguments(cexists.vars(), newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
             },
             cfalse -> cfalse,
             cinequal -> cinequal,
@@ -172,7 +172,7 @@ public class CompletenessUtil {
                     ownCriticalEdges.add(scopeOrVar, EdgeOrData.data(), PersistentUniDisunifier.Immutable.of());
                     criticalEdge.apply(scopeOrVar, EdgeOrData.data());
                 }
-                return new CNew(cnew.scopeTerm(), cnew.datumTerm(), cnew.cause().orElse(null), ownCriticalEdges.freeze());
+                return cnew.withArguments(cnew.scopeTerm(), cnew.datumTerm()).withOwnCriticalEdges(ownCriticalEdges.freeze());
             },
             iresolveQuery -> {
                 final QueryFilter newFilter =
@@ -182,13 +182,11 @@ public class CompletenessUtil {
                 return iresolveQuery.match(new IResolveQuery.Cases<IResolveQuery>() {
 
                     @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
-                        return new CResolveQuery(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null));
+                        return q.withArguments(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm());
                     }
 
                     @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
-                        return new CCompiledQuery(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
+                        return q.withArguments(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(), q.stateMachine());
                     }});
             },
             ctellEdge -> {
@@ -198,15 +196,15 @@ public class CompletenessUtil {
                     ownCriticalEdges.add(scopeOrVar, EdgeOrData.edge(ctellEdge.label()), PersistentUniDisunifier.Immutable.of());
                     criticalEdge.apply(scopeOrVar, EdgeOrData.edge(ctellEdge.label()));
                 }
-                return new CTellEdge(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm(),
-                        ctellEdge.cause().orElse(null), ownCriticalEdges.freeze());
+                return ctellEdge.withArguments(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm())
+                        .withOwnCriticalEdges(ownCriticalEdges.freeze());
             },
             ctermId -> ctermId,
             ctermProperty -> ctermProperty,
             ctrue -> ctrue,
             ctry -> {
                 final IConstraint newBody = precomputeCriticalEdges(ctry.constraint(), spec, criticalEdge);
-                return new CTry(newBody, ctry.cause().orElse(null), ctry.message().orElse(null));
+                return ctry.withArguments(newBody);
             },
             cuser -> {
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
@@ -218,7 +216,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(scopeOrVar, label);
                     }
                 });
-                return new CUser(cuser.name(), cuser.args(), cuser.cause().orElse(null), cuser.message().orElse(null), ownCriticalEdges.freeze());
+                return cuser.withArguments(cuser.name(), cuser.args()).withOwnCriticalEdges(ownCriticalEdges.freeze());
             }
         ));
         // @formatter:on

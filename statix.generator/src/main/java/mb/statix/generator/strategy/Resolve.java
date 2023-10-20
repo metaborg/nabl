@@ -143,8 +143,11 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                         lazyFlatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(constraints::add);
                         lazyFlatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
                                 .forEach(condition -> constraints
-                                        .add(new CInequal(CapsuleUtil.immutableSet(), condition.term1(), condition.term2(),
-                                                condition.cause().orElse(null), condition.message().orElse(null))));
+                                        .add(new CInequal(CapsuleUtil.immutableSet(), condition.term1(), condition.term2())
+                                                .withCause(condition.cause().orElse(null))
+                                                .withMessage(condition.message().orElse(null))
+                                        )
+                                );
                         final SearchState newState =
                                 input.update(ctx.spec(), constraints, Iterables2.singleton(query));
                         return new SearchNode<>(ctx.nextNodeId(), newState, node,

@@ -20,7 +20,7 @@ import mb.statix.arithmetic.ArithTest;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CArith implements IConstraint, Serializable {
+public final class CArith implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ArithExpr expr1;
@@ -34,12 +34,18 @@ public class CArith implements IConstraint, Serializable {
         this(expr1, op, expr2, null, null);
     }
 
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CArith(ArithExpr expr1, ArithTest op, ArithExpr expr2, @Nullable IMessage message) {
         this(expr1, op, expr2, null, message);
     }
 
-    private CArith(ArithExpr expr1, ArithTest op, ArithExpr expr2, @Nullable IConstraint cause,
-            @Nullable IMessage message) {
+    private CArith(
+            ArithExpr expr1,
+            ArithTest op,
+            ArithExpr expr2,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message
+    ) {
         this.expr1 = expr1;
         this.op = op;
         this.expr2 = expr2;
@@ -57,6 +63,10 @@ public class CArith implements IConstraint, Serializable {
 
     public ArithExpr expr2() {
         return expr2;
+    }
+
+    public CArith withArguments(ArithExpr expr1, ArithTest op, ArithExpr expr2) {
+        return new CArith(expr1, op, expr2, cause, message);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -85,8 +95,8 @@ public class CArith implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            expr1.getVars(),
-            expr2.getVars()
+                expr1.getVars(),
+                expr2.getVars()
         );
     }
 
@@ -103,24 +113,33 @@ public class CArith implements IConstraint, Serializable {
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         expr1.isTerm().ifPresent(t -> t.getVars().forEach(onFreeVar::apply));
         expr2.isTerm().ifPresent(t -> t.getVars().forEach(onFreeVar::apply));
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
     }
 
     @Override public CArith apply(ISubstitution.Immutable subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return new CArith(
+                expr1.apply(subst),
+                op,
+                expr2.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public CArith unsafeApply(ISubstitution.Immutable subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return apply(subst);
     }
 
     @Override public CArith apply(IRenaming subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return new CArith(
+                expr1.apply(subst),
+                op,
+                expr2.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -136,25 +155,35 @@ public class CArith implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CArith cArith = (CArith) o;
-        return Objects.equals(expr1, cArith.expr1) && Objects.equals(op, cArith.op)
-                && Objects.equals(expr2, cArith.expr2) && Objects.equals(cause, cArith.cause)
-                && Objects.equals(message, cArith.message);
+        final CArith that = (CArith)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.expr1, that.expr1)
+            && Objects.equals(this.op, that.op)
+            && Objects.equals(this.expr2, that.expr2)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(expr1, op, expr2, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return  Objects.hash(
+                expr1,
+                op,
+                expr2,
+                cause,
+                message
+        );
     }
 
 }
