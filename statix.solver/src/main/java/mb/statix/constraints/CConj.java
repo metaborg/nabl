@@ -29,8 +29,7 @@ public final class CConj implements IConstraint, Serializable {
         this(left, right, null);
     }
 
-    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
-    private CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
+    public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
         this.left = left;
         this.right = right;
         this.cause = cause;

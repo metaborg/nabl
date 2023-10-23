@@ -49,7 +49,6 @@ public final class CExists implements IConstraint, Serializable {
         this(vars, constraint, cause, bodyCriticalEdges, null);
     }
 
-    // Private so we can add more fields in the future. Externally call the appropriate with*() functions instead.
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
     private CExists(
             Iterable<ITermVar> vars,
