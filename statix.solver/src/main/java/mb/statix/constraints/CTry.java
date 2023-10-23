@@ -49,6 +49,11 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     public CTry withArguments(IConstraint constraint) {
+        if (this.constraint == constraint) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CTry(constraint, cause, message, origin);
     }
 
@@ -57,6 +62,11 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     @Override public CTry withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CTry(constraint, cause, message, origin);
     }
 
@@ -65,6 +75,11 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     @Override public CTry withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CTry(constraint, cause, message, origin);
     }
 

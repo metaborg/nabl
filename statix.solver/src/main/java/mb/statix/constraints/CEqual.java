@@ -66,6 +66,13 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     public CEqual withArguments(ITerm term1, ITerm term2) {
+        if (this.term1 == term1 &&
+            this.term2 == term2
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CEqual(term1, term2, cause, message, origin);
     }
 
@@ -74,6 +81,11 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     @Override public CEqual withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CEqual(term1, term2, cause, message, origin);
     }
 
@@ -82,6 +94,11 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     @Override public CEqual withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CEqual(term1, term2, cause, message, origin);
     }
 

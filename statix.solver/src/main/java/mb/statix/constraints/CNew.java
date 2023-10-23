@@ -56,6 +56,13 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     public CNew withArguments(ITerm scopeTerm, ITerm datumTerm) {
+        if (this.scopeTerm == scopeTerm &&
+            this.datumTerm == datumTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CNew(scopeTerm, datumTerm, cause, origin, ownCriticalEdges);
     }
 
@@ -79,6 +86,11 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CNew(scopeTerm, datumTerm, cause, origin, ownCriticalEdges);
     }
 
@@ -91,6 +103,11 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        if (this.ownCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CNew(scopeTerm, datumTerm, cause, origin, criticalEdges);
     }
 

@@ -81,6 +81,13 @@ public final class CExists implements IConstraint, Serializable {
     }
 
     public CExists withArguments(Iterable<ITermVar> vars, IConstraint constraint) {
+        if (this.vars == vars &&
+            this.constraint == constraint
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, null);
     }
 
@@ -89,6 +96,11 @@ public final class CExists implements IConstraint, Serializable {
     }
 
     @Override public CExists withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, freeVars);
     }
 
@@ -101,6 +113,11 @@ public final class CExists implements IConstraint, Serializable {
     }
 
     @Override public CExists withBodyCriticalEdges(@Nullable ICompleteness.Immutable criticalEdges) {
+        if (this.bodyCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CExists(vars, constraint, cause, origin, criticalEdges, freeVars);
     }
 

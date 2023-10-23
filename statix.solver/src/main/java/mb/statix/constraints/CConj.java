@@ -52,6 +52,13 @@ public final class CConj implements IConstraint, Serializable {
     }
 
     public CConj withArguments(IConstraint left, IConstraint right) {
+        if (this.left == left &&
+            this.right == right
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CConj(left, right, cause, origin);
     }
 
@@ -60,6 +67,11 @@ public final class CConj implements IConstraint, Serializable {
     }
 
     @Override public CConj withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CConj(left, right, cause, origin);
     }
 

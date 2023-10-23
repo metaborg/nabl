@@ -34,7 +34,8 @@ public final class CTrue implements IConstraint, Serializable {
     }
 
     public CTrue withArguments() {
-        return new CTrue(cause, origin);
+        // Avoid creating new objects.
+        return this;
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -42,6 +43,11 @@ public final class CTrue implements IConstraint, Serializable {
     }
 
     @Override public CTrue withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CTrue(cause, origin);
     }
 

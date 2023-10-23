@@ -79,6 +79,15 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     public CAstProperty withArguments(ITerm idTerm, ITerm property, Op op, ITerm value) {
+        if (this.idTerm == idTerm &&
+            this.property == property &&
+            this.op == op &&
+            this.value == value
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CAstProperty(idTerm, property, op, value, cause, origin);
     }
 
@@ -87,6 +96,11 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CAstProperty(idTerm, property, op, value, cause, origin);
     }
 

@@ -70,6 +70,14 @@ public final class CArith implements IConstraint, Serializable {
     }
 
     public CArith withArguments(ArithExpr expr1, ArithTest op, ArithExpr expr2) {
+        if (this.expr1 == expr1 &&
+            this.op == op &&
+            this.expr2 == expr2
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CArith(expr1, op, expr2, cause, message, origin);
     }
 
@@ -78,6 +86,11 @@ public final class CArith implements IConstraint, Serializable {
     }
 
     @Override public CArith withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CArith(expr1, op, expr2, cause, message, origin);
     }
 
@@ -86,6 +99,11 @@ public final class CArith implements IConstraint, Serializable {
     }
 
     @Override public CArith withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CArith(expr1, op, expr2, cause, message, origin);
     }
 

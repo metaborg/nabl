@@ -74,6 +74,17 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             ITerm resultTerm,
             StateMachine<ITerm> stateMachine
     ) {
+        if (this.filter == filter &&
+            this.min == min &&
+            this.project == project &&
+            this.scopeTerm == scopeTerm &&
+            this.resultTerm == resultTerm &&
+            this.stateMachine == stateMachine
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CCompiledQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin, stateMachine);
     }
 
@@ -95,6 +106,11 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
     }
 
     @Override public CCompiledQuery withCause(IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CCompiledQuery(
                 filter,
                 min,

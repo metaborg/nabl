@@ -46,7 +46,8 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     public CFalse withArguments() {
-        return new CFalse(cause, message, origin);
+        // Avoid creating new objects.
+        return this;
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -54,6 +55,11 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CFalse(cause, message, origin);
     }
 
@@ -62,6 +68,11 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CFalse(cause, message, origin);
     }
 

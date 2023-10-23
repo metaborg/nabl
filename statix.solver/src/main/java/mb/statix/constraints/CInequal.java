@@ -75,6 +75,13 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     public CInequal withArguments(Iterable<ITermVar> universals, ITerm term1, ITerm term2) {
+        if (this.universals == universals &&
+            this.term1 == term1 &&
+            this.term2 == term2
+        ) {
+            // Avoid creating new objects.
+            return this;
+        }
         return new CInequal(universals, term1, term2, cause, message, origin);
     }
 
@@ -83,6 +90,11 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CInequal(universals, term1, term2, cause, message, origin);
     }
 
@@ -91,6 +103,11 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CInequal(universals, term1, term2, cause, message, origin);
     }
 

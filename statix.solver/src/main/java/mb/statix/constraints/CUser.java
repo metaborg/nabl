@@ -67,6 +67,14 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     public CUser withArguments(String name, Iterable<? extends ITerm> args) {
+        //noinspection StringEquality
+        if (this.name == name &&
+            this.args == args
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CUser(name, args, cause, message, origin, ownCriticalEdges);
     }
 
@@ -75,6 +83,11 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CUser(name, args, cause, message, origin, ownCriticalEdges);
     }
 
@@ -83,6 +96,11 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CUser(name, args, cause, message, origin, ownCriticalEdges);
     }
 
@@ -95,6 +113,11 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
+        if (this.ownCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CUser(name, args, cause, message, origin, criticalEdges);
     }
 

@@ -61,6 +61,16 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
             ITerm scopeTerm,
             ITerm resultTerm
     ) {
+        if (this.filter == filter &&
+            this.min == min &&
+            this.project == project &&
+            this.scopeTerm == scopeTerm &&
+            this.resultTerm == resultTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
     }
 
@@ -74,10 +84,20 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
     }
 
     @Override public CResolveQuery withMessage(@Nullable IMessage message) {
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
     }
 

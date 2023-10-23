@@ -47,6 +47,13 @@ public final class CAstId implements IConstraint, Serializable {
     }
 
     public CAstId withArguments(ITerm term, ITerm idTerm) {
+        if (this.term == term &&
+            this.idTerm == idTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CAstId(term, idTerm, cause, origin);
     }
 
@@ -55,6 +62,11 @@ public final class CAstId implements IConstraint, Serializable {
     }
 
     @Override public CAstId withCause(@Nullable IConstraint cause) {
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
         return new CAstId(term, idTerm, cause, origin);
     }
 
