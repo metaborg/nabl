@@ -29,7 +29,6 @@ public final class CConj implements IConstraint, Serializable {
         this(left, right, null);
     }
 
-    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
         this.left = left;
         this.right = right;

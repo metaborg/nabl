@@ -41,8 +41,13 @@ public final class CEqual implements IConstraint, Serializable {
         this(term1, term2, cause, null);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause, or withMessage() instead.
-    public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause, @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CEqual(
+            ITerm term1,
+            ITerm term2,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message
+    ) {
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;

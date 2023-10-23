@@ -39,6 +39,7 @@ public final class CArith implements IConstraint, Serializable {
         this(expr1, op, expr2, null, message);
     }
 
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
     private CArith(
             ArithExpr expr1,
             ArithTest op,
