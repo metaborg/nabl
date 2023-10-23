@@ -50,9 +50,9 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
 
         final IConstraint appliedBody;
         if(safety.equals(Safety.UNSAFE)) {
-            appliedBody = rule.body().unsafeApply(matchResult.substitution()).withCause(cause);
+            appliedBody = rule.body().unsafeApply(matchResult.substitution(), true).withCause(cause);
         } else {
-            appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+            appliedBody = rule.body().apply(matchResult.substitution(), true).withCause(cause);
         }
         final ICompleteness.Immutable appliedCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(matchResult.substitution());

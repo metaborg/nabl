@@ -559,7 +559,7 @@ public class StatixSolver {
                 final Renaming existentials = _existentials.build();
 
                 final ISubstitution.Immutable subst = existentials.asSubstitution();
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                final IConstraint newConstraint = c.constraint().apply(subst, true).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");

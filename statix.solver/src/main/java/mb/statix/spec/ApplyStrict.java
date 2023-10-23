@@ -24,9 +24,9 @@ class ApplyStrict extends ApplyMode<Delay> {
         }
         final IConstraint newBody;
         if(safety.equals(Safety.UNSAFE)) {
-            newBody = rule.body().unsafeApply(subst).withCause(cause);
+            newBody = rule.body().unsafeApply(subst, true).withCause(cause);
         } else {
-            newBody = rule.body().apply(subst).withCause(cause);
+            newBody = rule.body().apply(subst, true).withCause(cause);
         }
         final ICompleteness.Immutable newBodyCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(subst);
