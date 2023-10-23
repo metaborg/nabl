@@ -86,24 +86,24 @@ public interface IConstraint {
 
     /**
      * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
      */
-    default IConstraint apply(ISubstitution.Immutable subst) {
-        return apply(subst, false);
-    }
+    IConstraint apply(ISubstitution.Immutable subst);
 
     /**
      * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
      */
-    default IConstraint unsafeApply(ISubstitution.Immutable subst) {
-        return unsafeApply(subst, false);
-    }
+    IConstraint unsafeApply(ISubstitution.Immutable subst);
 
     /**
      * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
      */
-    default IConstraint apply(IRenaming subst) {
-        return apply(subst, false);
-    }
+    IConstraint apply(IRenaming subst);
 
     /**
      * Apply capture avoiding substitution.

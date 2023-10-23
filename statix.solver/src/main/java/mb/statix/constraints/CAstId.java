@@ -92,6 +92,18 @@ public final class CAstId implements IConstraint, Serializable {
         idTerm.getVars().forEach(onFreeVar::apply);
     }
 
+    @Override public CAstId apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CAstId unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CAstId apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CAstId apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CAstId(
                 subst.apply(term),

@@ -85,6 +85,18 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
         return origin;
     }
 
+    @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CResolveQuery apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CResolveQuery apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CResolveQuery(
                 filter.apply(subst),

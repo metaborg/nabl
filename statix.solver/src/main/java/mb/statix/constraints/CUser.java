@@ -131,6 +131,18 @@ public final class CUser implements IConstraint, Serializable {
         }
     }
 
+    @Override public CUser apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CUser unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CUser apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CUser apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CUser(
                 name,

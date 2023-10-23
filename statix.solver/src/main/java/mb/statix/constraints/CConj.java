@@ -97,6 +97,18 @@ public final class CConj implements IConstraint, Serializable {
         right.visitFreeVars(onFreeVar);
     }
 
+    @Override public CConj apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CConj unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CConj apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CConj apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CConj(
                 left.apply(subst),

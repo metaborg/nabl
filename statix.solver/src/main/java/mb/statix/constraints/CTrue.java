@@ -74,6 +74,18 @@ public final class CTrue implements IConstraint, Serializable {
     private void doVisitFreeVars(@SuppressWarnings("unused") Action1<ITermVar> onFreeVar) {
     }
 
+    @Override public CTrue apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTrue unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CTrue apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CTrue apply(@SuppressWarnings("unused") ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTrue(
                 cause,

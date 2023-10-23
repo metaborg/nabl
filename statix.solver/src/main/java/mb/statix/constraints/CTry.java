@@ -101,6 +101,18 @@ public final class CTry implements IConstraint, Serializable {
         }
     }
 
+    @Override public CTry apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTry unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CTry apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CTry apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTry(
                 constraint.apply(subst),

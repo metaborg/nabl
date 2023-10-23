@@ -124,6 +124,18 @@ public final class CAstProperty implements IConstraint, Serializable {
         value.getVars().forEach(onFreeVar::apply);
     }
 
+    @Override public CAstProperty apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CAstProperty apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CAstProperty apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CAstProperty(
                 subst.apply(idTerm),

@@ -130,7 +130,18 @@ public final class CInequal implements IConstraint, Serializable {
         if (message != null) {
             message.visitVars(onFreeVar);
         }
+    }
 
+    @Override public CInequal apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CInequal unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CInequal apply(IRenaming subst) {
+        return apply(subst, false);
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst, boolean trackOrigin) {

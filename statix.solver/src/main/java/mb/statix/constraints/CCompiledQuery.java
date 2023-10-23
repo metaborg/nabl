@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
+import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.ISubstitution.Immutable;
 import mb.nabl2.util.TermFormatter;
 import mb.scopegraph.oopsla20.reference.ResolutionException;
@@ -107,7 +108,19 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
         );
     }
 
-    @Override public CCompiledQuery apply(Immutable subst, boolean trackOrigin) {
+    @Override public CCompiledQuery apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CCompiledQuery unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CCompiledQuery apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CCompiledQuery apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
                 filter.apply(subst),
                 min.apply(subst),
@@ -121,7 +134,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
         );
     }
 
-    @Override public CCompiledQuery unsafeApply(Immutable subst, boolean trackOrigin) {
+    @Override public CCompiledQuery unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
                 filter.unsafeApply(subst),
                 min.unsafeApply(subst),

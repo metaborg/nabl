@@ -143,6 +143,17 @@ public final class CExists implements IConstraint, Serializable {
         });
     }
 
+    @Override public CExists apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CExists apply(IRenaming subst) {
+        return apply(subst, false);
+    }
 
     @Override public CExists apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars).retainAll(freeVars());

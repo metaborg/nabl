@@ -97,6 +97,18 @@ public final class CFalse implements IConstraint, Serializable {
         }
     }
 
+    @Override public CFalse apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CFalse apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CFalse apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CFalse(
                 cause,

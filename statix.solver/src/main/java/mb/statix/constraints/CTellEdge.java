@@ -116,6 +116,18 @@ public final class CTellEdge implements IConstraint, Serializable {
         targetTerm.getVars().forEach(onFreeVar::apply);
     }
 
+    @Override public CTellEdge apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CTellEdge apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
     @Override public CTellEdge apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTellEdge(
                 subst.apply(sourceTerm),
