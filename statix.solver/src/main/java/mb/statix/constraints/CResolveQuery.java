@@ -54,7 +54,7 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
         this.origin = origin;
     }
 
-    public CResolveQuery withArguments(
+    @Override public CResolveQuery withArguments(
             QueryFilter filter,
             QueryMin min,
             QueryProject project,

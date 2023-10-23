@@ -1,5 +1,6 @@
 package mb.statix.constraints;
 
+import mb.scopegraph.resolution.StateMachine;
 import org.metaborg.util.functions.Function1;
 
 import mb.nabl2.terms.ITerm;
@@ -35,6 +36,8 @@ public interface IResolveQuery extends IConstraint {
     @Override default <R, E extends Throwable> R matchOrThrow(IConstraint.CheckedCases<R, E> cases) throws E {
         return cases.caseResolveQuery(this);
     }
+
+    IResolveQuery withArguments(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm);
 
     interface Cases<R> extends Function1<IResolveQuery, R> {
 
