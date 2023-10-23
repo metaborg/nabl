@@ -26,9 +26,10 @@ public final class CNew implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable ICompleteness.Immutable ownCriticalEdges;
+    private final @Nullable CNew origin;
 
     public CNew(ITerm scopeTerm, ITerm datumTerm) {
-        this(scopeTerm, datumTerm, null, null);
+        this(scopeTerm, datumTerm, null, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -36,11 +37,13 @@ public final class CNew implements IConstraint, Serializable {
             ITerm scopeTerm,
             ITerm datumTerm,
             @Nullable IConstraint cause,
+            @Nullable CNew origin,
             @Nullable ICompleteness.Immutable ownCriticalEdges
     ) {
         this.scopeTerm = scopeTerm;
         this.datumTerm = datumTerm;
         this.cause = cause;
+        this.origin = origin;
         this.ownCriticalEdges = ownCriticalEdges;
     }
 
@@ -53,7 +56,7 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     public CNew withArguments(ITerm scopeTerm, ITerm datumTerm) {
-        return new CNew(scopeTerm, datumTerm, cause, ownCriticalEdges);
+        return new CNew(scopeTerm, datumTerm, cause, origin, ownCriticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -76,7 +79,11 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew withCause(@Nullable IConstraint cause) {
-        return new CNew(scopeTerm, datumTerm, cause, ownCriticalEdges);
+        return new CNew(scopeTerm, datumTerm, cause, origin, ownCriticalEdges);
+    }
+
+    @Override public @Nullable CNew origin() {
+        return origin;
     }
 
     @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
@@ -84,7 +91,7 @@ public final class CNew implements IConstraint, Serializable {
     }
 
     @Override public CNew withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
-        return new CNew(scopeTerm, datumTerm, cause, criticalEdges);
+        return new CNew(scopeTerm, datumTerm, cause, origin, criticalEdges);
     }
 
     @Override public Set.Immutable<ITermVar> freeVars() {
@@ -107,6 +114,7 @@ public final class CNew implements IConstraint, Serializable {
                 subst.apply(scopeTerm),
                 subst.apply(datumTerm),
                 cause,
+                origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
@@ -120,6 +128,7 @@ public final class CNew implements IConstraint, Serializable {
                 subst.apply(scopeTerm),
                 subst.apply(datumTerm),
                 cause,
+                origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
@@ -147,7 +156,8 @@ public final class CNew implements IConstraint, Serializable {
         return this.hashCode == that.hashCode
             && Objects.equals(this.scopeTerm, that.scopeTerm)
             && Objects.equals(this.datumTerm, that.datumTerm)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -161,7 +171,8 @@ public final class CNew implements IConstraint, Serializable {
         return Objects.hash(
                 scopeTerm,
                 datumTerm,
-                cause
+                cause,
+                origin
         );
     }
 

@@ -21,18 +21,20 @@ public final class CTrue implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CTrue origin;
 
     public CTrue() {
-        this(null);
+        this(null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
-    private CTrue(@Nullable IConstraint cause) {
+    private CTrue(@Nullable IConstraint cause, @Nullable CTrue origin) {
         this.cause = cause;
+        this.origin = origin;
     }
 
     public CTrue withArguments() {
-        return new CTrue(cause);
+        return new CTrue(cause, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -40,7 +42,11 @@ public final class CTrue implements IConstraint, Serializable {
     }
 
     @Override public CTrue withCause(@Nullable IConstraint cause) {
-        return new CTrue(cause);
+        return new CTrue(cause, origin);
+    }
+
+    @Override public @Nullable CTrue origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -96,7 +102,8 @@ public final class CTrue implements IConstraint, Serializable {
         final CTrue that = (CTrue)o;
         // @formatter:off
         return this.hashCode == that.hashCode
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -108,7 +115,8 @@ public final class CTrue implements IConstraint, Serializable {
 
     private int computeHashCode() {
         return Objects.hash(
-                cause
+                cause,
+                origin
         );
     }
 

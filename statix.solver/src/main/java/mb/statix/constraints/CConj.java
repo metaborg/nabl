@@ -24,15 +24,23 @@ public final class CConj implements IConstraint, Serializable {
     private final IConstraint right;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CConj origin;
 
     public CConj(IConstraint left, IConstraint right) {
-        this(left, right, null);
+        this(left, right, null, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
+        this(left, right, cause, null);
+    }
+
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause, @Nullable CConj origin) {
         this.left = left;
         this.right = right;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public IConstraint left() {
@@ -44,7 +52,7 @@ public final class CConj implements IConstraint, Serializable {
     }
 
     public CConj withArguments(IConstraint left, IConstraint right) {
-        return new CConj(left, right, cause);
+        return new CConj(left, right, cause, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -52,7 +60,11 @@ public final class CConj implements IConstraint, Serializable {
     }
 
     @Override public CConj withCause(@Nullable IConstraint cause) {
-        return new CConj(left, right, cause);
+        return new CConj(left, right, cause, origin);
+    }
+
+    @Override public @Nullable CConj origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -86,15 +98,15 @@ public final class CConj implements IConstraint, Serializable {
     }
 
     @Override public CConj apply(ISubstitution.Immutable subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
+        return new CConj(left.apply(subst), right.apply(subst), cause, origin);
     }
 
     @Override public CConj unsafeApply(ISubstitution.Immutable subst) {
-        return new CConj(left.unsafeApply(subst), right.unsafeApply(subst), cause);
+        return new CConj(left.unsafeApply(subst), right.unsafeApply(subst), cause, origin);
     }
 
     @Override public CConj apply(IRenaming subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
+        return new CConj(left.apply(subst), right.apply(subst), cause, origin);
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -119,7 +131,8 @@ public final class CConj implements IConstraint, Serializable {
         return this.hashCode == that.hashCode
             && Objects.equals(this.left, that.left)
             && Objects.equals(this.right, that.right)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -133,7 +146,8 @@ public final class CConj implements IConstraint, Serializable {
         return Objects.hash(
                 left,
                 right,
-                cause
+                cause,
+                origin
         );
     }
 

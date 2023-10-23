@@ -39,9 +39,10 @@ public final class CAstProperty implements IConstraint, Serializable {
     private final ITerm value;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CAstProperty origin;
 
     public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value) {
-        this(idTerm, property, op, value, null);
+        this(idTerm, property, op, value, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -50,13 +51,15 @@ public final class CAstProperty implements IConstraint, Serializable {
             ITerm property,
             Op op,
             ITerm value,
-            @Nullable IConstraint cause
+            @Nullable IConstraint cause,
+            @Nullable CAstProperty origin
     ) {
         this.idTerm = idTerm;
         this.property = property;
         this.op = op;
         this.value = value;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public ITerm idTerm() {
@@ -76,7 +79,7 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     public CAstProperty withArguments(ITerm idTerm, ITerm property, Op op, ITerm value) {
-        return new CAstProperty(idTerm, property, op, value, cause);
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -84,7 +87,11 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty withCause(@Nullable IConstraint cause) {
-        return new CAstProperty(idTerm, property, op, value, cause);
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
+    }
+
+    @Override public @Nullable CAstProperty origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -118,7 +125,7 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause, origin);
     }
 
     @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
@@ -126,7 +133,7 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty apply(IRenaming subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause, origin);
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -156,7 +163,8 @@ public final class CAstProperty implements IConstraint, Serializable {
             && Objects.equals(this.property, that.property)
             && this.op == that.op
             && Objects.equals(this.value, that.value)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -172,7 +180,8 @@ public final class CAstProperty implements IConstraint, Serializable {
                 property,
                 op,
                 value,
-                cause
+                cause,
+                origin
         );
     }
 

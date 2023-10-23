@@ -29,6 +29,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
+import javax.annotation.Nullable;
+
 public interface IConstraint {
 
     Optional<IConstraint> cause();
@@ -38,6 +40,13 @@ public interface IConstraint {
     default Optional<IMessage> message() {
         return Optional.empty();
     }
+
+    /**
+     * The syntactic constraint from which this instance was derived.
+     *
+     * @return a constraint of the same type; or {@code null} if this information was not (yet) recorded
+     */
+    @Nullable IConstraint origin();
 
     default IConstraint withMessage(@SuppressWarnings("unused") IMessage msg) {
         throw new UnsupportedOperationException("Constraint does not support message.");

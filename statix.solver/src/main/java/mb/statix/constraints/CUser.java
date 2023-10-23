@@ -29,15 +29,16 @@ public final class CUser implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CUser origin;
     private final @Nullable ICompleteness.Immutable ownCriticalEdges;
 
     public CUser(String name, Iterable<? extends ITerm> args) {
-        this(name, args, null, null, null);
+        this(name, args, null, null, null, null);
     }
 
     // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CUser(String name, Iterable<? extends ITerm> args, @Nullable IMessage message) {
-        this(name, args, null, message, null);
+        this(name, args, null, message, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -46,12 +47,14 @@ public final class CUser implements IConstraint, Serializable {
             Iterable<? extends ITerm> args,
             @Nullable IConstraint cause,
             @Nullable IMessage message,
+            @Nullable CUser origin,
             @Nullable ICompleteness.Immutable ownCriticalEdges
     ) {
         this.name = name;
         this.args = ImList.Immutable.copyOf(args);
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
         this.ownCriticalEdges = ownCriticalEdges;
     }
 
@@ -64,7 +67,7 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     public CUser withArguments(String name, Iterable<? extends ITerm> args) {
-        return new CUser(name, args, cause, message, ownCriticalEdges);
+        return new CUser(name, args, cause, message, origin, ownCriticalEdges);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -72,7 +75,7 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withCause(@Nullable IConstraint cause) {
-        return new CUser(name, args, cause, message, ownCriticalEdges);
+        return new CUser(name, args, cause, message, origin, ownCriticalEdges);
     }
 
     @Override public Optional<IMessage> message() {
@@ -80,7 +83,11 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withMessage(@Nullable IMessage message) {
-        return new CUser(name, args, cause, message, ownCriticalEdges);
+        return new CUser(name, args, cause, message, origin, ownCriticalEdges);
+    }
+
+    @Override public @Nullable CUser origin() {
+        return origin;
     }
 
     @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
@@ -88,7 +95,7 @@ public final class CUser implements IConstraint, Serializable {
     }
 
     @Override public CUser withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
-        return new CUser(name, args, cause, message, criticalEdges);
+        return new CUser(name, args, cause, message, origin, criticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -130,6 +137,7 @@ public final class CUser implements IConstraint, Serializable {
                 subst.apply(args),
                 cause,
                 message == null ? null : message.apply(subst),
+                origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
@@ -144,6 +152,7 @@ public final class CUser implements IConstraint, Serializable {
                 subst.apply(args),
                 cause,
                 message == null ? null : message.apply(subst),
+                origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
@@ -172,7 +181,8 @@ public final class CUser implements IConstraint, Serializable {
             && Objects.equals(this.name, that.name)
             && Objects.equals(this.args, that.args)
             && Objects.equals(this.cause, that.cause)
-            && Objects.equals(this.message, that.message);
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -187,7 +197,8 @@ public final class CUser implements IConstraint, Serializable {
                 name,
                 args,
                 cause,
-                message
+                message,
+                origin
         );
     }
 

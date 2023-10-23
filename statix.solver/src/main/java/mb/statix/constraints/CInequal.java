@@ -29,9 +29,10 @@ public final class CInequal implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CInequal origin;
 
     public CInequal(Iterable<ITermVar> universals, ITerm term1, ITerm term2) {
-        this(universals, term1, term2, null, null);
+        this(universals, term1, term2, null, null, null);
     }
 
     // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
@@ -41,7 +42,7 @@ public final class CInequal implements IConstraint, Serializable {
             ITerm term2,
             @Nullable IMessage message
     ) {
-        this(universals, term1, term2, null, message);
+        this(universals, term1, term2, null, message, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -50,13 +51,15 @@ public final class CInequal implements IConstraint, Serializable {
             ITerm term1,
             ITerm term2,
             @Nullable IConstraint cause,
-            @Nullable IMessage message
+            @Nullable IMessage message,
+            @Nullable CInequal origin
     ) {
         this.universals = CapsuleUtil.toSet(universals);
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public Set<ITermVar> universals() {
@@ -72,7 +75,7 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     public CInequal withArguments(Iterable<ITermVar> universals, ITerm term1, ITerm term2) {
-        return new CInequal(universals, term1, term2, cause, message);
+        return new CInequal(universals, term1, term2, cause, message, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -80,7 +83,7 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withCause(@Nullable IConstraint cause) {
-        return new CInequal(universals, term1, term2, cause, message);
+        return new CInequal(universals, term1, term2, cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -88,7 +91,11 @@ public final class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withMessage(@Nullable IMessage message) {
-        return new CInequal(universals, term1, term2, cause, message);
+        return new CInequal(universals, term1, term2, cause, message, origin);
+    }
+
+    @Override public @Nullable CInequal origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -135,7 +142,8 @@ public final class CInequal implements IConstraint, Serializable {
                 subst.apply(term1),
                 subst.apply(term2),
                 cause,
-                message == null ? null : message.apply(subst)
+                message == null ? null : message.apply(subst),
+                origin
         );
     }
 
@@ -152,7 +160,8 @@ public final class CInequal implements IConstraint, Serializable {
                 subst.apply(term1),
                 subst.apply(term2),
                 cause,
-                message == null ? null : message.apply(subst)
+                message == null ? null : message.apply(subst),
+                origin
         );
     }
 
@@ -188,7 +197,8 @@ public final class CInequal implements IConstraint, Serializable {
             && Objects.equals(this.term1, that.term1)
             && Objects.equals(this.term2, that.term2)
             && Objects.equals(this.cause, that.cause)
-            && Objects.equals(this.message, that.message);
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -204,7 +214,8 @@ public final class CInequal implements IConstraint, Serializable {
                 term1,
                 term2,
                 cause,
-                message
+                message,
+                origin
         );
     }
 

@@ -22,6 +22,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
     private static final long serialVersionUID = 1L;
 
     private final StateMachine<ITerm> stateMachine;
+    private final @Nullable CCompiledQuery origin;
 
     public CCompiledQuery(
             QueryFilter filter,
@@ -31,7 +32,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             ITerm resultTerm,
             StateMachine<ITerm> stateMachine
     ) {
-        this(filter, min, project, scopeTerm, resultTerm, null, null, stateMachine);
+        this(filter, min, project, scopeTerm, resultTerm, null, null, null, stateMachine);
     }
 
     // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
@@ -44,7 +45,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             @Nullable IMessage message,
             StateMachine<ITerm> stateMachine
     ) {
-        this(filter, min, project, scopeTerm, resultTerm, null, message, stateMachine);
+        this(filter, min, project, scopeTerm, resultTerm, null, message, null, stateMachine);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -56,9 +57,11 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             ITerm resultTerm,
             @Nullable IConstraint cause,
             @Nullable IMessage message,
+            @Nullable CCompiledQuery origin,
             StateMachine<ITerm> stateMachine
     ) {
         super(filter, min, project, scopeTerm, resultTerm, cause, message);
+        this.origin = origin;
         this.stateMachine = stateMachine;
     }
 
@@ -70,7 +73,11 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             ITerm resultTerm,
             StateMachine<ITerm> stateMachine
     ) {
-        return new CCompiledQuery(filter, min, project, scopeTerm, resultTerm, cause, message, stateMachine);
+        return new CCompiledQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin, stateMachine);
+    }
+
+    @Override public @Nullable CCompiledQuery origin() {
+        return origin;
     }
 
     public StateMachine<ITerm> stateMachine() {
@@ -95,6 +102,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 resultTerm,
                 cause,
                 message,
+                origin,
                 stateMachine
         );
     }
@@ -108,6 +116,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
+                origin,
                 stateMachine
         );
     }
@@ -121,6 +130,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
+                origin,
                 stateMachine
         );
     }
@@ -134,6 +144,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
+                origin,
                 stateMachine
         );
     }
@@ -168,6 +179,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
             && Objects.equals(this.resultTerm, that.resultTerm)
             && Objects.equals(this.cause, that.cause)
             && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin)
             && Objects.equals(this.stateMachine, that.stateMachine);
         // @formatter:on
     }
@@ -187,6 +199,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 resultTerm,
                 cause,
                 message,
+                origin,
                 stateMachine
         );
     }
