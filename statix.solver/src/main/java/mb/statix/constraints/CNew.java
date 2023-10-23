@@ -109,26 +109,26 @@ public final class CNew implements IConstraint, Serializable {
         datumTerm.getVars().stream().forEach(onFreeVar::apply);
     }
 
-    @Override public CNew apply(ISubstitution.Immutable subst) {
+    @Override public CNew apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CNew(
                 subst.apply(scopeTerm),
                 subst.apply(datumTerm),
                 cause,
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
 
-    @Override public CNew unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CNew unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CNew apply(IRenaming subst) {
+    @Override public CNew apply(IRenaming subst, boolean trackOrigin) {
         return new CNew(
                 subst.apply(scopeTerm),
                 subst.apply(datumTerm),
                 cause,
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }

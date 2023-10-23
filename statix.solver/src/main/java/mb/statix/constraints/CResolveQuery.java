@@ -85,7 +85,7 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
         return origin;
     }
 
-    @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
+    @Override public CResolveQuery apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CResolveQuery(
                 filter.apply(subst),
                 min.apply(subst),
@@ -94,11 +94,11 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
-    @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst) {
+    @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CResolveQuery(
                 filter.unsafeApply(subst),
                 min.unsafeApply(subst),
@@ -107,11 +107,11 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
-    @Override public CResolveQuery apply(IRenaming subst) {
+    @Override public CResolveQuery apply(IRenaming subst, boolean trackOrigin) {
         return new CResolveQuery(
                 filter.apply(subst),
                 min.apply(subst),
@@ -120,7 +120,7 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 

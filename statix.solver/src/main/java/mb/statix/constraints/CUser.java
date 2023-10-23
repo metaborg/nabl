@@ -131,28 +131,28 @@ public final class CUser implements IConstraint, Serializable {
         }
     }
 
-    @Override public CUser apply(ISubstitution.Immutable subst) {
+    @Override public CUser apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CUser(
                 name,
                 subst.apply(args),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
 
-    @Override public CUser unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CUser unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CUser apply(IRenaming subst) {
+    @Override public CUser apply(IRenaming subst, boolean trackOrigin) {
         return new CUser(
                 name,
                 subst.apply(args),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }

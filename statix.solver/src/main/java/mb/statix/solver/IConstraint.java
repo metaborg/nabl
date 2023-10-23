@@ -87,17 +87,50 @@ public interface IConstraint {
     /**
      * Apply capture avoiding substitution.
      */
-    IConstraint apply(ISubstitution.Immutable subst);
+    default IConstraint apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
 
     /**
      * Apply unguarded substitution, which may result in capture.
      */
-    IConstraint unsafeApply(ISubstitution.Immutable subst);
+    default IConstraint unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
 
     /**
      * Apply variable renaming.
      */
-    IConstraint apply(IRenaming subst);
+    default IConstraint apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint apply(ISubstitution.Immutable subst, boolean trackOrigin);
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin);
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint apply(IRenaming subst, boolean trackOrigin);
 
     String toString(TermFormatter termToString);
 

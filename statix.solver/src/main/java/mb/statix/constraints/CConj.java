@@ -97,16 +97,31 @@ public final class CConj implements IConstraint, Serializable {
         right.visitFreeVars(onFreeVar);
     }
 
-    @Override public CConj apply(ISubstitution.Immutable subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause, origin);
+    @Override public CConj apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CConj(
+                left.apply(subst),
+                right.apply(subst),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
-    @Override public CConj unsafeApply(ISubstitution.Immutable subst) {
-        return new CConj(left.unsafeApply(subst), right.unsafeApply(subst), cause, origin);
+    @Override public CConj unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CConj(
+                left.unsafeApply(subst),
+                right.unsafeApply(subst),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
-    @Override public CConj apply(IRenaming subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause, origin);
+    @Override public CConj apply(IRenaming subst, boolean trackOrigin) {
+        return new CConj(
+                left.apply(subst),
+                right.apply(subst),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {

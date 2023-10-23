@@ -97,16 +97,24 @@ public final class CFalse implements IConstraint, Serializable {
         }
     }
 
-    @Override public CFalse apply(ISubstitution.Immutable subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst), origin);
+    @Override public CFalse apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CFalse(
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
-    @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CFalse unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CFalse apply(IRenaming subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst), origin);
+    @Override public CFalse apply(IRenaming subst, boolean trackOrigin) {
+        return new CFalse(
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {

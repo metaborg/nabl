@@ -133,7 +133,7 @@ public final class CInequal implements IConstraint, Serializable {
 
     }
 
-    @Override public CInequal apply(ISubstitution.Immutable subst) {
+    @Override public CInequal apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         final Set.Immutable<ITermVar> us = universals.stream()
                 .flatMap(v -> subst.apply(v).getVars().stream())
                 .collect(CapsuleCollectors.toSet());
@@ -143,15 +143,15 @@ public final class CInequal implements IConstraint, Serializable {
                 subst.apply(term2),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
-    @Override public CInequal unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CInequal unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CInequal apply(IRenaming subst) {
+    @Override public CInequal apply(IRenaming subst, boolean trackOrigin) {
         final Set.Immutable<ITermVar> us = universals.stream()
                 .map(subst::rename)
                 .collect(CapsuleCollectors.toSet());
@@ -161,7 +161,7 @@ public final class CInequal implements IConstraint, Serializable {
                 subst.apply(term2),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 

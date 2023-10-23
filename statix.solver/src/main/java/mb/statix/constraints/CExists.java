@@ -144,7 +144,7 @@ public final class CExists implements IConstraint, Serializable {
     }
 
 
-    @Override public CExists apply(ISubstitution.Immutable subst) {
+    @Override public CExists apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars).retainAll(freeVars());
         if (localSubst.isEmpty()) {
             return this;
@@ -173,10 +173,17 @@ public final class CExists implements IConstraint, Serializable {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, freeVars);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                freeVars
+        );
     }
 
-    @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
+    @Override public CExists unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars);
         if (localSubst.isEmpty()) {
             return this;
@@ -190,10 +197,17 @@ public final class CExists implements IConstraint, Serializable {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, null);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                null
+        );
     }
 
-    @Override public CExists apply(IRenaming subst) {
+    @Override public CExists apply(IRenaming subst, boolean trackOrigin) {
         Set.Immutable<ITermVar> vars = this.vars;
         IConstraint constraint = this.constraint;
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
@@ -204,7 +218,14 @@ public final class CExists implements IConstraint, Serializable {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
 
-        return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, null);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                null
+        );
     }
 
 

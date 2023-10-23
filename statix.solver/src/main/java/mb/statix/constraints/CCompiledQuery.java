@@ -107,7 +107,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
         );
     }
 
-    @Override public CCompiledQuery apply(Immutable subst) {
+    @Override public CCompiledQuery apply(Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
                 filter.apply(subst),
                 min.apply(subst),
@@ -116,12 +116,12 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 stateMachine
         );
     }
 
-    @Override public CCompiledQuery unsafeApply(Immutable subst) {
+    @Override public CCompiledQuery unsafeApply(Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
                 filter.unsafeApply(subst),
                 min.unsafeApply(subst),
@@ -130,12 +130,12 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 stateMachine
         );
     }
 
-    @Override public CCompiledQuery apply(IRenaming subst) {
+    @Override public CCompiledQuery apply(IRenaming subst, boolean trackOrigin) {
         return new CCompiledQuery(
                 filter.apply(subst),
                 min.apply(subst),
@@ -144,7 +144,7 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
                 subst.apply(resultTerm),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin,
+                origin == null && trackOrigin ? this : origin,
                 stateMachine
         );
     }

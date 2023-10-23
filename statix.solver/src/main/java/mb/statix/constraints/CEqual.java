@@ -122,27 +122,27 @@ public final class CEqual implements IConstraint, Serializable {
         }
     }
 
-    @Override public CEqual apply(ISubstitution.Immutable subst) {
+    @Override public CEqual apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CEqual(
                 subst.apply(term1),
                 subst.apply(term2),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
-    @Override public CEqual unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CEqual unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CEqual apply(IRenaming subst) {
+    @Override public CEqual apply(IRenaming subst, boolean trackOrigin) {
         return new CEqual(
                 subst.apply(term1),
                 subst.apply(term2),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 

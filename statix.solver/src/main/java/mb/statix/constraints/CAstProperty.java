@@ -124,16 +124,30 @@ public final class CAstProperty implements IConstraint, Serializable {
         value.getVars().forEach(onFreeVar::apply);
     }
 
-    @Override public CAstProperty apply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause, origin);
+    @Override public CAstProperty apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
-    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CAstProperty apply(IRenaming subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause, origin);
+    @Override public CAstProperty apply(IRenaming subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {

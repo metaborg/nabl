@@ -126,29 +126,29 @@ public final class CArith implements IConstraint, Serializable {
         }
     }
 
-    @Override public CArith apply(ISubstitution.Immutable subst) {
+    @Override public CArith apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CArith(
                 expr1.apply(subst),
                 op,
                 expr2.apply(subst),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
-    @Override public CArith unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CArith unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CArith apply(IRenaming subst) {
+    @Override public CArith apply(IRenaming subst, boolean trackOrigin) {
         return new CArith(
                 expr1.apply(subst),
                 op,
                 expr2.apply(subst),
                 cause,
                 message == null ? null : message.apply(subst),
-                origin
+                origin == null && trackOrigin ? this : origin
         );
     }
 
