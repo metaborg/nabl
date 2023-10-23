@@ -36,8 +36,8 @@ public final class CResolveQuery extends AResolveQuery implements Serializable {
         this(filter, min, project, scopeTerm, resultTerm, null, message);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
-    public CResolveQuery(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CResolveQuery(
             QueryFilter filter,
             QueryMin min,
             QueryProject project,

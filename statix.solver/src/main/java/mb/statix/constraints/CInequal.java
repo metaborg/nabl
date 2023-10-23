@@ -44,8 +44,8 @@ public final class CInequal implements IConstraint, Serializable {
         this(universals, term1, term2, null, message);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
-    public CInequal(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CInequal(
             Iterable<ITermVar> universals,
             ITerm term1,
             ITerm term2,

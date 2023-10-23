@@ -29,8 +29,8 @@ public final class CAstId implements IConstraint, Serializable {
         this(term, idTerm, null);
     }
 
-    // Do not call this constructor. Call withArguments() or withCause() instead.
-    public CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
         this.term = term;
         this.idTerm = idTerm;
         this.cause = cause;

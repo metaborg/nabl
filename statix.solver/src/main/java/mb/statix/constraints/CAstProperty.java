@@ -44,8 +44,14 @@ public final class CAstProperty implements IConstraint, Serializable {
         this(idTerm, property, op, value, null);
     }
 
-    // Do not call this constructor. Call withArguments() or withCause() instead.
-    public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value, @Nullable IConstraint cause) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CAstProperty(
+            ITerm idTerm,
+            ITerm property,
+            Op op,
+            ITerm value,
+            @Nullable IConstraint cause
+    ) {
         this.idTerm = idTerm;
         this.property = property;
         this.op = op;

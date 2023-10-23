@@ -31,8 +31,8 @@ public final class CNew implements IConstraint, Serializable {
         this(scopeTerm, datumTerm, null, null);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withOwnCriticalEdges() instead.
-    public CNew(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CNew(
             ITerm scopeTerm,
             ITerm datumTerm,
             @Nullable IConstraint cause,

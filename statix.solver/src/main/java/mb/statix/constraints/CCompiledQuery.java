@@ -47,8 +47,8 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
         this(filter, min, project, scopeTerm, resultTerm, null, message, stateMachine);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
-    public CCompiledQuery(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CCompiledQuery(
             QueryFilter filter,
             QueryMin min,
             QueryProject project,

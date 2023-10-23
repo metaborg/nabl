@@ -40,8 +40,8 @@ public final class CUser implements IConstraint, Serializable {
         this(name, args, null, message, null);
     }
 
-    // Do not call this constructor. Call withArguments() instead.
-    public CUser(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CUser(
             String name,
             Iterable<? extends ITerm> args,
             @Nullable IConstraint cause,

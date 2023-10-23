@@ -32,8 +32,8 @@ public final class CTellEdge implements IConstraint, Serializable {
         this(sourceTerm, label, targetTerm, null, null);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withOwnCriticalEdges() instead.
-    public CTellEdge(
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CTellEdge(
             ITerm sourceTerm,
             ITerm label,
             ITerm targetTerm,

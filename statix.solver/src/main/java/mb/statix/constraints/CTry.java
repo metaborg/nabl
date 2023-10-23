@@ -35,8 +35,8 @@ public final class CTry implements IConstraint, Serializable {
         this(constraint, null, message);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
-    public CTry(IConstraint constraint, @Nullable IConstraint cause, @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CTry(IConstraint constraint, @Nullable IConstraint cause, @Nullable IMessage message) {
         this.constraint = constraint;
         this.cause = cause;
         this.message = message;

@@ -26,8 +26,8 @@ public final class CTrue implements IConstraint, Serializable {
         this(null);
     }
 
-    // Do not call this constructor. Call withCause() instead.
-    public CTrue(@Nullable IConstraint cause) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CTrue(@Nullable IConstraint cause) {
         this.cause = cause;
     }
 
