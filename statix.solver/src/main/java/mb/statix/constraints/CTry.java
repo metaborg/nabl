@@ -115,7 +115,7 @@ public final class CTry implements IConstraint, Serializable {
 
     @Override public CTry apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTry(
-                constraint.apply(subst),
+                constraint.apply(subst, trackOrigin),
                 cause,
                 message == null ? null : message.apply(subst),
                 origin == null && trackOrigin ? this : origin
@@ -124,7 +124,7 @@ public final class CTry implements IConstraint, Serializable {
 
     @Override public CTry unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTry(
-                constraint.unsafeApply(subst),
+                constraint.unsafeApply(subst, trackOrigin),
                 cause,
                 message == null ? null : message.apply(subst),
                 origin == null && trackOrigin ? this : origin
@@ -133,7 +133,7 @@ public final class CTry implements IConstraint, Serializable {
 
     @Override public CTry apply(IRenaming subst, boolean trackOrigin) {
         return new CTry(
-                constraint.apply(subst),
+                constraint.apply(subst, trackOrigin),
                 cause,
                 message == null ? null : message.apply(subst),
                 origin == null && trackOrigin ? this : origin

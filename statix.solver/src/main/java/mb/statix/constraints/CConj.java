@@ -111,8 +111,8 @@ public final class CConj implements IConstraint, Serializable {
 
     @Override public CConj apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CConj(
-                left.apply(subst),
-                right.apply(subst),
+                left.apply(subst, trackOrigin),
+                right.apply(subst, trackOrigin),
                 cause,
                 origin == null && trackOrigin ? this : origin
         );
@@ -120,8 +120,8 @@ public final class CConj implements IConstraint, Serializable {
 
     @Override public CConj unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CConj(
-                left.unsafeApply(subst),
-                right.unsafeApply(subst),
+                left.unsafeApply(subst, trackOrigin),
+                right.unsafeApply(subst, trackOrigin),
                 cause,
                 origin == null && trackOrigin ? this : origin
         );
@@ -129,8 +129,8 @@ public final class CConj implements IConstraint, Serializable {
 
     @Override public CConj apply(IRenaming subst, boolean trackOrigin) {
         return new CConj(
-                left.apply(subst),
-                right.apply(subst),
+                left.apply(subst, trackOrigin),
+                right.apply(subst, trackOrigin),
                 cause,
                 origin == null && trackOrigin ? this : origin
         );

@@ -179,7 +179,7 @@ public final class CExists implements IConstraint, Serializable {
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        constraint = constraint.apply(localSubst);
+        constraint = constraint.apply(localSubst, trackOrigin);
         if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -203,7 +203,7 @@ public final class CExists implements IConstraint, Serializable {
         IConstraint constraint = this.constraint;
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
 
-        constraint = constraint.unsafeApply(localSubst);
+        constraint = constraint.unsafeApply(localSubst, trackOrigin);
         if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -224,7 +224,7 @@ public final class CExists implements IConstraint, Serializable {
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
 
         vars = CapsuleUtil.toSet(subst.rename(vars));
-        constraint = constraint.apply(subst);
+        constraint = constraint.apply(subst, trackOrigin);
         if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
