@@ -172,6 +172,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
             }
             return CompletableFuture.completedFuture(SolverResult.of(spec));
         }
+        final /*IState.*/Immutable unitState = State.of().withResource(context.id());
         final ApplyResult applyResult;
         try {
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
