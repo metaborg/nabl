@@ -40,10 +40,17 @@ class ConstraintDataLeq implements DataLeq<ITerm> {
 
     @Override public boolean leq(ITerm datum1, ITerm datum2) throws ResolutionException, InterruptedException {
         try {
-            final ApplyResult applyResult;
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum1, datum2), null,
-                    ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+            final ApplyResult applyResult = RuleUtil.apply(
+                    state.unifier(),
+                    constraint,
+                    ImList.Immutable.of(datum1, datum2),
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.UNSAFE,
+                    true
+            ).orElse(null);
+            if(applyResult == null) {
                 return false;
             }
 

@@ -64,20 +64,28 @@ public abstract class ARule {
      */
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
         final List<ITermVar>
-            args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
+                args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
                 .collect(Collectors.toList());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null,
-                    ApplyMode.STRICT, Safety.SAFE).orElse(null)) == null) {
+            applyResult = RuleUtil.apply(
+                    PersistentUniDisunifier.Immutable.of(),
+                    (Rule)this,
+                    args,
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.SAFE,
+                    false
+            ).orElse(null);
+            if (applyResult == null) {
                 // We could not apply the rule to the given variables,
                 // this rule is not unconditional
                 return Optional.empty();
             }
-        } catch(Delay d) {
+        } catch (Delay d) {
             return Optional.empty();
         }
-        if(applyResult.guard().isPresent()) {
+        if (applyResult.guard().isPresent()) {
             // This rule is not unconditional
             return Optional.empty();
         }
