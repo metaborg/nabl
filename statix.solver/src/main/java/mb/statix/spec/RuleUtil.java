@@ -153,6 +153,18 @@ public final class RuleUtil {
         return results.freeze();
     }
 
+    // TODO: Remove this overload
+    public static <E extends Throwable> Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety
+    ) throws E {
+        return apply(unifier, rule, args, cause, mode, safety, false);
+    }
+
     /**
      * Apply the given rule to the given arguments. Returns the result of application, or nothing of the rule cannot be
      * applied. The result may contain equalities that need to be satisfied for the application to be valid.
