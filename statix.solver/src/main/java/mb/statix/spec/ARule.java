@@ -221,9 +221,9 @@ public abstract class ARule {
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         params = params().stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
-        body = body.apply(subst);
+        body = body.apply(subst, trackOrigin);
         if(bodyCriticalEdges != null) {
-            bodyCriticalEdges = bodyCriticalEdges.apply(subst, trackOrigin);
+            bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
 
         return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
