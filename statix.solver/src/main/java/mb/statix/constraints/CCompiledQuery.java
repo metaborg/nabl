@@ -66,10 +66,6 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
         this.stateMachine = stateMachine;
     }
 
-    public CCompiledQuery withArguments(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm) {
-        return withArguments(filter, min, project, scopeTerm, resultTerm, this.stateMachine);
-    }
-
     public CCompiledQuery withArguments(
             QueryFilter filter,
             QueryMin min,
