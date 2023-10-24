@@ -138,8 +138,8 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
 
     @Override public CCompiledQuery apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
-                filter.apply(subst),
-                min.apply(subst),
+                filter.apply(subst, trackOrigin),
+                min.apply(subst, trackOrigin),
                 project,
                 subst.apply(scopeTerm),
                 subst.apply(resultTerm),
@@ -152,8 +152,8 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
 
     @Override public CCompiledQuery unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CCompiledQuery(
-                filter.unsafeApply(subst),
-                min.unsafeApply(subst),
+                filter.unsafeApply(subst, trackOrigin),
+                min.unsafeApply(subst, trackOrigin),
                 project,
                 subst.apply(scopeTerm),
                 subst.apply(resultTerm),
@@ -166,8 +166,8 @@ public final class CCompiledQuery extends AResolveQuery implements Serializable 
 
     @Override public CCompiledQuery apply(IRenaming subst, boolean trackOrigin) {
         return new CCompiledQuery(
-                filter.apply(subst),
-                min.apply(subst),
+                filter.apply(subst, trackOrigin),
+                min.apply(subst, trackOrigin),
                 project,
                 subst.apply(scopeTerm),
                 subst.apply(resultTerm),

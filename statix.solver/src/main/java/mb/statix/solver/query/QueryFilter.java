@@ -42,16 +42,61 @@ public class QueryFilter implements Serializable {
         return RuleUtil.vars(dataWf);
     }
 
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryFilter apply(ISubstitution.Immutable subst) {
-        return new QueryFilter(pathWf, dataWf.apply(subst));
+        return apply(subst, false);
     }
 
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryFilter unsafeApply(ISubstitution.Immutable subst) {
-        return new QueryFilter(pathWf, dataWf.unsafeApply(subst));
+        return unsafeApply(subst, false);
     }
 
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryFilter apply(IRenaming subst) {
-        return new QueryFilter(pathWf, dataWf.apply(subst));
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryFilter apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new QueryFilter(pathWf, dataWf.apply(subst, trackOrigin));
+    }
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryFilter unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new QueryFilter(pathWf, dataWf.unsafeApply(subst, trackOrigin));
+    }
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryFilter apply(IRenaming subst, boolean trackOrigin) {
+        return new QueryFilter(pathWf, dataWf.apply(subst, trackOrigin));
     }
 
     public String toString(TermFormatter termToString) {

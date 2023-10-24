@@ -37,16 +37,61 @@ public class QueryMin implements Serializable {
         return RuleUtil.vars(dataOrd);
     }
 
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryMin apply(ISubstitution.Immutable subst) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst));
+        return apply(subst, false);
     }
 
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryMin unsafeApply(ISubstitution.Immutable subst) {
-        return new QueryMin(labelOrd, dataOrd.unsafeApply(subst));
+        return unsafeApply(subst, false);
     }
 
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     */
     public QueryMin apply(IRenaming subst) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst));
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryMin apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigin));
+    }
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryMin unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new QueryMin(labelOrd, dataOrd.unsafeApply(subst, trackOrigin));
+    }
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public QueryMin apply(IRenaming subst, boolean trackOrigin) {
+        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigin));
     }
 
     public String toString(TermFormatter termToString) {
