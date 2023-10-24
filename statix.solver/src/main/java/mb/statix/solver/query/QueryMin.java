@@ -68,30 +68,30 @@ public class QueryMin implements Serializable {
      * Apply capture avoiding substitution.
      *
      * @param subst the substitution to apply
-     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public QueryMin apply(ISubstitution.Immutable subst, boolean trackOrigin) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigin));
+    public QueryMin apply(ISubstitution.Immutable subst, boolean trackOrigins) {
+        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigins));
     }
 
     /**
      * Apply unguarded substitution, which may result in capture.
      *
      * @param subst the substitution to apply
-     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public QueryMin unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
-        return new QueryMin(labelOrd, dataOrd.unsafeApply(subst, trackOrigin));
+    public QueryMin unsafeApply(ISubstitution.Immutable subst, boolean trackOrigins) {
+        return new QueryMin(labelOrd, dataOrd.unsafeApply(subst, trackOrigins));
     }
 
     /**
      * Apply variable renaming.
      *
      * @param subst the substitution to apply
-     * @param trackOrigin whether to track the syntactic origin of the constraints, if not already tracked
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public QueryMin apply(IRenaming subst, boolean trackOrigin) {
-        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigin));
+    public QueryMin apply(IRenaming subst, boolean trackOrigins) {
+        return new QueryMin(labelOrd, dataOrd.apply(subst, trackOrigins));
     }
 
     public String toString(TermFormatter termToString) {

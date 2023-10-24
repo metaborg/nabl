@@ -29,7 +29,13 @@ public abstract class ApplyMode<E extends Throwable> {
      */
     public static final ApplyMode<VoidException> RELAXED = new ApplyRelaxed();
 
-    abstract Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            @Nullable IConstraint cause, Safety safety) throws E;
+    abstract Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E;
 
 }

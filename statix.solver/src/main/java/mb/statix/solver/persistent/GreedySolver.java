@@ -703,7 +703,7 @@ class GreedySolver {
                 final ImList.Immutable<Rule> rules = spec.rules().getRules(name);
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final Tuple3<Rule, ApplyResult, Boolean> result;
-                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return fail(c);
