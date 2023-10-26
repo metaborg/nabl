@@ -9,7 +9,6 @@ import org.metaborg.util.collection.ImList;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.OccursException;
@@ -22,7 +21,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph extends StatixPrimitive {
 
-    @Inject public STX_get_scopegraph() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_scopegraph() {
         super(STX_get_scopegraph.class.getSimpleName(), 0);
     }
 

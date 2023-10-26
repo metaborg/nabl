@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;

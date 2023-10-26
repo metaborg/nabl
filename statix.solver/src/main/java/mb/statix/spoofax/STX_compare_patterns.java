@@ -10,14 +10,13 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.Pattern;
 
 public class STX_compare_patterns extends StatixPrimitive {
 
-    @Inject public STX_compare_patterns() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_compare_patterns() {
         super(STX_compare_patterns.class.getSimpleName(), 0);
     }
 

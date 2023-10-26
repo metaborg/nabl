@@ -18,7 +18,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -31,7 +30,7 @@ import mb.statix.spec.Spec;
 public abstract class StatixConstraintPrimitive extends StatixPrimitive {
     protected static final ILogger logger = LoggerUtils.logger(StatixConstraintPrimitive.class);
 
-    @Inject public StatixConstraintPrimitive(String name) {
+    @jakarta.inject.Inject @javax.inject.Inject public StatixConstraintPrimitive(String name) {
         super(name, 4);
     }
 
