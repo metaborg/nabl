@@ -24,7 +24,7 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  compileOnly("jakarta.annotation:jakarta.annotation-api")
+  implementation("jakarta.annotation:jakarta.annotation-api")
 
   // Tests
   testImplementation("junit:junit")
@@ -36,7 +36,6 @@ dependencies {
   testAnnotationProcessor("org.immutables:serial")
   testCompileOnly("org.immutables:value")
   testCompileOnly("org.immutables:serial")
-  testCompileOnly("jakarta.annotation:jakarta.annotation-api")
 
   // !! Update dependencies in pom.xml as well
 }
