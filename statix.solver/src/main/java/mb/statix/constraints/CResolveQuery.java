@@ -3,7 +3,7 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;

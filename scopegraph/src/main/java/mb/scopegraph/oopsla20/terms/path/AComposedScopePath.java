@@ -4,7 +4,7 @@ import java.math.BigInteger;
 import java.util.Iterator;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;

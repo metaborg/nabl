@@ -5,7 +5,6 @@ import java.util.concurrent.ExecutionException;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import javax.inject.Inject;
 
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
@@ -16,7 +15,7 @@ import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixConstraintPrimitive {
 
-    @Inject public STX_solve_constraint() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName());
     }
 

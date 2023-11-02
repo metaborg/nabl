@@ -15,7 +15,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -26,7 +25,7 @@ import mb.statix.solver.persistent.SolverResult;
 public class STX_get_all_properties extends StatixPropertyPrimitive {
 
 
-    @Inject public STX_get_all_properties() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_all_properties() {
         super(STX_get_all_properties.class.getSimpleName(), 1);
     }
 

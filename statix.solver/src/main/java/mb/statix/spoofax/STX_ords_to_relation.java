@@ -1,6 +1,5 @@
 package mb.statix.spoofax;
 
-import javax.inject.Inject;
 
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
@@ -19,7 +18,7 @@ import mb.scopegraph.relations.impl.Relation;
 
 public class STX_ords_to_relation extends AbstractPrimitive {
 
-    @Inject public STX_ords_to_relation() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_ords_to_relation() {
         super(STX_ords_to_relation.class.getSimpleName(), 0, 1);
     }
 

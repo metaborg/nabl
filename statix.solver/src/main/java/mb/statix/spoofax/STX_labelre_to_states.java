@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Inject;
-
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.library.AbstractPrimitive;
 import org.spoofax.interpreter.stratego.Strategy;
@@ -29,7 +27,7 @@ import mb.scopegraph.regexp.impl.RegExpNormalizingBuilder;
 
 public class STX_labelre_to_states extends AbstractPrimitive {
 
-    @Inject public STX_labelre_to_states(String name) {
+    @javax.inject.Inject @jakarta.inject.Inject public STX_labelre_to_states(String name) {
         super(STX_labelre_to_states.class.getSimpleName(), 0, 2);
     }
 

@@ -2,7 +2,7 @@ package mb.nabl2.terms.build;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.ImList;
 

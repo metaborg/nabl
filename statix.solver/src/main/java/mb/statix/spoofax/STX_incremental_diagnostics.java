@@ -15,7 +15,6 @@ import org.metaborg.util.future.IFuture;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -34,7 +33,7 @@ import mb.statix.scopegraph.Scope;
 
 public class STX_incremental_diagnostics extends StatixPrimitive {
 
-    @Inject public STX_incremental_diagnostics() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_incremental_diagnostics() {
         super(STX_incremental_diagnostics.class.getSimpleName(), 1);
     }
 
