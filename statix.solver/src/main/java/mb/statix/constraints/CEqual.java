@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -26,19 +26,20 @@ public final class CEqual implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CEqual origin;
 
     public CEqual(ITerm term1, ITerm term2) {
-        this(term1, term2, null, null);
+        this(term1, term2, null, null, null);
     }
 
     // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CEqual(ITerm term1, ITerm term2, @Nullable IMessage message) {
-        this(term1, term2, null, message);
+        this(term1, term2, null, message, null);
     }
 
     // Do not call this constructor. This is used in the solver. Call withArguments() or withCause() instead.
     public CEqual(ITerm term1, ITerm term2, @Nullable IConstraint cause) {
-        this(term1, term2, cause, null);
+        this(term1, term2, cause, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -46,12 +47,14 @@ public final class CEqual implements IConstraint, Serializable {
             ITerm term1,
             ITerm term2,
             @Nullable IConstraint cause,
-            @Nullable IMessage message
+            @Nullable IMessage message,
+            @Nullable CEqual origin
     ) {
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public ITerm term1() {
@@ -63,7 +66,14 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     public CEqual withArguments(ITerm term1, ITerm term2) {
-        return new CEqual(term1, term2, cause, message);
+        if (this.term1 == term1 &&
+            this.term2 == term2
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CEqual(term1, term2, cause, message, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -71,7 +81,12 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     @Override public CEqual withCause(@Nullable IConstraint cause) {
-        return new CEqual(term1, term2, cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CEqual(term1, term2, cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -79,7 +94,16 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     @Override public CEqual withMessage(@Nullable IMessage message) {
-        return new CEqual(term1, term2, cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CEqual(term1, term2, cause, message, origin);
+    }
+
+    @Override public @Nullable CEqual origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -116,24 +140,38 @@ public final class CEqual implements IConstraint, Serializable {
     }
 
     @Override public CEqual apply(ISubstitution.Immutable subst) {
-        return new CEqual(
-                subst.apply(term1),
-                subst.apply(term2),
-                cause,
-                message == null ? null : message.apply(subst)
-        );
+        return apply(subst, false);
     }
 
     @Override public CEqual unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+        return unsafeApply(subst, false);
     }
 
     @Override public CEqual apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CEqual apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CEqual(
                 subst.apply(term1),
                 subst.apply(term2),
                 cause,
-                message == null ? null : message.apply(subst)
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CEqual unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CEqual apply(IRenaming subst, boolean trackOrigin) {
+        return new CEqual(
+                subst.apply(term1),
+                subst.apply(term2),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
         );
     }
 
@@ -160,7 +198,8 @@ public final class CEqual implements IConstraint, Serializable {
             && Objects.equals(this.term1, that.term1)
             && Objects.equals(this.term2, that.term2)
             && Objects.equals(this.cause, that.cause)
-            && Objects.equals(this.message, that.message);
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -175,7 +214,8 @@ public final class CEqual implements IConstraint, Serializable {
                 term1,
                 term2,
                 cause,
-                message
+                message,
+                origin
         );
     }
 

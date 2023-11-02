@@ -11,7 +11,7 @@ import mb.statix.solver.persistent.Solver;
 import org.metaborg.util.functions.*;
 import org.metaborg.util.unit.Unit;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 
 public abstract class StepResult {

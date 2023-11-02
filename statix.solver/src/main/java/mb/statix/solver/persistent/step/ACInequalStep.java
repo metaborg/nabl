@@ -5,7 +5,7 @@ import mb.nabl2.terms.unification.ud.Diseq;
 import mb.statix.constraints.CInequal;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Optional;
 
 @Value.Immutable

@@ -1,11 +1,10 @@
 package mb.statix.solver.persistent.step;
 
+import jakarta.annotation.Nullable;
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.CTellEdge;
 import mb.statix.scopegraph.Scope;
 import org.immutables.value.Value;
-
-import javax.annotation.Nullable;
 
 @Value.Immutable
 public abstract class ACTellEdgeStep implements IStep {

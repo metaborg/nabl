@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;

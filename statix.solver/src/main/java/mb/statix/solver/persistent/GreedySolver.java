@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -454,7 +454,7 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
                 final Renaming existentials = _existentials.build();
 
                 final ISubstitution.Immutable subst = existentials.asSubstitution();
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                final IConstraint newConstraint = c.constraint().apply(subst, true).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
@@ -733,7 +733,7 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
                 final ImList.Immutable<Rule> rules = spec.rules().getRules(name);
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final Tuple3<Rule, ApplyResult, Boolean> result;
-                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return CUserStep.of(c, StepResult.failure(), null);

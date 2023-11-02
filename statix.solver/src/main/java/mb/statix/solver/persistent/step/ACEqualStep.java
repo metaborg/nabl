@@ -4,7 +4,7 @@ import mb.nabl2.terms.unification.u.IUnifier;
 import mb.statix.constraints.CEqual;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 @Value.Immutable
 public abstract class ACEqualStep implements IStep {

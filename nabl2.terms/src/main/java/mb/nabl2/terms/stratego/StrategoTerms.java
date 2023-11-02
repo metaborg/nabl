@@ -6,7 +6,7 @@ import static org.spoofax.interpreter.terms.TermType.BLOB;
 import java.util.LinkedList;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.ImList;
 import mb.nabl2.terms.matching.TermMatch;

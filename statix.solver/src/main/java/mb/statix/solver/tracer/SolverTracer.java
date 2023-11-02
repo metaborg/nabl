@@ -17,7 +17,7 @@ import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.step.IStep;
 import mb.statix.solver.persistent.step.StepResult;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 /**
  * A tracer which allows observing and influencing the behavior of a Statix solver externally.

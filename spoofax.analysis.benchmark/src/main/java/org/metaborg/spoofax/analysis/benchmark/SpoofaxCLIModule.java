@@ -4,7 +4,7 @@ import org.metaborg.core.editor.IEditorRegistry;
 import org.metaborg.core.editor.NullEditorRegistry;
 import org.metaborg.spoofax.core.SpoofaxModule;
 
-import javax.inject.Singleton;
+import com.google.inject.Singleton;
 
 public class SpoofaxCLIModule extends SpoofaxModule {
 

@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -62,20 +62,28 @@ public abstract class ARule {
      */
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
         final List<ITermVar>
-            args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
+                args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
                 .collect(Collectors.toList());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null,
-                    ApplyMode.STRICT, Safety.SAFE).orElse(null)) == null) {
+            applyResult = RuleUtil.apply(
+                    PersistentUniDisunifier.Immutable.of(),
+                    (Rule)this,
+                    args,
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.SAFE,
+                    false
+            ).orElse(null);
+            if (applyResult == null) {
                 // We could not apply the rule to the given variables,
                 // this rule is not unconditional
                 return Optional.empty();
             }
-        } catch(Delay d) {
+        } catch (Delay d) {
             return Optional.empty();
         }
-        if(applyResult.guard().isPresent()) {
+        if (applyResult.guard().isPresent()) {
             // This rule is not unconditional
             return Optional.empty();
         }
@@ -117,8 +125,39 @@ public abstract class ARule {
 
     /**
      * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
      */
     public Rule apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     */
+    public Rule unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     */
+    public Rule apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public Rule apply(ISubstitution.Immutable subst, boolean trackOrigins) {
         ISubstitution.Immutable localSubst = subst.removeAll(paramVars()).retainAll(freeVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
@@ -143,7 +182,7 @@ public abstract class ARule {
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        body = body.apply(localSubst);
+        body = body.apply(localSubst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -153,8 +192,11 @@ public abstract class ARule {
 
     /**
      * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public Rule unsafeApply(ISubstitution.Immutable subst) {
+    public Rule unsafeApply(ISubstitution.Immutable subst, boolean trackOrigins) {
         ISubstitution.Immutable localSubst = subst.removeAll(paramVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
@@ -164,7 +206,7 @@ public abstract class ARule {
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
-        body = body.unsafeApply(localSubst);
+        body = body.unsafeApply(localSubst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -175,14 +217,17 @@ public abstract class ARule {
 
     /**
      * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public Rule apply(IRenaming subst) {
+    public Rule apply(IRenaming subst, boolean trackOrigins) {
         ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
         params = params().stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
-        body = body.apply(subst);
+        body = body.apply(subst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }

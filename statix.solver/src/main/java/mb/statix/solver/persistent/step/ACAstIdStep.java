@@ -6,7 +6,7 @@ import mb.statix.constraints.CAstId;
 import mb.statix.scopegraph.Scope;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Optional;
 
 @Value.Immutable

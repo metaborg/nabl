@@ -5,7 +5,7 @@ import mb.statix.constraints.CNew;
 import mb.statix.scopegraph.Scope;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 @Value.Immutable
 public abstract class ACNewStep implements IStep {

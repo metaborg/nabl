@@ -6,7 +6,7 @@ import mb.statix.constraints.CAstProperty;
 import mb.statix.solver.ITermProperty;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 @Value.Immutable
 public abstract class ACAstPropertyStep implements IStep {

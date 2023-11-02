@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -39,9 +39,10 @@ public final class CAstProperty implements IConstraint, Serializable {
     private final ITerm value;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CAstProperty origin;
 
     public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value) {
-        this(idTerm, property, op, value, null);
+        this(idTerm, property, op, value, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -50,13 +51,15 @@ public final class CAstProperty implements IConstraint, Serializable {
             ITerm property,
             Op op,
             ITerm value,
-            @Nullable IConstraint cause
+            @Nullable IConstraint cause,
+            @Nullable CAstProperty origin
     ) {
         this.idTerm = idTerm;
         this.property = property;
         this.op = op;
         this.value = value;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public ITerm idTerm() {
@@ -76,7 +79,16 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     public CAstProperty withArguments(ITerm idTerm, ITerm property, Op op, ITerm value) {
-        return new CAstProperty(idTerm, property, op, value, cause);
+        if (this.idTerm == idTerm &&
+            this.property == property &&
+            this.op == op &&
+            this.value == value
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -84,7 +96,16 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty withCause(@Nullable IConstraint cause) {
-        return new CAstProperty(idTerm, property, op, value, cause);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
+    }
+
+    @Override public @Nullable CAstProperty origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -118,15 +139,41 @@ public final class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return apply(subst, false);
     }
 
     @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+        return unsafeApply(subst, false);
     }
 
     @Override public CAstProperty apply(IRenaming subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return apply(subst, false);
+    }
+
+    @Override public CAstProperty apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CAstProperty apply(IRenaming subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -156,7 +203,8 @@ public final class CAstProperty implements IConstraint, Serializable {
             && Objects.equals(this.property, that.property)
             && this.op == that.op
             && Objects.equals(this.value, that.value)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -172,7 +220,8 @@ public final class CAstProperty implements IConstraint, Serializable {
                 property,
                 op,
                 value,
-                cause
+                cause,
+                origin
         );
     }
 

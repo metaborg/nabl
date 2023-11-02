@@ -2,7 +2,7 @@ package mb.statix.solver.persistent.step;
 
 import org.metaborg.util.functions.Function1;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public class Steps {
 

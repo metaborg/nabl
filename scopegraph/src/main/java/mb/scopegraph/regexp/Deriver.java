@@ -1,6 +1,6 @@
 package mb.scopegraph.regexp;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.scopegraph.regexp.impl.RegExps;
 

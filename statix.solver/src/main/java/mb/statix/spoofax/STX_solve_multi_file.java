@@ -16,7 +16,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -32,7 +31,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
-    @Inject public STX_solve_multi_file() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_file() {
         super(STX_solve_multi_file.class.getSimpleName(), 5);
     }
 

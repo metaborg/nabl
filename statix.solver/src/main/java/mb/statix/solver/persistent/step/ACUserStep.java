@@ -4,7 +4,7 @@ import mb.statix.constraints.CUser;
 import mb.statix.spec.ApplyResult;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 @Value.Immutable
 public abstract class ACUserStep implements IStep {

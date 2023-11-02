@@ -15,7 +15,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
@@ -32,7 +31,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
-    @Inject public STX_solve_multi_project() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 5);
     }
 

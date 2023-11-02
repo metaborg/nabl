@@ -16,27 +16,24 @@ dependencies {
   api("org.metaborg:org.metaborg.util:$spoofax2Version")
   api(project(":scopegraph"))
   api("io.usethesource:capsule")
-  compileOnly(libs.jsr305)
 
   // Annotation processing
   annotationProcessor("org.immutables:value")
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  compileOnly(libs.javax.annotation)
+  implementation(libs.jakarta.annotation)
 
   // Tests
   testImplementation("junit:junit")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
   testImplementation("ch.qos.logback:logback-classic")
-  testCompileOnly(libs.jsr305)
 
   // Test Annotation processing
   testAnnotationProcessor("org.immutables:value")
   testAnnotationProcessor("org.immutables:serial")
   testCompileOnly("org.immutables:value")
   testCompileOnly("org.immutables:serial")
-  testCompileOnly(libs.javax.annotation)
 
   // !! Update dependencies in pom.xml as well
 }

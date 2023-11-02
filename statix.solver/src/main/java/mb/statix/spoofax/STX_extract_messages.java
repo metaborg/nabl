@@ -9,7 +9,6 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -19,7 +18,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_extract_messages extends StatixPrimitive {
 
-    @Inject public STX_extract_messages() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_extract_messages() {
         super(STX_extract_messages.class.getSimpleName(), 0);
     }
 

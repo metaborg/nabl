@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -24,16 +24,18 @@ public final class CAstId implements IConstraint, Serializable {
     private final ITerm idTerm;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CAstId origin;
 
     public CAstId(ITerm term, ITerm idTerm) {
-        this(term, idTerm, null);
+        this(term, idTerm, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
-    private CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause) {
+    private CAstId(ITerm term, ITerm idTerm, @Nullable IConstraint cause, @Nullable CAstId origin) {
         this.term = term;
         this.idTerm = idTerm;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public ITerm astTerm() {
@@ -45,7 +47,14 @@ public final class CAstId implements IConstraint, Serializable {
     }
 
     public CAstId withArguments(ITerm term, ITerm idTerm) {
-        return new CAstId(term, idTerm, cause);
+        if (this.term == term &&
+            this.idTerm == idTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstId(term, idTerm, cause, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -53,7 +62,16 @@ public final class CAstId implements IConstraint, Serializable {
     }
 
     @Override public CAstId withCause(@Nullable IConstraint cause) {
-        return new CAstId(term, idTerm, cause);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstId(term, idTerm, cause, origin);
+    }
+
+    @Override public @Nullable CAstId origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -87,15 +105,37 @@ public final class CAstId implements IConstraint, Serializable {
     }
 
     @Override public CAstId apply(ISubstitution.Immutable subst) {
-        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+        return apply(subst, false);
     }
 
     @Override public CAstId unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+        return unsafeApply(subst, false);
     }
 
     @Override public CAstId apply(IRenaming subst) {
-        return new CAstId(subst.apply(term), subst.apply(idTerm), cause);
+        return apply(subst, false);
+    }
+
+    @Override public CAstId apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CAstId(
+                subst.apply(term),
+                subst.apply(idTerm),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CAstId unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CAstId apply(IRenaming subst, boolean trackOrigin) {
+        return new CAstId(
+                subst.apply(term),
+                subst.apply(idTerm),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -122,7 +162,8 @@ public final class CAstId implements IConstraint, Serializable {
         return this.hashCode == that.hashCode
             && Objects.equals(this.term, that.term)
             && Objects.equals(this.idTerm, that.idTerm)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -136,7 +177,8 @@ public final class CAstId implements IConstraint, Serializable {
         return Objects.hash(
                 term,
                 idTerm,
-                cause
+                cause,
+                origin
         );
     }
 
