@@ -23,27 +23,31 @@ public final class CFalse implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CFalse origin;
 
     public CFalse() {
-        this(null, null);
+        this(null, null, null);
     }
 
     // This constructor is primarily used to reconstruct this object from a Statix term. Call withMessage() instead.
     public CFalse(@Nullable IMessage message) {
-        this(null, message);
+        this(null, message, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
     private CFalse(
             @Nullable IConstraint cause,
-            @Nullable IMessage message
+            @Nullable IMessage message,
+            @Nullable CFalse origin
     ) {
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public CFalse withArguments() {
-        return new CFalse(cause, message);
+        // Avoid creating new objects.
+        return this;
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -51,7 +55,12 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse withCause(@Nullable IConstraint cause) {
-        return new CFalse(cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CFalse(cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -59,7 +68,16 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse withMessage(@Nullable IMessage message) {
-        return new CFalse(cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CFalse(cause, message, origin);
+    }
+
+    @Override public @Nullable CFalse origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -91,15 +109,35 @@ public final class CFalse implements IConstraint, Serializable {
     }
 
     @Override public CFalse apply(ISubstitution.Immutable subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst));
+        return apply(subst, false);
     }
 
     @Override public CFalse unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+        return unsafeApply(subst, false);
     }
 
     @Override public CFalse apply(IRenaming subst) {
-        return new CFalse(cause, message == null ? null : message.apply(subst));
+        return apply(subst, false);
+    }
+
+    @Override public CFalse apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CFalse(
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CFalse unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CFalse apply(IRenaming subst, boolean trackOrigin) {
+        return new CFalse(
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(@SuppressWarnings("unused") TermFormatter termToString) {
@@ -119,7 +157,8 @@ public final class CFalse implements IConstraint, Serializable {
         // @formatter:off
         return this.hashCode == that.hashCode
             && Objects.equals(this.cause, that.cause)
-            && Objects.equals(this.message, that.message);
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -132,7 +171,8 @@ public final class CFalse implements IConstraint, Serializable {
     private int computeHashCode() {
         return Objects.hash(
                 cause,
-                message
+                message,
+                origin
         );
     }
 

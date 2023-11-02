@@ -39,7 +39,7 @@ import mb.statix.spec.ApplyMode.Safety;
 /**
  * A special rule application that supports indexing in its parameters. The index allows grouping based on which
  * arguments match a constraint, and finding matching arguments using lookup.
- * 
+ * <p>
  * The class throws Delay exceptions in the following cases:
  * <ul>
  * <li>If the initial application does not reduce enough, and the remaining constraint has free variables left. The free
@@ -154,29 +154,36 @@ public class IndexedRuleApplication {
 
         final IState.Transient _state = state.melt();
         final List<ITermVar> args = new ArrayList<>();
-        for(@SuppressWarnings("unused") Pattern param : rule.params()) {
+        for (@SuppressWarnings("unused") Pattern param : rule.params()) {
             final ITermVar v = _state.freshVar(B.newVar("", "arg"));
             args.add(v);
         }
         final IState.Immutable newState = _state.freeze();
 
-        final ApplyResult applyResult;
-        if((applyResult = RuleUtil.apply(newState.unifier(), rule, args, null, ApplyMode.RELAXED, Safety.SAFE)
-                .orElse(null)) == null) {
+        final ApplyResult applyResult = RuleUtil.apply(
+                newState.unifier(),
+                rule,
+                args,
+                null,
+                ApplyMode.RELAXED,
+                Safety.SAFE,
+                true
+        ).orElse(null);
+        if (applyResult == null) {
             return Optional.empty();
         }
 
         final IConstraint bodyAsConstraint = applyResult.body();
         final SolverResult solveResult = Solver.solve(spec, newState, bodyAsConstraint, new NullDebugContext(),
                 new NullCancel(), new NullProgress(), Solver.RETURN_ON_FIRST_ERROR);
-        if(solveResult.hasErrors()) {
+        if (solveResult.hasErrors()) {
             return Optional.empty();
         }
 
         final SortedSet<ITermVar> indexVars = new TreeSet<>();
         final List<Pattern> newParams = new ArrayList<>();
         final java.util.Set<ITermVar> newParamVars = new HashSet<>();
-        for(ITermVar arg : args) {
+        for (ITermVar arg : args) {
             final ITerm term = solveResult.state().unifier().findRecursive(arg);
             final Immutable<ITermVar> termVars = term.getVars();
             final Pattern param = P.fromTerm(term);
@@ -188,12 +195,12 @@ public class IndexedRuleApplication {
         final ITerm index = B.newTuple(indexVars);
 
         final IndexedRuleApplication ira;
-        if(solveResult.delays().isEmpty()) {
+        if (solveResult.delays().isEmpty()) {
             ira = new IndexedRuleApplication(spec, newParams, null, index);
         } else {
             final IConstraint residualConstraint = solveResult.delayed();
             final Set.Immutable<ITermVar> newFreeVars = residualConstraint.freeVars().__removeAll(newParamVars);
-            if(!newFreeVars.isEmpty()) {
+            if (!newFreeVars.isEmpty()) {
                 throw Delay.ofVars(newFreeVars);
             }
             ira = new IndexedRuleApplication(spec, newParams, residualConstraint, index);

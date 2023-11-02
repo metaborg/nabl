@@ -26,10 +26,11 @@ public final class CTellEdge implements IConstraint, Serializable {
     private final ITerm targetTerm;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CTellEdge origin;
     private final @Nullable ICompleteness.Immutable ownCriticalEdges;
 
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
-        this(sourceTerm, label, targetTerm, null, null);
+        this(sourceTerm, label, targetTerm, null, null, null);
     }
 
     // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
@@ -38,12 +39,14 @@ public final class CTellEdge implements IConstraint, Serializable {
             ITerm label,
             ITerm targetTerm,
             @Nullable IConstraint cause,
+            @Nullable CTellEdge origin,
             @Nullable ICompleteness.Immutable ownCriticalEdges
     ) {
         this.sourceTerm = sourceTerm;
         this.label = label;
         this.targetTerm = targetTerm;
         this.cause = cause;
+        this.origin = origin;
         this.ownCriticalEdges = ownCriticalEdges;
     }
 
@@ -60,7 +63,15 @@ public final class CTellEdge implements IConstraint, Serializable {
     }
 
     public CTellEdge withArguments(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause, ownCriticalEdges);
+        if (this.sourceTerm == sourceTerm &&
+            this.label == label &&
+            this.targetTerm == targetTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, ownCriticalEdges);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -68,7 +79,16 @@ public final class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge withCause(@Nullable IConstraint cause) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause, ownCriticalEdges);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, ownCriticalEdges);
+    }
+
+    @Override public @Nullable CTellEdge origin() {
+        return origin;
     }
 
     @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
@@ -76,7 +96,12 @@ public final class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause, criticalEdges);
+        if (this.ownCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, criticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -110,25 +135,39 @@ public final class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CTellEdge apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTellEdge apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTellEdge(
                 subst.apply(sourceTerm),
                 label,
                 subst.apply(targetTerm),
                 cause,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
 
-    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
-        return apply(subst);
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
     }
 
-    @Override public CTellEdge apply(IRenaming subst) {
+    @Override public CTellEdge apply(IRenaming subst, boolean trackOrigin) {
         return new CTellEdge(
                 subst.apply(sourceTerm),
                 label,
                 subst.apply(targetTerm),
                 cause,
+                origin == null && trackOrigin ? this : origin,
                 ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
         );
     }
@@ -158,7 +197,8 @@ public final class CTellEdge implements IConstraint, Serializable {
             && Objects.equals(this.sourceTerm, that.sourceTerm)
             && Objects.equals(this.label, that.label)
             && Objects.equals(this.targetTerm, that.targetTerm)
-            && Objects.equals(this.cause, that.cause);
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -173,7 +213,8 @@ public final class CTellEdge implements IConstraint, Serializable {
                 sourceTerm,
                 label,
                 targetTerm,
-                cause
+                cause,
+                origin
         );
     }
 

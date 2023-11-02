@@ -166,8 +166,8 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
             List<Scope> scopes) {
-        if(!rule.isPresent()) {
-            for(Scope scope : scopes) {
+        if (!rule.isPresent()) {
+            for (Scope scope : scopes) {
                 context.initScope(scope, Collections.emptyList(), false);
             }
             return CompletableFuture.completedFuture(SolverResult.of(spec));
@@ -176,13 +176,20 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         final ApplyResult applyResult;
         try {
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((applyResult =
-                    RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT, Safety.UNSAFE)
-                            .orElse(null)) == null) {
+            applyResult = RuleUtil.apply(
+                    unitState.unifier(),
+                    rule.get(),
+                    scopes,
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.UNSAFE,
+                    true
+            ).orElse(null);
+            if (applyResult == null) {
                 return CompletableFuture.completedExceptionally(
                         new IllegalArgumentException("Cannot apply initial rule to root scope."));
             }
-        } catch(Delay delay) {
+        } catch (Delay delay) {
             return CompletableFuture.completedExceptionally(
                     new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }

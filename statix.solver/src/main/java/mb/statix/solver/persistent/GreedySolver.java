@@ -430,7 +430,7 @@ class GreedySolver {
                 final Renaming existentials = _existentials.build();
 
                 final ISubstitution.Immutable subst = existentials.asSubstitution();
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                final IConstraint newConstraint = c.constraint().apply(subst, true).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
@@ -703,7 +703,7 @@ class GreedySolver {
                 final ImList.Immutable<Rule> rules = spec.rules().getRules(name);
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final Tuple3<Rule, ApplyResult, Boolean> result;
-                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return fail(c);
