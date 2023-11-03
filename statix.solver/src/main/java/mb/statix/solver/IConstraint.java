@@ -29,7 +29,7 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public interface IConstraint {
 
