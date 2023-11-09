@@ -2,11 +2,12 @@ package mb.scopegraph.regexp.impl;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import org.metaborg.util.collection.ImList;
 
 import mb.scopegraph.regexp.IAlphabet;
 
@@ -14,14 +15,18 @@ public final class FiniteAlphabet<S> implements IAlphabet<S>, Serializable {
 
     private static final long serialVersionUID = 42L;
 
-    private final ImmutableList<S> symbols;
+    private final ImList.Immutable<S> symbols;
 
     @SafeVarargs public FiniteAlphabet(S... symbols) {
-        this(Arrays.asList(symbols));
+        this(new HashSet<>(Arrays.asList(symbols)));
     }
 
-    public FiniteAlphabet(Iterable<S> alphabet) {
-        this.symbols = ImmutableList.copyOf(ImmutableSet.copyOf(alphabet));
+    public FiniteAlphabet(List<S> alphabet) {
+        this(new HashSet<>(alphabet));
+    }
+
+    public FiniteAlphabet(Set<S> alphabet) {
+        this.symbols = ImList.Immutable.copyOf(alphabet);
     }
 
     @Override public Iterator<S> iterator() {

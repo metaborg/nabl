@@ -2,17 +2,18 @@ package mb.nabl2.solver.solvers;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.functions.Predicate2;
+import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
+import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
@@ -50,6 +51,8 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseMultiFileSolver extends BaseSolver {
+
+    private static final PrintlineLogger log = PrintlineLogger.logger(BaseMultiFileSolver.class);
 
     public BaseMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         super(nabl2Debug, callExternal);
@@ -116,18 +119,22 @@ public class BaseMultiFileSolver extends BaseSolver {
 
             NameResolutionResult nameResolutionResult = nameResolutionSolver.finish();
             IUnifier.Immutable unifierResult = equalitySolver.finish();
-            Map<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
+            Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relationResult = relationSolver.finish();
             ISymbolicConstraints symbolicConstraints = symSolver.finish();
             setSolver.finish();
 
             final IMessages.Transient messages = initial.messages().melt();
             messages.addAll(solveResult.messages());
 
-            return Solution
+            Solution solution = Solution
                     .of(config, initial.astProperties(), nameResolutionResult.scopeGraph(),
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                             messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
+
+            log.info("finish intra: {}", solution);
+
+            return solution;
         } catch(RuntimeException ex) {
             throw new SolverException("Internal solver error.", ex);
         }

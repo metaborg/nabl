@@ -13,9 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.collection.MultiSet;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.PartialFunction1;
@@ -24,13 +25,8 @@ import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.tuple.Tuple3;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.Pattern;
@@ -52,7 +48,8 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.StateUtil;
 import mb.statix.spec.ApplyMode.Safety;
 
-public class RuleUtil {
+public final class RuleUtil {
+    private RuleUtil() { /* This class cannot be instantiated. */ }
 
     /**
      * Apply the given list of rules to the given arguments. Returns the result of application if one rule can be
@@ -60,23 +57,25 @@ public class RuleUtil {
      * order, with the first rule that can be applied is selected if the match is unconditional, or it is the only rule
      * that can be applied.
      *
-     * @param state
-     *            Initial state
-     * @param rules
-     *            Ordered list of rules to apply
-     * @param args
-     *            Arguments to apply the rules to
-     * @param cause
-     *            Cause of this rule application, null if none
-     *
-     * @return Empty if no rules apply, or the first application if multiple rules apply. The third component of the
-     *         tuple is true if this is the only match.
+     * @param state        the initial state
+     * @param rules        an ordered list of rules to apply
+     * @param args         the arguments to apply the rules to
+     * @param cause        the cause of this rule application; or {@code null} if none
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
+     * @return none if no rules apply, or the first application if multiple rules apply. The third component of the
+     * tuple is true if this is the only match.
      */
     public static <E extends Throwable> Optional<Tuple3<Rule, ApplyResult, Boolean>> applyOrderedOne(
-            IUniDisunifier.Immutable state, List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause,
-            ApplyMode<E> mode, Safety safety) throws E {
-        final List<Tuple2<Rule, ApplyResult>> results = applyOrdered(state, rules, args, cause, mode, safety, true);
-        if(results.size() == 0) {
+            IUniDisunifier.Immutable state,
+            ImList.Immutable<Rule> rules,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E {
+        final List<Tuple2<Rule, ApplyResult>> results = applyOrdered(state, rules, args, cause, mode, safety, true, trackOrigins);
+        if (results.size() == 0) {
             return Optional.empty();
         } else {
             final Tuple2<Rule, ApplyResult> result = results.get(0);
@@ -89,112 +88,146 @@ public class RuleUtil {
      * are expected to be in matching order, with rules being selected up to and including the first rule that can be
      * applied unconditional.
      *
-     * @param state
-     *            Initial state
-     * @param rules
-     *            Ordered list of rules to apply
-     * @param args
-     *            Arguments to apply the rules to
-     * @param cause
-     *            Cause of this rule application, null if none
-     *
-     * @return A list of apply results, up to and including the first unconditionally matching result.
+     * @param state        the initial state
+     * @param rules        an ordered list of rules to apply
+     * @param args         the arguments to apply the rules to
+     * @param cause        the cause of this rule application; or {@code null} if none
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
+     * @return a list of apply results, up to and including the first unconditionally matching result.
      */
-    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(IUniDisunifier.Immutable state,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety)
-            throws E {
-        return applyOrdered(state, rules, args, cause, mode, safety, false);
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrderedAll(
+            IUniDisunifier.Immutable state,
+            ImList.Immutable<Rule> rules,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E {
+        return applyOrdered(state, rules, args, cause, mode, safety, false, trackOrigins);
     }
 
     /**
      * Helper method to apply the given list of ordered rules to the given arguments. Returns a list of results for all
      * rules that could be applied. If onlyOne is true, returns at most two results.
      */
-    private static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrdered(IUniDisunifier.Immutable unifier,
-            List<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety,
-            boolean onlyOne) throws E {
-        final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
+    private static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyOrdered(
+            IUniDisunifier.Immutable unifier,
+            ImList.Immutable<Rule> rules,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety,
+            boolean onlyOne,
+            boolean trackOrigins
+    ) throws E {
+        final ImList.Mutable<Tuple2<Rule, ApplyResult>> results = ImList.Mutable.of();
         final AtomicBoolean foundOne = new AtomicBoolean(false);
-        for(Rule rule : rules) {
+        for (Rule rule : rules) {
             // apply rule
             final ApplyResult applyResult;
-            if((applyResult = apply(unifier, rule, args, cause, mode, safety).orElse(null)) == null) {
+            if ((applyResult = apply(unifier, rule, args, cause, mode, safety, trackOrigins).orElse(null)) == null) {
                 // this rule does not apply, continue to next rules
                 continue;
             }
             results.add(Tuple2.of(rule, applyResult));
-            if(onlyOne && foundOne.getAndSet(true)) {
+            if (onlyOne && foundOne.getAndSet(true)) {
                 // we require exactly one, but found multiple
                 break;
             }
 
             // stop or add guard to state for next rule
             final Tuple3<Set<ITermVar>, ITerm, ITerm> guard;
-            if((guard = applyResult.guard().map(Diseq::toTuple).orElse(null)) == null) {
+            if ((guard = applyResult.guard().map(Diseq::toTuple).orElse(null)) == null) {
                 // next rules are unreachable after this unconditional match
                 break;
             }
             final Optional<IUniDisunifier.Immutable> newUnifier =
                     unifier.disunify(guard._1(), guard._2(), guard._3()).map(IUniDisunifier.Result::unifier);
-            if(!newUnifier.isPresent()) {
+            if (!newUnifier.isPresent()) {
                 // guards are equalities missing in the unifier, disunifying them should never fail
                 throw new IllegalStateException("Unexpected incompatible guard.");
             }
             unifier = newUnifier.get();
         }
-        return results.build();
+        return results.freeze();
+    }
+
+    // TODO: Remove this overload
+    public static <E extends Throwable> Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety
+    ) throws E {
+        return apply(unifier, rule, args, cause, mode, safety, false);
     }
 
     /**
      * Apply the given rule to the given arguments. Returns the result of application, or nothing of the rule cannot be
      * applied. The result may contain equalities that need to be satisfied for the application to be valid.
      */
-    public static <E extends Throwable> Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule,
-            List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode, Safety safety) throws E {
-        return mode.apply(unifier, rule, args, cause, safety);
+    public static <E extends Throwable> Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E {
+        return mode.apply(unifier, rule, args, cause, safety, trackOrigins);
     }
 
     /**
      * Apply the given rules to the given arguments. Returns the results of application.
      */
-    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(IUniDisunifier.Immutable state,
-            Collection<Rule> rules, List<? extends ITerm> args, @Nullable IConstraint cause, ApplyMode<E> mode,
-            Safety safety) throws E {
-        final ImmutableList.Builder<Tuple2<Rule, ApplyResult>> results = ImmutableList.builder();
-        for(Rule rule : rules) {
+    public static <E extends Throwable> List<Tuple2<Rule, ApplyResult>> applyAll(
+            IUniDisunifier.Immutable state,
+            Collection<Rule> rules,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            ApplyMode<E> mode,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E {
+        final ImList.Mutable<Tuple2<Rule, ApplyResult>> results = ImList.Mutable.of();
+        for (Rule rule : rules) {
             final ApplyResult result;
-            if((result = apply(state, rule, args, cause, mode, safety).orElse(null)) != null) {
+            if ((result = apply(state, rule, args, cause, mode, safety, trackOrigins).orElse(null)) != null) {
                 results.add(Tuple2.of(rule, result));
             }
         }
-        return results.build();
+        return results.freeze();
     }
 
     /**
      * Computes the order independent rules.
      *
-     * @param rules
-     *            the ordered set of rules for which to compute
+     * @param rules the ordered set of rules for which to compute
      * @return the set of order independent rules
      */
-    public static ImmutableSet<Rule> computeOrderIndependentRules(List<Rule> rules) {
-        final ImmutableSet.Builder<Rule> newRules = ImmutableSet.builder();
+    public static Set.Immutable<Rule> computeOrderIndependentRules(ImList.Immutable<Rule> rules) {
+        final Set.Transient<Rule> newRules = CapsuleUtil.transientSet();
         final List<Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable>> guards = new ArrayList<>();
-        RULE: for(Rule rule : rules) {
+        RULE:
+        for (Rule rule : rules) {
             final Set.Immutable<ITermVar> ruleParamVars = rule.paramVars();
             final FreshVars fresh = new FreshVars(rule.freeVars(), ruleParamVars);
 
             final List<ITerm> paramTerms = new ArrayList<>();
             final IUniDisunifier.Transient _paramsUnifier = PersistentUniDisunifier.Immutable.of().melt();
-            for(Pattern param : rule.params()) {
+            for (Pattern param : rule.params()) {
                 final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> paramTerm =
                         param.asTerm(v -> v.orElseGet(() -> fresh.fresh("_")));
                 paramTerms.add(paramTerm._1());
                 try {
-                    if(!_paramsUnifier.unify(paramTerm._2()).isPresent()) {
+                    if (!_paramsUnifier.unify(paramTerm._2()).isPresent()) {
                         continue RULE; // skip, unmatchable pattern
                     }
-                } catch(OccursException ex) {
+                } catch (OccursException ex) {
                     continue RULE; // skip, unmatchable pattern
                 }
             }
@@ -203,20 +236,21 @@ public class RuleUtil {
             final IUniDisunifier.Immutable paramsUnifier = _paramsUnifier.freeze();
 
             final IUniDisunifier.Transient _unifier = paramsUnifier.melt();
-            GUARD: for(Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable> guard : guards) {
+            GUARD:
+            for (Tuple3<Set.Immutable<ITermVar>, ITerm, IUnifier.Immutable> guard : guards) {
                 final IRenaming guardRen = fresh.fresh(guard._1());
                 final Set.Immutable<ITermVar> guardVars = fresh.reset();
                 final ITerm guardTerm = guardRen.apply(guard._2());
                 IUnifier.Immutable guardUnifier = guard._3().rename(guardRen);
                 try {
-                    if((guardUnifier =
+                    if ((guardUnifier =
                             guardUnifier.unify(paramsTerm, guardTerm).map(r -> r.unifier()).orElse(null)) == null) {
                         continue GUARD; // skip, guard already satisfied
                     }
-                } catch(OccursException ex) {
+                } catch (OccursException ex) {
                     continue GUARD; // skip, guard already satisfied
                 }
-                if(!_unifier.disunify(guardVars, guardUnifier).isPresent()) {
+                if (!_unifier.disunify(guardVars, guardUnifier).isPresent()) {
                     continue RULE; // skip, incompatible patterns & guards
                 }
             }
@@ -226,7 +260,7 @@ public class RuleUtil {
                     Tuple3.of(paramVars, paramsTerm, paramsUnifier);
             guards.add(guard);
 
-            final List<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImmutableList.toImmutableList());
+            final ImList.Immutable<Pattern> params = paramTerms.stream().map(P::fromTerm).collect(ImList.Immutable.toImmutableList());
 
 
             // we initialized FreshVars to make sure these do not capture any free variables,
@@ -237,15 +271,15 @@ public class RuleUtil {
                     Constraints.exists(newBodyVars, Constraints.conjoin(StateUtil.asConstraint(unifier), rule.body()));
 
             final Rule newRule = Rule.builder()
-                .from(rule)
-                .params(params)
-                .body(body)
-                .bodyCriticalEdges(rule.bodyCriticalEdges())
-                .build();
+                    .from(rule)
+                    .params(params)
+                    .body(body)
+                    .bodyCriticalEdges(rule.bodyCriticalEdges())
+                    .build();
 
-            newRules.add(newRule);
+            newRules.__insert(newRule);
         }
-        return newRules.build();
+        return newRules.freeze();
     }
 
     /**
@@ -258,21 +292,21 @@ public class RuleUtil {
 
         final AtomicInteger i = new AtomicInteger(0);
         final IConstraint newBody = Constraints.map(c -> {
-            if(!(c instanceof CUser)) {
+            if (!(c instanceof CUser)) {
                 return c;
             }
-            final CUser constraint = (CUser) c;
-            if(!constraint.name().equals(rule.name())) {
+            final CUser constraint = (CUser)c;
+            if (!constraint.name().equals(rule.name())) {
                 return c;
             }
-            if(i.getAndIncrement() != ith) {
+            if (i.getAndIncrement() != ith) {
                 return c;
             }
 
             return applyToConstraint(fresh, rule, constraint.args());
         }, false).apply(into.body());
 
-        if(i.get() <= ith) {
+        if (i.get() <= ith) {
             // nothing was inlined
             return Optional.empty();
         }
@@ -294,9 +328,9 @@ public class RuleUtil {
 
     /**
      * Transform rule such that constraints and have a single top-level existential.
-     *
+     * <p>
      * Head patterns are preserved.
-     *
+     * <p>
      * For example:
      *
      * <pre>
@@ -311,7 +345,7 @@ public class RuleUtil {
     /**
      * Transform rule such that head patterns are maximally instantiated based on the body. This implicitly applies
      * hoisting.
-     *
+     * <p>
      * Head patterns are not preserved, but may only become more specific.
      */
     public static Rule instantiateHeadPatterns(Rule rule) {
@@ -320,15 +354,15 @@ public class RuleUtil {
 
         final List<ITerm> paramTerms = new ArrayList<>();
         final IUniDisunifier.Transient _paramsUnifier = PersistentUniDisunifier.Immutable.of().melt();
-        for(Pattern param : rule.params()) {
+        for (Pattern param : rule.params()) {
             final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> paramTerm =
                     param.asTerm(v -> v.orElseGet(() -> fresh.fresh("_")));
             paramTerms.add(paramTerm._1());
             try {
-                if(!_paramsUnifier.unify(paramTerm._2()).isPresent()) {
+                if (!_paramsUnifier.unify(paramTerm._2()).isPresent()) {
                     return rule; // skip, unmatchable pattern
                 }
-            } catch(OccursException ex) {
+            } catch (OccursException ex) {
                 return rule; // skip, unmatchable pattern
             }
         }
@@ -344,15 +378,15 @@ public class RuleUtil {
 
         final List<ITerm> newParamTerms = new ArrayList<>();
         final MultiSet.Transient<ITermVar> newParamVars = MultiSet.Transient.of();
-        for(ITerm paramTerm : paramTerms) {
+        for (ITerm paramTerm : paramTerms) {
             final ITerm newParamTerm = externResult._1().apply(paramTerm);
             newParamTerms.add(newParamTerm);
             newParamTerm.visitVars(newParamVars::add);
         }
 
-        final List<Pattern> params = newParamTerms.stream()
+        final ImList.Immutable<Pattern> params = newParamTerms.stream()
                 .map(t -> P.fromTerm(t, v -> !finalBody.freeVars().contains(v) && newParamVars.count(v) <= 1))
-                .collect(ImmutableList.toImmutableList());
+                .collect(ImList.Immutable.toImmutableList());
 
         return Rule.builder().from(rule).params(params).body(finalBody.toConstraint()).build();
     }
@@ -363,11 +397,11 @@ public class RuleUtil {
      */
     public static Rule closeInUnifier(Rule rule, IUnifier.Immutable unifier, Safety safety) {
         ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of();
-        for(ITermVar var : rule.freeVars()) {
+        for (ITermVar var : rule.freeVars()) {
             subst = subst.put(var, unifier.findRecursive(var));
         }
         Rule newRule;
-        if(safety.equals(Safety.UNSAFE)) {
+        if (safety.equals(Safety.UNSAFE)) {
             newRule = rule.unsafeApply(subst);
         } else {
             newRule = rule.apply(subst);
@@ -381,59 +415,59 @@ public class RuleUtil {
      * includeRule determine which premises should be inlined. The fragments are closed only w.r.t. the included
      * predicates.
      */
-    public static SetMultimap<String, Rule> makeFragments(RuleSet rules, Predicate1<String> includePredicate,
-            Predicate2<String, String> includeRule, int generations) {
-        final SetMultimap<String, Rule> fragments = HashMultimap.create();
+    public static SetMultimap.Immutable<String, Rule> makeFragments(RuleSet rules, Predicate1<String> includePredicate,
+                                                                    Predicate2<String, String> includeRule, int generations) {
+        final SetMultimap.Transient<String, Rule> fragments = SetMultimap.Transient.of();
 
         // 1. make all rules unordered, and keep included rules
-        final SetMultimap<String, Rule> newRules = HashMultimap.create();
-        for(String ruleName : rules.getRuleNames()) {
-            if(includePredicate.test(ruleName)) {
-                for(Rule r : rules.getOrderIndependentRules(ruleName)) {
-                    if(includeRule.test(r.name(), r.label())) {
-                        newRules.put(ruleName, r);
+        final SetMultimap.Transient<String, Rule> newRules = SetMultimap.Transient.of();
+        for (String ruleName : rules.getRuleNames()) {
+            if (includePredicate.test(ruleName)) {
+                for (Rule r : rules.getOrderIndependentRules(ruleName)) {
+                    if (includeRule.test(r.name(), r.label())) {
+                        newRules.__insert(ruleName, r);
                     }
                 }
             }
         }
 
         final PartialFunction1<IConstraint, CUser> expandable =
-                c -> (c instanceof CUser && newRules.containsKey(((CUser) c).name())) ? Optional.of(((CUser) c))
+                c -> (c instanceof CUser && newRules.containsKey(((CUser)c).name())) ? Optional.of(((CUser)c))
                         : Optional.empty();
 
         // 2. find the included axioms and move to fragments
-        for(Map.Entry<String, Rule> e : newRules.entries()) {
-            if(Constraints.collectBase(expandable, false).apply(e.getValue().body()).isEmpty()) {
-                fragments.put(e.getKey(), e.getValue());
+        for (Map.Entry<String, Rule> e : newRules.entrySet()) {
+            if (Constraints.collectBase(expandable, false).apply(e.getValue().body()).isEmpty()) {
+                fragments.__insert(e.getKey(), e.getValue());
             }
         }
-        fragments.forEach(newRules::remove);
+        fragments.entrySet().forEach(e -> newRules.__remove(e.getKey(), e.getValue()));
 
         // 3. for each generation, inline fragments into rules
-        for(int g = 0; g < generations; g++) {
-            final SetMultimap<String, Rule> generation = HashMultimap.create();
-            for(Map.Entry<String, Rule> e : newRules.entries()) {
+        for (int g = 0; g < generations; g++) {
+            final SetMultimap.Transient<String, Rule> generation = SetMultimap.Transient.of();
+            for (Map.Entry<String, Rule> e : newRules.entrySet()) {
                 final String name = e.getKey();
                 final Rule r = e.getValue();
                 final FreshVars fresh = new FreshVars(vars(r));
                 final List<IConstraint> cs = Constraints.flatMap(c -> {
                     final Optional<CUser> u = expandable.apply(c);
-                    if(u.isPresent()) {
+                    if (u.isPresent()) {
                         return fragments.get(u.get().name()).stream()
                                 .map(f -> applyToConstraint(fresh, f, u.get().args()));
                     } else {
                         return Stream.of(c);
                     }
                 }, false).apply(r.body()).collect(Collectors.toList());
-                for(IConstraint c : cs) {
+                for (IConstraint c : cs) {
                     final Rule f = r.withLabel("").withBody(new CExists(CapsuleUtil.immutableSet(), c));
-                    generation.put(name, hoist(f));
+                    generation.__insert(name, hoist(f));
                 }
             }
-            fragments.putAll(generation);
+            CapsuleUtil.putAll(fragments, generation);
         }
 
-        return ImmutableSetMultimap.copyOf(fragments);
+        return fragments.freeze();
     }
 
 

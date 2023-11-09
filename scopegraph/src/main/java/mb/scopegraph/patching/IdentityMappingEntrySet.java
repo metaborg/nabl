@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.google.common.collect.Iterators;
+import org.metaborg.util.iterators.MappedIterator;
 
 class IdentityMappingEntrySet<E> extends AbstractSet<Map.Entry<E, E>> {
 
@@ -37,7 +37,7 @@ class IdentityMappingEntrySet<E> extends AbstractSet<Map.Entry<E, E>> {
     }
 
     @Override public Iterator<Entry<E, E>> iterator() {
-        return Iterators.transform(backingSet.iterator(), elem -> new AbstractMap.SimpleImmutableEntry<E, E>(elem, elem));
+        return new MappedIterator<>(backingSet.iterator(), elem -> new AbstractMap.SimpleImmutableEntry<E, E>(elem, elem));
     }
 
     @Override public boolean add(Entry<E, E> entry) {

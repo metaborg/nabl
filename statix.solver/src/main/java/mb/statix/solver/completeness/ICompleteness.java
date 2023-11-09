@@ -1,5 +1,6 @@
 package mb.statix.solver.completeness;
 
+import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -23,7 +24,7 @@ public interface ICompleteness {
 
     boolean isEmpty();
 
-    MultiSet<EdgeOrData<ITerm>> get(ITerm varOrScope, IUnifier unifier);
+    MultiSet.Immutable<EdgeOrData<ITerm>> get(ITerm varOrScope, IUnifier unifier);
 
     boolean isComplete(Scope scope, EdgeOrData<ITerm> label, IUnifier unifier);
 
@@ -43,9 +44,9 @@ public interface ICompleteness {
 
         Immutable apply(IRenaming renaming);
 
-        Immutable removeAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier);
+        Immutable removeAll(Collection<? extends ITerm> varOrScopes, IUnifier unifier);
 
-        Immutable retainAll(Iterable<? extends ITerm> varOrScopes, IUnifier unifier);
+        Immutable retainAll(Collection<? extends ITerm> varOrScopes, IUnifier unifier);
 
         Immutable updateAll(Iterable<? extends ITermVar> vars, IUnifier unifier);
 
@@ -63,8 +64,8 @@ public interface ICompleteness {
             });
         }
 
-        default void addAll(Iterable<? extends IConstraint> constraints, Spec spec, IUnifier unifier) {
-            Iterables2.stream(constraints).forEach(c -> add(c, spec, unifier));
+        default void addAll(Collection<? extends IConstraint> constraints, Spec spec, IUnifier unifier) {
+            constraints.forEach(c -> add(c, spec, unifier));
         }
 
         void addAll(ICompleteness.Immutable criticalEdges, IUnifier unifier);

@@ -4,8 +4,8 @@
   <parent>
     <groupId>org.metaborg</groupId>
     <artifactId>parent.java</artifactId>
-    <version>2.5.18</version>
-    <relativePath>../releng/parent/java</relativePath>
+    <version>2.6.0-SNAPSHOT</version>
+    <relativePath>../../releng/parent/java</relativePath>
   </parent>
   <artifactId>nabl2.terms</artifactId>
   <packaging>jar</packaging>
@@ -28,17 +28,6 @@
       <version>${metaborg-version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <!-- Required for Guava >= 27.0: -->
-    <!--
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>failureaccess</artifactId>
-    </dependency>
-    -->
-    <dependency>
       <groupId>io.usethesource</groupId>
       <artifactId>capsule</artifactId>
     </dependency>
@@ -52,16 +41,9 @@
       <artifactId>serial</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!-- javax.annotation & jsr305 necessary for annotations in dependencies -->
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <scope>provided</scope>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

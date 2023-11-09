@@ -1,14 +1,15 @@
 package mb.scopegraph.pepm16.terms.path;
 
-import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.Iterator;
+import java.util.Objects;
+
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.ConsList;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.math.IntMath;
+import org.metaborg.util.iterators.Iterables2;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.pepm16.ILabel;
@@ -55,7 +56,7 @@ abstract class AComposedScopePath<S extends IScope, L extends ILabel, O extends 
     }
 
     @Override public Iterable<IResolutionPath<S, L, O>> getImportPaths() {
-        return Iterables.concat(getLeft().getImportPaths(), getRight().getImportPaths());
+        return Iterables2.fromConcat(getLeft().getImportPaths(), getRight().getImportPaths());
     }
 
     @Value.Lazy @Override public Set.Immutable<S> getScopes() {
@@ -67,7 +68,7 @@ abstract class AComposedScopePath<S extends IScope, L extends ILabel, O extends 
     }
 
     @Value.Lazy @Override public int hashCode() {
-        return getLeft().hashCode() + (IntMath.pow(31, getLeft().size()) * getRight().hashCode());
+        return getLeft().hashCode() + (BigInteger.valueOf(31).pow(getLeft().size()).intValue() * getRight().hashCode());
     }
 
     @Override public boolean equals(Object obj) {
@@ -80,7 +81,19 @@ abstract class AComposedScopePath<S extends IScope, L extends ILabel, O extends 
             return false;
         if(!getTarget().equals(other.getTarget()))
             return false;
-        return Iterators.elementsEqual(this.iterator(), other.iterator());
+        Iterator<?> iterator1 = this.iterator();
+        Iterator<?> iterator2 = other.iterator();
+        while(iterator1.hasNext()) {
+            if(!iterator2.hasNext()) {
+                return false;
+            }
+            Object o1 = iterator1.next();
+            Object o2 = iterator2.next();
+            if(!Objects.equals(o1, o2)) {
+                return false;
+            }
+        }
+        return !iterator2.hasNext();
     }
 
     @Override public String toString(boolean includeSource, boolean includeTarget) {

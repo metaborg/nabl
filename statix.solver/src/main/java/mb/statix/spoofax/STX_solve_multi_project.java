@@ -4,8 +4,8 @@ import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.log.ILogger;
@@ -15,9 +15,8 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.Maps;
-import com.google.inject.Inject;
 
+import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.Constraints;
 import mb.statix.constraints.messages.IMessage;
@@ -31,7 +30,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
-    @Inject public STX_solve_multi_project() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 5);
     }
 
@@ -53,7 +52,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
 
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
-        final Map<IConstraint, IMessage> messages = Maps.newHashMap(initial.messages());
+        final Map.Transient<IConstraint, IMessage> messages = initial.messages().asTransient();
         IState.Immutable state = initial.state();
         for(SolverResult result : results) {
             try {
@@ -64,7 +63,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
                 return Optional.empty();
             }
             constraints.add(result.delayed());
-            messages.putAll(result.messages());
+            messages.__putAll(result.messages());
         }
 
         final SolverResult resultConfig;
@@ -77,8 +76,8 @@ public class STX_solve_multi_project extends StatixPrimitive {
         } catch(InterruptedException e) {
             throw new RuntimeException(e);
         }
-        messages.putAll(resultConfig.messages());
-        final ITerm resultTerm = B.newBlob(resultConfig.withMessages(messages));
+        messages.__putAll(resultConfig.messages());
+        final ITerm resultTerm = B.newBlob(resultConfig.withMessages(messages.freeze()));
         return Optional.of(resultTerm);
     }
 

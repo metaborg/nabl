@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.nabl2.runtime:${metaborgVersion}
 name: NaBL2Runtime
-metaborgVersion: 2.5.18
+metaborgVersion: 2.6.0-SNAPSHOT
 metaborgBaselineVersion: 2.5.17
 dependencies:
   compile:
@@ -77,7 +77,7 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    format: ctree
+    format: ctree # source library
     args:
     - -la
     - stratego-lib

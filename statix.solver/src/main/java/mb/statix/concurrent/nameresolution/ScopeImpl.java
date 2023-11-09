@@ -11,10 +11,10 @@ import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
-import mb.nabl2.terms.matching.Transform.T;
+import static mb.nabl2.terms.matching.Transform.T;
 import mb.p_raffrayi.IScopeImpl;
-import mb.scopegraph.oopsla20.diff.BiMap;
-import mb.scopegraph.oopsla20.diff.BiMaps;
+import org.metaborg.util.collection.BiMap;
+import org.metaborg.util.collection.BiMaps;
 import mb.statix.scopegraph.Scope;
 
 public class ScopeImpl implements IScopeImpl<Scope, ITerm> {

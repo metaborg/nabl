@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.Level;
@@ -49,6 +49,8 @@ public class Solver {
     public static final int TERM_FORMAT_DEPTH = 4;
 
     public static final boolean INCREMENTAL_CRITICAL_EDGES = true;
+
+    public static final int ERROR_TRACE_TERM_DEPTH = 4;
 
     private Solver() {
     }

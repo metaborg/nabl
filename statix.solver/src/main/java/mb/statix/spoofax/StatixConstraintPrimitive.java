@@ -3,11 +3,13 @@ package mb.statix.spoofax;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
@@ -16,9 +18,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -31,7 +30,7 @@ import mb.statix.spec.Spec;
 public abstract class StatixConstraintPrimitive extends StatixPrimitive {
     protected static final ILogger logger = LoggerUtils.logger(StatixConstraintPrimitive.class);
 
-    @Inject public StatixConstraintPrimitive(String name) {
+    @jakarta.inject.Inject @javax.inject.Inject public StatixConstraintPrimitive(String name) {
         super(name, 4);
     }
 
@@ -53,7 +52,7 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
         return M.cases(
             StatixTerms.constraint().map(solveConstraint::apply),
             M.listElems(StatixTerms.constraint()).map(vars_constraints -> {
-                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImmutableList.toImmutableList()));
+                return B.newList(vars_constraints.stream().parallel().map(solveConstraint::apply).collect(ImList.Immutable.toImmutableList()));
             })
         ).match(term);
         // @formatter:on
@@ -70,7 +69,7 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
         }
         final IUniDisunifier.Immutable unifier = resultConfig.state().unifier();
 
-        final List<ITerm> substEntries = Lists.newArrayList();
+        final List<ITerm> substEntries = new ArrayList<>();
         for(Entry<ITermVar, ITermVar> e : resultConfig.existentials().entrySet()) {
             final ITerm v = StatixTerms.explode(e.getKey());
             final ITerm t = StatixTerms.explicateVars(unifier.findRecursive(e.getValue()));

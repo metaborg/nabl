@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -19,35 +19,50 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
-public class CExists implements IConstraint, Serializable {
+public final class CExists implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Set.Immutable<ITermVar> vars;
     private final IConstraint constraint;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CExists origin;
     private final @Nullable ICompleteness.Immutable bodyCriticalEdges;
 
     private volatile Set.Immutable<ITermVar> freeVars;
 
     public CExists(Iterable<ITermVar> vars, IConstraint constraint) {
-        this(vars, constraint, null, null, null);
+        this(vars, constraint, null, null, null, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause) {
-        this(vars, constraint, cause, null, null);
+        this(vars, constraint, cause, null, null, null);
     }
 
-    public CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause,
-            ICompleteness.Immutable bodyCriticalEdges) {
-        this(vars, constraint, cause, bodyCriticalEdges, null);
+    // Do not call this constructor. Call withArguments(), withCause(), or withBodyCriticalEdges() instead.
+    public CExists(
+            Iterable<ITermVar> vars,
+            IConstraint constraint,
+            @Nullable IConstraint cause,
+            ICompleteness.Immutable bodyCriticalEdges
+    ) {
+        this(vars, constraint, cause, null, bodyCriticalEdges, null);
     }
 
-    private CExists(Iterable<ITermVar> vars, IConstraint constraint, @Nullable IConstraint cause,
-            @Nullable ICompleteness.Immutable bodyCriticalEdges, @Nullable Set.Immutable<ITermVar> freeVars) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CExists(
+            Iterable<ITermVar> vars,
+            IConstraint constraint,
+            @Nullable IConstraint cause,
+            @Nullable CExists origin,
+            @Nullable ICompleteness.Immutable bodyCriticalEdges,
+            @Nullable Set.Immutable<ITermVar> freeVars
+    ) {
         this.vars = CapsuleUtil.toSet(vars);
         this.constraint = constraint;
         this.cause = cause;
+        this.origin = origin;
         this.bodyCriticalEdges = bodyCriticalEdges;
         this.freeVars = freeVars;
     }
@@ -62,7 +77,18 @@ public class CExists implements IConstraint, Serializable {
     }
 
     public CExists withConstraint(IConstraint constraint) {
-        return new CExists(vars, constraint, cause, bodyCriticalEdges, null);
+        return withArguments(vars, constraint);
+    }
+
+    public CExists withArguments(Iterable<ITermVar> vars, IConstraint constraint) {
+        if (this.vars == vars &&
+            this.constraint == constraint
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, null);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -70,7 +96,16 @@ public class CExists implements IConstraint, Serializable {
     }
 
     @Override public CExists withCause(@Nullable IConstraint cause) {
-        return new CExists(vars, constraint, cause, bodyCriticalEdges, freeVars);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CExists(vars, constraint, cause, origin, bodyCriticalEdges, freeVars);
+    }
+
+    @Override public @Nullable CExists origin() {
+        return origin;
     }
 
     @Override public Optional<ICompleteness.Immutable> bodyCriticalEdges() {
@@ -78,7 +113,12 @@ public class CExists implements IConstraint, Serializable {
     }
 
     @Override public CExists withBodyCriticalEdges(@Nullable ICompleteness.Immutable criticalEdges) {
-        return new CExists(vars, constraint, cause, criticalEdges, freeVars);
+        if (this.bodyCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CExists(vars, constraint, cause, origin, criticalEdges, freeVars);
     }
 
 
@@ -92,14 +132,14 @@ public class CExists implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            vars,
-            constraint.getVars()
+                vars,
+                constraint.getVars()
         );
     }
 
     @Override public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
-        if(freeVars == null) {
+        if (result == null) {
             Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
             doVisitFreeVars(_freeVars::__insert);
             result = _freeVars.freeze();
@@ -114,16 +154,27 @@ public class CExists implements IConstraint, Serializable {
 
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         constraint.visitFreeVars(v -> {
-            if(!vars.contains(v)) {
+            if (!vars.contains(v)) {
                 onFreeVar.apply(v);
             }
         });
     }
 
-
     @Override public CExists apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+    @Override public CExists apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CExists apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars).retainAll(freeVars());
-        if(localSubst.isEmpty()) {
+        if (localSubst.isEmpty()) {
             return this;
         }
 
@@ -131,7 +182,7 @@ public class CExists implements IConstraint, Serializable {
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
         Set.Immutable<ITermVar> freeVars = this.freeVars;
 
-        if(freeVars != null) {
+        if (freeVars != null) {
             // before renaming is included in localSubst
             // note that this is only correct because of .retainAll(freeVars()) above, or it might include too much!
             freeVars = freeVars.__removeAll(localSubst.domainSet()).__insertAll(localSubst.rangeSet());
@@ -141,47 +192,68 @@ public class CExists implements IConstraint, Serializable {
         final IRenaming ren = fresh.fresh(vars);
         final Set.Immutable<ITermVar> vars = fresh.fix();
 
-        if(!ren.isEmpty()) {
+        if (!ren.isEmpty()) {
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        constraint = constraint.apply(localSubst);
-        if(bodyCriticalEdges != null) {
+        constraint = constraint.apply(localSubst, trackOrigin);
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return new CExists(vars, constraint, cause, bodyCriticalEdges, freeVars);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                freeVars
+        );
     }
 
-    @Override public CExists unsafeApply(ISubstitution.Immutable subst) {
+    @Override public CExists unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
         ISubstitution.Immutable localSubst = subst.removeAll(vars);
-        if(localSubst.isEmpty()) {
+        if (localSubst.isEmpty()) {
             return this;
         }
 
         IConstraint constraint = this.constraint;
         @Nullable ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
 
-        constraint = constraint.unsafeApply(localSubst);
-        if(bodyCriticalEdges != null) {
+        constraint = constraint.unsafeApply(localSubst, trackOrigin);
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return new CExists(vars, constraint, cause, bodyCriticalEdges, null);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                null
+        );
     }
 
-    @Override public CExists apply(IRenaming subst) {
+    @Override public CExists apply(IRenaming subst, boolean trackOrigin) {
         Set.Immutable<ITermVar> vars = this.vars;
         IConstraint constraint = this.constraint;
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges;
 
         vars = CapsuleUtil.toSet(subst.rename(vars));
-        constraint = constraint.apply(subst);
-        if(bodyCriticalEdges != null) {
+        constraint = constraint.apply(subst, trackOrigin);
+        if (bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
 
-        return new CExists(vars, constraint, cause, bodyCriticalEdges, null);
+        return new CExists(
+                vars,
+                constraint,
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                bodyCriticalEdges,
+                null
+        );
     }
 
 
@@ -198,27 +270,33 @@ public class CExists implements IConstraint, Serializable {
 
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CExists cExists = (CExists) o;
+        final CExists that = (CExists)o;
         // @formatter:off
-        return Objects.equals(vars, cExists.vars)
-                && Objects.equals(constraint, cExists.constraint)
-                && Objects.equals(cause, cExists.cause);
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.vars, that.vars)
+            && Objects.equals(this.constraint, that.constraint)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(vars, constraint, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                vars,
+                constraint,
+                cause,
+                origin
+        );
     }
 
 }

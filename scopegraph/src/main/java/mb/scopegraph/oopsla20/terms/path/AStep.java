@@ -6,8 +6,7 @@ import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
-
-import com.google.common.collect.Iterators;
+import org.metaborg.util.iterators.Iterators2;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.path.IStep;
@@ -39,7 +38,7 @@ abstract class AStep<S, L> implements IStep<S, L> {
     }
 
     @Override public Iterator<IStep<S, L>> iterator() {
-        return Iterators.singletonIterator(this);
+        return Iterators2.singleton(this);
     }
 
     @Override public String toString(boolean includeSource, boolean includeTarget) {

@@ -2,7 +2,7 @@ package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
-import static mb.statix.generator.util.StreamUtil.flatMap;
+import static mb.statix.generator.util.StreamUtil.lazyFlatMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,14 +12,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
-import com.google.common.collect.Streams;
 
 import mb.nabl2.terms.IListTerm;
 import mb.nabl2.terms.ITerm;
@@ -112,7 +108,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
         Collections.shuffle(indices, ctx.rnd());
 
         final String desc = this.toString() + "[" + count.get() + "]";
-        return SearchNodes.of(node, () -> desc, flatMap(indices.stream(), idx -> {
+        return SearchNodes.of(node, () -> desc, lazyFlatMap(indices.stream(), idx -> {
             final AtomicInteger select = new AtomicInteger(idx);
             final Env<Scope, ITerm, ITerm, CEqual> env;
             try {
@@ -131,7 +127,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
             final Range<Integer> resultSize = resultSize(query.resultTerm(), unifier, env.matches.size());
             final List<Integer> sizes = sizes(resultSize, ctx.rnd());
 
-            return flatMap(sizes.stream().map(size -> size - reqMatches.size()),
+            return lazyFlatMap(sizes.stream().map(size -> size - reqMatches.size()),
                     size -> Subsets.of(optMatches).enumerate(size, ctx.rnd()).map(entry -> {
                         final Env.Builder<Scope, ITerm, ITerm, CEqual> subEnvBuilder = Env.builder();
                         reqMatches.forEach(subEnvBuilder::match);
@@ -141,16 +137,19 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
                         final Env<Scope, ITerm, ITerm, CEqual> subEnv = subEnvBuilder.build();
                         final List<ITerm> pathTerms = subEnv.matches.stream()
                                 .map(m -> StatixTerms.pathToTerm(m.path, ctx.spec().dataLabels()))
-                                .collect(ImmutableList.toImmutableList());
-                        final ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+                                .collect(Collectors.toList());
+                        final List<IConstraint> constraints = new ArrayList<>();
                         constraints.add(new CEqual(B.newList(pathTerms), query.resultTerm(), query));
-                        flatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(constraints::add);
-                        flatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
+                        lazyFlatMap(subEnv.matches.stream(), m -> Optionals.stream(m.condition)).forEach(constraints::add);
+                        lazyFlatMap(subEnv.rejects.stream(), m -> Optionals.stream(m.condition))
                                 .forEach(condition -> constraints
-                                        .add(new CInequal(ImmutableSet.of(), condition.term1(), condition.term2(),
-                                                condition.cause().orElse(null), condition.message().orElse(null))));
+                                        .add(new CInequal(CapsuleUtil.immutableSet(), condition.term1(), condition.term2())
+                                                .withCause(condition.cause().orElse(null))
+                                                .withMessage(condition.message().orElse(null))
+                                        )
+                                );
                         final SearchState newState =
-                                input.update(ctx.spec(), constraints.build(), Iterables2.singleton(query));
+                                input.update(ctx.spec(), constraints, Iterables2.singleton(query));
                         return new SearchNode<>(ctx.nextNodeId(), newState, node,
                                 "resolve[" + (idx + 1) + "/" + count.get() + "]");
                     }));
@@ -161,7 +160,7 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
         final IntStream fixedSizes = IntStream.of(0, 1, resultSize.upperEndpoint());
         final IntStream randomSizes = RandomUtil.ints(2, resultSize.upperEndpoint(), rnd).limit(sizes);
         final IntStream allSizes =
-                Streams.concat(fixedSizes, randomSizes).filter(resultSize::contains).limit(subsetsPerSize);
+            IntStream.concat(fixedSizes,randomSizes).filter(resultSize::contains).limit(subsetsPerSize);
         // make sure there are no duplicates, of resultSize.upperEndpoint equals one of the fixed values
         final List<Integer> subsetSizes = allSizes.boxed().distinct().collect(Collectors.toList());
         Collections.shuffle(subsetSizes, rnd);
@@ -186,4 +185,33 @@ public final class Resolve extends SearchStrategy<FocusedSearchState<CResolveQue
         return "resolve";
     }
 
+    static final class Range<T extends Comparable<T>> {
+        protected final T lowerEndPoint;
+        protected final T upperEndPoint;
+
+        protected Range(T lowerEndPoint, T upperEndPoint) {
+            this.lowerEndPoint = lowerEndPoint;
+            this.upperEndPoint = upperEndPoint;
+        }
+
+        public static <T extends Comparable<T>> Range<T> singleton(T single) {
+            return new Range(single, single);
+        }
+
+        public static <T extends Comparable<T>> Range<T> closed(T lower, T upper) {
+            return new Range(lower, upper);
+        }
+
+        public T lowerEndPoint() {
+            return lowerEndPoint;
+        }
+
+        public T upperEndpoint() {
+            return upperEndPoint;
+        }
+
+        public boolean contains(T elem) {
+            return lowerEndPoint.compareTo(elem) <= 0 && elem.compareTo(upperEndPoint) <= 0;
+        }
+    }
 }

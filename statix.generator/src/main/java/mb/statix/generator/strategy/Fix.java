@@ -12,8 +12,6 @@ import java.util.stream.Stream;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.Predicate1;
 
-import com.google.common.collect.Streams;
-
 import mb.statix.constraints.CUser;
 import mb.statix.generator.SearchContext;
 import mb.statix.generator.SearchState;
@@ -21,6 +19,7 @@ import mb.statix.generator.SearchStrategy;
 import mb.statix.generator.nodes.SearchNode;
 import mb.statix.generator.nodes.SearchNodes;
 import mb.statix.generator.util.StreamUtil;
+import mb.statix.solver.IConstraint;
 
 
 public final class Fix extends SearchStrategy<SearchState, SearchState> {
@@ -63,8 +62,11 @@ public final class Fix extends SearchStrategy<SearchState, SearchState> {
                     continue;
                 }
                 final SearchNode<SearchState> next = nodes.next();
-                if(Streams.stream(next.output().constraintsAndDelays())
-                        .allMatch(c -> (c instanceof CUser && done.test((CUser) c)))) {
+                boolean allDoneUsers = true;
+                for(IConstraint c : next.output().constraintsAndDelays()) {
+                    allDoneUsers &= (c instanceof CUser && done.test((CUser) c));
+                }
+                if(allDoneUsers) {
                     return Optional.of(next);
                 }
                 final SearchNodes<SearchState> nextNodes = searchAndInfer.apply(ctx, next);

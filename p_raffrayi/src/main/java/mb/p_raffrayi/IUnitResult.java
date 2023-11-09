@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.diff.ScopeGraphDiff;

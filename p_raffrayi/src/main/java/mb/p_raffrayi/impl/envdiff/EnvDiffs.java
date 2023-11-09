@@ -2,7 +2,7 @@ package mb.p_raffrayi.impl.envdiff;
 
 import org.metaborg.util.collection.CapsuleUtil;
 
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public final class EnvDiffs {
 

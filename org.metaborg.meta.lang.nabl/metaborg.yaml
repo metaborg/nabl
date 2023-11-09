@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.lang.nabl:${metaborgVersion}
 name: NameBindingLanguage
-metaborgVersion: 2.5.18
+metaborgVersion: 2.6.0-SNAPSHOT
 metaborgBaselineVersion: 2.5.17
 dependencies:
   compile:
@@ -19,8 +19,10 @@ pardonedLanguages:
 - Stratego-Sugar
 - SDF
 language:
+  sdf:
+    sdf2table: java
   stratego:
-    format: ctree
+    format: jar
     args:
     - -la
     - stratego-lib

@@ -1,11 +1,8 @@
 package mb.nabl2.terms.build;
 
-import java.util.List;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -28,8 +25,8 @@ abstract class AAppl4Term extends AbstractApplTerm implements IApplTerm {
 
     @Value.Parameter public abstract ITerm getArg3();
 
-    @Override public List<ITerm> getArgs() {
-        return ImmutableList.of(getArg0(), getArg1(), getArg2(), getArg3());
+    @Override public ImList.Immutable<ITerm> getArgs() {
+        return ImList.Immutable.of(getArg0(), getArg1(), getArg2(), getArg3());
     }
 
     @Override public int getArity() {

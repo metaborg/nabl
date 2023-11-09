@@ -1,6 +1,7 @@
 package mb.nabl2.relations.variants;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -9,8 +10,6 @@ import org.metaborg.util.collection.IRelation2;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.tuple.Tuple2;
-
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.scopegraph.relations.IRelation;
@@ -83,7 +82,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
                             r -> greatestLowerBound(argt1, argt2)
                             // @formatter:on
                         ));
-                    })).map(args -> matcher.build(Lists.newArrayList(args)));
+                    })).map(args -> matcher.build(new ArrayList<>(args)));
                 });
             });
             if(contains.isPresent()) {
@@ -107,7 +106,7 @@ public abstract class VariantRelation<T> implements IVariantRelation<T> {
                             r -> leastUpperBound(argt1, argt2)
                             // @formatter:on
                         ));
-                    })).map(args -> matcher.build(Lists.newArrayList(args)));
+                    })).map(args -> matcher.build(new ArrayList<>(args)));
                 });
             });
             if(contains.isPresent()) {

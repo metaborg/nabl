@@ -1,5 +1,5 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.units:2.5.18
+id: org.metaborg:statix.integrationtest.lang.units:2.6.0-SNAPSHOT
 name: Units
 dependencies:
   compile:
@@ -17,7 +17,7 @@ language:
     placeholder:
       prefix: "$"
   stratego:
-    format: ctree
+    format: jar
     args:
     - -la
     - stratego-lib

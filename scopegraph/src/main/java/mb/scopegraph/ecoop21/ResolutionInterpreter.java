@@ -1,5 +1,6 @@
 package mb.scopegraph.ecoop21;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -63,7 +64,7 @@ public class ResolutionInterpreter<S, L, D, M> {
                     return d_opt.<IFuture<Tuple2<Env<S, L, D>, M>>>map(d -> {
                         try {
                             return context.dataWf(d, cancel).thenApply(wf -> {
-                                return Tuple2.of(wf._1() ? Env.of(path.resolve(d)) : Env.empty(), wf._2());
+                                return Tuple2.of(wf._1() ? Env.of(path.resolve(d)) : Env.<S, L, D>empty(), wf._2());
                             });
                         } catch(InterruptedException e) {
                             return CompletableFuture.completedExceptionally(e);
@@ -210,7 +211,7 @@ public class ResolutionInterpreter<S, L, D, M> {
 
         IFuture<Tuple2<Env<S, L, D>, M>> externalEnv(ScopePath<S, L> path, State<L> state);
 
-        IFuture<Iterable<S>> getEdges(S scope, L label);
+        IFuture<Collection<S>> getEdges(S scope, L label);
 
         IFuture<Optional<D>> getDatum(S scope);
 

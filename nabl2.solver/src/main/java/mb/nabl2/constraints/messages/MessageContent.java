@@ -8,10 +8,8 @@ import java.util.function.Function;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Function1;
-import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -81,21 +79,21 @@ public abstract class MessageContent implements IMessageContent {
     @Serial.Version(value = 42L)
     static abstract class ACompoundMessage extends MessageContent {
 
-        @Value.Parameter abstract List<IMessageContent> getParts();
+        @Value.Parameter abstract ImList.Immutable<IMessageContent> getParts();
 
         @Override public ACompoundMessage apply(Function1<ITerm, ITerm> f) {
             return CompoundMessage
-                    .of(getParts().stream().map(p -> p.apply(f)).collect(ImmutableList.toImmutableList()));
+                    .of(getParts().stream().map(p -> p.apply(f)).collect(ImList.Immutable.toImmutableList()));
         }
 
         @Override public IMessageContent withDefault(IMessageContent defaultContent) {
             return CompoundMessage.of(getParts().stream().map(p -> p.withDefault(defaultContent))
-                    .collect(ImmutableList.toImmutableList()));
+                    .collect(ImList.Immutable.toImmutableList()));
         }
 
         @Override public ITerm build() {
             List<ITerm> parts =
-                    getParts().stream().map(IMessageContent::build).collect(ImmutableList.toImmutableList());
+                    getParts().stream().map(IMessageContent::build).collect(ImList.Immutable.toImmutableList());
             return B.newAppl(FORMATTED, (ITerm) B.newList(parts));
         }
 
@@ -139,14 +137,14 @@ public abstract class MessageContent implements IMessageContent {
 
     }
 
-    public static IMatcher<MessageContent> matcher() {
+    public static IMatcher<IMessageContent> matcher() {
         // @formatter:off
-        return M.<MessageContent>cases(
+        return M.<IMessageContent>cases(
             M.appl0(DEFAULT, (t) -> DefaultMessage.of()),
             M.appl1(FORMATTED, M.listElems(partMatcher()), (t, ps) -> CompoundMessage.of(ps)),
             M.string(s -> TextMessage.of(s.getValue())),
             partMatcher(),
-            M.term(t -> CompoundMessage.of(Iterables2.from(
+            M.term(t -> CompoundMessage.of(ImList.Immutable.of(
                 TermMessage.of(t),
                 TextMessage.of(" (error message was malformed)")
             )))
@@ -154,9 +152,9 @@ public abstract class MessageContent implements IMessageContent {
         // @formatter:on
     }
 
-    public static IMatcher<MessageContent> partMatcher() {
+    public static IMatcher<IMessageContent> partMatcher() {
         // @formatter:off
-        return M.<MessageContent>cases(
+        return M.<IMessageContent>cases(
             M.appl1(TEXT, M.stringValue(), (t,s) -> TextMessage.of(s)),
             M.appl1(TERM, M.term(), (t,s) -> TermMessage.of(s))
         );
@@ -173,10 +171,10 @@ public abstract class MessageContent implements IMessageContent {
 
     public static class Builder {
 
-        private final ImmutableList.Builder<IMessageContent> parts;
+        private final ImList.Mutable<IMessageContent> parts;
 
         private Builder() {
-            this.parts = ImmutableList.builder();
+            this.parts = ImList.Mutable.of();
         }
 
         public Builder append(String text) {
@@ -195,7 +193,7 @@ public abstract class MessageContent implements IMessageContent {
         }
 
         public MessageContent build() {
-            return CompoundMessage.of(parts.build());
+            return CompoundMessage.of(parts.freeze());
         }
 
     }

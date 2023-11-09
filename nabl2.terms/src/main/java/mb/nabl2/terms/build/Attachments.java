@@ -4,7 +4,9 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
+
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.IAttachments;
@@ -246,7 +248,7 @@ public class Attachments implements IAttachments, Serializable {
 
         @Override public <T> void put(Class<T> key, T value) {
             if(attachments == null) {
-                attachments = Map.Transient.of();
+                attachments = CapsuleUtil.transientMap();
             }
             attachments.__put(key, value);
         }

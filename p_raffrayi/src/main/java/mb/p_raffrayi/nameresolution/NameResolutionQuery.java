@@ -1,5 +1,6 @@
 package mb.p_raffrayi.nameresolution;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.metaborg.util.future.IFuture;
@@ -39,7 +40,7 @@ public class NameResolutionQuery<S, L, D> implements IQuery<S, L, D> {
                 return context.getDatum(scope);
             }
 
-            @Override public IFuture<Iterable<S>> getEdges(S scope, L label) {
+            @Override public IFuture<Collection<S>> getEdges(S scope, L label) {
                 return context.getEdges(scope, label);
             }
 

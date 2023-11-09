@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -20,7 +20,7 @@ import mb.statix.arithmetic.ArithTest;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CArith implements IConstraint, Serializable {
+public final class CArith implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ArithExpr expr1;
@@ -29,22 +29,32 @@ public class CArith implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CArith origin;
 
     public CArith(ArithExpr expr1, ArithTest op, ArithExpr expr2) {
-        this(expr1, op, expr2, null, null);
+        this(expr1, op, expr2, null, null, null);
     }
 
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CArith(ArithExpr expr1, ArithTest op, ArithExpr expr2, @Nullable IMessage message) {
-        this(expr1, op, expr2, null, message);
+        this(expr1, op, expr2, null, message, null);
     }
 
-    private CArith(ArithExpr expr1, ArithTest op, ArithExpr expr2, @Nullable IConstraint cause,
-            @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CArith(
+            ArithExpr expr1,
+            ArithTest op,
+            ArithExpr expr2,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message,
+            @Nullable CArith origin
+    ) {
         this.expr1 = expr1;
         this.op = op;
         this.expr2 = expr2;
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public ArithExpr expr1() {
@@ -59,12 +69,29 @@ public class CArith implements IConstraint, Serializable {
         return expr2;
     }
 
+    public CArith withArguments(ArithExpr expr1, ArithTest op, ArithExpr expr2) {
+        if (this.expr1 == expr1 &&
+            this.op == op &&
+            this.expr2 == expr2
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CArith(expr1, op, expr2, cause, message, origin);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CArith withCause(@Nullable IConstraint cause) {
-        return new CArith(expr1, op, expr2, cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CArith(expr1, op, expr2, cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -72,7 +99,16 @@ public class CArith implements IConstraint, Serializable {
     }
 
     @Override public CArith withMessage(@Nullable IMessage message) {
-        return new CArith(expr1, op, expr2, cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CArith(expr1, op, expr2, cause, message, origin);
+    }
+
+    @Override public @Nullable CArith origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -85,8 +121,8 @@ public class CArith implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            expr1.getVars(),
-            expr2.getVars()
+                expr1.getVars(),
+                expr2.getVars()
         );
     }
 
@@ -103,24 +139,47 @@ public class CArith implements IConstraint, Serializable {
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         expr1.isTerm().ifPresent(t -> t.getVars().forEach(onFreeVar::apply));
         expr2.isTerm().ifPresent(t -> t.getVars().forEach(onFreeVar::apply));
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
     }
 
     @Override public CArith apply(ISubstitution.Immutable subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return apply(subst, false);
     }
 
     @Override public CArith unsafeApply(ISubstitution.Immutable subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return unsafeApply(subst, false);
     }
 
     @Override public CArith apply(IRenaming subst) {
-        return new CArith(expr1.apply(subst), op, expr2.apply(subst), cause,
-                message == null ? null : message.apply(subst));
+        return apply(subst, false);
+    }
+
+    @Override public CArith apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CArith(
+                expr1.apply(subst),
+                op,
+                expr2.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CArith unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CArith apply(IRenaming subst, boolean trackOrigin) {
+        return new CArith(
+                expr1.apply(subst),
+                op,
+                expr2.apply(subst),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -136,25 +195,37 @@ public class CArith implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CArith cArith = (CArith) o;
-        return Objects.equals(expr1, cArith.expr1) && Objects.equals(op, cArith.op)
-                && Objects.equals(expr2, cArith.expr2) && Objects.equals(cause, cArith.cause)
-                && Objects.equals(message, cArith.message);
+        final CArith that = (CArith)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.expr1, that.expr1)
+            && Objects.equals(this.op, that.op)
+            && Objects.equals(this.expr2, that.expr2)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(expr1, op, expr2, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return  Objects.hash(
+                expr1,
+                op,
+                expr2,
+                cause,
+                message,
+                origin
+        );
     }
 
 }

@@ -1,22 +1,21 @@
 package mb.statix.constraints;
 
 import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.PartialFunction1;
 import org.metaborg.util.optionals.Optionals;
 import org.metaborg.util.unit.Unit;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITermVar;
@@ -353,18 +352,18 @@ public final class Constraints {
         // @formatter:off
         return cases(
             c -> f.apply(c),
-            c -> f.apply(new CConj(bottomup(f, recurseInLogicalScopes).apply(c.left()), bottomup(f, recurseInLogicalScopes).apply(c.right()), c.cause().orElse(null))),
+            c -> f.apply(c.withArguments(bottomup(f, recurseInLogicalScopes).apply(c.left()), bottomup(f, recurseInLogicalScopes).apply(c.right()))),
             c -> f.apply(c),
-            c -> f.apply(new CExists(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null))),
-            c -> f.apply(c),
-            c -> f.apply(c),
+            c -> f.apply(c.withArguments(c.vars(), bottomup(f, recurseInLogicalScopes).apply(c.constraint()))),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
             c -> f.apply(c),
-            c -> f.apply(recurseInLogicalScopes ? new CTry(bottomup(f, recurseInLogicalScopes).apply(c.constraint()), c.cause().orElse(null), c.message().orElse(null)) : c),
+            c -> f.apply(c),
+            c -> f.apply(c),
+            c -> f.apply(recurseInLogicalScopes ? c.withArguments(bottomup(f, recurseInLogicalScopes).apply(c.constraint())) : c),
             c -> f.apply(c)
         );
         // @formatter:on
@@ -381,12 +380,12 @@ public final class Constraints {
             c -> {
                 final IConstraint left = map(f, recurseInLogicalScopes).apply(c.left());
                 final IConstraint right = map(f, recurseInLogicalScopes).apply(c.right());
-                return new CConj(left, right, c.cause().orElse(null));
+                return c.withArguments(left, right);
             },
             c -> f.apply(c),
             c -> {
                 final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
-                return new CExists(c.vars(), body, c.cause().orElse(null));
+                return c.withArguments(c.vars(), body);
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -399,7 +398,7 @@ public final class Constraints {
             c -> {
                 if(recurseInLogicalScopes) {
                     final IConstraint body = map(f, recurseInLogicalScopes).apply(c.constraint());
-                    return new CTry(body, c.cause().orElse(null), c.message().orElse(null));
+                    return c.withArguments(body);
                 } else {
                     return c;
                 }
@@ -420,12 +419,12 @@ public final class Constraints {
             c -> {
                 final Optional<IConstraint> left = filter(f, recurseInLogicalScopes).apply(c.left());
                 final Optional<IConstraint> right = filter(f, recurseInLogicalScopes).apply(c.right());
-                return Optionals.lift(left, right, (l, r) -> new CConj(l, r, c.cause().orElse(null)));
+                return Optionals.lift(left, right, (l, r) -> c.withArguments(l, r));
             },
             c -> f.apply(c),
             c -> {
                 final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
-                return body.map(b -> new CExists(c.vars(), b, c.cause().orElse(null)));
+                return body.map(b -> c.withArguments(c.vars(), b));
             },
             c -> f.apply(c),
             c -> f.apply(c),
@@ -438,7 +437,7 @@ public final class Constraints {
             c -> {
                 if(recurseInLogicalScopes) {
                     final Optional<IConstraint> body = filter(f, recurseInLogicalScopes).apply(c.constraint());
-                    return body.map(b -> new CTry(b, c.cause().orElse(null), c.message().orElse(null)));
+                    return body.map(b -> c.withArguments(b));
                 } else {
                     return Optional.of(c);
                 }
@@ -459,14 +458,14 @@ public final class Constraints {
             c -> {
                 return flatMap(f, recurseInLogicalScopes).apply(c.left()).flatMap(l -> {
                     return flatMap(f, recurseInLogicalScopes).apply(c.right()).map(r -> {
-                        return new CConj(l, r, c.cause().orElse(null));
+                        return c.withArguments(l, r);
                     });
                 });
             },
             c -> f.apply(c),
             c -> {
                 return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
-                    return new CExists(c.vars(), b, c.cause().orElse(null));
+                    return c.withArguments(c.vars(), b);
                 });
             },
             c -> f.apply(c),
@@ -480,7 +479,7 @@ public final class Constraints {
             c -> {
                 if(recurseInLogicalScopes) {
                     return flatMap(f, recurseInLogicalScopes).apply(c.constraint()).map(b -> {
-                        return new CTry(b, c.cause().orElse(null), c.message().orElse(null));
+                        return c.withArguments(b);
                     });
                 } else {
                     return Stream.of(c);
@@ -494,14 +493,14 @@ public final class Constraints {
     public static <T> Function1<IConstraint, List<T>> collectBase(PartialFunction1<IConstraint, T> f,
             boolean recurseInLogicalScopes) {
         return c -> {
-            final ImmutableList.Builder<T> ts = ImmutableList.builder();
+            final ImList.Mutable<T> ts = ImList.Mutable.of();
             collectBase(c, f, ts, recurseInLogicalScopes);
-            return ts.build();
+            return ts.freeze();
         };
     }
 
     private static <T> void collectBase(IConstraint constraint, PartialFunction1<IConstraint, T> f,
-            ImmutableList.Builder<T> ts, boolean recurseInLogicalScopes) {
+        ImList.Mutable<T> ts, boolean recurseInLogicalScopes) {
         // @formatter:off
         constraint.match(cases(
             c -> { f.apply(c).ifPresent(ts::add); return Unit.unit; },
@@ -528,7 +527,7 @@ public final class Constraints {
 
     public static List<IConstraint> apply(List<IConstraint> constraints, ISubstitution.Immutable subst,
             @Nullable IConstraint cause) {
-        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImmutableList.toImmutableList());
+        return constraints.stream().map(c -> c.apply(subst).withCause(cause)).collect(ImList.toImmutableList());
     }
 
     public static String toString(Iterable<? extends IConstraint> constraints, TermFormatter termToString) {
@@ -573,14 +572,14 @@ public final class Constraints {
     /**
      * Split a conjunction constraint into constraints.
      */
-    public static List<IConstraint> disjoin(IConstraint constraint) {
-        ImmutableList.Builder<IConstraint> constraints = ImmutableList.builder();
+    public static ImList.Immutable<IConstraint> disjoin(IConstraint constraint) {
+        ImList.Mutable<IConstraint> constraints = ImList.Mutable.of();
         disjoin(constraint, constraints::add);
-        return constraints.build();
+        return constraints.freeze();
     }
 
     public static void disjoin(IConstraint constraint, Action1<IConstraint> action) {
-        Deque<IConstraint> worklist = Lists.newLinkedList();
+        Deque<IConstraint> worklist = new LinkedList<>();
         worklist.push(constraint);
         while(!worklist.isEmpty()) {
             worklist.pop().match(Constraints.cases().conj(conj -> {

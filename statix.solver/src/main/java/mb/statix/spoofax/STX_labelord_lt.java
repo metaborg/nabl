@@ -1,6 +1,5 @@
 package mb.statix.spoofax;
 
-import javax.inject.Inject;
 
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
@@ -14,7 +13,7 @@ import mb.scopegraph.oopsla20.reference.ResolutionException;
 
 public class STX_labelord_lt extends AbstractPrimitive {
 
-    @Inject public STX_labelord_lt() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_labelord_lt() {
         super(STX_labelord_lt.class.getSimpleName(), 0, 1);
     }
 

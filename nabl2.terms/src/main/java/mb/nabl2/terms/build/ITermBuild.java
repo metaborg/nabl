@@ -1,12 +1,10 @@
 package mb.nabl2.terms.build;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 
-import javax.annotation.Nullable;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.IAttachments;
@@ -38,12 +36,12 @@ public interface ITermBuild {
         return newTuple(Arrays.asList(args));
     }
 
-    default ITerm newTuple(Iterable<? extends ITerm> args) {
+    default ITerm newTuple(Collection<? extends ITerm> args) {
         return newTuple(args, null);
     }
 
-    default ITerm newTuple(Iterable<? extends ITerm> args, @Nullable IAttachments attachments) {
-        return Iterables.size(args) == 1 ? Iterables.getOnlyElement(args) : newAppl(Terms.TUPLE_OP, args, attachments);
+    default ITerm newTuple(Collection<? extends ITerm> args, @Nullable IAttachments attachments) {
+        return args.size() == 1 ? args.iterator().next() : newAppl(Terms.TUPLE_OP, args, attachments);
     }
 
 
@@ -51,15 +49,15 @@ public interface ITermBuild {
         return newList(Arrays.asList(elems));
     }
 
-    default IListTerm newList(Iterable<? extends ITerm> elems) {
+    default IListTerm newList(Collection<? extends ITerm> elems) {
         return newList(elems, null);
     }
 
-    default IListTerm newList(Iterable<? extends ITerm> elems,
-            @Nullable Iterable<IAttachments> attachments) {
-        LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
+    default IListTerm newList(Collection<? extends ITerm> elems,
+            @Nullable Collection<IAttachments> attachments) {
+        LinkedList<ITerm> elemsQueue = new LinkedList(elems);
         LinkedList<IAttachments> attachmentsQueue =
-                attachments != null ? Lists.newLinkedList(attachments) : null;
+                attachments != null ? new LinkedList(attachments) : null;
         if(attachmentsQueue != null && attachmentsQueue.size() != elemsQueue.size() + 1) {
             throw new IllegalArgumentException(
                     "Number of attachments does not correspond to number of elements in the list.");
@@ -71,15 +69,15 @@ public interface ITermBuild {
         return newListTail(elemsQueue, list, attachmentsQueue);
     }
 
-    default IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list) {
+    default IListTerm newListTail(Collection<? extends ITerm> elems, IListTerm list) {
         return newListTail(elems, list, null);
     }
 
-    default IListTerm newListTail(Iterable<? extends ITerm> elems, IListTerm list,
-            @Nullable Iterable<IAttachments> attachments) {
-        LinkedList<ITerm> elemsQueue = Lists.newLinkedList(elems);
+    default IListTerm newListTail(Collection<? extends ITerm> elems, IListTerm list,
+            @Nullable Collection<IAttachments> attachments) {
+        LinkedList<ITerm> elemsQueue = new LinkedList(elems);
         LinkedList<IAttachments> attachmentsQueue =
-                attachments != null ? Lists.newLinkedList(attachments) : null;
+                attachments != null ? new LinkedList(attachments) : null;
         if(attachmentsQueue != null && attachmentsQueue.size() != elemsQueue.size()) {
             throw new IllegalArgumentException(
                     "Number of attachments does not correspond to number of elements in the list.");

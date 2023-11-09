@@ -15,7 +15,6 @@ import org.metaborg.util.future.IFuture;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.inject.Inject;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -27,14 +26,14 @@ import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Match;
 import mb.p_raffrayi.impl.diagnostics.AmbigousEdgeMatch.Report;
 import mb.p_raffrayi.impl.diff.IDifferOps;
 import mb.scopegraph.oopsla20.IScopeGraph;
-import mb.scopegraph.oopsla20.diff.BiMap.Immutable;
+import org.metaborg.util.collection.BiMap.Immutable;
 import mb.statix.concurrent.IStatixResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.scopegraph.Scope;
 
 public class STX_incremental_diagnostics extends StatixPrimitive {
 
-    @Inject public STX_incremental_diagnostics() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_incremental_diagnostics() {
         super(STX_incremental_diagnostics.class.getSimpleName(), 1);
     }
 
@@ -85,11 +84,11 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
             this.unifier = unifier;
         }
 
-        @Override public Map<? extends Entry<Scope, ITerm>, ? extends Iterable<Scope>> getEdges() {
+        @Override public Map<? extends Entry<Scope, ITerm>, ? extends Collection<Scope>> getEdges() {
             return scopeGraph.getEdges();
         }
 
-        @Override public Iterable<Scope> getEdges(Scope scope, ITerm label) {
+        @Override public Collection<Scope> getEdges(Scope scope, ITerm label) {
             return scopeGraph.getEdges(scope, label);
         }
 

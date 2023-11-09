@@ -7,6 +7,7 @@ import mb.scopegraph.oopsla20.reference.ResolutionException;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
+import mb.statix.solver.query.QueryProject;
 
 public interface IResolveQuery extends IConstraint {
 
@@ -14,14 +15,18 @@ public interface IResolveQuery extends IConstraint {
 
     QueryMin min();
 
+    QueryProject project();
+
     ITerm scopeTerm();
 
     ITerm resultTerm();
 
     <R> R match(Cases<R> cases);
 
-    <R, E extends Throwable> R matchInResolution(ResolutionFunction1<CResolveQuery, R> onResolveQuery,
-            ResolutionFunction1<CCompiledQuery, R> onCompiledQuery) throws ResolutionException, InterruptedException;
+    <R, E extends Throwable> R matchInResolution(
+            ResolutionFunction1<CResolveQuery, R> onResolveQuery,
+            ResolutionFunction1<CCompiledQuery, R> onCompiledQuery
+    ) throws ResolutionException, InterruptedException;
 
     @Override default <R> R match(IConstraint.Cases<R> cases) {
         return cases.caseResolveQuery(this);

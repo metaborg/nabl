@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.usethesource.capsule.Set.Immutable;
-import mb.scopegraph.oopsla20.diff.BiMap;
+import org.metaborg.util.collection.BiMap;
 
 public interface IScopeImpl<S, D> {
 

@@ -3,14 +3,13 @@ package mb.nabl2.spoofax.primitives;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.metaborg.util.collection.IRelation3;
 import org.spoofax.interpreter.core.InterpreterException;
-
-import com.google.common.collect.Lists;
 
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.terms.ITerm;
@@ -33,14 +32,14 @@ public abstract class ScopeGraphEdgePrimitive<S extends ITerm> extends AnalysisP
         // @formatter:off
         return M.<ITerm>cases(
             M.term(sourceMatcher, (t, source) -> {
-                List<ITerm> edgeTerms = Lists.newArrayList();
+                List<ITerm> edgeTerms = new ArrayList<>();
                 for(Map.Entry<Label, ? extends ITerm> edge : edges.get(source)) {
                     edgeTerms.add(B.newTuple(edge.getKey(), edge.getValue()));
                 }
                 return B.newList(edgeTerms);
             }),
             M.tuple2(sourceMatcher, Label.matcher(), (t, source, label) -> {
-                List<ITerm> targetTerms = Lists.newArrayList();
+                List<ITerm> targetTerms = new ArrayList<>();
                 for(ITerm target : edges.get(source, label)) {
                     targetTerms.add(target);
                 }

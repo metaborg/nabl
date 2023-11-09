@@ -3,12 +3,9 @@ package mb.nabl2.relations.terms;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
-import java.util.List;
-
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
-
-import com.google.common.collect.ImmutableList;
+import org.metaborg.util.collection.ImList;
 
 import mb.nabl2.terms.IApplTerm;
 import mb.nabl2.terms.ITerm;
@@ -56,8 +53,8 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
             return OP;
         }
 
-        @Value.Lazy @Override public List<ITerm> getArgs() {
-            return ImmutableList.of((ITerm) B.newString(getName()));
+        @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+            return ImList.Immutable.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<NamedFunction> matcher() {
@@ -121,8 +118,8 @@ public abstract class FunctionName extends AbstractApplTerm implements IFunction
             return OP;
         }
 
-        @Value.Lazy @Override public List<ITerm> getArgs() {
-            return ImmutableList.of((ITerm) B.newString(getName()));
+        @Value.Lazy @Override public ImList.Immutable<ITerm> getArgs() {
+            return ImList.Immutable.of((ITerm) B.newString(getName()));
         }
 
         public static IMatcher<ExtFunction> matcher() {

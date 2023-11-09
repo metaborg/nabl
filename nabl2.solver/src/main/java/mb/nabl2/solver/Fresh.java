@@ -1,9 +1,10 @@
 package mb.nabl2.solver;
 
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.google.common.collect.Maps;
+import org.metaborg.util.collection.CapsuleUtil;
 
 import io.usethesource.capsule.Map;
 
@@ -20,7 +21,7 @@ public abstract class Fresh {
         }
 
         public Transient melt() {
-            final ConcurrentMap<String, Integer> transientCounters = Maps.newConcurrentMap();
+            final ConcurrentMap<String, Integer> transientCounters = new ConcurrentHashMap<>();
             transientCounters.putAll(counters);
             return new Transient(transientCounters);
         }
@@ -55,13 +56,13 @@ public abstract class Fresh {
         }
 
         public Immutable freeze() {
-            final Map.Transient<String, Integer> transientCounters = Map.Transient.of();
+            final Map.Transient<String, Integer> transientCounters = CapsuleUtil.transientMap();
             transientCounters.__putAll(counters);
             return new Immutable(transientCounters.freeze());
         }
 
         public static Fresh.Transient of() {
-            return new Transient(Maps.newConcurrentMap());
+            return new Transient(new ConcurrentHashMap<>());
         }
 
     }

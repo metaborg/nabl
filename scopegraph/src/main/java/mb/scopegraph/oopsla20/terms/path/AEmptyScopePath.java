@@ -8,8 +8,6 @@ import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ConsList;
 
-import com.google.common.collect.Iterators;
-
 import io.usethesource.capsule.Set;
 import mb.scopegraph.oopsla20.path.IScopePath;
 import mb.scopegraph.oopsla20.path.IStep;
@@ -62,7 +60,7 @@ abstract class AEmptyScopePath<S, L> implements IScopePath<S, L> {
             return false;
         if(!getScope().equals(other.getTarget()))
             return false;
-        return Iterators.size(other.iterator()) == 0;
+        return other.size() == 0;
     }
 
     @Override public String toString(boolean includeSource, boolean includeTarget) {

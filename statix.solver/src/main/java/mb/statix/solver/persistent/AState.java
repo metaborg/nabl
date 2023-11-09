@@ -2,7 +2,7 @@ package mb.statix.solver.persistent;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;

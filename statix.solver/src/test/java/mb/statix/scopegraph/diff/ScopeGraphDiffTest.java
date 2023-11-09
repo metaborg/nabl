@@ -6,10 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Collection;
 
 import org.junit.Test;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
+import org.metaborg.util.collection.MultiSetMap;
 
 import mb.nabl2.terms.ITerm;
 import static mb.nabl2.terms.build.TermBuild.B;
@@ -138,11 +135,11 @@ public class ScopeGraphDiffTest {
             .setDatum(d2, B.newAppl("D", s4));
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, var);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s0, EdgeOrData.data());
         closed.put(s1, EdgeOrData.data());
 
@@ -202,11 +199,11 @@ public class ScopeGraphDiffTest {
             .setDatum(d2, B.newAppl("D", s4));
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, var);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s1, EdgeOrData.edge(var));
         closed.put(s0, EdgeOrData.data());
         closed.put(s1, EdgeOrData.data());
@@ -245,11 +242,11 @@ public class ScopeGraphDiffTest {
             .setDatum(d2, B.newAppl("D", s4));
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, var);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s0, EdgeOrData.data());
         closed.put(s1, EdgeOrData.data());
         closed.put(s3, EdgeOrData.data());
@@ -258,14 +255,14 @@ public class ScopeGraphDiffTest {
         ScopeGraphDiffer<Scope, ITerm, ITerm> differ =
             ScopeGraphDiffer.of(previous, ops, new CollectionStatusOps<>(allLabels, closed));
         DifferState.Immutable<Scope, ITerm, ITerm> state1 =
-            differ.doDiff(current, differ.initDiff(s0, s0), ImmutableMultimap.of(s0, EdgeOrData.data()));
+            differ.doDiff(current, differ.initDiff(s0, s0), MultiSetMap.Immutable.of(s0, EdgeOrData.data()));
 
         assertScopeMatches(state1, s0, s0);
         assertEdgeMatches(state1);
 
         // Adding datum to d1 does not change status
         current = current.setDatum(d1, B.newAppl("D", s3));
-        DifferState.Immutable<Scope, ITerm, ITerm> state2 = differ.doDiff(current, state1, ImmutableMultimap.of());
+        DifferState.Immutable<Scope, ITerm, ITerm> state2 = differ.doDiff(current, state1, MultiSetMap.Immutable.of());
 
         assertScopeMatches(state2, s0, s0);
         assertEdgeMatches(state2);
@@ -273,14 +270,14 @@ public class ScopeGraphDiffTest {
         // closing (d1, $) does not change status
         closed.put(d1, EdgeOrData.data());
         DifferState.Immutable<Scope, ITerm, ITerm> state3 =
-            differ.doDiff(current, state2, ImmutableMultimap.of(d1, EdgeOrData.data()));
+            differ.doDiff(current, state2, MultiSetMap.Immutable.of(d1, EdgeOrData.data()));
 
         assertScopeMatches(state3, s0, s0);
         assertEdgeMatches(state3);
 
         // Adding s1 -var-> d1 does not change status
         current = current.addEdge(s1, var, d1);
-        DifferState.Immutable<Scope, ITerm, ITerm> state4 = differ.doDiff(current, state3, ImmutableMultimap.of());
+        DifferState.Immutable<Scope, ITerm, ITerm> state4 = differ.doDiff(current, state3, MultiSetMap.Immutable.of());
 
         assertScopeMatches(state4, s0, s0);
         assertEdgeMatches(state4);
@@ -288,14 +285,14 @@ public class ScopeGraphDiffTest {
         // closing (s1, var) does not change status
         closed.put(s1, EdgeOrData.edge(var));
         DifferState.Immutable<Scope, ITerm, ITerm> state5 =
-            differ.doDiff(current, state4, ImmutableMultimap.of(s1, EdgeOrData.edge(var)));
+            differ.doDiff(current, state4, MultiSetMap.Immutable.of(s1, EdgeOrData.edge(var)));
 
         assertScopeMatches(state5, s0, s0);
         assertEdgeMatches(state5);
 
         // adding s0 -P-> s1 does not change state
         current = current.addEdge(s0, P, s1);
-        DifferState.Immutable<Scope, ITerm, ITerm> state6 = differ.doDiff(current, state5, ImmutableMultimap.of());
+        DifferState.Immutable<Scope, ITerm, ITerm> state6 = differ.doDiff(current, state5, MultiSetMap.Immutable.of());
 
         assertScopeMatches(state6, s0, s0);
         assertEdgeMatches(state6);
@@ -303,7 +300,7 @@ public class ScopeGraphDiffTest {
         // Closing (s0, P) matches edges s0 -P-> {s1, s2} and s1 -var-> {D(s3), D(s4)}
         closed.put(s0, EdgeOrData.edge(P));
         DifferState.Immutable<Scope, ITerm, ITerm> state7 =
-            differ.doDiff(current, state6, ImmutableMultimap.of(s0, EdgeOrData.edge(P)));
+            differ.doDiff(current, state6, MultiSetMap.Immutable.of(s0, EdgeOrData.edge(P)));
 
         assertScopeMatches(state7, s0, s0, s1, s2, d1, d2, s3, s4);
         assertEdgeMatches(state7, edge(s0, P, s1), edge(s0, P, s2), edge(s1, var, d1), edge(s2, var, d2));
@@ -330,10 +327,10 @@ public class ScopeGraphDiffTest {
             .setDatum(d4, B.newAppl("B"));
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, var);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s0, EdgeOrData.edge(var));
         closed.put(s0, EdgeOrData.data());
         closed.put(d1, EdgeOrData.data());
@@ -368,12 +365,12 @@ public class ScopeGraphDiffTest {
             .addEdge(s4, P, s0);
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, P);
         allLabels.put(s2, P);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s0, EdgeOrData.edge(P));
         closed.put(s2, EdgeOrData.edge(P));
         closed.put(s0, EdgeOrData.data());
@@ -410,12 +407,12 @@ public class ScopeGraphDiffTest {
             .addEdge(s4, P, s0);
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, P);
         allLabels.put(s2, P);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s0, EdgeOrData.edge(P));
         closed.put(s1, EdgeOrData.edge(P));
         closed.put(s0, EdgeOrData.data());
@@ -452,12 +449,12 @@ public class ScopeGraphDiffTest {
             .addEdge(s4, P, s0);
         // @formatter:on
 
-        Multimap<Scope, ITerm> allLabels = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, ITerm> allLabels = MultiSetMap.Transient.of();
         allLabels.put(s0, P);
         allLabels.put(s1, P);
         allLabels.put(s2, P);
 
-        Multimap<Scope, EdgeOrData<ITerm>> closed = ArrayListMultimap.create();
+        MultiSetMap.Transient<Scope, EdgeOrData<ITerm>> closed = MultiSetMap.Transient.of();
         closed.put(s1, EdgeOrData.edge(P));
         closed.put(s2, EdgeOrData.edge(P));
         closed.put(s0, EdgeOrData.data());
@@ -543,20 +540,20 @@ public class ScopeGraphDiffTest {
 
     private static class CollectionStatusOps<S, L> implements ScopeGraphStatusOps<S, L> {
 
-        private final Multimap<S, L> allLabels;
-        private final Multimap<S, EdgeOrData<L>> closedLabels;
+        private final MultiSetMap<S, L> allLabels;
+        private final MultiSetMap<S, EdgeOrData<L>> closedLabels;
 
-        public CollectionStatusOps(Multimap<S, L> allLabels, Multimap<S, EdgeOrData<L>> closedLabels) {
+        public CollectionStatusOps(MultiSetMap<S, L> allLabels, MultiSetMap<S, EdgeOrData<L>> closedLabels) {
             this.allLabels = allLabels;
             this.closedLabels = closedLabels;
         }
 
         @Override public boolean closed(S scope, EdgeOrData<L> label) {
-            return closedLabels.containsEntry(scope, label);
+            return closedLabels.contains(scope, label);
         }
 
         @Override public Collection<L> allLabels(S scope) {
-            return allLabels.get(scope);
+            return allLabels.get(scope).toCollection();
         }
 
     }

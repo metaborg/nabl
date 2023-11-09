@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import com.google.common.collect.Streams;
-
 import mb.scopegraph.pepm16.IOccurrence;
 import mb.scopegraph.pepm16.path.IScopePath;
 import mb.scopegraph.pepm16.path.IStep;
@@ -64,31 +62,31 @@ public class PathsTest {
 
     @Test public void testEmptyIterator() {
         IScopePath<Scope, Label, IOccurrence> path = id1;
-        List<IStep<Scope, Label, IOccurrence>> steps = Streams.stream(path).collect(Collectors.toList());
+        List<IStep<Scope, Label, IOccurrence>> steps = path.stream().collect(Collectors.toList());
         assertEquals(Arrays.asList(), steps);
     }
 
     @Test public void testSingleStepIterator() {
         IScopePath<Scope, Label, IOccurrence> path = st23;
-        List<IStep<Scope, Label, IOccurrence>> steps = Streams.stream(path).collect(Collectors.toList());
+        List<IStep<Scope, Label, IOccurrence>> steps = path.stream().collect(Collectors.toList());
         assertEquals(Arrays.asList(st23), steps);
     }
 
     @Test public void testSingleStepAndIdIterator() {
         IScopePath<Scope, Label, IOccurrence> path = Paths.append(st23, id3).get();
-        List<IStep<Scope, Label, IOccurrence>> steps = Streams.stream(path).collect(Collectors.toList());
+        List<IStep<Scope, Label, IOccurrence>> steps = path.stream().collect(Collectors.toList());
         assertEquals(Arrays.asList(st23), steps);
     }
 
     @Test public void testTwoStepsIterator() {
         IScopePath<Scope, Label, IOccurrence> path = Paths.append(st12, st23).get();
-        List<IStep<Scope, Label, IOccurrence>> steps = Streams.stream(path).collect(Collectors.toList());
+        List<IStep<Scope, Label, IOccurrence>> steps = path.stream().collect(Collectors.toList());
         assertEquals(Arrays.asList(st12, st23), steps);
     }
 
     @Test public void testStepIdStepIterator() {
         IScopePath<Scope, Label, IOccurrence> path = Paths.append(st12, Paths.append(id2, st23).get()).get();
-        List<IStep<Scope, Label, IOccurrence>> steps = Streams.stream(path).collect(Collectors.toList());
+        List<IStep<Scope, Label, IOccurrence>> steps = path.stream().collect(Collectors.toList());
         assertEquals(Arrays.asList(st12, st23), steps);
     }
 

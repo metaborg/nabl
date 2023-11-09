@@ -2,18 +2,18 @@ package mb.statix.generator.strategy;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
+import org.metaborg.util.collection.Sets;
 import org.metaborg.util.iterators.Iterables2;
 import org.metaborg.util.task.NullCancel;
 import org.metaborg.util.task.NullProgress;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
@@ -53,11 +53,17 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final IUniDisunifier.Immutable unifier = state.unifier();
 
         // apply rule
-        final ApplyResult applyResult;
         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-        if((applyResult =
-                RuleUtil.apply(state.unifier(), dataWf, ImmutableList.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
-                        .orElse(null)) == null) {
+        final ApplyResult applyResult = RuleUtil.apply(
+                state.unifier(),
+                dataWf,
+                ImList.Immutable.of(datum),
+                null,
+                ApplyMode.RELAXED,
+                Safety.UNSAFE,
+                true
+        ).orElse(null);
+        if (applyResult == null) {
             return Optional.empty();
         }
         final IState.Immutable applyState = state;
@@ -72,19 +78,19 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
 
         // no substate is used here, as we allow variables from the context to be unified
         final SolverResult result = Solver.solve(spec, applyState, Iterables2.singleton(applyConstraint),
-                Map.Immutable.of(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
+                CapsuleUtil.immutableMap(), completeness.freeze(), IsComplete.ALWAYS, new NullDebugContext(),
                 new NullProgress(), new NullCancel(), Solver.RETURN_ON_FIRST_ERROR);
 
         // NOTE This part is almost a duplicate of Solver::entailed and should be
         //      kept in sync
 
-        if(result.hasErrors()) {
+        if (result.hasErrors()) {
             return Optional.empty();
         }
 
         final IState.Immutable newState = result.state();
 
-        if(!result.delays().isEmpty()) {
+        if (!result.delays().isEmpty()) {
             return Optional.empty();
         }
 
@@ -99,24 +105,23 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
                 .flatMap(diseq -> diseq.domainSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
-        if(!disunifiedVars.isEmpty()) {
+        if (!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
-        final Set<ITermVar> unifiedVars = Sets.difference(newUnifier.domainSet(), unifier.domainSet());
         // FIXME This test assumes the newUnifier is an extension of the old one.
         //       Without this assumption, we should use the more expensive test
         //       `newUnifier.equals(state.unifier())`
-        final List<ITerm> leftTerms = Lists.newArrayList();
-        final List<ITerm> rightTerms = Lists.newArrayList();
-        for(ITermVar var : unifiedVars) {
+        final List<ITerm> leftTerms = new ArrayList<>();
+        final List<ITerm> rightTerms = new ArrayList<>();
+        for (ITermVar var : Sets.difference(newUnifier.domainSet(), unifier.domainSet())) {
             final ITerm term = newUnifier.findTerm(var);
-            if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
+            if (!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
                 leftTerms.add(var);
                 rightTerms.add(term);
             }
         }
-        if(!leftTerms.isEmpty()) {
+        if (!leftTerms.isEmpty()) {
             final CEqual eq = new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), cause);
             return Optional.of(Optional.of(eq));
         }

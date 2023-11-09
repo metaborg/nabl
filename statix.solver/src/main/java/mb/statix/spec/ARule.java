@@ -1,22 +1,18 @@
 package mb.statix.spec;
 
-import static mb.nabl2.terms.build.TermBuild.B;
-import static mb.nabl2.terms.matching.TermPattern.P;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action1;
-
-import com.google.common.collect.ImmutableList;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.util.stream.CapsuleCollectors;
@@ -34,6 +30,9 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.spec.ApplyMode.Safety;
 
+import static mb.nabl2.terms.build.TermBuild.B;
+import static mb.nabl2.terms.matching.TermPattern.P;
+
 @Value.Immutable
 @Serial.Version(42L)
 public abstract class ARule {
@@ -44,7 +43,7 @@ public abstract class ARule {
 
     @Value.Parameter public abstract String name();
 
-    @Value.Parameter public abstract List<Pattern> params();
+    @Value.Parameter public abstract ImList.Immutable<Pattern> params();
 
     @Value.Lazy public Set.Immutable<ITermVar> paramVars() {
         return params().stream().flatMap(t -> t.getVars().stream()).collect(CapsuleCollectors.toSet());
@@ -64,20 +63,29 @@ public abstract class ARule {
      * otherwise, none
      */
     @Value.Lazy public Optional<Boolean> isAlways() throws InterruptedException {
-        final List<ITermVar> args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
+        final List<ITermVar>
+                args = IntStream.range(0, params().size()).mapToObj(idx -> B.newVar("", "arg" + idx))
                 .collect(Collectors.toList());
         final ApplyResult applyResult;
         try {
-            if((applyResult = RuleUtil.apply(PersistentUniDisunifier.Immutable.of(), (Rule) this, args, null,
-                    ApplyMode.STRICT, Safety.SAFE).orElse(null)) == null) {
+            applyResult = RuleUtil.apply(
+                    PersistentUniDisunifier.Immutable.of(),
+                    (Rule)this,
+                    args,
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.SAFE,
+                    false
+            ).orElse(null);
+            if (applyResult == null) {
                 // We could not apply the rule to the given variables,
                 // this rule is not unconditional
                 return Optional.empty();
             }
-        } catch(Delay d) {
+        } catch (Delay d) {
             return Optional.empty();
         }
-        if(applyResult.guard().isPresent()) {
+        if (applyResult.guard().isPresent()) {
             // This rule is not unconditional
             return Optional.empty();
         }
@@ -90,7 +98,7 @@ public abstract class ARule {
 
     public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
-        if(freeVars == null) {
+        if(result == null) {
             final Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
             doVisitFreeVars(_freeVars::__insert);
             result = _freeVars.freeze();
@@ -119,14 +127,45 @@ public abstract class ARule {
 
     /**
      * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
      */
     public Rule apply(ISubstitution.Immutable subst) {
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     */
+    public Rule unsafeApply(ISubstitution.Immutable subst) {
+        return unsafeApply(subst, false);
+    }
+
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     */
+    public Rule apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
+     */
+    public Rule apply(ISubstitution.Immutable subst, boolean trackOrigins) {
         ISubstitution.Immutable localSubst = subst.removeAll(paramVars()).retainAll(freeVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
         }
 
-        List<Pattern> params = this.params();
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
         Set.Immutable<ITermVar> freeVars = this.freeVars;
@@ -141,11 +180,11 @@ public abstract class ARule {
         fresh.fix();
 
         if(!ren.isEmpty()) {
-            params = params().stream().map(p -> p.apply(ren)).collect(ImmutableList.toImmutableList());
+            params = params().stream().map(p -> p.apply(ren)).collect(ImList.Immutable.toImmutableList());
             localSubst = ren.asSubstitution().compose(localSubst);
         }
 
-        body = body.apply(localSubst);
+        body = body.apply(localSubst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -155,18 +194,21 @@ public abstract class ARule {
 
     /**
      * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public Rule unsafeApply(ISubstitution.Immutable subst) {
+    public Rule unsafeApply(ISubstitution.Immutable subst, boolean trackOrigins) {
         ISubstitution.Immutable localSubst = subst.removeAll(paramVars());
         if(localSubst.isEmpty()) {
             return (Rule) this;
         }
 
-        List<Pattern> params = this.params();
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
-        body = body.unsafeApply(localSubst);
+        body = body.unsafeApply(localSubst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
@@ -177,14 +219,17 @@ public abstract class ARule {
 
     /**
      * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigins whether to track the syntactic origin of the constraints, if not already tracked
      */
-    public Rule apply(IRenaming subst) {
-        List<Pattern> params = this.params();
+    public Rule apply(IRenaming subst, boolean trackOrigins) {
+        ImList.Immutable<Pattern> params = this.params();
         IConstraint body = this.body();
         ICompleteness.Immutable bodyCriticalEdges = this.bodyCriticalEdges();
 
-        params = params().stream().map(p -> p.apply(subst)).collect(ImmutableList.toImmutableList());
-        body = body.apply(subst);
+        params = params().stream().map(p -> p.apply(subst)).collect(ImList.Immutable.toImmutableList());
+        body = body.apply(subst, trackOrigins);
         if(bodyCriticalEdges != null) {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
@@ -232,14 +277,14 @@ public abstract class ARule {
      */
     public static class LeftRightOrder {
 
-        public Optional<Integer> compare(Rule r1, Rule r2) {
+        public static Optional<Integer> compare(Rule r1, Rule r2) {
             final Pattern p1 = P.newTuple(r1.params());
             final Pattern p2 = P.newTuple(r2.params());
             return Pattern.leftRightOrdering.compare(p1, p2);
         }
 
-        public Comparator<Rule> asComparator() {
-            return (r1, r2) -> LeftRightOrder.this.compare(r1, r2).orElse(0);
+        public static Comparator<Rule> asComparator() {
+            return (r1, r2) -> LeftRightOrder.compare(r1, r2).orElse(0);
         }
 
     }

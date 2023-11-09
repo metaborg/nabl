@@ -302,7 +302,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable retainAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable retainAll(Set.Immutable<ITermVar> vars) {
             final IUniDisunifier.Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result =
                     unifier.retainAll(vars);
             unifier = result.unifier();
@@ -316,7 +316,7 @@ public abstract class BaseUniDisunifier implements IUniDisunifier, Serializable 
             return result.result();
         }
 
-        @Override public ISubstitution.Immutable removeAll(Iterable<ITermVar> vars) {
+        @Override public ISubstitution.Immutable removeAll(Set.Immutable<ITermVar> vars) {
             final IUniDisunifier.Result<mb.nabl2.terms.substitution.ISubstitution.Immutable> result =
                     unifier.removeAll(vars);
             unifier = result.unifier();

@@ -10,12 +10,11 @@ import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -26,7 +25,7 @@ import mb.statix.solver.persistent.SolverResult;
 public class STX_get_all_properties extends StatixPropertyPrimitive {
 
 
-    @Inject public STX_get_all_properties() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_all_properties() {
         super(STX_get_all_properties.class.getSimpleName(), 1);
     }
 
@@ -49,9 +48,9 @@ public class STX_get_all_properties extends StatixPropertyPrimitive {
             group.put(propName, propValue);
         }
 
-        final ImmutableList.Builder<ITerm> propSets = ImmutableList.builder();
+        final ImList.Mutable<ITerm> propSets = ImList.Mutable.of();
         for(Map.Entry<TermIndex, SortedMap<ITerm, ITermProperty>> rawSet : groupedProps.entrySet()) {
-            final ImmutableList.Builder<ITerm> props = ImmutableList.builder();
+            final ImList.Mutable<ITerm> props = ImList.Mutable.of();
             final TermIndex index = rawSet.getKey();
 
             for(Map.Entry<ITerm, ITermProperty> rawProp : rawSet.getValue().entrySet()) {
@@ -61,10 +60,10 @@ public class STX_get_all_properties extends StatixPropertyPrimitive {
 
                 props.add(B.newAppl(STX_PROP_OP, name, value, multiplicity));
             }
-            propSets.add(B.newTuple(index, B.newList(props.build())));
+            propSets.add(B.newTuple(index, B.newList(props.freeze())));
         }
 
-        return Optional.of(B.newAppl(PROPERTIES_OP, B.newList(propSets.build())));
+        return Optional.of(B.newAppl(PROPERTIES_OP, B.newList(propSets.freeze())));
 
     }
 

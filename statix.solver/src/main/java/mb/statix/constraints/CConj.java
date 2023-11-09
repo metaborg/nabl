@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -17,22 +17,30 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CConj implements IConstraint, Serializable {
+public final class CConj implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final IConstraint left;
     private final IConstraint right;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CConj origin;
 
     public CConj(IConstraint left, IConstraint right) {
-        this(left, right, null);
+        this(left, right, null, null);
     }
 
+    // Do not call this constructor. Call withArguments() or withCause() instead.
     public CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause) {
+        this(left, right, cause, null);
+    }
+
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CConj(IConstraint left, IConstraint right, @Nullable IConstraint cause, @Nullable CConj origin) {
         this.left = left;
         this.right = right;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public IConstraint left() {
@@ -43,12 +51,32 @@ public class CConj implements IConstraint, Serializable {
         return right;
     }
 
+    public CConj withArguments(IConstraint left, IConstraint right) {
+        if (this.left == left &&
+            this.right == right
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CConj(left, right, cause, origin);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CConj withCause(@Nullable IConstraint cause) {
-        return new CConj(left, right, cause);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CConj(left, right, cause, origin);
+    }
+
+    @Override public @Nullable CConj origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -61,8 +89,8 @@ public class CConj implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            left.getVars(),
-            right.getVars()
+                left.getVars(),
+                right.getVars()
         );
     }
 
@@ -82,15 +110,42 @@ public class CConj implements IConstraint, Serializable {
     }
 
     @Override public CConj apply(ISubstitution.Immutable subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
+        return apply(subst, false);
     }
 
     @Override public CConj unsafeApply(ISubstitution.Immutable subst) {
-        return new CConj(left.unsafeApply(subst), right.unsafeApply(subst), cause);
+        return unsafeApply(subst, false);
     }
 
     @Override public CConj apply(IRenaming subst) {
-        return new CConj(left.apply(subst), right.apply(subst), cause);
+        return apply(subst, false);
+    }
+
+    @Override public CConj apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CConj(
+                left.apply(subst, trackOrigin),
+                right.apply(subst, trackOrigin),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CConj unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CConj(
+                left.unsafeApply(subst, trackOrigin),
+                right.unsafeApply(subst, trackOrigin),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CConj apply(IRenaming subst, boolean trackOrigin) {
+        return new CConj(
+                left.apply(subst, trackOrigin),
+                right.apply(subst, trackOrigin),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -106,24 +161,33 @@ public class CConj implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CConj cConj = (CConj) o;
-        return Objects.equals(left, cConj.left) && Objects.equals(right, cConj.right)
-                && Objects.equals(cause, cConj.cause);
+        final CConj that = (CConj)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.left, that.left)
+            && Objects.equals(this.right, that.right)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(left, right, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                left,
+                right,
+                cause,
+                origin
+        );
     }
 
 }

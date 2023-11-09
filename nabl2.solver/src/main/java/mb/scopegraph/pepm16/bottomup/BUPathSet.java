@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map.Entry;
 
+import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate2;
 
 import io.usethesource.capsule.Set;
@@ -38,7 +39,7 @@ abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurren
     }
 
     public Collection<P> paths(SpacedName name) {
-        final Set.Transient<P> paths = Set.Transient.of();
+        final Set.Transient<P> paths = CapsuleUtil.transientSet();
         for(BUPathKey<L> key : _keys().get(name)) {
             paths.__insertAll(_paths().get(key));
         }
@@ -115,7 +116,7 @@ abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurren
 
 
         public Collection<P> add(BUPathKey<L> key, Collection<P> paths) {
-            final Set.Transient<P> added = Set.Transient.of();
+            final Set.Transient<P> added = CapsuleUtil.transientSet();
             keys.__insert(key.name(), key);
             for(P path : paths) {
                 if(this.paths.__insert(key, path)) {
@@ -138,7 +139,7 @@ abstract class BUPathSet<S extends IScope, L extends ILabel, O extends IOccurren
         }
 
         public Collection<P> remove(BUPathKey<L> key, Collection<P> paths) {
-            final Set.Transient<P> removed = Set.Transient.of();
+            final Set.Transient<P> removed = CapsuleUtil.transientSet();
             for(P path : paths) {
                 if(this.paths.__remove(key, path)) {
                     removed.__insert(path);

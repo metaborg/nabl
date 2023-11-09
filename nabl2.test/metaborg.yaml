@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:org.metaborg.meta.nabl2.test:${metaborgVersion}
 name: NaBL2Test
-metaborgVersion: 2.5.18
+metaborgVersion: 2.6.0-SNAPSHOT
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
@@ -16,6 +16,8 @@ runtime:
   nabl2:
     debug: analysis
 language:
+  sdf:
+    sdf2table: java
   stratego:
     format: ctree
     args:

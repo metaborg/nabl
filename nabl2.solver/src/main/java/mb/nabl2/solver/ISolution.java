@@ -1,9 +1,8 @@
 package mb.nabl2.solver;
 
-import java.util.Map;
-
-import com.google.common.collect.Multimap;
-
+import io.usethesource.capsule.Map;
+import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.solver.messages.IMessages;
@@ -30,9 +29,9 @@ public interface ISolution {
 
     IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph();
 
-    Multimap<OccurrenceIndex, Occurrence> astRefs();
+    SetMultimap.Immutable<OccurrenceIndex, Occurrence> astRefs();
 
-    Multimap<OccurrenceIndex, Occurrence> astDecls();
+    SetMultimap.Immutable<OccurrenceIndex, Occurrence> astDecls();
 
     ISolution withScopeGraph(IEsopScopeGraph.Immutable<Scope, Label, Occurrence, ITerm> scopeGraph);
 
@@ -44,9 +43,9 @@ public interface ISolution {
 
     ISolution withDeclProperties(IProperties.Immutable<Occurrence, ITerm, ITerm> declProperties);
 
-    Map<String, IVariantRelation.Immutable<ITerm>> relations();
+    Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relations();
 
-    ISolution withRelations(Map<String, ? extends IVariantRelation.Immutable<ITerm>> relations);
+    ISolution withRelations(Map.Immutable<String, IVariantRelation.Immutable<ITerm>> relations);
 
     ISymbolicConstraints symbolic();
 
@@ -66,8 +65,8 @@ public interface ISolution {
         return messages.freeze();
     }
 
-    java.util.Set<IConstraint> constraints();
+    Set.Immutable<IConstraint> constraints();
 
-    ISolution withConstraints(Iterable<? extends IConstraint> constraints);
+    ISolution withConstraints(Set.Immutable<IConstraint> constraints);
 
 }

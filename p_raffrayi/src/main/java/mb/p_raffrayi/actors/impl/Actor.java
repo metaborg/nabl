@@ -3,6 +3,7 @@ package mb.p_raffrayi.actors.impl;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,8 +12,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.functions.Function0;
 import org.metaborg.util.functions.Function1;
@@ -22,8 +24,6 @@ import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-
-import com.google.common.collect.ImmutableList;
 
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorMonitor;
@@ -586,13 +586,13 @@ class Actor<T> implements IActorImpl<T>, Runnable {
         private int maxPendingMessages = 0;
         private int maxPendingMessagesOnActivate = 0;
 
-        @Override public Iterable<String> csvHeaders() {
-            return ImmutableList.of("suspended", "preempted", "rescheduled", "messages", "maxPendingMessages",
+        @Override public Collection<String> csvHeaders() {
+            return ImList.Immutable.of("suspended", "preempted", "rescheduled", "messages", "maxPendingMessages",
                     "maxPendingMessagesOnActivate");
         }
 
-        @Override public Iterable<String> csvRow() {
-            return ImmutableList.of(Integer.toString(suspended), Integer.toString(preempted),
+        @Override public Collection<String> csvRow() {
+            return ImList.Immutable.of(Integer.toString(suspended), Integer.toString(preempted),
                     Integer.toString(rescheduled), Integer.toString(messages), Integer.toString(maxPendingMessages),
                     Integer.toString(maxPendingMessagesOnActivate));
         }

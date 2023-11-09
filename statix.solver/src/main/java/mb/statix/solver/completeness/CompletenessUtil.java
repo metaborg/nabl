@@ -4,14 +4,13 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.Collection;
 
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.functions.Action2;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SetMultimap;
-
 import io.usethesource.capsule.Set;
+import io.usethesource.capsule.SetMultimap;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -73,8 +72,8 @@ public class CompletenessUtil {
             onTrue -> Unit.unit,
             onTry -> Unit.unit,
             onUser -> {
-                spec.scopeExtensions().get(onUser.name()).stream()
-                        .forEach(il -> criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
+                spec.scopeExtensions().get(onUser.name()).forEach(il ->
+                    criticalEdge.apply(onUser.args().get(il._1()), EdgeOrData.edge(il._2())));
                 return Unit.unit;
             }
         ));
@@ -85,22 +84,22 @@ public class CompletenessUtil {
      * Return critical edges for this constraint.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> criticalEdges.add(CriticalEdge.of(s, l)));
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     /**
      * Return critical edges for this constraint, normalized against the given unifier.
      */
     public static Collection<CriticalEdge> criticalEdges(IConstraint constraint, Spec spec, IUnifier unifier) {
-        ImmutableList.Builder<CriticalEdge> criticalEdges = ImmutableList.builder();
+        ImList.Mutable<CriticalEdge> criticalEdges = ImList.Mutable.of();
         criticalEdges(constraint, spec, (s, l) -> {
             scopeOrVar().match(s, unifier).ifPresent(scopeOrVar -> {
                 criticalEdges.add(CriticalEdge.of(scopeOrVar, l));
             });
         });
-        return criticalEdges.build();
+        return criticalEdges.freeze();
     }
 
     public static IMatcher<ITerm> scopeOrVar() {
@@ -150,7 +149,7 @@ public class CompletenessUtil {
             cconj -> {
                 final IConstraint newLeft = precomputeCriticalEdges(cconj.left(), spec, criticalEdge);
                 final IConstraint newRight = precomputeCriticalEdges(cconj.right(), spec, criticalEdge);
-                return new CConj(newLeft, newRight, cconj.cause().orElse(null));
+                return cconj.withArguments(newLeft, newRight);
             },
             cequal -> cequal,
             cexists -> {
@@ -162,7 +161,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(s, l);
                     }
                 });
-                return cexists.withConstraint(newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
+                return cexists.withArguments(cexists.vars(), newBody).withBodyCriticalEdges(bodyCriticalEdges.freeze());
             },
             cfalse -> cfalse,
             cinequal -> cinequal,
@@ -173,7 +172,7 @@ public class CompletenessUtil {
                     ownCriticalEdges.add(scopeOrVar, EdgeOrData.data(), PersistentUniDisunifier.Immutable.of());
                     criticalEdge.apply(scopeOrVar, EdgeOrData.data());
                 }
-                return new CNew(cnew.scopeTerm(), cnew.datumTerm(), cnew.cause().orElse(null), ownCriticalEdges.freeze());
+                return cnew.withArguments(cnew.scopeTerm(), cnew.datumTerm()).withOwnCriticalEdges(ownCriticalEdges.freeze());
             },
             iresolveQuery -> {
                 final QueryFilter newFilter =
@@ -183,13 +182,11 @@ public class CompletenessUtil {
                 return iresolveQuery.match(new IResolveQuery.Cases<IResolveQuery>() {
 
                     @Override public IResolveQuery caseResolveQuery(CResolveQuery q) {
-                        return new CResolveQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null));
+                        return q.withArguments(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm());
                     }
 
                     @Override public IResolveQuery caseCompiledQuery(CCompiledQuery q) {
-                        return new CCompiledQuery(newFilter, newMin, q.scopeTerm(), q.resultTerm(),
-                                q.cause().orElse(null), q.message().orElse(null), q.stateMachine());
+                        return q.withArguments(newFilter, newMin, q.project(), q.scopeTerm(), q.resultTerm(), q.stateMachine());
                     }});
             },
             ctellEdge -> {
@@ -199,19 +196,19 @@ public class CompletenessUtil {
                     ownCriticalEdges.add(scopeOrVar, EdgeOrData.edge(ctellEdge.label()), PersistentUniDisunifier.Immutable.of());
                     criticalEdge.apply(scopeOrVar, EdgeOrData.edge(ctellEdge.label()));
                 }
-                return new CTellEdge(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm(),
-                        ctellEdge.cause().orElse(null), ownCriticalEdges.freeze());
+                return ctellEdge.withArguments(ctellEdge.sourceTerm(), ctellEdge.label(), ctellEdge.targetTerm())
+                        .withOwnCriticalEdges(ownCriticalEdges.freeze());
             },
             ctermId -> ctermId,
             ctermProperty -> ctermProperty,
             ctrue -> ctrue,
             ctry -> {
                 final IConstraint newBody = precomputeCriticalEdges(ctry.constraint(), spec, criticalEdge);
-                return new CTry(newBody, ctry.cause().orElse(null), ctry.message().orElse(null));
+                return ctry.withArguments(newBody);
             },
             cuser -> {
                 final ICompleteness.Transient ownCriticalEdges = Completeness.Transient.of();
-                spec.get(cuser.name()).stream().forEach(il -> {
+                spec.get(cuser.name()).forEach(il -> {
                     final ITerm scopeOrVar;
                     if((scopeOrVar = scopeOrVar().match(cuser.args().get(il._1())).orElse(null)) != null) {
                         final EdgeOrData<ITerm> label = EdgeOrData.edge(il._2());
@@ -219,7 +216,7 @@ public class CompletenessUtil {
                         criticalEdge.apply(scopeOrVar, label);
                     }
                 });
-                return new CUser(cuser.name(), cuser.args(), cuser.cause().orElse(null), cuser.message().orElse(null), ownCriticalEdges.freeze());
+                return cuser.withArguments(cuser.name(), cuser.args()).withOwnCriticalEdges(ownCriticalEdges.freeze());
             }
         ));
         // @formatter:on

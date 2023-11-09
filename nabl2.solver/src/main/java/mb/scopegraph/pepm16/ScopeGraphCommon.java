@@ -1,15 +1,13 @@
 package mb.scopegraph.pepm16;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.metaborg.util.iterators.Iterables2;
-
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 
 import mb.scopegraph.pepm16.esop15.IEsopScopeGraph;
 import mb.scopegraph.pepm16.esop15.reference.EsopScopeGraph;
@@ -34,8 +32,8 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
      * Returns the set of scopes that directly reach the given scope.
      */
     public Set<S> reachingScopes(final S scope) {
-        @SuppressWarnings("unchecked") final Set<S> reaches = Sets.newHashSet(scope);
-        final Deque<S> worklist = Queues.newArrayDeque(Iterables2.singleton(scope));
+        @SuppressWarnings("unchecked") final Set<S> reaches = new HashSet<>(Arrays.asList(scope));
+        final Deque<S> worklist = new ArrayDeque<>(Arrays.asList(scope));
         while(!worklist.isEmpty()) {
             final S current = worklist.pop();
             scopeGraph.getDirectEdges().inverse().get(current).stream().map(Map.Entry::getValue)
@@ -59,8 +57,8 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
      * Returns the set of scopes that are directly reachable from given scope.
      */
     public Set<S> reachableScopes(final S scope) {
-        @SuppressWarnings("unchecked") final Set<S> reachable = Sets.newHashSet(scope);
-        final Deque<S> worklist = Queues.newArrayDeque(Iterables2.singleton(scope));
+        @SuppressWarnings("unchecked") final Set<S> reachable = new HashSet<>(Arrays.asList(scope));
+        final Deque<S> worklist = new ArrayDeque<>(Arrays.asList(scope));
         while(!worklist.isEmpty()) {
             final S current = worklist.pop();
             scopeGraph.getDirectEdges().get(current).stream().map(Map.Entry::getValue)
@@ -77,7 +75,7 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
      */
     public IEsopScopeGraph<S, L, O, V> summarize(final S scope) {
         final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
-        summarize(scope, summaryGraph, Sets.newHashSet());
+        summarize(scope, summaryGraph, new HashSet<>());
         return summaryGraph.freeze();
     }
 
@@ -97,7 +95,7 @@ public final class ScopeGraphCommon<S extends IScope, L extends ILabel, O extend
 
     public IEsopScopeGraph<S, L, O, V> summarize(final O decl) {
         final IEsopScopeGraph.Transient<S, L, O, V> summaryGraph = EsopScopeGraph.Transient.of();
-        summarize(decl, summaryGraph, Sets.newHashSet());
+        summarize(decl, summaryGraph, new HashSet<>());
         return summaryGraph.freeze();
     }
 
