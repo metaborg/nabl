@@ -44,10 +44,6 @@
       <version>${metaborg-version}</version>
     </dependency>
     <dependency>
-      <groupId>jakarta.inject</groupId>
-      <artifactId>jakarta.inject-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.usethesource</groupId>
       <artifactId>capsule</artifactId>
     </dependency>
