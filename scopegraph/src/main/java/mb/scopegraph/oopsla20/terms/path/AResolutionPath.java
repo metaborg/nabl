@@ -1,6 +1,6 @@
 package mb.scopegraph.oopsla20.terms.path;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;

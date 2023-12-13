@@ -10,7 +10,7 @@ import java.util.List;
 import io.usethesource.capsule.Map;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public class State<L> implements Serializable {
 

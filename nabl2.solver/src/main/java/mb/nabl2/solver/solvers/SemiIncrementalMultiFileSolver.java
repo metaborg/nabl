@@ -14,6 +14,7 @@ import io.usethesource.capsule.Map;
 import io.usethesource.capsule.Set;
 import mb.nabl2.config.NaBL2DebugConfig;
 import mb.nabl2.constraints.IConstraint;
+import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.constraints.messages.IMessageInfo;
 import mb.nabl2.relations.variants.IVariantRelation;
 import mb.nabl2.relations.variants.VariantRelations;
@@ -132,6 +133,15 @@ public class SemiIncrementalMultiFileSolver extends BaseMultiFileSolver {
                 constraints.addAll(unitSolution.constraints());
                 messages.addAll(unitSolution.messages());
             }
+
+
+            if(log.enabled()) {
+                log.debug("start solverInter; equality constraints: ");
+                constraints.stream()
+                    .filter(CEqual.class::isInstance)
+                    .forEach(c -> log.debug("* {}", c));
+            }
+
 
             // solve constraints
             scopeGraphReducer.updateAll();

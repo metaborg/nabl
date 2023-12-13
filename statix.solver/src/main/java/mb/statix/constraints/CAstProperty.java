@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -17,10 +17,10 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 
-public class CAstProperty implements IConstraint, Serializable {
+public final class CAstProperty implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static enum Op {
+    public enum Op {
         SET {
             @Override public String toString() {
                 return ":=";
@@ -39,17 +39,27 @@ public class CAstProperty implements IConstraint, Serializable {
     private final ITerm value;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CAstProperty origin;
 
     public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value) {
-        this(idTerm, property, op, value, null);
+        this(idTerm, property, op, value, null, null);
     }
 
-    public CAstProperty(ITerm idTerm, ITerm property, Op op, ITerm value, @Nullable IConstraint cause) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CAstProperty(
+            ITerm idTerm,
+            ITerm property,
+            Op op,
+            ITerm value,
+            @Nullable IConstraint cause,
+            @Nullable CAstProperty origin
+    ) {
         this.idTerm = idTerm;
         this.property = property;
         this.op = op;
         this.value = value;
         this.cause = cause;
+        this.origin = origin;
     }
 
     public ITerm idTerm() {
@@ -68,12 +78,34 @@ public class CAstProperty implements IConstraint, Serializable {
         return value;
     }
 
+    public CAstProperty withArguments(ITerm idTerm, ITerm property, Op op, ITerm value) {
+        if (this.idTerm == idTerm &&
+            this.property == property &&
+            this.op == op &&
+            this.value == value
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CAstProperty withCause(@Nullable IConstraint cause) {
-        return new CAstProperty(idTerm, property, op, value, cause);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CAstProperty(idTerm, property, op, value, cause, origin);
+    }
+
+    @Override public @Nullable CAstProperty origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -86,8 +118,8 @@ public class CAstProperty implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            idTerm.getVars(),
-            value.getVars()
+                idTerm.getVars(),
+                value.getVars()
         );
     }
 
@@ -107,15 +139,41 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public CAstProperty apply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return apply(subst, false);
     }
 
     @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return unsafeApply(subst, false);
     }
 
     @Override public CAstProperty apply(IRenaming subst) {
-        return new CAstProperty(subst.apply(idTerm), property, op, subst.apply(value), cause);
+        return apply(subst, false);
+    }
+
+    @Override public CAstProperty apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CAstProperty unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CAstProperty apply(IRenaming subst, boolean trackOrigin) {
+        return new CAstProperty(
+                subst.apply(idTerm),
+                property,
+                op,
+                subst.apply(value),
+                cause,
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -134,24 +192,37 @@ public class CAstProperty implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CAstProperty that = (CAstProperty) o;
-        return Objects.equals(idTerm, that.idTerm) && Objects.equals(property, that.property) && op == that.op
-                && Objects.equals(value, that.value) && Objects.equals(cause, that.cause);
+        final CAstProperty that = (CAstProperty)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.idTerm, that.idTerm)
+            && Objects.equals(this.property, that.property)
+            && this.op == that.op
+            && Objects.equals(this.value, that.value)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(idTerm, property, op, value, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                idTerm,
+                property,
+                op,
+                value,
+                cause,
+                origin
+        );
     }
 
 }

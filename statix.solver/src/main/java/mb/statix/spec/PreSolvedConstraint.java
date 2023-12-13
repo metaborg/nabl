@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -83,7 +83,7 @@ public class PreSolvedConstraint implements Serializable {
 
     public Set.Immutable<ITermVar> freeVars() {
         Set.Immutable<ITermVar> result = freeVars;
-        if(freeVars == null) {
+        if(result == null) {
             Set.Transient<ITermVar> _freeVars = CapsuleUtil.transientSet();
             doVisitFreeVars(_freeVars::__insert);
             result = _freeVars.freeze();
@@ -341,7 +341,7 @@ public class PreSolvedConstraint implements Serializable {
      * Externalize the given variables, returning a substitution for the variables and an updated rule body. The given
      * variables must be free in the rule body, or part of the existential variables. Existential variables of the rule
      * body may become free in the updated rule body.
-     * 
+     *
      * This method works under the assumption that the provided variables were bound, and that these binders are
      * replaced by the terms provided in the substitution, causing the variables that appear there to be bound instead.
      */

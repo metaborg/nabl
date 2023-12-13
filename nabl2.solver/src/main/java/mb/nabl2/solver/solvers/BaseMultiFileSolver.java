@@ -3,7 +3,7 @@ package mb.nabl2.solver.solvers;
 import java.util.Collection;
 import java.util.List;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;

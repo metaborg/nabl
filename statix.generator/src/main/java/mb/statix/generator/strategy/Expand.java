@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
@@ -69,7 +69,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
-                predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE);
+                predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE, false);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = new ArrayList<>();
         results.forEach(result -> {

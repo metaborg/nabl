@@ -1,6 +1,6 @@
 package mb.statix.concurrent;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.p_raffrayi.ITypeChecker.IOutput;

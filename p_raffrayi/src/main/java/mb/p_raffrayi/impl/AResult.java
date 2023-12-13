@@ -2,7 +2,7 @@ package mb.p_raffrayi.impl;
 
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;

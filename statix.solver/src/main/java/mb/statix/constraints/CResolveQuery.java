@@ -3,7 +3,7 @@ package mb.statix.constraints;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.substitution.IRenaming;
@@ -16,22 +16,62 @@ import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.QueryProject;
 
-public class CResolveQuery extends AResolveQuery implements Serializable {
+public final class CResolveQuery extends AResolveQuery implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private final @Nullable CResolveQuery origin;
+
     public CResolveQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm) {
-        this(filter, min, project, scopeTerm, resultTerm, null, null);
+        this(filter, min, project, scopeTerm, resultTerm, null, null, null);
     }
 
-    public CResolveQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
-            @Nullable IMessage message) {
-        this(filter, min, project, scopeTerm, resultTerm, null, message);
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
+    public CResolveQuery(
+            QueryFilter filter,
+            QueryMin min,
+            QueryProject project,
+            ITerm scopeTerm,
+            ITerm resultTerm,
+            @Nullable IMessage message
+    ) {
+        this(filter, min, project, scopeTerm, resultTerm, null, message, null);
     }
 
-    public CResolveQuery(QueryFilter filter, QueryMin min, QueryProject project, ITerm scopeTerm, ITerm resultTerm,
-            @Nullable IConstraint cause, @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CResolveQuery(
+            QueryFilter filter,
+            QueryMin min,
+            QueryProject project,
+            ITerm scopeTerm,
+            ITerm resultTerm,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message,
+            @Nullable CResolveQuery origin
+    ) {
         super(filter, min, project, scopeTerm, resultTerm, cause, message);
+
+        this.origin = origin;
+    }
+
+    public CResolveQuery withArguments(
+            QueryFilter filter,
+            QueryMin min,
+            QueryProject project,
+            ITerm scopeTerm,
+            ITerm resultTerm
+    ) {
+        if (this.filter == filter &&
+            this.min == min &&
+            this.project == project &&
+            this.scopeTerm == scopeTerm &&
+            this.resultTerm == resultTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -44,26 +84,76 @@ public class CResolveQuery extends AResolveQuery implements Serializable {
     }
 
     @Override public CResolveQuery withCause(@Nullable IConstraint cause) {
-        return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
     }
 
     @Override public CResolveQuery withMessage(@Nullable IMessage message) {
-        return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CResolveQuery(filter, min, project, scopeTerm, resultTerm, cause, message, origin);
+    }
+
+    @Override public @Nullable CResolveQuery origin() {
+        return origin;
     }
 
     @Override public CResolveQuery apply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(filter.apply(subst), min.apply(subst), project, subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+        return apply(subst, false);
     }
 
     @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst) {
-        return new CResolveQuery(filter.unsafeApply(subst), min.unsafeApply(subst), project, subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+        return unsafeApply(subst, false);
     }
 
     @Override public CResolveQuery apply(IRenaming subst) {
-        return new CResolveQuery(filter.apply(subst), min.apply(subst), project, subst.apply(scopeTerm),
-                subst.apply(resultTerm), cause, message == null ? null : message.apply(subst));
+        return apply(subst, false);
+    }
+
+    @Override public CResolveQuery apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CResolveQuery(
+                filter.apply(subst, trackOrigin),
+                min.apply(subst, trackOrigin),
+                project,
+                subst.apply(scopeTerm),
+                subst.apply(resultTerm),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CResolveQuery unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CResolveQuery(
+                filter.unsafeApply(subst, trackOrigin),
+                min.unsafeApply(subst, trackOrigin),
+                project,
+                subst.apply(scopeTerm),
+                subst.apply(resultTerm),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CResolveQuery apply(IRenaming subst, boolean trackOrigin) {
+        return new CResolveQuery(
+                filter.apply(subst, trackOrigin),
+                min.apply(subst, trackOrigin),
+                project,
+                subst.apply(scopeTerm),
+                subst.apply(resultTerm),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -86,22 +176,37 @@ public class CResolveQuery extends AResolveQuery implements Serializable {
             return true;
         if(o == null || getClass() != o.getClass())
             return false;
-        CResolveQuery that = (CResolveQuery) o;
-        return Objects.equals(filter, that.filter) && Objects.equals(min, that.min)
-                && Objects.equals(project, that.project) && Objects.equals(scopeTerm, that.scopeTerm)
-                && Objects.equals(resultTerm, that.resultTerm) && Objects.equals(cause, that.cause)
-                && Objects.equals(message, that.message);
+        final CResolveQuery that = (CResolveQuery)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.filter, that.filter)
+            && Objects.equals(this.min, that.min)
+            && Objects.equals(this.project, that.project)
+            && Objects.equals(this.scopeTerm, that.scopeTerm)
+            && Objects.equals(this.resultTerm, that.resultTerm)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(filter, min, project, scopeTerm, resultTerm, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                filter,
+                min,
+                project,
+                scopeTerm,
+                resultTerm,
+                cause,
+                message,
+                origin
+        );
     }
 
 }

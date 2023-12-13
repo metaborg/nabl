@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -18,7 +18,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.completeness.ICompleteness;
 
-public class CTellEdge implements IConstraint, Serializable {
+public final class CTellEdge implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final ITerm sourceTerm;
@@ -26,18 +26,27 @@ public class CTellEdge implements IConstraint, Serializable {
     private final ITerm targetTerm;
 
     private final @Nullable IConstraint cause;
+    private final @Nullable CTellEdge origin;
     private final @Nullable ICompleteness.Immutable ownCriticalEdges;
 
     public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
-        this(sourceTerm, label, targetTerm, null, null);
+        this(sourceTerm, label, targetTerm, null, null, null);
     }
 
-    public CTellEdge(ITerm sourceTerm, ITerm label, ITerm targetTerm, @Nullable IConstraint cause,
-            @Nullable ICompleteness.Immutable ownCriticalEdges) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CTellEdge(
+            ITerm sourceTerm,
+            ITerm label,
+            ITerm targetTerm,
+            @Nullable IConstraint cause,
+            @Nullable CTellEdge origin,
+            @Nullable ICompleteness.Immutable ownCriticalEdges
+    ) {
         this.sourceTerm = sourceTerm;
         this.label = label;
         this.targetTerm = targetTerm;
         this.cause = cause;
+        this.origin = origin;
         this.ownCriticalEdges = ownCriticalEdges;
     }
 
@@ -53,12 +62,33 @@ public class CTellEdge implements IConstraint, Serializable {
         return targetTerm;
     }
 
+    public CTellEdge withArguments(ITerm sourceTerm, ITerm label, ITerm targetTerm) {
+        if (this.sourceTerm == sourceTerm &&
+            this.label == label &&
+            this.targetTerm == targetTerm
+        ) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, ownCriticalEdges);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CTellEdge withCause(@Nullable IConstraint cause) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause, ownCriticalEdges);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, ownCriticalEdges);
+    }
+
+    @Override public @Nullable CTellEdge origin() {
+        return origin;
     }
 
     @Override public Optional<ICompleteness.Immutable> ownCriticalEdges() {
@@ -66,7 +96,12 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge withOwnCriticalEdges(ICompleteness.Immutable criticalEdges) {
-        return new CTellEdge(sourceTerm, label, targetTerm, cause, criticalEdges);
+        if (this.ownCriticalEdges == criticalEdges) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTellEdge(sourceTerm, label, targetTerm, cause, origin, criticalEdges);
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -79,8 +114,8 @@ public class CTellEdge implements IConstraint, Serializable {
 
     @Override public Set.Immutable<ITermVar> getVars() {
         return Set.Immutable.union(
-            sourceTerm.getVars(),
-            targetTerm.getVars()
+                sourceTerm.getVars(),
+                targetTerm.getVars()
         );
     }
 
@@ -100,18 +135,41 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public CTellEdge apply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return apply(subst, false);
     }
 
     @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return unsafeApply(subst, false);
     }
 
     @Override public CTellEdge apply(IRenaming subst) {
-        return new CTellEdge(subst.apply(sourceTerm), label, subst.apply(targetTerm), cause,
-                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst));
+        return apply(subst, false);
+    }
+
+    @Override public CTellEdge apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CTellEdge(
+                subst.apply(sourceTerm),
+                label,
+                subst.apply(targetTerm),
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
+    }
+
+    @Override public CTellEdge unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CTellEdge apply(IRenaming subst, boolean trackOrigin) {
+        return new CTellEdge(
+                subst.apply(sourceTerm),
+                label,
+                subst.apply(targetTerm),
+                cause,
+                origin == null && trackOrigin ? this : origin,
+                ownCriticalEdges == null ? null : ownCriticalEdges.apply(subst)
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
@@ -129,24 +187,35 @@ public class CTellEdge implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CTellEdge cTellEdge = (CTellEdge) o;
-        return Objects.equals(sourceTerm, cTellEdge.sourceTerm) && Objects.equals(label, cTellEdge.label)
-                && Objects.equals(targetTerm, cTellEdge.targetTerm) && Objects.equals(cause, cTellEdge.cause);
+        CTellEdge that = (CTellEdge)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.sourceTerm, that.sourceTerm)
+            && Objects.equals(this.label, that.label)
+            && Objects.equals(this.targetTerm, that.targetTerm)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(sourceTerm, label, targetTerm, cause);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                sourceTerm,
+                label,
+                targetTerm,
+                cause,
+                origin
+        );
     }
 
 }

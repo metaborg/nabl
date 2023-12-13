@@ -1,6 +1,6 @@
 package mb.nabl2.terms;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public interface IAttachments {
 

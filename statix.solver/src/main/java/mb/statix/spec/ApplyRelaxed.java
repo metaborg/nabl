@@ -27,18 +27,24 @@ import mb.statix.solver.completeness.ICompleteness;
 
 class ApplyRelaxed extends ApplyMode<VoidException> {
 
-    @Override Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            IConstraint cause, Safety safety) throws VoidException {
+    @Override Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            IConstraint cause,
+            Safety safety,
+            boolean trackOrigins
+    ) throws VoidException {
         Set.Immutable<ITermVar> freeVars = rule.freeVars();
-        for(ITerm arg : args) {
+        for (ITerm arg : args) {
             freeVars = freeVars.__insertAll(arg.getVars());
         }
 
         // match and create equality constraints
         final FreshVars fresh = new FreshVars(freeVars);
-        final VarProvider freshProvider = VarProvider.of(v -> fresh.fresh(v), () -> fresh.fresh("_"));
+        final VarProvider freshProvider = VarProvider.of(fresh::fresh, () -> fresh.fresh("_"));
         final MatchResult matchResult;
-        if((matchResult = P.matchWithEqs(rule.params(), args, unifier, freshProvider).orElse(null)) == null) {
+        if ((matchResult = P.matchWithEqs(rule.params(), args, unifier, freshProvider).orElse(null)) == null) {
             return Optional.empty();
         }
 
@@ -49,10 +55,10 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         final Set.Immutable<ITermVar> constrainedVars = Set.Immutable.subtract(matchResult.constrainedVars(), generatedVars);
 
         final IConstraint appliedBody;
-        if(safety.equals(Safety.UNSAFE)) {
-            appliedBody = rule.body().unsafeApply(matchResult.substitution()).withCause(cause);
+        if (safety.equals(Safety.UNSAFE)) {
+            appliedBody = rule.body().unsafeApply(matchResult.substitution(), trackOrigins).withCause(cause);
         } else {
-            appliedBody = rule.body().apply(matchResult.substitution()).withCause(cause);
+            appliedBody = rule.body().apply(matchResult.substitution(), trackOrigins).withCause(cause);
         }
         final ICompleteness.Immutable appliedCriticalEdges =
                 rule.bodyCriticalEdges() == null ? null : rule.bodyCriticalEdges().apply(matchResult.substitution());
@@ -60,10 +66,10 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         // simplify guard constraints
         final IUniDisunifier.Result<IUnifier.Immutable> unifyResult;
         try {
-            if((unifyResult = unifier.unify(matchResult.equalities()).orElse(null)) == null) {
+            if ((unifyResult = unifier.unify(matchResult.equalities()).orElse(null)) == null) {
                 return Optional.empty();
             }
-        } catch(OccursException e) {
+        } catch (OccursException e) {
             return Optional.empty();
         }
         final IUnifier.Immutable diff = unifyResult.result();
@@ -73,7 +79,7 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         final ICompleteness.Immutable newCriticalEdges;
         final Optional<Diseq> diseq;
         final IUnifier.Immutable guard = diff.retainAll(constrainedVars).unifier();
-        if(guard.isEmpty()) {
+        if (guard.isEmpty()) {
             newBody = appliedBody;
             newCriticalEdges = appliedCriticalEdges;
             diseq = Optional.empty();
@@ -88,8 +94,12 @@ class ApplyRelaxed extends ApplyMode<VoidException> {
         }
 
         // construct result
-        final ApplyResult applyResult = ApplyResult.of(diseq, newBody,
-                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of());
+        final ApplyResult applyResult = ApplyResult.of(
+                diseq,
+                newBody,
+                newCriticalEdges != null ? newCriticalEdges : Completeness.Immutable.of(),
+                matchResult.substitution()
+        );
 
         return Optional.of(applyResult);
     }

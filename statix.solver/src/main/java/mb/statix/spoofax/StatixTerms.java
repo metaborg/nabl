@@ -135,16 +135,10 @@ public class StatixTerms {
     public static final String RVAR_OP = "RVar";
 
     public static IMatcher<Spec> spec() {
-        final IMatcher<Spec> specMatcher = M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
+        return M.appl5("Spec", M.req(labels()), M.req(labels()), M.term(), rules(), M.req(scopeExtensions()),
             (t, edgeLabels, dataLabels, noRelationLabel, rules, ext) -> {
                 return Spec.of(rules, edgeLabels, dataLabels, ext).precomputeCriticalEdges();
             });
-        return (term, unifier) -> {
-            TermMatch.log = true;
-            Optional<Spec> result = specMatcher.match(term, unifier);
-            TermMatch.log = false;
-            return result;
-        };
     }
 
     public static IMatcher<RuleSet> rules() {
