@@ -1158,7 +1158,6 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
 
                 return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
                         new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
-                throw new IllegalStateException("Unexpected delay.", e);
             } catch (Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
