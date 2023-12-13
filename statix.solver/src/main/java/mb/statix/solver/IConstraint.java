@@ -29,6 +29,8 @@ import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 
+import jakarta.annotation.Nullable;
+
 public interface IConstraint {
 
     Optional<IConstraint> cause();
@@ -38,6 +40,13 @@ public interface IConstraint {
     default Optional<IMessage> message() {
         return Optional.empty();
     }
+
+    /**
+     * The syntactic constraint from which this instance was derived.
+     *
+     * @return a constraint of the same type; or {@code null} if this information was not (yet) recorded
+     */
+    @Nullable IConstraint origin();
 
     default IConstraint withMessage(@SuppressWarnings("unused") IMessage msg) {
         throw new UnsupportedOperationException("Constraint does not support message.");
@@ -77,18 +86,51 @@ public interface IConstraint {
 
     /**
      * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
      */
     IConstraint apply(ISubstitution.Immutable subst);
 
     /**
      * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
      */
     IConstraint unsafeApply(ISubstitution.Immutable subst);
 
     /**
      * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
      */
     IConstraint apply(IRenaming subst);
+
+    /**
+     * Apply capture avoiding substitution.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint apply(ISubstitution.Immutable subst, boolean trackOrigin);
+
+    /**
+     * Apply unguarded substitution, which may result in capture.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin);
+
+    /**
+     * Apply variable renaming.
+     *
+     * @param subst the substitution to apply
+     * @param trackOrigin whether to use the current constraint as the syntactic {@link #origin()}
+     *                    of the resulting constraint, if not already tracked
+     */
+    IConstraint apply(IRenaming subst, boolean trackOrigin);
 
     String toString(TermFormatter termToString);
 

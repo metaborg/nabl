@@ -44,11 +44,13 @@ public class EqualityComponent extends ASolver {
         try {
             final IUnifier.Transient unifier = this.unifier.get().melt();
             if(!unifier.unify(solution).isPresent()) {
+                log.debug("seeding failed: {}", message);
                 messages.add(message.withContent(MessageContent.of("Unification failed.")));
             } else {
                 this.unifier.set(unifier.freeze());
             }
         } catch(OccursException e) {
+            log.debug("seeding failed: {}", message);
             final MessageContent content = MessageContent.of("Recursive unifier");
             messages.add(message.withContent(content));
         }

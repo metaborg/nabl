@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -20,7 +20,7 @@ import mb.nabl2.util.TermFormatter;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.IConstraint;
 
-public class CInequal implements IConstraint, Serializable {
+public final class CInequal implements IConstraint, Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Set<ITermVar> universals;
@@ -29,22 +29,37 @@ public class CInequal implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CInequal origin;
 
     public CInequal(Iterable<ITermVar> universals, ITerm term1, ITerm term2) {
-        this(universals, term1, term2, null, null);
+        this(universals, term1, term2, null, null, null);
     }
 
-    public CInequal(Iterable<ITermVar> universals, ITerm term1, ITerm term2, @Nullable IMessage message) {
-        this(universals, term1, term2, null, message);
+    // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
+    public CInequal(
+            Iterable<ITermVar> universals,
+            ITerm term1,
+            ITerm term2,
+            @Nullable IMessage message
+    ) {
+        this(universals, term1, term2, null, message, null);
     }
 
-    public CInequal(Iterable<ITermVar> universals, ITerm term1, ITerm term2, @Nullable IConstraint cause,
-            @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CInequal(
+            Iterable<ITermVar> universals,
+            ITerm term1,
+            ITerm term2,
+            @Nullable IConstraint cause,
+            @Nullable IMessage message,
+            @Nullable CInequal origin
+    ) {
         this.universals = CapsuleUtil.toSet(universals);
         this.term1 = term1;
         this.term2 = term2;
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public Set<ITermVar> universals() {
@@ -59,12 +74,28 @@ public class CInequal implements IConstraint, Serializable {
         return term2;
     }
 
+    public CInequal withArguments(Iterable<ITermVar> universals, ITerm term1, ITerm term2) {
+        if (this.universals == universals &&
+            this.term1 == term1 &&
+            this.term2 == term2
+        ) {
+            // Avoid creating new objects.
+            return this;
+        }
+        return new CInequal(universals, term1, term2, cause, message, origin);
+    }
+
     @Override public Optional<IConstraint> cause() {
         return Optional.ofNullable(cause);
     }
 
     @Override public CInequal withCause(@Nullable IConstraint cause) {
-        return new CInequal(universals, term1, term2, cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CInequal(universals, term1, term2, cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -72,7 +103,16 @@ public class CInequal implements IConstraint, Serializable {
     }
 
     @Override public CInequal withMessage(@Nullable IMessage message) {
-        return new CInequal(universals, term1, term2, cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CInequal(universals, term1, term2, cause, message, origin);
+    }
+
+    @Override public @Nullable CInequal origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -104,36 +144,58 @@ public class CInequal implements IConstraint, Serializable {
     private void doVisitFreeVars(Action1<ITermVar> onFreeVar) {
         term1.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
         term2.getVars().stream().filter(v -> !universals.contains(v)).forEach(onFreeVar::apply);
-        if(message != null) {
+        if (message != null) {
             message.visitVars(onFreeVar);
         }
-
     }
 
     @Override public CInequal apply(ISubstitution.Immutable subst) {
-        final Set.Immutable<ITermVar> us =
-                universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
-        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
-                message == null ? null : message.apply(subst));
+        return apply(subst, false);
     }
 
     @Override public CInequal unsafeApply(ISubstitution.Immutable subst) {
-        final Set.Immutable<ITermVar> us =
-                universals.stream().flatMap(v -> subst.apply(v).getVars().stream()).collect(CapsuleCollectors.toSet());
-        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
-                message == null ? null : message.apply(subst));
+        return unsafeApply(subst, false);
     }
 
     @Override public CInequal apply(IRenaming subst) {
-        final Set.Immutable<ITermVar> us =
-                universals.stream().map(v -> subst.rename(v)).collect(CapsuleCollectors.toSet());
-        return new CInequal(us, subst.apply(term1), subst.apply(term2), cause,
-                message == null ? null : message.apply(subst));
+        return apply(subst, false);
+    }
+
+    @Override public CInequal apply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        final Set.Immutable<ITermVar> us = universals.stream()
+                .flatMap(v -> subst.apply(v).getVars().stream())
+                .collect(CapsuleCollectors.toSet());
+        return new CInequal(
+                us,
+                subst.apply(term1),
+                subst.apply(term2),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CInequal unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return apply(subst, trackOrigin);
+    }
+
+    @Override public CInequal apply(IRenaming subst, boolean trackOrigin) {
+        final Set.Immutable<ITermVar> us = universals.stream()
+                .map(subst::rename)
+                .collect(CapsuleCollectors.toSet());
+        return new CInequal(
+                us,
+                subst.apply(term1),
+                subst.apply(term2),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
     }
 
     @Override public String toString(TermFormatter termToString) {
         final StringBuilder sb = new StringBuilder();
-        if(!universals.isEmpty()) {
+        if (!universals.isEmpty()) {
             sb.append("(forall ");
             sb.append(universals.stream().map(termToString::format).collect(Collectors.joining(", ")));
             sb.append(". ");
@@ -141,7 +203,7 @@ public class CInequal implements IConstraint, Serializable {
         sb.append(termToString.format(term1));
         sb.append(" != ");
         sb.append(termToString.format(term2));
-        if(!universals.isEmpty()) {
+        if (!universals.isEmpty()) {
             sb.append(")");
         }
         return sb.toString();
@@ -152,25 +214,37 @@ public class CInequal implements IConstraint, Serializable {
     }
 
     @Override public boolean equals(Object o) {
-        if(this == o)
+        if (this == o)
             return true;
-        if(o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
-        CInequal cInequal = (CInequal) o;
-        return Objects.equals(universals, cInequal.universals) && Objects.equals(term1, cInequal.term1)
-                && Objects.equals(term2, cInequal.term2) && Objects.equals(cause, cInequal.cause)
-                && Objects.equals(message, cInequal.message);
+        final CInequal that = (CInequal)o;
+        // @formatter:off
+        return this.hashCode == that.hashCode
+            && Objects.equals(this.universals, that.universals)
+            && Objects.equals(this.term1, that.term1)
+            && Objects.equals(this.term2, that.term2)
+            && Objects.equals(this.cause, that.cause)
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
+        // @formatter:on
     }
 
-    private volatile int hashCode;
+    private final int hashCode = computeHashCode();
 
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = Objects.hash(universals, term1, term2, cause, message);
-            hashCode = result;
-        }
-        return result;
+        return hashCode;
+    }
+
+    private int computeHashCode() {
+        return Objects.hash(
+                universals,
+                term1,
+                term2,
+                cause,
+                message,
+                origin
+        );
     }
 
 }

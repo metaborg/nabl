@@ -3,7 +3,7 @@ package mb.statix.concurrent;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;

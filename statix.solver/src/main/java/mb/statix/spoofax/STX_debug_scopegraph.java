@@ -19,7 +19,6 @@ import org.metaborg.util.log.LoggerUtils;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -32,7 +31,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
 
     private static final ILogger logger = LoggerUtils.logger(STX_debug_scopegraph.class);
 
-    @Inject public STX_debug_scopegraph() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_debug_scopegraph() {
         super(STX_debug_scopegraph.class.getSimpleName(), 0);
     }
 

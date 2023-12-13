@@ -53,11 +53,17 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         final IUniDisunifier.Immutable unifier = state.unifier();
 
         // apply rule
-        final ApplyResult applyResult;
         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-        if((applyResult =
-                RuleUtil.apply(state.unifier(), dataWf, ImList.Immutable.of(datum), null, ApplyMode.RELAXED, Safety.UNSAFE)
-                        .orElse(null)) == null) {
+        final ApplyResult applyResult = RuleUtil.apply(
+                state.unifier(),
+                dataWf,
+                ImList.Immutable.of(datum),
+                null,
+                ApplyMode.RELAXED,
+                Safety.UNSAFE,
+                true
+        ).orElse(null);
+        if (applyResult == null) {
             return Optional.empty();
         }
         final IState.Immutable applyState = state;
@@ -78,13 +84,13 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         // NOTE This part is almost a duplicate of Solver::entailed and should be
         //      kept in sync
 
-        if(result.hasErrors()) {
+        if (result.hasErrors()) {
             return Optional.empty();
         }
 
         final IState.Immutable newState = result.state();
 
-        if(!result.delays().isEmpty()) {
+        if (!result.delays().isEmpty()) {
             return Optional.empty();
         }
 
@@ -99,7 +105,7 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
                 .flatMap(diseq -> diseq.domainSet().stream())
                 .collect(Collectors.toList());
         // @formatter:on
-        if(!disunifiedVars.isEmpty()) {
+        if (!disunifiedVars.isEmpty()) {
             return Optional.empty();
         }
 
@@ -108,14 +114,14 @@ public class ResolveDataWF implements DataWF<ITerm, CEqual> {
         //       `newUnifier.equals(state.unifier())`
         final List<ITerm> leftTerms = new ArrayList<>();
         final List<ITerm> rightTerms = new ArrayList<>();
-        for(ITermVar var : Sets.difference(newUnifier.domainSet(), unifier.domainSet())) {
+        for (ITermVar var : Sets.difference(newUnifier.domainSet(), unifier.domainSet())) {
             final ITerm term = newUnifier.findTerm(var);
-            if(!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
+            if (!unifier.diff(var, term).map(IUnifier::isEmpty).orElse(false)) {
                 leftTerms.add(var);
                 rightTerms.add(term);
             }
         }
-        if(!leftTerms.isEmpty()) {
+        if (!leftTerms.isEmpty()) {
             final CEqual eq = new CEqual(B.newTuple(leftTerms), B.newTuple(rightTerms), cause);
             return Optional.of(Optional.of(eq));
         }

@@ -11,7 +11,6 @@ import org.metaborg.util.future.IFuture;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
-import javax.inject.Inject;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
@@ -44,7 +43,7 @@ import mb.statix.spec.Spec;
 
 public class STX_solve_constraint_concurrent extends StatixConstraintPrimitive {
 
-    @Inject public STX_solve_constraint_concurrent() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_constraint_concurrent() {
         super(STX_solve_constraint_concurrent.class.getSimpleName());
     }
 

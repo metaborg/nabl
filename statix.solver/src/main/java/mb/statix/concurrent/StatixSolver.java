@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -571,7 +571,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 final Renaming existentials = _existentials.build();
 
                 final ISubstitution.Immutable subst = existentials.asSubstitution();
-                final IConstraint newConstraint = c.constraint().apply(subst).withCause(c.cause().orElse(null));
+                final IConstraint newConstraint = c.constraint().apply(subst, true).withCause(c.cause().orElse(null));
                 if(INCREMENTAL_CRITICAL_EDGES && !c.bodyCriticalEdges().isPresent()) {
                     throw new IllegalArgumentException(
                             "Solver only accepts constraints with pre-computed critical edges.");
@@ -869,7 +869,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 final ImList.Immutable<Rule> rules = spec.rules().getRules(name);
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
                 final Tuple3<Rule, ApplyResult, Boolean> result;
-                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE)
+                if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
                     return fail(c);
@@ -1143,14 +1143,21 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
             try {
                 final ApplyResult applyResult;
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum), null,
-                        ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+                applyResult = RuleUtil.apply(
+                        state.unifier(),
+                        constraint,
+                        ImList.Immutable.of(datum),
+                        null,
+                        ApplyMode.STRICT,
+                        Safety.UNSAFE,
+                        true
+                ).orElse(null);
+                if (applyResult == null) {
                     return CompletableFuture.completedFuture(false);
                 }
 
                 return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
                         new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
-            } catch(Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
         }
@@ -1229,10 +1236,17 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final ApplyResult applyResult;
                     // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                    if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum), null,
-                            ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+                    final ApplyResult applyResult = RuleUtil.apply(
+                            state.unifier(),
+                            constraint,
+                            ImList.Immutable.of(datum),
+                            null,
+                            ApplyMode.STRICT,
+                            Safety.UNSAFE,
+                            true
+                    ).orElse(null);
+                    if(applyResult == null) {
                         return CompletableFuture.completedFuture(false);
                     }
 
@@ -1273,10 +1287,17 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         @Override public IFuture<Boolean> leq(ITerm datum1, ITerm datum2,
                 ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
             try {
-                final ApplyResult applyResult;
                 // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum1, datum2), null,
-                        ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+                final ApplyResult applyResult = RuleUtil.apply(
+                        state.unifier(),
+                        constraint,
+                        ImList.Immutable.of(datum1, datum2),
+                        null,
+                        ApplyMode.STRICT,
+                        Safety.UNSAFE,
+                        true
+                ).orElse(null);
+                if (applyResult == null) {
                     return CompletableFuture.completedFuture(false);
                 }
 
@@ -1290,12 +1311,12 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         private transient @Nullable IFuture<Boolean> alwaysTrue;
 
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
-            if(alwaysTrue == null) {
+            if (alwaysTrue == null) {
                 try {
-                    switch(SHADOW_OPTIMIZATION) {
+                    switch (SHADOW_OPTIMIZATION) {
                         case CONTEXT:
                             final Boolean isAlways;
-                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
+                            if ((isAlways = constraint.isAlways().orElse(null)) != null) {
                                 alwaysTrue = CompletableFuture.completedFuture(isAlways);
                             } else {
                                 final ApplyResult result;
@@ -1305,16 +1326,23 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                                         d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
                                 try {
                                     // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                                    if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                            ImList.Immutable.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
-                                            Safety.UNSAFE).orElse(null)) == null) {
+                                    result = RuleUtil.apply(
+                                            d2_state._2().unifier(),
+                                            constraint,
+                                            ImList.Immutable.of(d1_state._1(), d2_state._1()),
+                                            null,
+                                            ApplyMode.STRICT,
+                                            Safety.UNSAFE,
+                                            true
+                                    ).orElse(null);
+                                    if (result == null) {
                                         alwaysTrue = CompletableFuture.completedFuture(false);
                                     } else {
                                         alwaysTrue = entails(context, spec, d2_state._2(), result.body(),
                                                 result.criticalEdges(), new NullDebugContext(), tracerFactory.get(),
                                                 cancel, new NullProgress(), solverFlags);
                                     }
-                                } catch(Delay e) {
+                                } catch (Delay e) {
                                     throw new IllegalStateException("Unexpected delay.", e);
                                 }
                             }
@@ -1327,7 +1355,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                             alwaysTrue = CompletableFuture.completedFuture(false);
                             break;
                     }
-                } catch(InterruptedException e) {
+                } catch (InterruptedException e) {
                     return CompletableFuture.completedExceptionally(e);
                 }
             }
@@ -1389,15 +1417,22 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) throws InterruptedException {
             return absorbDelays(() -> {
                 try {
-                    final ApplyResult applyResult;
                     // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                    if((applyResult = RuleUtil.apply(state.unifier(), constraint, ImList.Immutable.of(datum1, datum2),
-                            null, ApplyMode.STRICT, Safety.UNSAFE).orElse(null)) == null) {
+                    final ApplyResult applyResult = RuleUtil.apply(
+                            state.unifier(),
+                            constraint,
+                            ImList.Immutable.of(datum1, datum2),
+                            null,
+                            ApplyMode.STRICT,
+                            Safety.UNSAFE,
+                            true
+                    ).orElse(null);
+                    if (applyResult == null) {
                         return CompletableFuture.completedFuture(false);
                     }
 
                     return entails(context, applyResult.body(), applyResult.criticalEdges(), cancel);
-                } catch(Delay delay) {
+                } catch (Delay delay) {
                     return CompletableFuture.completedExceptionally(delay);
                 }
             });
@@ -1406,25 +1441,32 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         private transient @Nullable IFuture<Boolean> alwaysTrue;
 
         @Override public IFuture<Boolean> alwaysTrue(ITypeCheckerContext<Scope, ITerm, ITerm> context, ICancel cancel) {
-            if(alwaysTrue == null) {
+            if (alwaysTrue == null) {
                 try {
-                    switch(SHADOW_OPTIMIZATION) {
+                    switch (SHADOW_OPTIMIZATION) {
                         case CONTEXT:
                             final Boolean isAlways;
-                            if((isAlways = constraint.isAlways().orElse(null)) != null) {
+                            if ((isAlways = constraint.isAlways().orElse(null)) != null) {
                                 alwaysTrue = CompletableFuture.completedFuture(isAlways);
                             } else {
                                 alwaysTrue = absorbDelays(() -> {
                                     try {
-                                        final ApplyResult result;
+
                                         final Tuple2<ITermVar, IState.Immutable> d1_state =
                                                 state.freshVar(B.newVar(state.resource(), "d1"));
                                         final Tuple2<ITermVar, IState.Immutable> d2_state =
                                                 d1_state._2().freshVar(B.newVar(state.resource(), "d2"));
                                         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-                                        if((result = RuleUtil.apply(d2_state._2().unifier(), constraint,
-                                                ImList.Immutable.of(d1_state._1(), d2_state._1()), null, ApplyMode.STRICT,
-                                                Safety.UNSAFE).orElse(null)) == null) {
+                                        final ApplyResult result = RuleUtil.apply(
+                                                d2_state._2().unifier(),
+                                                constraint,
+                                                ImList.Immutable.of(d1_state._1(), d2_state._1()),
+                                                null,
+                                                ApplyMode.STRICT,
+                                                Safety.UNSAFE,
+                                                true
+                                        ).orElse(null);
+                                        if (result == null) {
                                             return CompletableFuture.completedFuture(false);
                                         }
                                         return entails(context, spec, state, result.body(), result.criticalEdges(),
@@ -1443,7 +1485,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                             alwaysTrue = CompletableFuture.completedFuture(false);
                             break;
                     }
-                } catch(InterruptedException e) {
+                } catch (InterruptedException e) {
                     return CompletableFuture.completedExceptionally(e);
                 }
             }
@@ -1486,7 +1528,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         return updatedVars;
     }
 
-    private io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed() {
+    private io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed() {implementation
         final io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed = this.failed.freeze();
         this.failed = failed.asTransient();
         return failed;

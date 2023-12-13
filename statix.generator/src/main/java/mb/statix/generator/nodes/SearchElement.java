@@ -1,6 +1,6 @@
 package mb.statix.generator.nodes;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 /**
  * An element in the search tree.

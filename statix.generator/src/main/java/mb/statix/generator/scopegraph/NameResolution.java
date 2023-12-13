@@ -3,7 +3,7 @@ package mb.statix.generator.scopegraph;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Predicate0;

@@ -2,7 +2,7 @@ package mb.statix.generator.nodes;
 
 import java.util.Objects;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.statix.generator.SearchState;
 

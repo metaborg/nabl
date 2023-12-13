@@ -4,7 +4,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
 
 import java.util.*;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.log.ILogger;
