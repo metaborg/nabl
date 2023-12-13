@@ -1159,6 +1159,8 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
                         new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
                 throw new IllegalStateException("Unexpected delay.", e);
+            } catch (Delay e) {
+                throw new IllegalStateException("Unexpected delay.", e);
             }
         }
 
@@ -1528,7 +1530,7 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         return updatedVars;
     }
 
-    private io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed() {implementation
+    private io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed() {
         final io.usethesource.capsule.Map.Immutable<IConstraint, IMessage> failed = this.failed.freeze();
         this.failed = failed.asTransient();
         return failed;
