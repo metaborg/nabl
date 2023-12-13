@@ -1,0 +1,96 @@
+module statix/runtime/analysis/multi-file
+
+imports
+
+  libstratego-lib
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/ast
+  statix/runtime/analysis
+  statix/runtime/analysis/traditional
+  statix/runtime/analysis/constraint
+  statix/runtime/constraints
+  statix/runtime/terms
+
+  statix/api
+
+rules // multi file analysis
+
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
+       ; config := <stx--project-config>
+    with
+      switch !project-change
+        case ?Added(_) + ?Changed(_, _):
+          //
+          // 1. create global scope
+          //
+          global-scope-var := Var("s")
+        ; Solution(global-scope-subst, global-scope-state) :=
+              <stx--solve-constraint(|spec, level, progress, cancel)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
+        ; global-scope := <lookup> (global-scope-var, global-scope-subst)
+          //
+          // 2. partially solve project constraint
+          //
+        ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> [(project-resource, project-C)]
+        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _, _)):
+          id
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+      //
+      // 3. Partially solve file constraints
+      //
+    ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
+    ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
+    ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
+    ; initial-file-result* := <zip({ file-state', ast'', custom-file-analysis, file-analysis: \
+        ((resource, ast'), file-state) ->
+            (resource, Full(ast'', file-analysis, [], [], []))
+          with ast'' := <post> ast'
+             ; custom-file-analysis := <analyze-unit> (resource, ast', file-state)
+             ; file-analysis := FileAnalysis(file-state, None(), custom-file-analysis, NoCustomAnalysis())
+      \})> (resource-ast'*, initial-file-state*)
+      //
+      // 4. Combine and solve all partial solution
+      //
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _, _, _))))> change*
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
+    ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
+    ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state, custom-analysis)
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id, !custom-analysis), id, id, id)))> initial-file-result*
+    ; switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-result := Full(project-ast, project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
+        case ?Cached(_):
+          project-result := Update(project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
+      end
+    ; result* := [(project-resource, project-result)|file-result*]
+      //
+      // 5. Compute scope graph diff
+      //
+    //; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
+    //    diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
+    //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+    //  end
+
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
+      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_3_2` instead.")>
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [(string, Constraint)] -> [SolverResult]
+  stx--solve-multi-file(|spec, state, level, progress, cancel) = prim("STX_solve_multi_file", spec, state, level, progress, cancel)
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [SolverResult] -> SolverResult
+  stx--solve-multi-project(|spec, state, level, progress, cancel) = prim("STX_solve_multi_project", spec, state, level, progress, cancel)

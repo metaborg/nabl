@@ -1,0 +1,23 @@
+module statix/runtime/analysis/traditional
+
+imports
+
+  libstratego-lib
+
+  statix/runtime/analysis
+
+signature
+
+  constructors
+    ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
+    FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomUnitAnalysis * CustomFinalAnalysis -> AnalysisResult
+
+rules
+
+  stx--get-analysis =
+    ?FileAnalysis(_, <id>, _, _) + ?ProjectAnalysis(_, _, _, <id>, _)
+
+  stx--get-custom-file-analysis = ?FileAnalysis(_, _, <id>, _)
+
+  stx--get-custom-analysis =
+      ?ProjectAnalysis(_, _, _, _, <id>) + ?FileAnalysis(_, _, _, <id>)

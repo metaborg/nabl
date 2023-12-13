@@ -9,6 +9,7 @@ imports
   injections/statix/-
 
   statix/runtime/-
+  statix/runtime/analysis/-
 
 rules // analysis
 

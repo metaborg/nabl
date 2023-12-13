@@ -1,0 +1,61 @@
+module statix/runtime/analysis/single-file
+
+imports
+
+  libstratego-lib
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/ast
+  statix/runtime/analysis
+  statix/runtime/analysis/traditional
+  statix/runtime/analysis/constraint
+  statix/runtime/constraints
+  statix/runtime/terms
+
+rules // single file analysis
+
+  stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
+      AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
+       ; config := <stx--project-config>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
+    ; C* := <map(\ (resource, ast') -> C(c-name, [<stx--explode> ast'], NoMessage()) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
+    ; result* := <zip({ ast'', custom-analysis, file-analysis, error*, warning*, note*, c-e*, c-w*, c-n*: \
+        ((resource, ast'), Solution(_, a)) ->
+            (resource, Full(ast'', file-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*]))
+          with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
+             ; ast'' := <post> ast'
+             ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> (ast', a)
+             ; file-analysis := FileAnalysis(a, a, custom-analysis, custom-analysis)
+      \})> (resource-ast'*, solve-result*)
+
+  stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
+      AnalyzeMulti(_, _, _, _) -> <fatal-err-msg(|"Single-file `stx-editor-analyze_3_2` called for multi-file analysis. Use `stx-editor-analyze_4_3` instead.")>
+
+rules // single file elaboration
+
+  stx--editor-elaborate(pre, post|spec-name, init-constraint):
+      AnalyzeSingle(change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; c-name := <stx--mk-qualified-name(|spec-name)> init-constraint
+       ; config := <stx--project-config>
+    with
+      resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
+    ; V := Var("out")
+    ; C* := <map(\ (resource, ast') -> <stx--exists>([V], C(c-name, [<stx--explode> ast', V], NoMessage())) \)> resource-ast'*
+    ; solve-result* := <stx--solve-constraint(|spec, level, progress, cancel)> C*
+    ; result* := <zip({ ast'', file-analysis, error*, warning*, note*: \
+        ((resource, ast'), Solution(subst, a)) ->
+            (resource, Full(ast'', file-analysis, error*, warning*, note*))
+          with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
+          with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
+             ; file-analysis := FileAnalysis(a, a, NoCustomAnalysis(), NoCustomAnalysis())
+      \})> (resource-ast'*, solve-result*)
