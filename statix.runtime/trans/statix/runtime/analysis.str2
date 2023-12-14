@@ -158,6 +158,9 @@ rules // grouping
 
   stx--default-group-key: (resource, _) -> [resource]
 
+  stx--no-grouping: (resource, ast) -> key
+    with key := [<current-language-relative-source-or-include-path> resource]
+
 rules // libraries
 
   stx--local-libs =
