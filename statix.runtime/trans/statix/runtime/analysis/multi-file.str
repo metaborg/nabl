@@ -35,22 +35,27 @@ rules // multi file analysis
               <stx--solve-constraint(|spec, level, progress, cancel)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
         ; global-scope := <lookup> (global-scope-var, global-scope-subst)
           //
-          // 2. partially solve project constraint
+          // 2. register libraries
+          //
+        ; libs := <stx--local-libs>
+        ; initial-state := <foldl({lib, state: \ (lib, state) -> <stx--register-library(|global-scope, state)> lib \})> (libs, global-scope-state)
+          //
+          // 3. partially solve project constraint
           //
         ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
-        ; [initial-project-state] := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> [(project-resource, project-C)]
-        case ?Cached(ProjectAnalysis(global-scope, global-scope-state, initial-project-state, _, _)):
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, initial-state, level, progress, cancel)> [(project-resource, project-C)]
+        case ?Cached(ProjectAnalysis(global-scope, initial-state, initial-project-state, _, _)):
           id
         otherwise:
           fatal-err(|"Unexpected change on project")
       end
       //
-      // 3. Partially solve file constraints
+      // 4. Partially solve file constraints
       //
     ; resource-ast* := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
     ; resource-ast'* := <map(\ (resource, ast) -> (resource, <stx--index-ast(|resource); pre> ast) \)> resource-ast*
     ; file-C* := <map(\ (resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [global-scope, ast'], NoMessage())) \)> resource-ast'*
-    ; initial-file-state* := <stx--solve-multi-file(|spec, global-scope-state, level, progress, cancel)> file-C*
+    ; initial-file-state* := <stx--solve-multi-file(|spec, initial-state, level, progress, cancel)> file-C*
     ; initial-file-result* := <zip({ file-state', ast'', custom-file-analysis, file-analysis: \
         ((resource, ast'), file-state) ->
             (resource, Full(ast'', file-analysis, [], [], []))
@@ -59,13 +64,13 @@ rules // multi file analysis
              ; file-analysis := FileAnalysis(file-state, None(), custom-file-analysis, NoCustomAnalysis())
       \})> (resource-ast'*, initial-file-state*)
       //
-      // 4. Combine and solve all partial solution
+      // 5. Combine and solve all partial solution
       //
     ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(<id>, _, _, _))))> change*
     ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
     ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
-    ; project-analysis := ProjectAnalysis(global-scope, global-scope-state, initial-project-state, final-project-state, custom-analysis)
+    ; project-analysis := ProjectAnalysis(global-scope, initial-state, initial-project-state, final-project-state, custom-analysis)
     ; file-result* := <map((id, Full(id, FileAnalysis(id, !final-project-state, id, !custom-analysis), id, id, id)))> initial-file-result*
     ; switch !project-change
         case ?Added(project-ast) + ?Changed(project-ast, _):
@@ -75,7 +80,7 @@ rules // multi file analysis
       end
     ; result* := [(project-resource, project-result)|file-result*]
       //
-      // 5. Compute scope graph diff
+      // 6. Compute scope graph diff
       //
     //; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
     //    diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
