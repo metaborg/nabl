@@ -29,8 +29,13 @@ public class STX_register_library extends StatixPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final IStatixLibrary lib = IStatixLibrary.matcher().match(term)
-                .orElseThrow(() -> new InterpreterException("Expected scope graph library."));
+        final Tuple2<String, IStatixLibrary> name_lib =
+                M.tuple2(M.stringValue(), IStatixLibrary.matcher(), (appl, name, lib) -> Tuple2.of(name, lib))
+                        .match(term).orElseThrow(
+                                () -> new InterpreterException("Expected pair of string and scope graph library."));
+
+        final String libName = name_lib._1();
+        final IStatixLibrary lib = name_lib._2();
 
         final Scope globalScope =
                 Scope.matcher().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected scope."));
@@ -39,7 +44,7 @@ public class STX_register_library extends StatixPrimitive {
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final Tuple2<? extends Set<Scope>, IScopeGraph.Immutable<Scope, ITerm, ITerm>> initLib =
-                lib.initialize(Collections.singletonList(globalScope), name -> Scope.of("", name));
+                lib.initialize(Collections.singletonList(globalScope), name -> Scope.of(libName, name));
 
         final IState.Transient state = initial.state().melt();
         state.add(State.of().withScopeGraph(initLib._2()).with__scopes(CapsuleUtil.toSet(initLib._1())));
