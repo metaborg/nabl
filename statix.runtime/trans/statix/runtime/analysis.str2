@@ -29,6 +29,8 @@ signature
     Config
     WithConfig
 
+    StatixLibrary
+
     CustomAnalysis
     CustomUnitAnalysis
     CustomFinalAnalysis
@@ -36,6 +38,8 @@ signature
   constructors
 
     : list(string) -> Key
+
+    Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
 
     NoCustomAnalysis : CustomAnalysis
 
@@ -200,6 +204,12 @@ rules // solver result transformations
 
   // @type SolverResult -> (SolverResult, [Error], [Warning], [Note])
   stx--extract-messages(|config) = <prim("STX_extract_messages")> WithConfig(config, <id>)
+
+rules // analysis result accessors
+
+  stx--get-analysis = fail
+
+  stx--get-result = fail
 
 rules // solver result accessors
 

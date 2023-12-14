@@ -25,7 +25,6 @@ signature
     StatixGroup
     StatixUnit
     StatixProject
-    StatixLibrary
 
 signature
   constructors // Concurrent/Incremental
@@ -36,7 +35,6 @@ signature
     Unit            : Term -> Unit
 
     Project : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
-    Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
     Group   : /*resource*/String * /*scopeNames*/List(String) * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
     Unit    : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult -> StatixUnit
 

@@ -5,6 +5,7 @@ imports
     libspoofax/analysis/constraint
     libspoofax/ui/dialogs
     statix/runtime/analysis
+    statix/runtime/analysis/multi-file
     statix/runtime/ast
     statix/api
     signatures/statix/runtime/-
