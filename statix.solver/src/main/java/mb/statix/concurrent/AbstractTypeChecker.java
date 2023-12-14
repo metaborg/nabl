@@ -38,6 +38,7 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.library.IStatixLibrary;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;

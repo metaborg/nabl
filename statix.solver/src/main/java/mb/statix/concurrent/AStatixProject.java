@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 
 import io.usethesource.capsule.Map;
 import mb.nabl2.terms.ITerm;
+import mb.statix.library.IStatixLibrary;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.Rule;

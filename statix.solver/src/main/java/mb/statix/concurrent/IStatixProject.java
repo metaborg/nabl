@@ -6,6 +6,7 @@ import java.util.Optional;
 import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.library.IStatixLibrary;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.Rule;

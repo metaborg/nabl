@@ -8,6 +8,8 @@ import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.statix.library.IStatixLibrary;
+import mb.statix.library.StatixLibrary;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spoofax.StatixTerms;
