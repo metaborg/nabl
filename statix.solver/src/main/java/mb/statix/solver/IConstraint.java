@@ -2,6 +2,7 @@ package mb.statix.solver;
 
 import java.util.Optional;
 
+import jakarta.annotation.Nullable;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.functions.CheckedFunction1;
 import org.metaborg.util.functions.Function1;
@@ -28,8 +29,6 @@ import mb.statix.constraints.IResolveQuery;
 import mb.statix.constraints.messages.IMessage;
 import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
-
-import jakarta.annotation.Nullable;
 
 public interface IConstraint {
 

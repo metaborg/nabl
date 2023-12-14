@@ -26,9 +26,9 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-
-  implementation("jakarta.inject:jakarta.inject:1")
-  implementation("jakarta.annotation:jakarta.annotation-api")
+  implementation(libs.jakarta.annotation)
+  implementation(libs.jakarta.inject)
+  implementation(libs.javax.inject)
 
   // Tests
   testImplementation("junit:junit")

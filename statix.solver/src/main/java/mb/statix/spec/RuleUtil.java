@@ -311,7 +311,7 @@ public final class RuleUtil {
             return Optional.empty();
         }
 
-        return Optional.of(into.withLabel(RuleName.empty()).withBody(newBody));
+        return Optional.of(into.withBody(newBody));
     }
 
     private static IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {

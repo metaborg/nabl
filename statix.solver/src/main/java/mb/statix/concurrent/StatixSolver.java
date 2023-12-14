@@ -6,11 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.annotation.Nullable;
 
@@ -322,8 +319,17 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
         final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> existentials = Optional.ofNullable(this.existentials).orElse(NO_EXISTENTIALS);
         final Set.Immutable<CriticalEdge> removedEdges = CapsuleUtil.immutableSet();
         final ICompleteness.Immutable completeness = Completeness.Immutable.of();
-        final SolverResult<TR> result =
-                SolverResult.of(spec, state, tracer.result(), failed(), delayed, existentials, updatedVars(), removedEdges, completeness);
+        final SolverResult<TR> result = SolverResult.of(
+                spec,
+                state,
+                tracer.result(state),
+                failed(),
+                delayed,
+                existentials,
+                updatedVars(),
+                removedEdges,
+                completeness
+        );
         return result;
     }
 
@@ -1155,9 +1161,18 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 if (applyResult == null) {
                     return CompletableFuture.completedFuture(false);
                 }
-
-                return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
-                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
+                return entails(
+                        context,
+                        spec,
+                        state,
+                        applyResult.body(),
+                        applyResult.criticalEdges(),
+                        new NullDebugContext(),
+                        tracerFactory.get(),
+                        cancel,
+                        new NullProgress(),
+                        solverFlags
+                );
             } catch (Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
@@ -1301,10 +1316,19 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                 if (applyResult == null) {
                     return CompletableFuture.completedFuture(false);
                 }
-
-                return entails(context, spec, state, applyResult.body(), applyResult.criticalEdges(),
-                        new NullDebugContext(), tracerFactory.get(), cancel, new NullProgress(), solverFlags);
-            } catch(Delay e) {
+                return entails(
+                        context,
+                        spec,
+                        state,
+                        applyResult.body(),
+                        applyResult.criticalEdges(),
+                        new NullDebugContext(),
+                        tracerFactory.get(),
+                        cancel,
+                        new NullProgress(),
+                        solverFlags
+                );
+            } catch (Delay e) {
                 throw new IllegalStateException("Unexpected delay.", e);
             }
         }
@@ -1470,9 +1494,20 @@ public class StatixSolver<TR extends SolverTracer.IResult<TR>> {
                                         if (result == null) {
                                             return CompletableFuture.completedFuture(false);
                                         }
-                                        return entails(context, spec, state, result.body(), result.criticalEdges(),
-                                                new NullDebugContext(), tracer.subTracer(), cancel, new NullProgress(), flags);
-                                    } catch(Delay delay) {
+
+                                        return entails(
+                                                context,
+                                                spec,
+                                                state,
+                                                result.body(),
+                                                result.criticalEdges(),
+                                                new NullDebugContext(),
+                                                tracer.subTracer(),
+                                                cancel,
+                                                new NullProgress(),
+                                                flags
+                                        );
+                                    } catch (Delay delay) {
                                         return CompletableFuture.completedExceptionally(delay);
                                     }
                                 });
