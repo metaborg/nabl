@@ -176,6 +176,8 @@ rules // libraries
   stx--lib-path: "stxlibs" -> "lib/stxlibs"
   stx--lib-path: name -> $[lib/[name].stxlib]
 
+  stx--register-library(|scope, a) = prim("STX_register_library", scope, a)
+
 rules // custom analysis
 
   stx--no-custom-unit-analysis  = !NoCustomAnalysis()
