@@ -2,6 +2,8 @@ module statix/runtime/analysis/constraint
 
 imports
 
+  libstratego-lib
+
   statix/runtime/analysis
   statix/runtime/constraints
   statix/runtime/terms
