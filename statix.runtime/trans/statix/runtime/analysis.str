@@ -20,6 +20,9 @@ imports
 
 signature
   sorts
+    Key
+    GroupKey
+
     Scope
     SolverResult
     Rule
@@ -38,6 +41,8 @@ signature
   constructors
 
     : list(string) -> Key
+    GroupKey        : String * Term -> GroupKey
+    Key             : List(GroupKey) * /*resource name*/String * /*full path*/String * Unit -> Key
 
     Library : /*rootScopes*/List(Scope) * /*ownScopes*/List(Scope) * /*scopeGraph*/ScopeGraph -> StatixLibrary
 
@@ -160,10 +165,30 @@ rules // config
 
 rules // grouping
 
-  stx--default-group-key: (resource, _) -> [resource]
+  stx--default-group-key: (resource, ast) -> [resource]
 
   stx--no-grouping: (resource, ast) -> key
     with key := [<current-language-relative-source-or-include-path> resource]
+
+  stx--composite-group-key(group-key): (res, ast) -> key
+    with raw-key := <group-key> (res, ast)
+       ; if <map(is-string)> raw-key then
+             (group-key, name) := <split-init-last> raw-key
+             // FIXME: `x -> GroupKey(x, x)` seems redundant: can we remove?
+           ; key := Key(<map({x: \x -> GroupKey(x, x) \})> group-key, name, res, Unit(ast))
+         else
+             key := Key([], raw-key, res, Unit(ast))
+         end
+
+  stx--extract-groups: keys -> groups
+    with groups := <map(?Key(<id>, _, _, _)); filter(stx--extract-parent-groups); mapconcat(id); make-set> keys
+
+  stx--extract-parent-groups: [] -> [[]]
+
+  stx--extract-parent-groups: grp -> all-grp*
+    with (prnt, _) := <split-init-last> grp
+       ; prnt-grp* := <stx--extract-parent-groups> prnt
+       ; all-grp* := <at-end(![grp])> prnt-grp*
 
 rules // libraries
 

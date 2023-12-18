@@ -32,7 +32,7 @@ rules // single file analysis
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
              ; ast'' := <post> ast'
              ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-custom> (ast', a)
-             ; file-analysis := FileAnalysis(a, a, custom-analysis, custom-analysis)
+             ; file-analysis := FileAnalysis([], a, a, custom-analysis, custom-analysis)
       \})> (resource-ast'*, solve-result*)
 
   stx--editor-analyze(pre, post, analyze-custom|spec-name, init-constraint):
@@ -57,5 +57,5 @@ rules // single file elaboration
             (resource, Full(ast'', file-analysis, error*, warning*, note*))
           with (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> a
           with ast'' := <substitute(stx--is-var);stx--implode;post> (subst, V)
-             ; file-analysis := FileAnalysis(a, a, NoCustomAnalysis(), NoCustomAnalysis())
+             ; file-analysis := FileAnalysis([], a, a, NoCustomAnalysis(), NoCustomAnalysis())
       \})> (resource-ast'*, solve-result*)

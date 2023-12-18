@@ -9,15 +9,15 @@ imports
 signature
 
   constructors
-    ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
-    FileAnalysis     : /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomUnitAnalysis * CustomFinalAnalysis -> AnalysisResult
+    ProjectAnalysis  : /*globalScope*/Scope * /*globalAnalysis*/SolverResult * /*initialAnalysis*/SolverResult * /*group scopes*/ List(List(GroupKey), Scope) * /*finalAnalysis*/SolverResult * CustomAnalysis -> AnalysisResult
+    FileAnalysis     : /*group*/List(GroupKey) * /*initialAnalysis*/SolverResult * /*finalAnalysis*/SolverResult * CustomUnitAnalysis * CustomFinalAnalysis -> AnalysisResult
 
 rules
 
   stx--get-analysis =
-    ?FileAnalysis(_, <id>, _, _) + ?ProjectAnalysis(_, _, _, <id>, _)
+    ?FileAnalysis(_, _, <id>, _, _) + ?ProjectAnalysis(_, _, _, _, <id>, _)
 
-  stx--get-custom-file-analysis = ?FileAnalysis(_, _, <id>, _)
+  stx--get-custom-file-analysis = ?FileAnalysis(_, _, _, <id>, _)
 
   stx--get-custom-analysis =
-      ?ProjectAnalysis(_, _, _, _, <id>) + ?FileAnalysis(_, _, _, <id>)
+      ?ProjectAnalysis(_, _, _, _, _, <id>) + ?FileAnalysis(_, _, _, _, <id>)

@@ -15,7 +15,6 @@ imports
 
 signature
   sorts
-    GroupKey
     UnitResult
     GroupAnalysis
     ProjectInitialState
@@ -29,8 +28,6 @@ signature
 signature
   constructors // Concurrent/Incremental
 
-    GroupKey        : String * Term -> GroupKey
-    Key             : List(GroupKey) * String * Unit -> Key
     CompositeUnit   : Term * /* constraint name*/String * /*own scope names*/List(String) * List(String, Unit) -> Unit
     Unit            : Term -> Unit
 
@@ -42,7 +39,7 @@ signature
 
     ProjectTask     : String * Constraint * ProjectResult -> ProjectTask
     GroupTask       : Key * Constraint * UnitState -> GroupTask
-    FileTask        : String * Key * Term * SubFileTask -> FileTask
+    FileTask        : Key * Term * SubFileTask -> FileTask
     SimpleFileTask  : Term * Constraint * UnitState -> SubFileTask
     CompositeTask   : Term * /*own scope names*/List(String) * Constraint * UnitState * List(String, SubFileTask) -> SubFileTask
 
@@ -115,19 +112,19 @@ rules // concurrent multi file analysis
 rules // cstx -- file tasks
 
   cstx--make-file(pre,group-key,qualify|file-c-name): (_, change) -> (group-key, task')
-    where Cached(FileAnalysis(Key(group-key, _, _), task, _, sub-analysis)) := change
+    where Cached(FileAnalysis(Key(group-key, _, _, _), task, _, sub-analysis)) := change
     with task' := <cstx--update-initial-state> task
 
   cstx--make-file(pre,group-key,qualify|file-c-name): (resource, change) -> (key*, task)
-    with ast                   := <(?Added(<id>) + ?Changed(<id>, _)); stx--index-ast(|resource); pre> change
-       ; Key(key*, name, unit) := <cstx--composite-group-key(group-key)> (resource, ast)
-       ; prev-res              := <?Changed(_, <id>) <+ !()> change
-       ; task                  := <cstx--file-unit-to-task(qualify|file-c-name)> (resource, key*, ast, name, unit, prev-res)
+    with ast                      := <(?Added(<id>) + ?Changed(<id>, _)); stx--index-ast(|resource); pre> change
+       ; Key(key*, name, _, unit) := <stx--composite-group-key(group-key)> (resource, ast)
+       ; prev-res                 := <?Changed(_, <id>) <+ !()> change
+       ; task                     := <cstx--file-unit-to-task(qualify|file-c-name)> (resource, key*, ast, name, unit, prev-res)
 
   cstx--file-unit-to-task(qualify|file-c-name): (resource, key*, ast, name, u, prev-res) -> task
     with prev-res' := <?FileAnalysis(_, _, _, <id>) + ?()> prev-res
        ; sub-task  := <cstx--file-subunit-to-task(qualify|file-c-name, ["s_grp"])> (u, prev-res')
-       ; task      := FileTask(resource, Key(key*, name, u), ast, sub-task)
+       ; task      := FileTask(Key(key*, name, resource, u), ast, sub-task)
 
   cstx--file-subunit-to-task(qualify|file-c-name, parent-scope*): (Unit(ast), prev-res) -> task
     with prev-ast     := <cstx--unit-term <+ !()> prev-res
@@ -148,21 +145,12 @@ rules // cstx -- file tasks
                           \})> sub-group*
        ; task          := CompositeTask(ast, scope-name*, constraint, init-state, sub-task*)
 
-  cstx--update-initial-state: FileTask(resource, key, ast, task) -> FileTask(resource, key, ast, task')
+  cstx--update-initial-state: FileTask(key, ast, task) -> FileTask(key, ast, task')
     with task' := <cstx--update-sub-initial-state> task
 
   cstx--update-sub-initial-state : SimpleFileTask(ast, constraint, _) -> SimpleFileTask(ast, constraint, Cached())
   cstx--update-sub-initial-state : CompositeTask(ast, scope-name*, constraint, _, sub-task*) -> CompositeTask(ast, scope-name*, constraint, Cached(), new-sub-task*)
     with new-sub-task* := <map({ name, task: \ (name, task) -> (name, <cstx--update-sub-initial-state> task) \ })> sub-task*
-
-  cstx--composite-group-key(group-key): (res, ast) -> key
-    with raw-key := <group-key> (res, ast)
-       ; if <map(is-string)> raw-key then
-             (group-key, name) := <split-init-last> raw-key
-           ; key := Key(<map(\x -> GroupKey(x, x)\)> group-key, name, Unit(ast))
-         else
-           key := raw-key
-         end
 
   cstx--initial-state(|_, _): () -> Changed() // c.q. added, because no previous result available
   cstx--initial-state(|prev-ast, cur-ast): _ -> Cached()
@@ -190,8 +178,8 @@ rules // cstx -- project/group tasks
   cstx--make-subs(|grp-res, grp-c-name): file-task* -> (groups, units)
     with key* := <filter({key: \ ([key|_], _) -> key \}); make-set> file-task*
        ; <cstx--keys-consistent> key*
-       ; file-sub-task* := <filter(?([], FileTask(_, _, _, _)))> file-task*
-       ; file-sub* := <map({ resource, name : ?([], FileTask(resource, Key(_, name, _), _, <id>)); cstx--unit-task-to-sub(|resource, name) })> file-sub-task*
+       ; file-sub-task* := <filter(?([], FileTask(_, _, _)))> file-task*
+       ; file-sub* := <map({ resource, name : ?([], FileTask(Key(_, name, resource, _), _, <id>)); cstx--unit-task-to-sub(|resource, name) })> file-sub-task*
        ; group-sub* := <map({key, result: \ key -> result
            with result := <filter({ keys, file: ?([key|keys], file); !(keys, file) })
                 ; cstx--make-sub(|key, grp-res, grp-c-name)
@@ -248,7 +236,7 @@ rules // cstx -- results
     end
 
   cstx--mk-file-result(post|config, file-task*, analysis*): (resource, change) -> (resource, result)
-    with task@FileTask(_, key, ast, sub-task) := <getfirst(?(_, FileTask(resource, _, _, _))); Snd> file-task*
+    with task@FileTask(key, ast, sub-task) := <getfirst(?(_, FileTask(Key(_, _, resource, _), _, _))); Snd> file-task*
        ; if (sub-result, error*, warning*, note*) := <lookup'; cstx--mk-subfile-result(|config, analysis*, sub-task, resource)> (resource, analysis*) then
            analysis := FileAnalysis(key, task, ast, sub-result)
          ; switch !change
