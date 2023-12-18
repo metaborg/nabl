@@ -13,7 +13,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 public class STX_solve_constraint_with_initial_state extends StatixPrimitive {
 
-    @Inject
+    @jakarta.inject.Inject @javax.inject.Inject
     public STX_solve_constraint_with_initial_state() {
         super(STX_solve_constraint_with_initial_state.class.getSimpleName(), 4);
     }

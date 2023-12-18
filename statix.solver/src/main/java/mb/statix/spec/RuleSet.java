@@ -138,7 +138,16 @@ public final class RuleSet implements Serializable {
      * @return the rules with the specified name
      */
     public ImList.Immutable<Rule> getRules(String name) {
-        return this.rules.get(name);
+        final ImList.Immutable<Rule> rules = this.rules.get(name);
+        if(rules == null) {
+            final String qualified;
+            if((qualified = getRuleNames().stream().filter(n -> n.endsWith(name)).findAny().orElse(null)) != null) {
+                throw new NullPointerException("No rule with name " + name + ". Did you mean " + qualified + "?");
+            } else {
+                throw new NullPointerException("No rule with name " + name);
+            }
+        }
+        return rules;
     }
 
     /**

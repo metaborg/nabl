@@ -361,7 +361,10 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
         return stepResultOverride.orElse(step.result()).match(
                 (newState, updatedVars, newConstraints, newCriticalEdges, newExistentials) ->
                         success(step.constraint(), newState, updatedVars, newConstraints, newCriticalEdges, newExistentials, fuel),
-                ex -> fail(step.constraint()),
+                ex -> {
+                    // FIXME: should throw when ex != null
+                    return fail(step.constraint());
+                },
                 delay -> delay(step.constraint(), delay)
         );
     }
