@@ -16,8 +16,8 @@ dependencyResolutionManagement {
 
 include("nabl2.terms")
 //include("nabl2.lang")
-//include("nabl2.runtime")
 //include("nabl2.shared")
+////include("nabl2.runtime")
 //
 //include("statix.solver")
 //include("statix.generator")
