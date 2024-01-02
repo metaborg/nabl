@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.jakarta.annotation)
 
     // Tests
+    testImplementation(libs.junit4)
     testImplementation(libs.junit)
     testRuntimeOnly(libs.junit.vintage)
     testImplementation(libs.logback)
