@@ -1,10 +1,11 @@
 rootProject.name = "nabl"
 
-//pluginManagement {
-//  repositories {
-//    maven("https://artifacts.metaborg.org/content/groups/public/")
-//  }
-//}
+// This is needed to let Gradle find the dependencies of the spoofax2-gradle plugin
+pluginManagement {
+  repositories {
+    maven("https://artifacts.metaborg.org/content/groups/public/")
+  }
+}
 
 dependencyResolutionManagement {
     versionCatalogs {

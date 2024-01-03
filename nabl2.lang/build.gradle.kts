@@ -1,15 +1,31 @@
 plugins {
     `java-library`
     `maven-publish`
-    // TODO:
-//  id("org.metaborg.devenv.spoofax.gradle.langspec")
+    id("dev.spoofax.spoofax2.gradle.langspec")
 }
 
 // TODO:
 //spoofaxLanguageSpecification {
 //  addSourceDependenciesFromMetaborgYaml.set(false)
 //}
+
+
+// FIXME: Move this to a common spot
+repositories {
+    mavenCentral()
+    maven("https://nexus.usethesource.io/content/repositories/releases/")
+    maven("https://artifacts.metaborg.org/content/groups/public/")
+}
+
 dependencies {
+    // FIXME: Move these platform definitions to a common spot
+    sourceLanguage(platform(libs.spoofax3.bom))
+    api(platform(libs.spoofax3.bom))
+    testImplementation(platform(libs.spoofax3.bom))
+    annotationProcessor(platform(libs.spoofax3.bom))
+    testAnnotationProcessor(platform(libs.spoofax3.bom))
+
+    // Languages
     sourceLanguage(libs.spoofax2.meta.lib)
     sourceLanguage(project(":nabl2.shared"))
 }
