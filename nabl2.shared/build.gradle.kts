@@ -4,10 +4,9 @@ plugins {
     id("dev.spoofax.spoofax2.gradle.langspec")
 }
 
-// TODO:
-//spoofaxLanguageSpecification {
-//  addSourceDependenciesFromMetaborgYaml.set(false)
-//}
+spoofaxLanguageSpecification {
+    addSourceDependenciesFromMetaborgYaml.set(false)
+}
 
 // FIXME: Move this to a common spot
 repositories {
@@ -28,9 +27,9 @@ dependencies {
     sourceLanguage(libs.spoofax2.meta.lib)
 }
 
-// TODO:
+// TODO: This uses the gradle.config plugin
 //metaborg { // Do not create Java publication; this project is already published as a Spoofax 2 language.
-//  javaCreatePublication = false
-//  javaCreateSourcesJar = false
-//  javaCreateJavadocJar = false
+//    javaCreatePublication = false
+//    javaCreateSourcesJar = false
+//    javaCreateJavadocJar = false
 //}
