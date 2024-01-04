@@ -34,18 +34,13 @@ public abstract class AConfirm<S, L, D> implements IWaitFor<S, L, D> {
      * The tokens CloseScope & CloseLabel are created for such checks, and must have structural equality.
      */
 
-    private volatile int hashCode;
-
     @Override public int hashCode() {
-        int result = hashCode;
-        if(result == 0) {
-            result = super.hashCode();
-            hashCode = result;
-        }
-        return hashCode;
+        // This returns the unique hashcode for this instance.
+        return super.hashCode();
     }
 
     @Override public boolean equals(Object obj) {
+        // This performs instance equality
         return this == obj;
     }
 
