@@ -1,7 +1,5 @@
 plugins {
     `java-library`
-//  id("org.metaborg.gradle.config.java-library")
-//  id("org.metaborg.gradle.config.junit-testing")
 }
 
 // FIXME: Move this to a common spot
@@ -18,7 +16,7 @@ dependencies {
     annotationProcessor(platform(libs.spoofax3.bom))
     testAnnotationProcessor(platform(libs.spoofax3.bom))
 
-    implementation(libs.spoofax2.metaborg.util)
+    api(libs.spoofax2.metaborg.util)
     api(libs.spoofax2.terms)
     api(libs.spoofax2.interpreter.core)
     api(libs.capsule)
@@ -46,7 +44,7 @@ dependencies {
 // FIXME: If this is necessary, use testFixtures instead
 //// Copy test resources into classes directory, to make them accessible as classloader resources at runtime.
 //val copyTestResourcesTask = tasks.create<Copy>("copyTestResources") {
-//  from("$projectDir/src/test/resources")
-//  into("$buildDir/classes/java/test")
+//    from("$projectDir/src/test/resources")
+//    into("$buildDir/classes/java/test")
 //}
 //tasks.getByName("processTestResources").dependsOn(copyTestResourcesTask)

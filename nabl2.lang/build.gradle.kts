@@ -4,11 +4,11 @@ plugins {
     id("dev.spoofax.spoofax2.gradle.langspec")
 }
 
-// TODO:
-//spoofaxLanguageSpecification {
-//  addSourceDependenciesFromMetaborgYaml.set(false)
-//}
-
+spoofaxLanguageSpecification {
+  addCompileDependenciesFromMetaborgYaml.set(false)
+  addSourceDependenciesFromMetaborgYaml.set(false)
+  addJavaDependenciesFromMetaborgYaml.set(false)
+}
 
 // FIXME: Move this to a common spot
 repositories {
@@ -19,6 +19,7 @@ repositories {
 
 dependencies {
     // FIXME: Move these platform definitions to a common spot
+    compileLanguage(platform(libs.spoofax3.bom))
     sourceLanguage(platform(libs.spoofax3.bom))
     api(platform(libs.spoofax3.bom))
     testImplementation(platform(libs.spoofax3.bom))
@@ -26,6 +27,9 @@ dependencies {
     testAnnotationProcessor(platform(libs.spoofax3.bom))
 
     // Languages
+    compileLanguage(libs.spoofax.lang.esv)
+    compileLanguage(libs.spoofax.lang.sdf3)
+
     sourceLanguage(libs.spoofax2.meta.lib)
     sourceLanguage(project(":nabl2.shared"))
 }
