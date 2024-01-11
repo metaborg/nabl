@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -42,6 +42,13 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.SolverTracer;
+
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.MultiSet;
+import org.metaborg.util.functions.Action1;
+import org.metaborg.util.functions.Function0;
+import org.metaborg.util.functions.Function1;
 import mb.statix.spoofax.IStatixProjectConfig;
 
 import static mb.nabl2.terms.build.TermBuild.B;
@@ -83,7 +90,7 @@ public class MessageUtil {
         return message;
     }
 
-    public static SolverResult delaysAsErrors(SolverResult result, boolean suppressCascadingErrors) {
+    public static <TR extends SolverTracer.IResult<TR>> SolverResult<TR> delaysAsErrors(SolverResult<TR> result, boolean suppressCascadingErrors) {
 
         io.usethesource.capsule.Map.Immutable<IConstraint, Delay> delays = result.delays();
 
@@ -121,7 +128,7 @@ public class MessageUtil {
                                 .ownCriticalEdges().orElse(Completeness.Immutable.of()).entrySet()) {
                             final ITerm scope = unifier.findRecursive(criticalEdges.getKey());
                             final Set.Immutable<CriticalEdge> edges = criticalEdges.getValue().elementSet().stream()
-                                    .map(edge -> CriticalEdge.of(scope, edge)).collect(CapsuleCollectors.toSet());
+                                    .<CriticalEdge>map(edge -> CriticalEdge.of(scope, edge)).collect(CapsuleCollectors.toSet());
                             _newCriticalEdges.__insertAll(edges.__removeAll(allCriticalEdges));
                         }
                     } else {

@@ -10,6 +10,7 @@ imports
   statix/lang/normalize
   statix/lang/precompile
   statix/lang/transform/-
+  statix/lang/schema/-
 
   pp
 
@@ -101,3 +102,27 @@ rules // Explicit signature rules
     where a := <nabl2-get-resource-analysis> $[[project-path]/[path]];
           <not(nabl2-analysis-has-errors)> a
     with ast' := <add-signature-rules(|a)> ast
+
+rules
+
+  show-sdfg-constraints: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <generate-combined-aterm; Snd; extract-spec-sdfg> input
+    with filename := <guarantee-extension(|"sdfgc.aterm")> path
+
+  get-sdfg(debug) = generate-combined-aterm; Snd; extract-sdfg(debug)
+
+  show-sdfg: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <get-sdfg(fail)> input
+    with filename := <guarantee-extension(|"sdfg.aterm")> path
+
+  format-sdfg: input@(_, _, ast, path, project-path) -> (filename, result)
+    with result := <get-sdfg(fail); pp-Statix-string> input
+    with filename := <guarantee-extension(|"sdfg")> path
+
+  show-sdfg-debug: input@(_, _, ast, path, project-path) -> (filename, sdfg)
+    with sdfg := <get-sdfg(id)> input
+    with filename := <guarantee-extension(|"sdfg.aterm")> path
+
+  format-sdfg-debug: input@(_, _, ast, path, project-path) -> (filename, result)
+    with result := <get-sdfg(id); pp-Statix-string> input
+    with filename := <guarantee-extension(|"sdfg")> path

@@ -1,0 +1,134 @@
+module statix/runtime/analysis/multi-file
+
+imports
+
+  strategolib
+
+  libspoofax/analysis/constraint
+
+  statix/runtime/ast
+  statix/runtime/analysis
+  statix/runtime/analysis/traditional
+  statix/runtime/analysis/constraint
+  statix/runtime/constraints
+  statix/runtime/terms
+
+  statix/api
+
+rules // multi file analysis
+
+  stx--editor-analyze(pre, group-key, post, analyze-unit, analyze-final|spec-name, project-constraint, group-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; level := <stx--log-level>
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; group-c-name := <stx--mk-qualified-name(|spec-name)> group-constraint
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
+       ; config := <stx--project-config>
+    with
+      switch !project-change
+        case ?Added(_):
+          //
+          // 1. create global scope
+          //
+          global-scope-var := Var("s")
+        ; Solution(global-scope-subst, global-scope-state) :=
+              <stx--solve-constraint(|spec, level, progress, cancel)> <stx--exists>([global-scope-var], CNew([global-scope-var]))
+        ; global-scope   := <lookup> (global-scope-var, global-scope-subst)
+        ; initial-groups := [([], global-scope)]
+          //
+          // 2. register libraries
+          //
+        ; libs := <stx--local-libs>
+        ; initial-state := <foldl({lib, state: \ (lib, state) -> <stx--register-library(|global-scope, state)> lib \})> (libs, global-scope-state)
+          //
+          // 3. partially solve project constraint
+          //
+        ; project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, initial-state, level, progress, cancel)> [(project-resource, project-C)]
+          // remove cached results: names on group result may differ f
+        case ?Changed(_, ProjectAnalysis(global-scope, initial-state, _, initial-groups, _, _)):
+          //
+          // 3. partially solve project constraint
+          //
+          project-C := C(proj-c-name, <map(stx--explode)> [global-scope], NoMessage())
+        ; [initial-project-state] := <stx--solve-multi-file(|spec, initial-state, level, progress, cancel)> [(project-resource, project-C)]
+        case ?Cached(ProjectAnalysis(global-scope, initial-state, initial-project-state, initial-groups, _, _)):
+          id
+        otherwise:
+          fatal-err(|"Unexpected change on project")
+      end
+      //
+      // 4. Partially solve group constraints
+      //
+    ; resource-ast*         := <filter((id, ?Added(<id>) + ?Changed(<id>, _)))> change*
+    // FIXME: vv change name
+    ; resource-keys         := <map({arg, res, ast: \arg@(res, ast) -> (<stx--composite-group-key(group-key)> arg, res, ast) \})> resource-ast*
+    ; changed-resource-keys := <map(?(<id>, _, _))> resource-keys
+    ; cached-resource-keys  := <filter(?(_, Cached(FileAnalysis(<id>, _, _, _, _))))> change*
+    ; current-groups        := <conc; stx--extract-groups> (changed-resource-keys, cached-resource-keys)
+    ; known-groups          := <map(Fst)> initial-groups
+    ; new-groups            := <diff> (current-groups, known-groups)
+    ; (new-group-scopes, new-group-state) := <foldl({ scope-var, constraint, vars, new-state, grp-scope: \(grp, (grp-scope*, state)) -> ([grp-scope*, (grp, grp-scope)], new-state)
+                                    with scope-var  := Var(<map(?GroupKey(<id>, _)); separate-by(|"/") ; concat-strings> grp)
+                                       ; constraint := <stx--exists> ([scope-var], CNew([scope-var]))
+                                       ; Solution(vars, new-state) := <stx--solve-constraint-with-initial-state(|state, level)> constraint
+                                       ; grp-scope := <lookup> (scope-var, vars)
+
+                               \})> (new-groups, ([], initial-state))
+    ; group-scopes          := <conc> (initial-groups, new-group-scopes)
+    ; current-group-scopes  := <map({grp, scope : \ grp -> (grp, scope) with scope := <lookup> (grp, group-scopes) \})> current-groups
+    ; group-C               := <filter(not(?([], _))); map({ prnt, prnt-scope, grp, scope, name: \ (grp, scope) -> C(group-c-name, <map(stx--explode)> [prnt-scope, name, scope], NoMessage())
+                                    with (prnt, GroupKey(name, _)) := <split-init-last> grp
+                                       ; prnt-scope := <lookup> (prnt, group-scopes)
+                               \}); stx--conj> current-group-scopes
+    ; [initial-group-state] := <stx--solve-multi-file(|spec, new-group-state, level, progress, cancel)> [($[[project-resource]#groups], group-C)]
+      //
+      // 5. Partially solve file constraints
+      //
+    ; resource-ast'* := <map(\ (key, resource, ast) -> (key, resource, <stx--index-ast(|resource); pre> ast) \)> resource-keys
+    ; file-C* := <map(\ (Key(group-key, _, _, _), resource, ast') -> (resource, C(file-c-name, <map(stx--explode)> [<lookup> (group-key, group-scopes), ast'], NoMessage())) \)> resource-ast'*
+    ; initial-file-state* := <stx--solve-multi-file(|spec, new-group-state, level, progress, cancel)> file-C*
+    ; initial-file-result* := <zip({ group-key, file-state', ast'', custom-file-analysis, file-analysis: \
+        ((group-key, resource, ast'), file-state) ->
+            (resource, Full(ast'', file-analysis, [], [], []))
+          with ast'' := <post> ast'
+             ; custom-file-analysis := <analyze-unit> (resource, ast', file-state)
+             ; file-analysis := FileAnalysis(group-key, file-state, None(), custom-file-analysis, NoCustomAnalysis())
+      \})> (resource-ast'*, initial-file-state*)
+      //
+      // 6. Combine and solve all partial solution
+      //
+    ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(_, <id>, _, _, _))))> change*
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-group-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
+    ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
+    ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
+    ; project-analysis := ProjectAnalysis(global-scope, /*need to keep track of group scope ownership*/new-group-state, initial-project-state, group-scopes, final-project-state, custom-analysis)
+    ; file-result* := <map((id, Full(id, FileAnalysis(id, id, !final-project-state, id, !custom-analysis), id, id, id)))> initial-file-result*
+    ; switch !project-change
+        case ?Added(project-ast) + ?Changed(project-ast, _):
+          project-result := Full(project-ast, project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
+        case ?Cached(_):
+          project-result := Update(project-analysis, [error*, c-e*], [warning*, c-w*], [note*, c-n*])
+      end
+    ; result* := [(project-resource, project-result)|file-result*]
+      //
+      // 7. Compute scope graph diff
+      //
+    //; if Cached(ProjectAnalysis(_, _, _, final-project-state')) := project-change then
+    //    diff := <stx--diff-scopegraphs(|global-scope)> (final-project-state, final-project-state')
+    //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+    //  end
+
+  stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint):
+      AnalyzeSingle(_, _, _) -> <fatal-err-msg(|"Multi-file `stx-editor-analyze_4_3` called for single-file analysis. Use `stx-editor-analyze_3_2` instead.")>
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [(string, Constraint)] -> [SolverResult]
+  stx--solve-multi-file(|spec, state, level, progress, cancel) = prim("STX_solve_multi_file", spec, state, level, progress, cancel)
+
+  // @param state : SolverResult
+  // @param level : LogLevel
+  // @type [SolverResult] -> SolverResult
+  stx--solve-multi-project(|spec, state, level, progress, cancel) = prim("STX_solve_multi_project", spec, state, level, progress, cancel)

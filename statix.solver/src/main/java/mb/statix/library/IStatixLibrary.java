@@ -1,4 +1,4 @@
-package mb.statix.concurrent;
+package mb.statix.library;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
@@ -9,7 +9,7 @@ import java.util.Set;
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
 import mb.nabl2.terms.unification.u.PersistentUnifier;
-import mb.p_raffrayi.IScopeGraphLibrary;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.statix.scopegraph.Scope;
 import mb.statix.spoofax.StatixTerms;

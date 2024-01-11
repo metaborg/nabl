@@ -3,15 +3,17 @@ package mb.statix.concurrent;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
+import mb.statix.library.IStatixLibrary;
 import mb.statix.scopegraph.Scope;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.Rule;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 
-public interface IStatixProject {
+public interface IStatixProject<TR extends SolverTracer.IResult<TR>> {
 
     String resource();
 
@@ -43,7 +45,7 @@ public interface IStatixProject {
     /**
      * Result from previous type-checker run.
      */
-    @Nullable IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>> previousResult();
+    @Nullable IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult<TR>, SolverState>> previousResult();
 
     /**
      * @return Total number of units (including groups and subunits) in the project.

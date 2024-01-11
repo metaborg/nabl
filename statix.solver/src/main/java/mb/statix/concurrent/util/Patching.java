@@ -5,7 +5,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -26,6 +26,8 @@ import mb.nabl2.terms.matching.ConsPattern;
 import mb.nabl2.terms.matching.Pattern;
 import mb.nabl2.terms.matching.PatternAs;
 import mb.nabl2.terms.matching.StringPattern;
+import mb.nabl2.terms.matching.Transform.T;
+import mb.nabl2.terms.substitution.FreshVars;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.CArith;
 import mb.statix.constraints.CAstId;

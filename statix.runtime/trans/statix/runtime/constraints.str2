@@ -21,6 +21,10 @@ signature
     CExists : List(Var) * Constraint -> Constraint
     C       : string * List(Term) * Message -> Constraint
   constructors
+    Rule    : RuleName * RuleHead * Constraint -> Rule
+  constructors
+    C       : ConstraintId * List(Term) -> RuleHead
+  constructors
     LLam    : List(Term) * Constraint -> HoConstraint
 
   constructors

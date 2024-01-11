@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -20,13 +19,13 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph_data extends StatixPrimitive {
 
-    @Inject public STX_get_scopegraph_data() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_scopegraph_data() {
         super(STX_get_scopegraph_data.class.getSimpleName(), 1);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final SolverResult<?> analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final IState.Immutable state = analysis.state();
         // @formatter:off

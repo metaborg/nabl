@@ -2,6 +2,7 @@ package mb.statix.spec;
 
 import java.util.Optional;
 
+import mb.nabl2.terms.substitution.ISubstitution;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -28,5 +29,10 @@ public abstract class AApplyResult {
      * Critical edges that are introduced by the application of this rule.
      */
     @Value.Parameter public abstract ICompleteness.Immutable criticalEdges();
+
+    /**
+     * Substitution that is applied to the rule body in order to generate {@link #body()}.
+     */
+    @Value.Parameter public abstract ISubstitution.Immutable substitution();
 
 }

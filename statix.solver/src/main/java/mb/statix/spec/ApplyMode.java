@@ -3,7 +3,7 @@ package mb.statix.spec;
 import java.util.List;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.unification.ud.IUniDisunifier;
@@ -29,7 +29,13 @@ public abstract class ApplyMode<E extends Throwable> {
      */
     public static final ApplyMode<VoidException> RELAXED = new ApplyRelaxed();
 
-    abstract Optional<ApplyResult> apply(IUniDisunifier.Immutable unifier, Rule rule, List<? extends ITerm> args,
-            @Nullable IConstraint cause, Safety safety) throws E;
+    abstract Optional<ApplyResult> apply(
+            IUniDisunifier.Immutable unifier,
+            Rule rule,
+            List<? extends ITerm> args,
+            @Nullable IConstraint cause,
+            Safety safety,
+            boolean trackOrigins
+    ) throws E;
 
 }

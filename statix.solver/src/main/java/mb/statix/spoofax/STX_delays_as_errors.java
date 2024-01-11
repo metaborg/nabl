@@ -1,6 +1,5 @@
 package mb.statix.spoofax;
 
-import javax.inject.Inject;
 import mb.nabl2.terms.ITerm;
 import mb.statix.constraints.messages.MessageUtil;
 import mb.statix.solver.persistent.SolverResult;
@@ -14,7 +13,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 public class STX_delays_as_errors extends StatixPrimitive {
 
-    @Inject public STX_delays_as_errors() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_delays_as_errors() {
         super(STX_delays_as_errors.class.getSimpleName(), 0);
     }
 
@@ -22,9 +21,9 @@ public class STX_delays_as_errors extends StatixPrimitive {
         throws InterpreterException {
 
         final IStatixProjectConfig config = getConfig(term);
-        final SolverResult result = getResult(term);
+        final SolverResult<?> result = getResult(term);
 
-        final SolverResult newResult = MessageUtil.delaysAsErrors(result, config.suppressCascadingErrors());
+        final SolverResult<?> newResult = MessageUtil.delaysAsErrors(result, config.suppressCascadingErrors());
         return Optional.of(B.newBlob(newResult));
     }
 }

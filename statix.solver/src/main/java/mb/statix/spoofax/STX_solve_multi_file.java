@@ -16,7 +16,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -26,12 +25,13 @@ import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
-    @Inject public STX_solve_multi_file() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_file() {
         super(STX_solve_multi_file.class.getSimpleName(), 5);
     }
 
@@ -42,8 +42,8 @@ public class STX_solve_multi_file extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(1))
-                .orElseThrow(() -> new InterpreterException("Expected solver result."));
+        @SuppressWarnings("unchecked") final SolverResult<Empty> initial = M.blobValue(SolverResult.class)
+                .match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final IDebugContext debug = getDebugContext(terms.get(2));
         final IProgress progress = getProgress(terms.get(3));
@@ -70,7 +70,7 @@ public class STX_solve_multi_file extends StatixPrimitive {
         final IsComplete isComplete = (s, l, st) -> {
             return !state.scopes().contains(s);
         };
-        final SolverResult resultConfig;
+        final SolverResult<Empty> resultConfig;
         try {
             resultConfig = Solver.solve(spec, state, constraint, isComplete, debug, cancel, progress, 0);
         } catch(InterruptedException e) {

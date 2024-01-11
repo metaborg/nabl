@@ -1,0 +1,15 @@
+# See: https://docs.gradle.org/current/userguide/platforms.html
+
+[versions]
+jsr305              = "3.0.2"
+javax-annotation    = "1.3.2"
+jakarta-annotation  = "2.1.1"
+javax-inject        = "1"
+jakarta-inject      = "2.0.1"
+
+[libraries]
+jsr305              = { module = "com.google.code.findbugs:jsr305",             version.ref = "jsr305" }
+javax-annotation    = { module = "javax.annotation:javax.annotation-api",       version.ref = "javax-annotation" }
+jakarta-annotation  = { module = "jakarta.annotation:jakarta.annotation-api",   version.ref = "jakarta-annotation" }
+javax-inject        = { module = "javax.inject:javax.inject",                   version.ref = "javax-inject" }
+jakarta-inject      = { module = "jakarta.inject:jakarta.inject-api",           version.ref = "jakarta-inject" }

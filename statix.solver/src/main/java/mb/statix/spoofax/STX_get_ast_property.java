@@ -9,7 +9,6 @@ import org.metaborg.util.tuple.Tuple2;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
@@ -22,12 +21,12 @@ import mb.statix.solver.persistent.SolverResult;
  */
 public final class STX_get_ast_property extends StatixPropertyPrimitive {
 
-    @Inject public STX_get_ast_property() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_ast_property() {
         super(STX_get_ast_property.class.getSimpleName(), 2);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms) throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final SolverResult<?> analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final ITerm prop = terms.get(1);
         return call(env, term, analysis, prop);

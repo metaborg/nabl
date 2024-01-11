@@ -15,7 +15,6 @@ import org.metaborg.util.future.IFuture;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
@@ -31,10 +30,11 @@ import org.metaborg.util.collection.BiMap.Immutable;
 import mb.statix.concurrent.IStatixResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.scopegraph.Scope;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 
 public class STX_incremental_diagnostics extends StatixPrimitive {
 
-    @Inject public STX_incremental_diagnostics() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_incremental_diagnostics() {
         super(STX_incremental_diagnostics.class.getSimpleName(), 1);
     }
 
@@ -43,7 +43,7 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
 
         // Diagnostic one: possibility for inaccurate edge matches.
 
-        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, IStatixResult, ?>> analysis =
+        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, IStatixResult<Empty>, ?>> analysis =
                 M.blobValue(IUnitResult.class).match(terms.get(0))
                         .orElseThrow(() -> new InterpreterException("Expected solver result."));
 

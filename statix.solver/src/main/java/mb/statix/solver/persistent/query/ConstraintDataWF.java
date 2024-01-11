@@ -40,18 +40,24 @@ class ConstraintDataWF implements DataWF<ITerm> {
 
     @Override public boolean wf(ITerm datum) throws ResolutionException, InterruptedException {
         try {
-            final ApplyResult applyResult;
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((applyResult = RuleUtil
-                    .apply(state.unifier(), constraint, ImList.Immutable.of(datum), null, ApplyMode.STRICT, Safety.UNSAFE)
-                    .orElse(null)) == null) {
+            final ApplyResult applyResult = RuleUtil.apply(
+                    state.unifier(),
+                    constraint,
+                    ImList.Immutable.of(datum),
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.UNSAFE,
+                    true
+            ).orElse(null);
+            if (applyResult == null) {
                 return false;
             }
 
             return Solver.entails(spec, state, Constraints.disjoin(applyResult.body()), Collections.emptyMap(),
                     applyResult.criticalEdges(), isComplete, new NullDebugContext(),
                     new NullProgress().subProgress(1), new NullCancel());
-        } catch(Delay d) {
+        } catch (Delay d) {
             throw new ResolutionDelayException("Data well-formedness delayed.", d);
         }
     }

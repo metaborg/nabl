@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
@@ -25,21 +25,23 @@ public final class CTry implements IConstraint, Serializable {
 
     private final @Nullable IConstraint cause;
     private final @Nullable IMessage message;
+    private final @Nullable CTry origin;
 
     public CTry(IConstraint constraint) {
-        this(constraint, null, null);
+        this(constraint, null, null, null);
     }
 
     // Do not call this constructor. This is only used to reconstruct this object from a Statix term. Call withArguments() or withMessage() instead.
     public CTry(IConstraint constraint, @Nullable IMessage message) {
-        this(constraint, null, message);
+        this(constraint, null, message, null);
     }
 
-    // Do not call this constructor. Call withArguments(), withCause(), or withMessage() instead.
-    public CTry(IConstraint constraint, @Nullable IConstraint cause, @Nullable IMessage message) {
+    // Private constructor, so we can add more fields in the future. Externally call the appropriate with*() functions instead.
+    private CTry(IConstraint constraint, @Nullable IConstraint cause, @Nullable IMessage message, @Nullable CTry origin) {
         this.constraint = constraint;
         this.cause = cause;
         this.message = message;
+        this.origin = origin;
     }
 
     public IConstraint constraint() {
@@ -47,7 +49,12 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     public CTry withArguments(IConstraint constraint) {
-        return new CTry(constraint, cause, message);
+        if (this.constraint == constraint) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTry(constraint, cause, message, origin);
     }
 
     @Override public Optional<IConstraint> cause() {
@@ -55,7 +62,12 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     @Override public CTry withCause(@Nullable IConstraint cause) {
-        return new CTry(constraint, cause, message);
+        if (this.cause == cause) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTry(constraint, cause, message, origin);
     }
 
     @Override public Optional<IMessage> message() {
@@ -63,7 +75,16 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     @Override public CTry withMessage(@Nullable IMessage message) {
-        return new CTry(constraint, cause, message);
+        if (this.message == message) {
+            // Avoid creating new objects if the arguments are the exact same objects.
+            // NOTE: Using `==` (instead of `Objects.equals()`) is cheap and already covers 99% of cases.
+            return this;
+        }
+        return new CTry(constraint, cause, message, origin);
+    }
+
+    @Override public @Nullable CTry origin() {
+        return origin;
     }
 
     @Override public <R> R match(Cases<R> cases) {
@@ -96,26 +117,41 @@ public final class CTry implements IConstraint, Serializable {
     }
 
     @Override public CTry apply(ISubstitution.Immutable subst) {
-        return new CTry(
-                constraint.apply(subst),
-                cause,
-                message == null ? null : message.apply(subst)
-        );
+        return apply(subst, false);
     }
 
     @Override public CTry unsafeApply(ISubstitution.Immutable subst) {
-        return new CTry(
-                constraint.unsafeApply(subst),
-                cause,
-                message == null ? null : message.apply(subst)
-        );
+        return unsafeApply(subst, false);
     }
 
     @Override public CTry apply(IRenaming subst) {
+        return apply(subst, false);
+    }
+
+    @Override public CTry apply(ISubstitution.Immutable subst, boolean trackOrigin) {
         return new CTry(
-                constraint.apply(subst),
+                constraint.apply(subst, trackOrigin),
                 cause,
-                message == null ? null : message.apply(subst)
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CTry unsafeApply(ISubstitution.Immutable subst, boolean trackOrigin) {
+        return new CTry(
+                constraint.unsafeApply(subst, trackOrigin),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
+        );
+    }
+
+    @Override public CTry apply(IRenaming subst, boolean trackOrigin) {
+        return new CTry(
+                constraint.apply(subst, trackOrigin),
+                cause,
+                message == null ? null : message.apply(subst),
+                origin == null && trackOrigin ? this : origin
         );
     }
 
@@ -141,7 +177,8 @@ public final class CTry implements IConstraint, Serializable {
         return this.hashCode == that.hashCode
             && Objects.equals(this.constraint, that.constraint)
             && Objects.equals(this.cause, that.cause)
-            && Objects.equals(this.message, that.message);
+            && Objects.equals(this.message, that.message)
+            && Objects.equals(this.origin, that.origin);
         // @formatter:on
     }
 
@@ -155,7 +192,8 @@ public final class CTry implements IConstraint, Serializable {
         return Objects.hash(
                 constraint,
                 cause,
-                message
+                message,
+                origin
         );
     }
 

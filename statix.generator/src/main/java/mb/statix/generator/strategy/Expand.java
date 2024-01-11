@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
@@ -38,6 +38,7 @@ import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleName;
 import mb.statix.spec.RuleSet;
 import mb.statix.spec.RuleUtil;
 
@@ -68,7 +69,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         final java.util.Map<Rule, Double> rules = getWeightedRules(ctx, predicate.name());
         // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
         final List<Tuple2<Rule, ApplyResult>> results = RuleUtil.applyAll(input.state().unifier(), rules.keySet(),
-                predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE);
+                predicate.args(), predicate, ApplyMode.RELAXED, Safety.UNSAFE, false);
 
         final List<Pair<SearchNode<SearchState>, Double>> newNodes = new ArrayList<>();
         results.forEach(result -> {
@@ -116,7 +117,7 @@ public final class Expand extends SearchStrategy<FocusedSearchState<CUser>, Sear
         return cache.computeIfAbsent(name, k -> {
             RuleSet rules = this.rules != null ? this.rules : ctx.spec().rules();
             final Set.Immutable<Rule> rs = rules.getOrderIndependentRules(name);
-            final java.util.Map<String, Long> rcs =
+            final java.util.Map<RuleName, Long> rcs =
                     rs.stream().collect(Collectors.groupingBy(Rule::label, Collectors.counting()));
             // ImmutableMap iterates over keys in insertion-order
             final Map.Transient<Rule, Double> ruleWeights = CapsuleUtil.transientMap();

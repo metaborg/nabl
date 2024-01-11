@@ -118,10 +118,10 @@ public class SearchState {
     /**
      * Replace the current state and constraints by the result from solving.
      */
-    public SearchState replace(SolverResult result) {
+    public SearchState replace(SolverResult<?> result) {
         final Set.Transient<IConstraint> constraints = CapsuleUtil.transientSet();
         final Map.Transient<IConstraint, Delay> delays = CapsuleUtil.transientMap();
-        result.delays().forEach((c, d) -> {
+        result.delays().forEach((IConstraint c, Delay d) -> {
             if(d.criticalEdges().isEmpty()) {
                 constraints.__insert(c);
             } else {

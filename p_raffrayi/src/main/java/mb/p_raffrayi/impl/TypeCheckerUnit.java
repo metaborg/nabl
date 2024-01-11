@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
@@ -35,7 +35,6 @@ import org.metaborg.util.unit.Unit;
 import io.usethesource.capsule.Set;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 import mb.p_raffrayi.IRecordedQuery;
-import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.ITypeChecker.IState;
@@ -77,6 +76,7 @@ import mb.p_raffrayi.nameresolution.NameResolutionQuery;
 import mb.p_raffrayi.nameresolution.StateMachineQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import org.metaborg.util.collection.BiMap;
 import mb.scopegraph.oopsla20.path.IResolutionPath;

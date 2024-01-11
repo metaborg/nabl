@@ -11,8 +11,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
+import org.metaborg.util.collection.CapsuleUtil;
+import org.metaborg.util.collection.ImList;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.Level;
 import org.metaborg.util.task.ICancel;
@@ -38,11 +40,16 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.completeness.ICompleteness;
 import mb.statix.solver.completeness.IsComplete;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.tracer.EmptyTracer;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
+import mb.statix.solver.tracer.SolverTracer;
+import mb.statix.solver.tracer.SolverTracer.IResult;
 import mb.statix.spec.PreSolvedConstraint;
 import mb.statix.spec.Spec;
 
 public class Solver {
 
+    // flags
     public static final int RETURN_ON_FIRST_ERROR = 1;
     public static final int FORCE_INTERP_QUERIES = 2;
 
@@ -52,40 +59,62 @@ public class Solver {
 
     public static final int ERROR_TRACE_TERM_DEPTH = 4;
 
+    public static final io.usethesource.capsule.Set.Immutable<ITermVar> NO_UPDATED_VARS = CapsuleUtil.immutableSet();
+    public static final ImList.Immutable<IConstraint> NO_NEW_CONSTRAINTS = ImList.Immutable.of();
+    public static final Completeness.Immutable NO_NEW_CRITICAL_EDGES =
+            Completeness.Immutable.of();
+    public static final io.usethesource.capsule.Map.Immutable<ITermVar, ITermVar> NO_EXISTENTIALS = CapsuleUtil.immutableMap();
+
     private Solver() {
     }
 
-    public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
+    public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final IDebugContext debug, ICancel cancel, IProgress progress, int flags) throws InterruptedException {
         return solve(spec, state, constraint, (s, l, st) -> true, debug, cancel, progress, flags);
     }
 
-    public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
-            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
+    public static <TR extends IResult<TR>> SolverResult<TR> solve(final Spec spec, final IState.Immutable state,
+            final IConstraint constraint, final IsComplete isComplete, final IDebugContext debug, final ICancel cancel,
+            IProgress progress, SolverTracer<TR> tracer, int flags)
             throws InterruptedException {
-        return new GreedySolver(spec, state, constraint, isComplete, debug, progress, cancel, flags).solve();
+        return new GreedySolver<>(spec, state, constraint, isComplete, debug, progress, cancel, tracer, flags).solve();
     }
 
-    public static SolverResult solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
+    public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
+            final IsComplete isComplete, final IDebugContext debug, final ICancel cancel, IProgress progress, int flags)
+            throws InterruptedException {
+        return solve(spec, state, constraint, isComplete, debug, cancel, progress, new EmptyTracer(), flags);
+    }
+
+    public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state, final IConstraint constraint,
             final ICompleteness.Immutable completeness, final IDebugContext debug, ICancel cancel, IProgress progress,
             int flags) throws InterruptedException {
         return solve(spec, state, Collections.singletonList(constraint), Collections.emptyMap(), completeness,
                 (s, l, st) -> true, debug, progress, cancel, flags);
     }
 
-    public static SolverResult solve(final Spec spec, final IState.Immutable state,
+    public static <TR extends IResult<TR>> SolverResult<TR> solve(final Spec spec, final IState.Immutable state,
+            final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
+            final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
+            IProgress progress, ICancel cancel, SolverTracer<TR> tracer, int flags) throws InterruptedException {
+        return new GreedySolver<>(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                tracer, flags).solve();
+    }
+
+    public static SolverResult<Empty> solve(final Spec spec, final IState.Immutable state,
             final Iterable<IConstraint> constraints, final Map<IConstraint, Delay> delays,
             final ICompleteness.Immutable completeness, final IsComplete isComplete, final IDebugContext debug,
             IProgress progress, ICancel cancel, int flags) throws InterruptedException {
-        return new GreedySolver(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
-                flags).solve();
+        return solve(spec, state, constraints, delays, completeness, isComplete, debug, progress, cancel,
+                new EmptyTracer(), flags);
     }
 
-    public static IFuture<SolverResult> solveConcurrent(IConstraint constraint, Spec spec, IState.Immutable state,
-            ICompleteness.Immutable completeness, IDebugContext debug, IProgress progress, ICancel cancel,
-            ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags, Iterable<Scope> rootScopes) {
-        return new StatixSolver(constraint, spec, state, completeness, debug, progress, cancel, scopeGraph, flags)
-                .solve(rootScopes);
+    public static IFuture<SolverResult<Empty>> solveConcurrent(IConstraint constraint, Spec spec,
+            IState.Immutable state, ICompleteness.Immutable completeness, IDebugContext debug, IProgress progress,
+            ICancel cancel, ITypeCheckerContext<Scope, ITerm, ITerm> scopeGraph, int flags,
+            Iterable<Scope> rootScopes) {
+        return new StatixSolver<>(constraint, spec, state, completeness, debug, progress, cancel, scopeGraph,
+                new EmptyTracer(), flags).solve(rootScopes);
     }
 
     public static boolean entails(final Spec spec, IState.Immutable state, final Iterable<IConstraint> constraints,
@@ -106,7 +135,7 @@ public class Solver {
             return entailed(subState, preSolveResult, debug);
         }
 
-        final SolverResult result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints, delays,
+        final SolverResult<Empty> result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints, delays,
                 preSolveResult.criticalEdges, isComplete, debug.subContext(), progress, cancel, RETURN_ON_FIRST_ERROR);
 
         return Solver.entailed(subState, result, debug);
@@ -129,15 +158,15 @@ public class Solver {
             return entailed(subState, preSolveResult, debug);
         }
 
-        final SolverResult result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints,
+        final SolverResult<Empty> result = Solver.solve(spec, preSolveResult.state, preSolveResult.constraints,
                 Collections.emptyMap(), preSolveResult.criticalEdges, isComplete, debug.subContext(), progress, cancel,
                 RETURN_ON_FIRST_ERROR);
 
         return entailed(subState, result, debug);
     }
 
-    public static boolean entailed(IState.Immutable initialState, SolverResult result, final IDebugContext debug)
-            throws Delay {
+    public static <R extends SolverTracer.IResult<R>> boolean entailed(IState.Immutable initialState,
+            SolverResult<R> result, final IDebugContext debug) throws Delay {
         if(!initialState.vars().isEmpty() || !initialState.scopes().isEmpty()) {
             throw new IllegalArgumentException("Incurrent initial state: create with IState::subState.");
         }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.CapsuleUtil;
@@ -37,6 +38,7 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 import mb.scopegraph.patching.IPatchCollection;
 import mb.statix.constraints.messages.IMessage;
+import mb.statix.library.IStatixLibrary;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.Delay;
 import mb.statix.solver.IConstraint;
@@ -46,6 +48,7 @@ import mb.statix.solver.completeness.Completeness;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
 import mb.statix.solver.persistent.State;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.ApplyMode;
 import mb.statix.spec.ApplyMode.Safety;
 import mb.statix.spec.ApplyResult;
@@ -53,21 +56,26 @@ import mb.statix.spec.Rule;
 import mb.statix.spec.RuleUtil;
 import mb.statix.spec.Spec;
 
-public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, ITerm, ITerm>>
+public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, ITerm, ITerm>, TR extends SolverTracer.IResult<TR>>
         implements ITypeChecker<Scope, ITerm, ITerm, R, SolverState> {
 
     private static final ILogger logger = LoggerUtils.logger(AbstractTypeChecker.class);
 
     protected final Spec spec;
     protected final IDebugContext debug;
+    private final Supplier<SolverTracer<TR>> tracerFactory;
+    private final int solverFlags;
 
-    protected AbstractTypeChecker(Spec spec, IDebugContext debug) {
+    protected AbstractTypeChecker(Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory,
+            int solverFlags) {
         this.spec = spec;
         this.debug = debug;
+        this.tracerFactory = tracerFactory;
+        this.solverFlags = solverFlags;
     }
 
-    private StatixSolver solver;
-    private IFuture<SolverResult> solveResult;
+    private StatixSolver<TR> solver;
+    private IFuture<SolverResult<TR>> solveResult;
     private final MultiSetMap.Transient<ITerm, ICompletableFuture<ITerm>> pendingData = MultiSetMap.Transient.of();
 
     private boolean snapshotTaken = false;
@@ -79,20 +87,18 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         return s;
     }
 
-    protected
-            IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
-            runGroups(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups,
-                    List<Scope> parentScopes) {
+    protected IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>>>
+            runGroups(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixGroup> groups, List<Scope> parentScopes) {
         if(groups.isEmpty()) {
             return CompletableFuture.completedFuture(CapsuleUtil.immutableMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixGroup> entry : groups.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>> result =
-                    context.add(key, new GroupTypeChecker(entry.getValue(), spec, debug), parentScopes,
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>> result =
+                    context.add(key, new GroupTypeChecker<>(entry.getValue(), spec, debug, tracerFactory, solverFlags), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: group {} returned.", context.id(), key);
@@ -105,20 +111,19 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
                 });
     }
 
-    protected
-            IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
+    protected IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>>>
             runUnits(ITypeCheckerContext<Scope, ITerm, ITerm> context, Map<String, IStatixUnit> units,
                     List<Scope> parentScopes) {
         if(units.isEmpty()) {
             return CompletableFuture.completedFuture(CapsuleUtil.immutableMap());
         }
 
-        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>> results =
+        final List<IFuture<Tuple2<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>>>> results =
                 new ArrayList<>();
         for(Map.Entry<String, IStatixUnit> entry : units.entrySet()) {
             final String key = entry.getKey();
-            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>> result =
-                    context.add(key, new UnitTypeChecker(entry.getValue(), spec, debug), parentScopes,
+            final IFuture<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>> result =
+                    context.add(key, new UnitTypeChecker<>(entry.getValue(), spec, debug, tracerFactory, solverFlags), parentScopes,
                             entry.getValue().changed());
             results.add(result.thenApply(r -> Tuple2.of(key, r)).whenComplete((r, ex) -> {
                 logger.debug("checker {}: unit {} returned.", context.id(), key);
@@ -155,7 +160,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
                 });
     }
 
-    protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
+    protected IFuture<SolverResult<TR>> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
             Optional<SolverState> initialState, List<Scope> scopes) {
         if(initialState.isPresent()) {
             return runSolver(context, initialState.get());
@@ -164,39 +169,47 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         }
     }
 
-    protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
+    protected IFuture<SolverResult<TR>> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context, Optional<Rule> rule,
             List<Scope> scopes) {
-        if(!rule.isPresent()) {
-            for(Scope scope : scopes) {
+        if (!rule.isPresent()) {
+            for (Scope scope : scopes) {
                 context.initScope(scope, Collections.emptyList(), false);
             }
-            return CompletableFuture.completedFuture(SolverResult.of(spec));
+            return CompletableFuture.completedFuture(SolverResult.of(spec, null));
         }
         final /*IState.*/Immutable unitState = State.of().withResource(context.id());
         final ApplyResult applyResult;
         try {
             // UNSAFE : we assume the resource of spec variables is empty and of state variables non-empty
-            if((applyResult =
-                    RuleUtil.apply(unitState.unifier(), rule.get(), scopes, null, ApplyMode.STRICT, Safety.UNSAFE)
-                            .orElse(null)) == null) {
+            applyResult = RuleUtil.apply(
+                    unitState.unifier(),
+                    rule.get(),
+                    scopes,
+                    null,
+                    ApplyMode.STRICT,
+                    Safety.UNSAFE,
+                    true
+            ).orElse(null);
+            if (applyResult == null) {
                 return CompletableFuture.completedExceptionally(
                         new IllegalArgumentException("Cannot apply initial rule to root scope."));
             }
-        } catch(Delay delay) {
+        } catch (Delay delay) {
             return CompletableFuture.completedExceptionally(
                     new IllegalArgumentException("Cannot apply initial rule to root scope.", delay));
         }
 
-        solver = new StatixSolver(applyResult.body(), spec, unitState, applyResult.criticalEdges(), debug,
-                new NullProgress(), new NullCancel(), context, 0);
+        solver = new StatixSolver<>(applyResult.body(), spec, unitState, applyResult.criticalEdges(), debug,
+                new NullProgress(), new NullCancel(), context, tracerFactory.get(), solverFlags);
         solveResult = solver.solve(scopes);
 
         return finish(solveResult, context.id());
     }
 
-    protected IFuture<SolverResult> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context,
+    protected IFuture<SolverResult<TR>> runSolver(ITypeCheckerContext<Scope, ITerm, ITerm> context,
             SolverState initialState) {
-        solver = new StatixSolver(initialState, spec, debug, new NullProgress(), new NullCancel(), context, 0);
+        solver = new StatixSolver<>(initialState, spec, debug, new NullProgress(), new NullCancel(), context,
+                tracerFactory.get(), solverFlags);
         solveResult = solver.continueSolve();
         pendingData.forEach((d, future) -> solver.getExternalRepresentation(d).whenComplete(future::complete));
         pendingData.clear();
@@ -204,7 +217,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
         return finish(solveResult, context.id());
     }
 
-    private IFuture<SolverResult> finish(IFuture<SolverResult> future, String id) {
+    private IFuture<SolverResult<TR>> finish(IFuture<SolverResult<TR>> future, String id) {
         return future.thenApply(r -> {
             logger.debug("checker {}: solver returned.", id);
             if(snapshotTaken) {
@@ -216,7 +229,7 @@ public abstract class AbstractTypeChecker<R extends ITypeChecker.IOutput<Scope, 
 
     }
 
-    protected SolverResult patch(SolverResult previousResult, IPatchCollection.Immutable<Scope> patches) {
+    protected SolverResult<TR> patch(SolverResult<TR> previousResult, IPatchCollection.Immutable<Scope> patches) {
         if(patches.isIdentity()) {
             return previousResult;
         }

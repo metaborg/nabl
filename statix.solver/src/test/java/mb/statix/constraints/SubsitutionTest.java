@@ -17,6 +17,7 @@ import mb.nabl2.terms.substitution.ISubstitution;
 import mb.nabl2.terms.substitution.PersistentSubstitution;
 import mb.statix.solver.IConstraint;
 import mb.statix.spec.Rule;
+import mb.statix.spec.RuleName;
 
 public class SubsitutionTest {
 
@@ -116,28 +117,28 @@ public class SubsitutionTest {
 
     @Test public void testRule0() {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, f());
-        final Rule p = Rule.of("", list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
+        final Rule p = Rule.of("", RuleName.empty(), list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
         final Rule q = p.apply(subst);
         assertInvariant(p, subst, q);
     }
 
     @Test public void testRule1() {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, f(a));
-        final Rule p = Rule.of("", list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
+        final Rule p = Rule.of("", RuleName.empty(), list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
         final Rule q = p.apply(subst);
         assertInvariant(p, subst, q);
     }
 
     @Test public void testRule2() {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, g(b));
-        final Rule p = Rule.of("", list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
+        final Rule p = Rule.of("", RuleName.empty(), list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
         final Rule q = p.apply(subst);
         assertInvariant(p, subst, q);
     }
 
     @Test public void testRule3() {
         final ISubstitution.Immutable subst = PersistentSubstitution.Immutable.of(a, g(c));
-        final Rule p = Rule.of("", list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
+        final Rule p = Rule.of("", RuleName.empty(), list(P.newVar(b)), new CExists(list(c), new CEqual(b, a)));
         final Rule q = p.apply(subst);
         assertInvariant(p, subst, q);
     }

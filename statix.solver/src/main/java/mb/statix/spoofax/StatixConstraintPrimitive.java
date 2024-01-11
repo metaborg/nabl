@@ -18,7 +18,6 @@ import org.metaborg.util.task.IProgress;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ITermVar;
@@ -26,12 +25,13 @@ import mb.nabl2.terms.unification.ud.IUniDisunifier;
 import mb.statix.solver.IConstraint;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.spec.Spec;
 
 public abstract class StatixConstraintPrimitive extends StatixPrimitive {
     protected static final ILogger logger = LoggerUtils.logger(StatixConstraintPrimitive.class);
 
-    @Inject public StatixConstraintPrimitive(String name) {
+    @jakarta.inject.Inject @javax.inject.Inject public StatixConstraintPrimitive(String name) {
         super(name, 4);
     }
 
@@ -61,7 +61,7 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
 
     private ITerm solveConstraint(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) {
-        final SolverResult resultConfig;
+        final SolverResult<Empty> resultConfig;
 
         try {
             resultConfig = solve(spec, constraint, debug, progress, cancel);
@@ -84,7 +84,7 @@ public abstract class StatixConstraintPrimitive extends StatixPrimitive {
         return resultTerm;
     }
 
-    protected abstract SolverResult solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
+    protected abstract SolverResult<Empty> solve(Spec spec, IConstraint constraint, IDebugContext debug, IProgress progress,
             ICancel cancel) throws InterruptedException, ExecutionException;
 
 

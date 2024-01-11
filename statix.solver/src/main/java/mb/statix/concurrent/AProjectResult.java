@@ -1,6 +1,6 @@
 package mb.statix.concurrent;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
@@ -12,10 +12,11 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.SolverTracer;
 
 @Value.Immutable
 @Serial.Version(42L)
-public abstract class AProjectResult implements IStatixResult {
+public abstract class AProjectResult<TR extends SolverTracer.IResult<TR>> implements IStatixResult<TR> {
 
     @Value.Parameter public abstract String resource();
 
@@ -23,11 +24,11 @@ public abstract class AProjectResult implements IStatixResult {
 
     @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Unit>> libraryResults();
 
-    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>> groupResults();
+    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>> groupResults();
 
-    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>> unitResults();
+    @Value.Parameter public abstract Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>> unitResults();
 
-    @Override @Value.Parameter public abstract @Nullable SolverResult solveResult();
+    @Override @Value.Parameter public abstract @Nullable SolverResult<TR> solveResult();
 
     @Override @Value.Parameter public abstract @Nullable Throwable exception();
 

@@ -9,7 +9,6 @@ import java.util.Optional;
 import org.spoofax.interpreter.core.IContext;
 import org.spoofax.interpreter.core.InterpreterException;
 
-import javax.inject.Inject;
 
 import mb.nabl2.terms.ITerm;
 import mb.statix.scopegraph.Scope;
@@ -18,13 +17,13 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph_edges extends StatixPrimitive {
 
-    @Inject public STX_get_scopegraph_edges() {
+    @jakarta.inject.Inject @javax.inject.Inject public STX_get_scopegraph_edges() {
         super(STX_get_scopegraph_edges.class.getSimpleName(), 1);
     }
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final SolverResult<?> analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
         final IState.Immutable state = analysis.state();
         // @formatter:off
