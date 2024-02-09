@@ -100,7 +100,7 @@ rules // multi file analysis
       // 6. Combine and solve all partial solution
       //
     ; initial-cached-state* := <filter(?(_, Cached(FileAnalysis(_, <id>, _, _, _))))> change*
-    ; final-project-state := <stx--solve-multi-project(|spec, initial-group-state, level, progress, cancel)> [initial-file-state*, initial-cached-state*]
+    ; final-project-state := <stx--solve-multi-project(|spec, initial-project-state, level, progress, cancel)> [initial-group-state, initial-file-state*, initial-cached-state*]
     ; (error*, warning*, note*) := <stx--delays-as-errors(|config);stx--extract-messages(|config)> final-project-state
     ; (c-e*, c-w*, c-n*, custom-analysis) := <analyze-final> final-project-state
     ; project-analysis := ProjectAnalysis(global-scope, /*need to keep track of group scope ownership*/new-group-state, initial-project-state, group-scopes, final-project-state, custom-analysis)
