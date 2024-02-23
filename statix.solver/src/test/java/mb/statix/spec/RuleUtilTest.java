@@ -119,7 +119,7 @@ public class RuleUtilTest {
         logger.info("Ordered rules:");
         rules.forEach(r -> logger.info(" * {}", r));
 
-        Collection<java.util.Set<Rule>> newRules = RuleSet.of(rules).getAllOrderIndependentRules().values();
+        Collection<java.util.Set<Rule>> newRules = BaseRuleSet.of(rules).getAllOrderIndependentRules().values();
         logger.info("Unordered rules:");
         newRules.forEach(r -> logger.info(" * {}", r));
     }

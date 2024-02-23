@@ -36,7 +36,7 @@ public abstract class ASpec {
     }
 
     public static Spec of() {
-        return Spec.of(new RuleSet(CapsuleUtil.immutableMap()), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
+        return Spec.of(new BaseRuleSet(CapsuleUtil.immutableMap()), CapsuleUtil.immutableSet(), CapsuleUtil.immutableSet(),
                 SetMultimap.Immutable.of());
     }
 
