@@ -1,4 +1,4 @@
-rootProject.name = "nabl"
+rootProject.name = "nabl-project"
 
 // This is needed to let Gradle find the dependencies of the spoofax2-gradle plugin
 pluginManagement {
