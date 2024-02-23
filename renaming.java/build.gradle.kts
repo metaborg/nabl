@@ -1,48 +1,55 @@
 plugins {
-  id("org.metaborg.gradle.config.java-library")
-  id("org.metaborg.gradle.config.junit-testing")
+    `java-library`
 }
 
-val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
+// FIXME: Move this to a common spot
+repositories {
+    mavenCentral()
+    maven("https://nexus.usethesource.io/content/repositories/releases/")
+    maven("https://artifacts.metaborg.org/content/groups/public/")
+}
+
 dependencies {
-  api(platform("org.metaborg:parent:$spoofax2Version"))
-  testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
-  annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
-  testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
+    // FIXME: Move these platform definitions to a common spot
+    api(platform(libs.spoofax3.bom))
+    testImplementation(platform(libs.spoofax3.bom))
+    annotationProcessor(platform(libs.spoofax3.bom))
+    testAnnotationProcessor(platform(libs.spoofax3.bom))
 
-  // !! Update dependencies in pom.xml as well
+    // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
-  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
-  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
-  api(project(":nabl2.terms"))
-  api("io.usethesource:capsule")
+    api(libs.spoofax2.terms)
+    api(libs.spoofax2.interpreter.core)
+    api(project(":nabl2.terms"))
+    api(libs.spoofax2.metaborg.util)
+    api(libs.capsule)
 
-  // Annotation processing
-  annotationProcessor("org.immutables:value")
-  annotationProcessor("org.immutables:serial")
-  compileOnly("org.immutables:value")
-  compileOnly("org.immutables:serial")
-  implementation(libs.jakarta.annotation)
+    // Annotation processing
+    annotationProcessor(libs.immutables.value)
+    annotationProcessor(libs.immutables.serial)
+    compileOnly(libs.immutables.value)
+    compileOnly(libs.immutables.serial)
+    implementation(libs.jakarta.annotation)
 
-  // Tests
-  testImplementation("junit:junit")
-  testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
-  testImplementation("ch.qos.logback:logback-classic")
+    // Tests
+    testImplementation(libs.junit4)
+    testImplementation(libs.junit)
+    testRuntimeOnly(libs.junit.vintage)
+    testImplementation(libs.logback)
 
-  // Test Annotation processing
-  testAnnotationProcessor("org.immutables:value")
-  testAnnotationProcessor("org.immutables:serial")
-  testCompileOnly("org.immutables:value")
-  testCompileOnly("org.immutables:serial")
+    // Test Annotation processing
+    testAnnotationProcessor(libs.immutables.value)
+    testAnnotationProcessor(libs.immutables.serial)
+    testCompileOnly(libs.immutables.value)
+    testCompileOnly(libs.immutables.serial)
 
-  // !! Update dependencies in pom.xml as well
+    // !! Update dependencies in pom.xml as well
 }
 
-// Copy test resources into classes directory, to make them accessible as classloader resources at runtime.
-val copyTestResourcesTask = tasks.create<Copy>("copyTestResources") {
-  from("$projectDir/src/test/resources")
-  into("$buildDir/classes/java/test")
-}
-tasks.getByName("processTestResources").dependsOn(copyTestResourcesTask)
+// FIXME: If this is necessary, use testFixtures instead
+//// Copy test resources into classes directory, to make them accessible as classloader resources at runtime.
+//val copyTestResourcesTask = tasks.create<Copy>("copyTestResources") {
+//  from("$projectDir/src/test/resources")
+//  into("$buildDir/classes/java/test")
+//}
+//tasks.getByName("processTestResources").dependsOn(copyTestResourcesTask)
