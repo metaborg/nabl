@@ -18,8 +18,8 @@ dependencies {
 
     // !! Update dependencies in pom.xml as well
 
-    api(libs.spoofax2.metaborg.util)
-    api(libs.capsule)
+    implementation(libs.spoofax2.metaborg.util)
+    implementation(libs.capsule)
 
     // Annotation processing
     annotationProcessor(libs.immutables.value)

@@ -21,8 +21,8 @@ dependencies {
     api(libs.spoofax2.terms)
     api(libs.spoofax2.interpreter.core)
     api(project(":nabl2.terms"))
-    api(libs.spoofax2.metaborg.util)
-    api(libs.capsule)
+    implementation(libs.spoofax2.metaborg.util)
+    implementation(libs.capsule)
 
     // Annotation processing
     annotationProcessor(libs.immutables.value)

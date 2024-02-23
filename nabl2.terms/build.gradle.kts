@@ -16,10 +16,10 @@ dependencies {
     annotationProcessor(platform(libs.spoofax3.bom))
     testAnnotationProcessor(platform(libs.spoofax3.bom))
 
-    api(libs.spoofax2.metaborg.util)
+    implementation(libs.spoofax2.metaborg.util)
     api(libs.spoofax2.terms)
     api(libs.spoofax2.interpreter.core)
-    api(libs.capsule)
+    implementation(libs.capsule)
 
     // Annotation processing
     annotationProcessor(libs.immutables.value)

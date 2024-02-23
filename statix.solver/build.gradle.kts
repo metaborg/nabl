@@ -22,10 +22,10 @@ dependencies {
     api(project(":scopegraph"))
     api(project(":p_raffrayi"))
 
-    api(libs.spoofax2.metaborg.util) // API to expose logger framework.
     api(libs.spoofax2.terms)
     api(libs.spoofax2.interpreter.core)
-    api(libs.capsule)
+    implementation(libs.capsule)
+    implementation(libs.spoofax2.metaborg.util) // API to expose logger framework.
 
     // Annotation processing
     annotationProcessor(libs.immutables.value)

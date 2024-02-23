@@ -20,17 +20,17 @@ dependencies {
 
     api(project(":scopegraph"))
 
-    api(libs.spoofax2.metaborg.util)
-    api(libs.capsule)
+    implementation(libs.spoofax2.metaborg.util)
+    implementation(libs.capsule)
 
-    // Annotation processing
+    // Annotations & Annotation Processing
     annotationProcessor(libs.immutables.value)
     annotationProcessor(libs.immutables.serial)
     compileOnly(libs.immutables.value)
     compileOnly(libs.immutables.serial)
     implementation(libs.jakarta.annotation)
 
-    // Tests
+    // Testing
     testImplementation(libs.junit4)
     testImplementation(libs.junit)
     testRuntimeOnly(libs.junit.vintage)
