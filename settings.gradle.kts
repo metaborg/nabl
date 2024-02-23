@@ -8,6 +8,11 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven("https://artifacts.metaborg.org/content/groups/public/")
+    }
+
     versionCatalogs {
         create("libs") {
             from("dev.spoofax:spoofax3-catalog:0.0.0-SNAPSHOT")
