@@ -4,6 +4,7 @@ plugins {
     id("dev.spoofax.spoofax2.gradle.langspec")
 }
 
+// FIXME: Move this to a common spot
 spoofaxLanguageSpecification {
     addCompileDependenciesFromMetaborgYaml.set(false)
     addSourceDependenciesFromMetaborgYaml.set(false)
