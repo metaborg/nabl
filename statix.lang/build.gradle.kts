@@ -33,7 +33,7 @@ dependencies {
     compileLanguage(project(":nabl2.lang"))
 
 
-    sourceLanguage(libs.spoofax2.meta.lib)
+    sourceLanguage(libs.spoofax2.meta.lib.spoofax)
     sourceLanguage(project(":nabl2.shared"))
     sourceLanguage(project(":nabl2.runtime"))
     sourceLanguage(project(":statix.runtime"))

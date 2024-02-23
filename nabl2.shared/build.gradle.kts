@@ -30,7 +30,7 @@ dependencies {
     // Languages
     compileLanguage(libs.spoofax.lang.sdf3)
 
-    sourceLanguage(libs.spoofax2.meta.lib)
+    sourceLanguage(libs.spoofax2.meta.lib.spoofax)
 }
 
 // TODO: This uses the gradle.config plugin
