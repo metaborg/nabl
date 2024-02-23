@@ -25,8 +25,8 @@ include("p_raffrayi")
 
 include("statix.solver")
 include("statix.generator")
+include("statix.runtime")
 //include("statix.lang")
-//include("statix.runtime")
 //
 //
 //include("renaming.java")

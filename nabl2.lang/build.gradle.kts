@@ -5,9 +5,9 @@ plugins {
 }
 
 spoofaxLanguageSpecification {
-  addCompileDependenciesFromMetaborgYaml.set(false)
-  addSourceDependenciesFromMetaborgYaml.set(false)
-  addJavaDependenciesFromMetaborgYaml.set(false)
+    addCompileDependenciesFromMetaborgYaml.set(false)
+    addSourceDependenciesFromMetaborgYaml.set(false)
+    addJavaDependenciesFromMetaborgYaml.set(false)
 }
 
 // FIXME: Move this to a common spot
