@@ -739,14 +739,14 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
                 if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
-                    return CUserStep.of(c, StepResult.failure(), null);
+                    return CUserStep.of(c, StepResult.failure(), null, result._1(), result._3());
                 }
                 final ApplyResult applyResult = result._2();
                 if(!result._3()) {
                     final Set<ITermVar> stuckVars = applyResult.guard()
                             .map(Diseq::domainSet).orElse(CapsuleUtil.immutableSet());
                     proxyDebug.debug("Rule delayed (multiple conditional matches)");
-                    return CUserStep.of(c, StepResult.delay(Delay.ofVars(stuckVars)), applyResult);
+                    return CUserStep.of(c, StepResult.delay(Delay.ofVars(stuckVars)), applyResult, result._1(), result._3());
                 }
                 proxyDebug.debug("Rule accepted");
                 proxyDebug.commit();
@@ -754,7 +754,7 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
                     throw new IllegalArgumentException("Solver only accepts specs with pre-computed critical edges.");
                 }
                 return CUserStep.of(c, StepResult.success(state).withNewConstraints(Collections.singletonList(applyResult.body()))
-                        .withNewCriticalEdges(applyResult.criticalEdges()), applyResult);
+                        .withNewCriticalEdges(applyResult.criticalEdges()), applyResult, result._1(), result._3());
             }
 
         });
