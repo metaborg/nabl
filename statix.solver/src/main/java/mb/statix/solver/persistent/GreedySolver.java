@@ -739,7 +739,7 @@ class GreedySolver<TR extends SolverTracer.IResult<TR>> {
                 if((result = RuleUtil.applyOrderedOne(state.unifier(), rules, args, c, ApplyMode.RELAXED, Safety.UNSAFE, true)
                         .orElse(null)) == null) {
                     debug.debug("No rule applies");
-                    return CUserStep.of(c, StepResult.failure(), null, result._1(), result._3());
+                    return CUserStep.of(c, StepResult.failure(), null, null, result._3());
                 }
                 final ApplyResult applyResult = result._2();
                 if(!result._3()) {
