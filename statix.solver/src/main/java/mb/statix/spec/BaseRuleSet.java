@@ -50,6 +50,11 @@ public final class BaseRuleSet implements Serializable, RuleSet {
     private final HashMap<String, Set.Immutable<Rule>> independentRules = new HashMap<>();
 
     /**
+     * The independent rules, indexed by name.
+     */
+    private final HashMap<RuleName, Rule> independentRulesByName = new HashMap<>();
+
+    /**
      * Sub-constraints. If a rule name is not in this map, an independent version of its rules has not yet been created.
      */
     private final HashMap<RuleName, Map.Immutable<String, ImList.Immutable<Rule>>> subConstraints = new HashMap<>();
@@ -166,6 +171,24 @@ public final class BaseRuleSet implements Serializable, RuleSet {
     @Override
     public Set.Immutable<Rule> getOrderIndependentRules(String name) {
         return this.independentRules.computeIfAbsent(name, n -> RuleUtil.computeOrderIndependentRules(getRules(name)));
+    }
+
+    @Override
+    public Rule getOrderIndependentRule(RuleName label) {
+        final Rule rule = this.independentRulesByName.get(label);
+        if(rule != null) {
+            return rule;
+        }
+        final String ruleName = getRule(label).name();
+        final Set.Immutable<Rule> orderIndependentRules = getOrderIndependentRules(ruleName);
+        Rule target = null; // rule that we are looking for
+        for(Rule r : orderIndependentRules) {
+            this.independentRulesByName.put(label, r);
+            if(r.label().equals(label)) {
+                target = r;
+            }
+        }
+        return target;
     }
 
     @Override

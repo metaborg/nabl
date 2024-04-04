@@ -99,6 +99,19 @@ public interface RuleSet {
     Set.Immutable<Rule> getOrderIndependentRules(String name);
 
     /**
+     * Gets a list of rules with the specified name, where the match order is reflected in (dis)equality constraints in
+     * the rule bodies. The resulting rules can be applied independent of the other rules in the set.
+     *
+     * Note that compared to using applyAll, mismatches may only be discovered when the body of the returned rules is
+     * evaluated, instead of during the matching process already.
+     *
+     * @param label
+     *            the label of the rule to find
+     * @return the rule, including constraints implied byt specificity ordering
+     */
+    Rule getOrderIndependentRule(RuleName label);
+
+    /**
      * Gets a multimap from names to rules that have equivalent patterns.
      *
      * @return the map from names to equivalent rules
