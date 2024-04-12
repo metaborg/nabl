@@ -17,6 +17,7 @@ import mb.p_raffrayi.nameresolution.DataWf;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.ecoop21.LabelOrder;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.scopegraph.oopsla20.path.IResolutionPath;
 import mb.scopegraph.resolution.StateMachine;
 

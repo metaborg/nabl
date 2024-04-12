@@ -9,6 +9,7 @@ imports
   injections/statix/-
 
   statix/runtime/-
+  statix/runtime/analysis/-
 
 rules // analysis
 
@@ -26,15 +27,18 @@ rules // analysis
   stx-editor-analyze(pre, post|spec-name, project-constraint, file-constraint) = stx-editor-analyze(pre, post, stx--no-custom-unit-analysis, stx--no-custom-final-analysis|spec-name, project-constraint, file-constraint)
   stx-editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint) = stx--is-concurrent-enabled
                                                                                < cstx--editor-analyze(pre, stx--no-grouping, post, analyze-final|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
-                                                                               + stx--editor-analyze(pre, post, analyze-unit, analyze-final|spec-name, project-constraint, file-constraint)
+                                                                               + stx--editor-analyze(pre, stx--no-grouping, post, analyze-unit, analyze-final|spec-name, project-constraint, "<NO_GROUPING>", file-constraint)
 
-  stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx-editor-analyze(pre, group, post, stx--no-custom-final-analysis|spec-name, project-constraint, group-constraint, file-constraint)
-  stx-editor-analyze(pre, group, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
-                                                                                                        < cstx--editor-analyze(pre, group, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint)
-                                                                                                        + fatal-err-msg(|"Grouping is only supported by concurrent Statix solver.")
+  stx-editor-analyze(pre, group, post|spec-name, project-constraint, group-constraint, file-constraint) = stx-editor-analyze(pre, group, post, stx--no-custom-final-analysis, stx--no-custom-final-analysis|spec-name, project-constraint, group-constraint, file-constraint)
+  stx-editor-analyze(pre, group, post, analyze-unit, analyze-final|spec-name, project-constraint, group-constraint, file-constraint) = stx--is-concurrent-enabled
+                                                                                                        < cstx--editor-analyze(pre, group, post, analyze-final|spec-name, project-constraint, group-constraint, file-constraint)
+                                                                                                        + stx--editor-analyze(pre, group, post, analyze-unit, analyze-final|spec-name, project-constraint, group-constraint, file-constraint)
 
   stx-evaluate(|spec-name, constraint): in* -> out
     where (out, s, [], _, _) := <stx--evaluate(|spec-name, constraint)> in*
+
+  stx-evaluate-with-initial-state(|a, c-name): in* -> out
+    where (out, s, [], _, _) := <stx--evaluate-with-initial-state(|a, c-name)> in*
 
   stx-analysis-has-errors = stx--analysis-has-errors
 

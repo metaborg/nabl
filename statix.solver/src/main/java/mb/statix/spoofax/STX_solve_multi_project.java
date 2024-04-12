@@ -25,6 +25,7 @@ import mb.statix.solver.IState;
 import mb.statix.solver.log.IDebugContext;
 import mb.statix.solver.persistent.Solver;
 import mb.statix.solver.persistent.SolverResult;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 import mb.statix.spec.Spec;
 
 public class STX_solve_multi_project extends StatixPrimitive {
@@ -41,20 +42,21 @@ public class STX_solve_multi_project extends StatixPrimitive {
                 StatixTerms.spec().match(terms.get(0)).orElseThrow(() -> new InterpreterException("Expected spec."));
         reportOverlappingRules(spec);
 
-        final SolverResult initial = M.blobValue(SolverResult.class).match(terms.get(1))
-                .orElseThrow(() -> new InterpreterException("Expected solver result."));
+        @SuppressWarnings("unchecked") final SolverResult<Empty> initial = M.blobValue(SolverResult.class)
+                .match(terms.get(1)).orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final IDebugContext debug = getDebugContext(terms.get(2));
         final IProgress progress = getProgress(terms.get(3));
         final ICancel cancel = getCancel(terms.get(4));
 
-        final List<SolverResult> results = M.listElems(M.blobValue(SolverResult.class)).match(term)
-                .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
+        @SuppressWarnings("unchecked") final List<SolverResult<Empty>> results =
+                M.listElems(M.blobValue(SolverResult.class).map(r -> (SolverResult<Empty>) r)).match(term)
+                        .orElseThrow(() -> new InterpreterException("Expected list of solver results."));
 
         final List<IConstraint> constraints = new ArrayList<>(initial.delays().keySet());
         final Map.Transient<IConstraint, IMessage> messages = initial.messages().asTransient();
         IState.Immutable state = initial.state();
-        for(SolverResult result : results) {
+        for(SolverResult<Empty> result : results) {
             try {
                 state = state.add(result.state());
             } catch(IllegalArgumentException e) {
@@ -66,7 +68,7 @@ public class STX_solve_multi_project extends StatixPrimitive {
             messages.__putAll(result.messages());
         }
 
-        final SolverResult resultConfig;
+        final SolverResult<Empty> resultConfig;
         try {
             final double t0 = System.currentTimeMillis();
             resultConfig = Solver.solve(spec, state, Constraints.conjoin(constraints), (s, l, st) -> true, debug,

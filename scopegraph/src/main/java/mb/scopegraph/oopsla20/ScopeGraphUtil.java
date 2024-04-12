@@ -3,7 +3,6 @@ package mb.scopegraph.oopsla20;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.metaborg.util.functions.Function1;
@@ -22,7 +21,10 @@ public final class ScopeGraphUtil {
         final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = sgEdges.entrySet().stream().collect(
             Collectors.groupingBy(
                 t -> t.getKey().getKey(), Collectors.mapping(
-                    t -> new AbstractMap.SimpleImmutableEntry<>(t.getKey().getValue(), t.getValue()), Collectors.toSet()
+                    t -> {
+                        final Map.Entry<L,Iterable<S>> result = new AbstractMap.SimpleImmutableEntry<>(t.getKey().getValue(), t.getValue());
+                        return result;
+                    }, Collectors.toSet()
                 )
             )
         );

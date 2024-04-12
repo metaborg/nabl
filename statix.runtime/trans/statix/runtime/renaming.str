@@ -5,6 +5,7 @@ imports
     libspoofax/analysis/constraint
     libspoofax/ui/dialogs
     statix/runtime/analysis
+    statix/runtime/analysis/multi-file
     statix/runtime/ast
     statix/api
     signatures/statix/runtime/-
@@ -129,7 +130,7 @@ rules //Step 5: Checking for capture
     where
       input := <make-analysis-input-single> (path, renamed-ast)
       ; AnalysisResult(analyses) := <analyze> input
-      ; (_, Full(new-ast, FileAnalysis(_, new-analysis, _, _), _, _, _)) := <fetch-elem(?(path, _))> analyses
+      ; (_, Full(new-ast, FileAnalysis(_, _, new-analysis, _, _), _, _, _)) := <fetch-elem(?(path, _))> analyses
 
   make-analysis-input-single: (path, renamed-ast) -> AnalyzeSingle([(path, change)], (), ())
     where
@@ -225,9 +226,9 @@ rules // Utility strategies
     where
       <eq> (path, search-path)
 
-  get-analysis-object: ProjectAnalysis(_, _, _, analysis-object, _) -> analysis-object
+  get-analysis-object: ProjectAnalysis(_, _, _, _, analysis-object, _) -> analysis-object
 
-  get-analysis-object: FileAnalysis(_, analysis-object, _, _) -> analysis-object
+  get-analysis-object: FileAnalysis(_, _, analysis-object, _, _) -> analysis-object
 
   get-analysed-asts(multi): selected-ast -> asts
     where

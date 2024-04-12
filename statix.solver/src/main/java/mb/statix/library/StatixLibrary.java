@@ -1,4 +1,4 @@
-package mb.statix.concurrent;
+package mb.statix.library;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,7 +13,7 @@ import org.metaborg.util.tuple.Tuple2;
 import io.usethesource.capsule.Set;
 import mb.nabl2.terms.ITerm;
 import static mb.nabl2.terms.matching.Transform.T;
-import mb.p_raffrayi.IScopeGraphLibrary;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.IScopeGraph.Immutable;
 import mb.scopegraph.oopsla20.reference.ScopeGraph;

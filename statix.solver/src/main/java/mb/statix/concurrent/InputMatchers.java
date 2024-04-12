@@ -8,15 +8,18 @@ import org.metaborg.util.iterators.Iterables2;
 
 import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.matching.TermMatch.IMatcher;
+import mb.statix.library.IStatixLibrary;
+import mb.statix.library.StatixLibrary;
 import mb.statix.scopegraph.Scope;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spoofax.StatixTerms;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 
 public class InputMatchers {
 
-    public static IMatcher<IStatixProject> project() {
-        return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.previousResult(),
+    public static <TR extends SolverTracer.IResult<TR>> IMatcher<IStatixProject<TR>> project() {
+        return M.appl6("Project", M.stringValue(), StatixTerms.hoconstraint(), InputMatchers.<TR>previousResult(),
                 M.map(M.stringValue(), group()), M.map(M.stringValue(), unit()),
                 M.map(M.stringValue(), M.req(library())), (t, id, rule, result, groups, units, libs) -> {
                     return StatixProject.of(id, Optional.of(rule), groups, units, libs, result.isPresent(),
@@ -57,11 +60,11 @@ public class InputMatchers {
     }
 
     @SuppressWarnings("unchecked")
-    public static IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>>> previousResult() {
+    public static <TR extends SolverTracer.IResult<TR>> IMatcher<Optional<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult<TR>, SolverState>>>> previousResult() {
         // @formatter:off
-        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>>>cases(
+        return M.req("Expected Unit Result option.", M.<Optional<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult<TR>, SolverState>>>>cases(
             M.appl0("Added", appl -> Optional.empty()),
-            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult, SolverState>>>of(result))
+            M.appl1("Cached", M.blobValue(IUnitResult.class), (appl, result) -> Optional.<IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, ProjectResult<TR>, SolverState>>>of(result))
         ));
         // formatter:on
     }

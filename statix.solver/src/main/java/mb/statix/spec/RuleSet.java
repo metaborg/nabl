@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.annotation.Nullable;
+
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
+import org.metaborg.util.log.ILogger;
+import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 
 import io.usethesource.capsule.Map;
@@ -26,15 +30,34 @@ import mb.statix.solver.completeness.CompletenessUtil;
  */
 public final class RuleSet implements Serializable {
 
+    private static final ILogger logger = LoggerUtils.logger(RuleSet.class);
+
     private static final long serialVersionUID = 1L;
 
     /** The rules, ordered from most specific to least specific guard. */
     private final Map.Immutable<String, ImList.Immutable<Rule>> rules;
+
+    /** The rules, indexed by name. */
+    private final Map.Immutable<RuleName, Rule> rulesByLabel;
+
+    /** Graph of rules using other predicates as sub-constraints. */
+    private final SubConstraintGraph subConstraintGraph;
+
     /**
      * The independent rules. If a rule name is not in this map, an independent version of its rules has not yet been
      * created.
      */
     private final HashMap<String, Set.Immutable<Rule>> independentRules = new HashMap<>();
+
+    /**
+     * Sub-constraints. If a rule name is not in this map, an independent version of its rules has not yet been created.
+     */
+    private final HashMap<RuleName, Map.Immutable<String, ImList.Immutable<Rule>>> subConstraints = new HashMap<>();
+
+    /**
+     * Invoking rules. If a rule name is not in this map, an independent version of its rules has not yet been created.
+     */
+    private final HashMap<String, Collection<Rule>> invokingRules = new HashMap<>();
 
     /**
      * Makes a new ruleset from the specified collection of rules.
@@ -56,7 +79,22 @@ public final class RuleSet implements Serializable {
      *            the multimap of rule names to rules, ordered from most specific to least specific guard
      */
     public RuleSet(Map.Immutable<String, ImList.Immutable<Rule>> rules) {
+        this(rules, buildLabelMap(rules));
+    }
+
+    private RuleSet(Map.Immutable<String, ImList.Immutable<Rule>> rules, Map.Immutable<RuleName, Rule> rulesByLabel) {
+        this(rules, rulesByLabel, SubConstraintGraph.of(rules));
+    }
+
+    private RuleSet(Map.Immutable<String, ImList.Immutable<Rule>> rules, SubConstraintGraph subConstraintGraph) {
+        this(rules, buildLabelMap(rules), subConstraintGraph);
+    }
+
+    private RuleSet(Map.Immutable<String, ImList.Immutable<Rule>> rules, Map.Immutable<RuleName, Rule> rulesByLabel,
+            SubConstraintGraph subConstraintGraph) {
         this.rules = rules;
+        this.rulesByLabel = rulesByLabel;
+        this.subConstraintGraph = subConstraintGraph;
     }
 
     /**
@@ -96,12 +134,63 @@ public final class RuleSet implements Serializable {
      * The rules are returned in order from most specific to least specific guard.
      *
      * @param name
-     *            the name of the rules to find
+     *            the (constraint) name of the rules to find
      * @return the rules with the specified name
      */
     public ImList.Immutable<Rule> getRules(String name) {
-        return this.rules.get(name);
+        final ImList.Immutable<Rule> rules = this.rules.get(name);
+        if(rules == null) {
+            final String qualified;
+            if((qualified = getRuleNames().stream().filter(n -> n.endsWith(name)).findAny().orElse(null)) != null) {
+                throw new NullPointerException("No rule with name " + name + ". Did you mean " + qualified + "?");
+            } else {
+                throw new NullPointerException("No rule with name " + name);
+            }
+        }
+        return rules;
     }
+
+    /**
+     *
+     * @param name
+     *            the (rule) name of the rules to find
+     * @return the rule with the specified name, or <code>null</code> if it does not exist.
+     */
+    public @Nullable Rule getRule(RuleName name) {
+        return rulesByLabel.get(name);
+    }
+
+    /**
+     * Gets the subset of rules that may be a sub-set of the constraints initiated by {@code rule}.
+     * @param rule
+     *            the name of the rule to get all sub-constraints for.
+     * @return the subset of rules that may be a sub-set of {@code rule}
+     */
+    public Map.Immutable<String, ImList.Immutable<Rule>> subConstraints(RuleName rule) {
+        return subConstraints.computeIfAbsent(rule, _rule -> {
+            final Set.Immutable<String> subConstraintNames = subConstraintGraph.subConstraints(_rule);
+            final Map.Transient<String, ImList.Immutable<Rule>> _rules = rules.asTransient();
+            CapsuleUtil.filter(_rules, subConstraintNames::contains);
+            return _rules.freeze();
+        });
+    }
+
+
+    /**
+     * Gets the subset of rules that may use a rule for predicate {@code constraint} as sub-constraint.
+     * @param constraint
+     *                  the name of the constraints to get all causing rules for
+     * @return the subset of rules that may be a cause of {@code constraint}
+     */
+    public Collection<Rule> invokingRules(String constraint) {
+        return invokingRules.computeIfAbsent(constraint, _constraint -> {
+            final Set.Immutable<RuleName> superRuleNames = subConstraintGraph.invokingRules(_constraint);
+            final Map.Transient<RuleName, Rule> _rules = rulesByLabel.asTransient();
+            CapsuleUtil.filter(_rules, superRuleNames::contains);
+            return _rules.freeze().values();
+        });
+    }
+
 
     /**
      * Gets a map of lists of rules, where the match order is reflected in (dis)equality constraints in the rule bodies.
@@ -148,8 +237,7 @@ public final class RuleSet implements Serializable {
         this.rules.keySet().forEach(name -> {
             final java.util.Set<Rule> equivalentRules = getEquivalentRules(name);
             if(!equivalentRules.isEmpty()) {
-                overlappingRules.computeIfAbsent(name, k -> new HashSet<>())
-                    .addAll(equivalentRules);
+                overlappingRules.computeIfAbsent(name, k -> new HashSet<>()).addAll(equivalentRules);
             }
         });
         return overlappingRules;
@@ -164,26 +252,46 @@ public final class RuleSet implements Serializable {
      */
     public java.util.Set<Rule> getEquivalentRules(String name) {
         ImList.Immutable<Rule> rules = getRules(name);
-        return rules.stream().filter(a -> rules.stream().anyMatch(
-                b -> !a.equals(b) && ARule.LeftRightOrder.compare(a, b).map(c -> c == 0).orElse(false)))
+        return rules.stream()
+                .filter(a -> rules.stream().anyMatch(
+                        b -> !a.equals(b) && ARule.LeftRightOrder.compare(a, b).map(c -> c == 0).orElse(false)))
                 .collect(Collectors.toSet());
     }
 
     public RuleSet precomputeCriticalEdges(SetMultimap.Immutable<String, Tuple2<Integer, ITerm>> scopeExtensions) {
-        return new RuleSet(buildRuleSet(
-            rules.keySet().stream().flatMap(name -> rules.get(name).stream()).map(
-                (Rule rule) -> CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions))));
+        return new RuleSet(
+                buildRuleSet(rules.keySet().stream().flatMap(name -> rules.get(name).stream())
+                        .map((Rule rule) -> CompletenessUtil.precomputeCriticalEdges(rule, scopeExtensions))),
+                subConstraintGraph);
     }
 
     private static Map.Immutable<String, ImList.Immutable<Rule>> buildRuleSet(Stream<Rule> rules) {
         final HashMap<String, List<Rule>> builder = new HashMap<>();
         rules.forEach(rule -> {
-            final List<Rule> value = builder.computeIfAbsent(rule.name(),
-                k -> new ArrayList<>());
+            final List<Rule> value = builder.computeIfAbsent(rule.name(), k -> new ArrayList<>());
             value.add(rule);
         });
         return CapsuleUtil.toMap(builder,
-            value -> ImList.Immutable.sortedCopyOf(value, ARule.LeftRightOrder.asComparator()));
+                value -> ImList.Immutable.sortedCopyOf(value, ARule.LeftRightOrder.asComparator()));
+    }
+
+    private static Map.Immutable<RuleName, Rule> buildLabelMap(Map.Immutable<String, ImList.Immutable<Rule>> rules) {
+        final Map.Transient<RuleName, Rule> rulesByLabel = CapsuleUtil.transientMap();
+        for(ImList.Immutable<Rule> ruleList : rules.values()) {
+            for(Rule rule : ruleList) {
+                if(!rule.label().isEmpty()) {
+                    final Rule old;
+                    if((old = rulesByLabel.__put(rule.label(), rule)) != null) {
+                        logger.warn("Duplicate rule name {}. ", rule.label());
+                        logger.debug("* rule 1: {}", old);
+                        logger.debug("* rule 2: {}", rule);
+                    }
+                } else {
+                    logger.warn("Rule without name for constraint {}/{}: {}.", rule.name(), rule.params().size(), rule);
+                }
+            }
+        }
+        return rulesByLabel.freeze();
     }
 
 }

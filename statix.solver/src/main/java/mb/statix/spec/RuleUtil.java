@@ -311,7 +311,7 @@ public final class RuleUtil {
             return Optional.empty();
         }
 
-        return Optional.of(into.withLabel("").withBody(newBody));
+        return Optional.of(into.withBody(newBody));
     }
 
     private static IConstraint applyToConstraint(FreshVars fresh, Rule rule, List<? extends ITerm> args) {
@@ -320,7 +320,10 @@ public final class RuleUtil {
         final Tuple2<ITerm, List<Tuple2<ITermVar, ITerm>>> p_eqs = rulePatterns.asTerm(v -> v.get());
         final ITerm p = swap.apply(p_eqs._1());
         final ITerm t = B.newTuple(args);
-        final CEqual eq = new CEqual(t, p);
+        final List<CEqual> c_eqs = p_eqs._2().stream()
+                .map(e -> new CEqual(e._1(), swap.apply(e._2())))
+                .collect(Collectors.toList());
+        final IConstraint eq = Constraints.conjoin(c_eqs, new CEqual(t, p));
         final Set.Immutable<ITermVar> newVars = fresh.reset();
         final IConstraint newConstraint = Constraints.exists(newVars, new CConj(eq, rule.body().apply(swap)));
         return newConstraint;
@@ -416,7 +419,7 @@ public final class RuleUtil {
      * predicates.
      */
     public static SetMultimap.Immutable<String, Rule> makeFragments(RuleSet rules, Predicate1<String> includePredicate,
-                                                                    Predicate2<String, String> includeRule, int generations) {
+            Predicate2<String, RuleName> includeRule, int generations) {
         final SetMultimap.Transient<String, Rule> fragments = SetMultimap.Transient.of();
 
         // 1. make all rules unordered, and keep included rules
@@ -459,8 +462,8 @@ public final class RuleUtil {
                         return Stream.of(c);
                     }
                 }, false).apply(r.body()).collect(Collectors.toList());
-                for (IConstraint c : cs) {
-                    final Rule f = r.withLabel("").withBody(new CExists(CapsuleUtil.immutableSet(), c));
+                for(IConstraint c : cs) {
+                    final Rule f = r.withLabel(RuleName.empty()).withBody(new CExists(CapsuleUtil.immutableSet(), c));
                     generation.__insert(name, hoist(f));
                 }
             }

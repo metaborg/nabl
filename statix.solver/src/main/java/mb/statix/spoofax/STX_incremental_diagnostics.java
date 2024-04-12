@@ -30,6 +30,7 @@ import org.metaborg.util.collection.BiMap.Immutable;
 import mb.statix.concurrent.IStatixResult;
 import mb.statix.concurrent.nameresolution.ScopeImpl;
 import mb.statix.scopegraph.Scope;
+import mb.statix.solver.tracer.EmptyTracer.Empty;
 
 public class STX_incremental_diagnostics extends StatixPrimitive {
 
@@ -42,7 +43,7 @@ public class STX_incremental_diagnostics extends StatixPrimitive {
 
         // Diagnostic one: possibility for inaccurate edge matches.
 
-        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, IStatixResult, ?>> analysis =
+        @SuppressWarnings("unchecked") final IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, IStatixResult<Empty>, ?>> analysis =
                 M.blobValue(IUnitResult.class).match(terms.get(0))
                         .orElseThrow(() -> new InterpreterException("Expected solver result."));
 

@@ -1,4 +1,4 @@
-package mb.p_raffrayi;
+package mb.scopegraph.library;
 
 import java.util.List;
 import java.util.Set;

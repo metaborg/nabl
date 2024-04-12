@@ -1,0 +1,56 @@
+module statix/runtime/analysis/constraint
+
+imports
+
+  libstratego-lib
+
+  statix/runtime/analysis
+  statix/runtime/constraints
+  statix/runtime/terms
+
+rules // stateful and stateless constraint evaluation
+
+  stx--evaluate(|spec-name, constraint): in* -> result
+    with spec   := <stx--language-spec-by-name> spec-name
+       ; config := <stx--project-config>
+       ; c-name := <stx--mk-qualified-name(|spec-name)> constraint
+       ; (C, V) := <stx--mk-constraint(|c-name)> in*
+       ; level  := <stx--log-level>
+       ; result := <stx--solve-constraint(|spec, level); stx--process-solution(|config, V)> C
+
+  stx--evaluate-with-initial-state(|a, c-name): in* -> result
+    with config := <stx--project-config>
+       ; (C, V) := <stx--mk-constraint(|c-name)> in*
+       ; level  := <stx--log-level>
+       ; result := <stx--solve-constraint-with-initial-state(|a, level); stx--process-solution(|config, V)> C
+
+  stx--mk-constraint(|c-name): in* -> (C, V)
+    with T* := <map(stx--explode)> in*
+       ; V  := Var("out")
+       ; C  := <stx--exists>([V], C(c-name, [T*, V], NoMessage()))
+
+  stx--process-solution(|config, V): s@Solution(subst, a) -> (out, s, error*, warning*, note*)
+    with (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> a
+       ; out := <substitute(stx--is-var); stx--implode> (subst, V)
+rules
+
+  // solve-constraint(|Spec, LogLevel) : Constraint -> Solution
+  stx--solve-constraint(|spec, level) = stx--solve-constraint(|spec, level, (), ())
+
+  // solve-constraint(|Spec, LogLevel, Progress, Cancel) : Constraint -> Solution
+  stx--solve-constraint(|spec, level, progress, cancel) = prim("STX_solve_constraint", spec, level, progress, cancel)
+
+rules
+
+  // solve-constraint-with-initial-state(|Analysis, LogLevel) : Constraint -> Solution
+  stx--solve-constraint-with-initial-state(|a, level) = stx--solve-constraint-with-initial-state(|a, level, (), ())
+
+  // solve-constraint-with-initial-state(|Analysis, LogLevel, Progress, Cancel) : Constraint -> Solution
+  stx--solve-constraint-with-initial-state(|a, level, progress, cancel) = prim("STX_solve_constraint_with_initial_state", a, level, progress, cancel)
+
+rules
+
+  cstx--solve-constraint(|spec, level) = cstx--solve-constraint(|spec, level, (), ())
+
+  // solve-constraint(|Spec, LogLevel, Progress, Cancel) : ([Var], Constraint) -> Solution
+  cstx--solve-constraint(|spec, level, progress, cancel) = prim("STX_solve_constraint_concurrent", spec, level, progress, cancel)

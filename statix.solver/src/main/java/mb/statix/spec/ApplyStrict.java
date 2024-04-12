@@ -39,7 +39,8 @@ class ApplyStrict extends ApplyMode<Delay> {
         final ApplyResult applyResult = ApplyResult.of(
                 Optional.empty(),
                 newBody,
-                newBodyCriticalEdges != null ? newBodyCriticalEdges : Completeness.Immutable.of()
+                newBodyCriticalEdges != null ? newBodyCriticalEdges : Completeness.Immutable.of(),
+                subst
         );
         return Optional.of(applyResult);
     }

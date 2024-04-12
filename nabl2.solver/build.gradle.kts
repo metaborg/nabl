@@ -19,7 +19,6 @@ dependencies {
   implementation(compositeBuild("org.strategoxt.strj"))
   api(project(":nabl2.terms"))
   api(project(":scopegraph"))
-
   api("io.usethesource:capsule")
 
   // Annotation processing
@@ -27,7 +26,7 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  implementation("jakarta.annotation:jakarta.annotation-api")
+  implementation(libs.jakarta.annotation)
 
   // Tests
   testImplementation("junit:junit")

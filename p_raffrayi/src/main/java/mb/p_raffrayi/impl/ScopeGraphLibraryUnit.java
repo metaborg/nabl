@@ -3,6 +3,7 @@ package mb.p_raffrayi.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,13 +12,13 @@ import java.util.stream.Collectors;
 import jakarta.annotation.Nullable;
 
 import org.metaborg.util.future.CompletableFuture;
+import org.metaborg.util.future.ICompletableFuture;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
 import org.metaborg.util.tuple.Tuple2;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.actors.IActor;
 import mb.p_raffrayi.actors.IActorRef;
@@ -28,6 +29,7 @@ import mb.p_raffrayi.nameresolution.DataLeq;
 import mb.p_raffrayi.nameresolution.DataWf;
 import mb.p_raffrayi.nameresolution.IQuery;
 import mb.scopegraph.ecoop21.LabelWf;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.scopegraph.oopsla20.IScopeGraph;
 import mb.scopegraph.oopsla20.reference.EdgeOrData;
 import mb.scopegraph.oopsla20.terms.newPath.ScopePath;
@@ -88,7 +90,10 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                     previousResult.rootScopes());
         }
         startWorkers();
-        return doFinish(CompletableFuture.completedFuture(Unit.unit));
+
+        final ICompletableFuture<Unit> validationFinished = new CompletableFuture<>();
+        validateScopeGraph(validationFinished);
+        return doFinish(validationFinished);
     }
 
     private void buildScopeGraph(List<S> rootScopes) {
@@ -171,6 +176,25 @@ class ScopeGraphLibraryUnit<S, L, D> extends AbstractUnit<S, L, D, Unit> {
                     }, Collections.emptyList(), true);
             workers.add(worker._1());
         }
+    }
+
+    private void validateScopeGraph(ICompletableFuture<Unit> finished) {
+        final ICompletableFuture<Unit> future = new CompletableFuture<>();
+        future.thenApply(unit -> {
+            final Set<L> invalidLabels = new HashSet<>();
+            for(L label: scopeGraph.get().getLabels()) {
+                if(!edgeLabels.contains(label)) {
+                    invalidLabels.add(label);
+                }
+            }
+            if(!invalidLabels.isEmpty()) {
+                logger.warn("Scope graph library contains labels not in type checker specification: {}.", invalidLabels);
+            }
+            return Unit.unit;
+        }).whenComplete(finished::complete);
+
+        // Asynchronous validation to prevent it from becoming performance bottleneck
+        self.complete(future, Unit.unit, null);
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,282 @@
+module statix/runtime/analysis/concurrent
+
+imports
+
+  libstratego-lib
+
+  libspoofax/analysis/constraint
+  libspoofax/resource/path
+
+  statix/runtime/ast
+  statix/runtime/analysis
+  statix/runtime/constraints
+  statix/runtime/terms
+  statix/runtime/pp
+
+signature
+  sorts
+    UnitResult
+    GroupAnalysis
+    ProjectInitialState
+    UnitState
+    Rule
+    ID
+    StatixGroup
+    StatixUnit
+    StatixProject
+
+signature
+  constructors // Concurrent/Incremental
+
+    CompositeUnit   : Term * /* constraint name*/String * /*own scope names*/List(String) * List(String, Unit) -> Unit
+    Unit            : Term -> Unit
+
+    Project : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) * /*libraries*/List(String, StatixLibrary) -> StatixProject
+    Group   : /*resource*/String * /*scopeNames*/List(String) * /*ast*/Term * /*cached result*/UnitResult * /*subGroups*/List(String, StatixGroup) * /*subUnits*/List(String, StatixUnit) -> StatixGroup
+    Unit    : /*resource*/String * /*ast*/Term * /*cached result*/UnitResult -> StatixUnit
+
+    // Tasks
+
+    ProjectTask     : String * Constraint * ProjectResult -> ProjectTask
+    GroupTask       : Key * Constraint * UnitState -> GroupTask
+    FileTask        : Key * Term * SubFileTask -> FileTask
+    SimpleFileTask  : Term * Constraint * UnitState -> SubFileTask
+    CompositeTask   : Term * /*own scope names*/List(String) * Constraint * UnitState * List(String, SubFileTask) -> SubFileTask
+
+    // TODO: remove
+    Added           : InitialState
+    Cached          : UnitResult -> InitialState
+    Changed         : UnitResult -> InitialState
+
+    Cached          : UnitState
+    Changed         : UnitState
+
+    // Results
+    ProjectAnalysis : Analysis * UnitResult * CustomAnalysis -> AnalysisResult
+    FileAnalysis    : Key * FileTask * AST * SubAnalysis -> AnalysisResult
+    SubAnalysis     : Term * Constraint * Analysis * UnitResult * List(String, FileAnalysis) -> SubAnalysis
+
+    // cstx solver outputs
+    ProjectResult   : Analysis * UnitResult -> Result
+    GroupResult     : Analysis * UnitResult -> Result
+    UnitResult      : Analysis * UnitResult -> Result
+
+
+rules // concurrent multi file analysis
+
+  cstx--editor-analyze(pre, group-key, post, analyze-custom|spec-name, project-constraint, group-constraint, file-constraint):
+      AnalyzeMulti((project-resource, project-change), file-change*, progress, cancel) -> AnalysisResult(result*)
+    with spec  := <stx--language-spec-by-name> spec-name
+       ; libs  := <stx--local-libs>
+       ; level := <stx--log-level>
+       ; proj-c-name := <stx--mk-qualified-name(|spec-name)> project-constraint
+       ; grp-c-name  := <stx--mk-qualified-name(|spec-name)> group-constraint
+       ; file-c-name := <stx--mk-qualified-name(|spec-name)> file-constraint
+       ; s-proj      := Var("s_proj")
+       ; s-grp       := Var("s_grp")
+       ; config      := <stx--project-config>
+       ; solver-mode := <stx--solver-mode>
+    with
+      //
+      // 1. Build project task
+      //
+      project-ast  := ()
+    ; project-rule := LLam([s-proj], C(proj-c-name, [s-proj], NoMessage()))
+    ; project-res  := <?Cached(ProjectAnalysis(_, <!Cached(<id>)>, _)) + ?Changed(_, ProjectAnalysis(_, <!Changed(<id>)>, _)) + ?Added(<!Added()>)> project-change
+    ; project-task := ProjectTask(project-resource, project-rule, project-res)
+      //
+      // 2. Build file tasks
+      //
+    ; file-task* := <map(cstx--make-file(pre,group-key,stx--mk-qualified-name(|spec-name)|file-c-name))> file-change*
+      //
+      // 4. Solve project
+      //
+    ; project   := <cstx--make-project(|grp-c-name, libs)> (project-task, file-task*)
+    ; analysis* := <cstx--solve-multi(|solver-mode, spec, level, progress, cancel)> project
+      //
+      // 5. Construct results
+      //
+    ; project-result := <cstx--mk-project-result(analyze-custom|config, analysis*)> (project-resource, project-ast, project-change)
+    ; file-result*   := <map(cstx--mk-file-result(post|config, file-task*, analysis*))> file-change*
+    ; result* := [project-result|file-result*]
+      //
+      // 6. Compute scope graph diff
+      //
+  // Disabled as long as we do not know the root scope here
+  //; if Cached(ProjectAnalysis(_, project-analysis')) := project-change then
+  //    project-analysis := <lookup> (project-resource, analysis*)
+  //  ; diff := <stx--diff-scopegraphs(|global-scope)> (project-analysis, project-analysis')
+  //  ; <pp-Statix-string(prettyprint-Statix-Stx-Diff);debug> diff
+  //  end
+
+rules // cstx -- file tasks
+
+  cstx--make-file(pre,group-key,qualify|file-c-name): (_, change) -> (group-key, task')
+    where Cached(FileAnalysis(Key(group-key, _, _, _), task, _, sub-analysis)) := change
+    with task' := <cstx--update-initial-state> task
+
+  cstx--make-file(pre,group-key,qualify|file-c-name): (resource, change) -> (key*, task)
+    with ast                      := <(?Added(<id>) + ?Changed(<id>, _)); stx--index-ast(|resource); pre> change
+       ; Key(key*, name, _, unit) := <stx--composite-group-key(group-key)> (resource, ast)
+       ; prev-res                 := <?Changed(_, <id>) <+ !()> change
+       ; task                     := <cstx--file-unit-to-task(qualify|file-c-name)> (resource, key*, ast, name, unit, prev-res)
+
+  cstx--file-unit-to-task(qualify|file-c-name): (resource, key*, ast, name, u, prev-res) -> task
+    with prev-res' := <?FileAnalysis(_, _, _, <id>) + ?()> prev-res
+       ; sub-task  := <cstx--file-subunit-to-task(qualify|file-c-name, ["s_grp"])> (u, prev-res')
+       ; task      := FileTask(Key(key*, name, resource, u), ast, sub-task)
+
+  cstx--file-subunit-to-task(qualify|file-c-name, parent-scope*): (Unit(ast), prev-res) -> task
+    with prev-ast     := <cstx--unit-term <+ !()> prev-res
+       ; init-state   := <cstx--initial-state(|prev-ast, ast)> prev-res
+       ; p-scope-var* := <map(mk-var)> parent-scope*
+       ; constraint   := LLam(p-scope-var*, C(file-c-name, [p-scope-var*, <stx--explode> ast], NoMessage()))
+       ; task         := SimpleFileTask(ast, constraint, init-state)
+
+  cstx--file-subunit-to-task(qualify|file-c-name, parent-scope*): (CompositeUnit(ast, c-name, scope-name*, sub-group*), prev-res) -> task
+    with prev-ast      := <cstx--unit-term <+ !()> prev-res
+       ; init-state    := <cstx--initial-state(|prev-ast, ast)> prev-res
+       ; s-parent-var* := <map(mk-var)> parent-scope*
+       ; s-own-var*    := <map(mk-var)> scope-name*
+       ; constraint    := LLam([s-parent-var*, s-own-var*], C(<qualify> c-name, [s-parent-var*, <stx--explode> ast, s-own-var*], NoMessage()))
+       ; sub-task*     := <map({name, unit, prev-res', task' : \ (name, unit) -> (name, task')
+                            with prev-res' := <cstx--sub-result(|name)> prev-res
+                               ; task'     := <cstx--file-subunit-to-task(qualify|file-c-name, scope-name*)> (unit, prev-res')
+                          \})> sub-group*
+       ; task          := CompositeTask(ast, scope-name*, constraint, init-state, sub-task*)
+
+  cstx--update-initial-state: FileTask(key, ast, task) -> FileTask(key, ast, task')
+    with task' := <cstx--update-sub-initial-state> task
+
+  cstx--update-sub-initial-state : SimpleFileTask(ast, constraint, _) -> SimpleFileTask(ast, constraint, Cached())
+  cstx--update-sub-initial-state : CompositeTask(ast, scope-name*, constraint, _, sub-task*) -> CompositeTask(ast, scope-name*, constraint, Cached(), new-sub-task*)
+    with new-sub-task* := <map({ name, task: \ (name, task) -> (name, <cstx--update-sub-initial-state> task) \ })> sub-task*
+
+  cstx--initial-state(|_, _): () -> Changed() // c.q. added, because no previous result available
+  cstx--initial-state(|prev-ast, cur-ast): _ -> Cached()
+    with prev-ast' := <strip-annos> prev-ast
+       ; cur-ast'  := <strip-annos> cur-ast
+    where(<eq> (prev-ast', cur-ast'))
+  cstx--initial-state(|_, _): _ -> Changed()
+
+  cstx--unit-term   = ?SubAnalysis(<id>, _, _, _, _)
+
+  cstx--sub-result(|name): () -> ()
+  cstx--sub-result(|name): SubAnalysis(_, _, _, _, sub-analysis) -> sub-result
+    with sub-result := <lookup' <+ !()> (name, sub-analysis)
+
+  cstx--sub-result(|name) = report-failure(|$[Failed to find analysis for [name]: ], <id>)
+
+  mk-var: name -> Var(name)
+
+rules // cstx -- project/group tasks
+
+  cstx--make-project(|grp-c-name, libs): (project-task, file-task*) -> Project(project-resource, project-rule, project-res, groups, units, libs)
+    with ProjectTask(project-resource, project-rule, project-res) := project-task
+       ; (groups, units) := <cstx--make-subs(|project-resource, grp-c-name)> file-task*
+
+  cstx--make-subs(|grp-res, grp-c-name): file-task* -> (groups, units)
+    with key* := <filter({key: \ ([key|_], _) -> key \}); make-set> file-task*
+       ; <cstx--keys-consistent> key*
+       ; file-sub-task* := <filter(?([], FileTask(_, _, _)))> file-task*
+       ; file-sub* := <map({ resource, name : ?([], FileTask(Key(_, name, resource, _), _, <id>)); cstx--unit-task-to-sub(|resource, name) })> file-sub-task*
+       ; group-sub* := <map({key, result: \ key -> result
+           with result := <filter({ keys, file: ?([key|keys], file); !(keys, file) })
+                ; cstx--make-sub(|key, grp-res, grp-c-name)
+                > file-task*
+         \ })> key*
+       ; subs   := [file-sub*, group-sub*]
+       ; groups := <filter(?(_, Group(_, _, _, _, _, _)))> subs
+       ; units  := <filter(?(_, Unit(_, _, _)))> subs
+
+  // Every name maps to same term
+  cstx--keys-consistent = ?keys; strip-annos; map(?GroupKey(<id>, _)); make-set; map({ n: \ n -> n with <filter(?GroupKey(n, <id>)); make-set> keys => [_] \})
+
+  cstx--make-sub(|key, parent-res, grp-c-name): file-task* -> grp
+    with GroupKey(grp-id, _) := key
+       ; grp-res := $[[parent-res]/[grp-id]]
+       ; grp     := <cstx--make-group(|key, grp-res, grp-c-name)> file-task*
+
+  cstx--make-group(|key, grp-res, grp-c-name): file-task* -> (grp-id, Group(grp-res, ["s_thisGrp"], rule, Cached(), groups, units))
+    with GroupKey(grp-id, term) := key
+       ; s-proj           := Var("s_proj")
+       ; s-this-grp       := Var("s_thisGrp")
+       ; rule             := LLam([s-proj, s-this-grp], C(grp-c-name, [s-proj, <stx--explode> term, s-this-grp], NoMessage()))
+       ; (groups, units)  := <cstx--make-subs(|grp-res, grp-c-name)> file-task*
+
+  cstx--unit-task-to-sub(|resource, name): SimpleFileTask(_, constraint, state) -> (name, unit)
+    with unit := Unit(resource, constraint, state)
+
+  cstx--unit-task-to-sub(|resource, name): CompositeTask(_, scope*, constraint, state, subtask*) -> (name, Group(resource, scope*, constraint, state, group*, unit*))
+    with sub*     := <map({name', task': \ (name', task') -> <cstx--unit-task-to-sub(|$[[resource]/[name']], name')> task' \})> subtask*
+       ; group*   := <filter(?(_, Group(_, _, _, _, _, _)))> sub*
+       ; unit*    := <filter(?(_, Unit(_, _, _)))> sub*
+
+  // @param spec  : Spec
+  // @param level : LogLevel
+  // @type StatixProject -> [(string, SolverResult)]
+  cstx--solve-multi(|solver-mode, spec, level, progress, cancel) =
+    prim("STX_solve_multi", solver-mode, spec, level, progress, cancel)
+
+rules // cstx -- results
+
+  cstx--mk-project-result(analyze-custom|config, analysis*): (project-res, ast, change) -> (project-res, result)
+    with if ProjectResult(state, unit-result) := <lookup'> (project-res, analysis*) then
+         (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
+       ; custom-analysis := <analyze-custom> unit-result
+       ; analysis := ProjectAnalysis(state, unit-result, custom-analysis)
+       ; switch !change
+           case ?Added(_) + ?Changed(_, _):
+             result := Full(ast, analysis, error*, warning*, note*)
+           case ?Cached(_):
+             result := Update(analysis, error*, warning*, note*)
+       end
+    else
+      result := Failed()
+    end
+
+  cstx--mk-file-result(post|config, file-task*, analysis*): (resource, change) -> (resource, result)
+    with task@FileTask(key, ast, sub-task) := <getfirst(?(_, FileTask(Key(_, _, resource, _), _, _))); Snd> file-task*
+       ; if (sub-result, error*, warning*, note*) := <lookup'; cstx--mk-subfile-result(|config, analysis*, sub-task, resource)> (resource, analysis*) then
+           analysis := FileAnalysis(key, task, ast, sub-result)
+         ; switch !change
+             case ?Added(_) + ?Changed(_, _):
+               result := Full(<post> ast, analysis, error*, warning*, note*)
+             case ?Cached(_):
+               result := Update(analysis, error*, warning*, note*)
+            end
+         else
+           result := Failed()
+         end
+
+  cstx--mk-subfile-result(|config, analysis*, task, resource): GroupResult(state, unit-result) -> result'
+    with CompositeTask(ast, _, constraint, _, sub-task*) := task
+       ; (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
+       ; sub-result*   := <map(cstx--mk-subtask-result(|config, analysis*, resource))> sub-task*
+       ; sub-analysis* := <map({ name, sub-result: \ (name, sub-result, _, _, _) -> (name, sub-result) \ })> sub-result*
+       ; sub-error*    := <mapconcat(Third)> sub-result*
+       ; sub-warning*  := <mapconcat(Ttl; Third)> sub-result*
+       ; sub-note*     := <mapconcat(Ttl; Ttl; Third)> sub-result*
+       ; result        := SubAnalysis(ast, constraint, state, unit-result, sub-analysis*)
+       ; result'       := (result, [error*, sub-error*], [warning*, sub-warning*], [note*, sub-note*])
+    //
+
+  cstx--mk-subfile-result(|config, analysis*, sub-task, resource): UnitResult(state, unit-result) -> (result, error*, warning*, note*)
+    with SimpleFileTask(ast, constraint, _) := sub-task
+       ; (error*, warning*, note*) := <stx--delays-as-errors(|config); stx--extract-messages(|config)> state
+       ; result := SubAnalysis(ast, constraint, state, unit-result, [])
+
+  cstx--mk-subtask-result(|config, analysis*, resource): (name, sub-task) -> (name, sub-result, error', warning', note')
+    with resource' := $[[resource]/[name]]
+       ; (sub-result, error', warning', note') := <lookup'; cstx--mk-subfile-result(|config, analysis*, sub-task, resource')> (resource', analysis*)
+
+rules // result accessors
+
+  stx--get-result =
+    ( ?FileAnalysis(_, _, _, SubAnalysis(_, _, _,<id>, _)) +
+      ?ProjectAnalysis(_, <id>, _)
+    )
+
+  stx--get-analysis = ?FileAnalysis(_, _, _, SubAnalysis(_, _, <id>, _, _)) + ?ProjectAnalysis(<id>, _, _)
+
+  stx--get-custom-analysis = ?ProjectAnalysis(_, _, <id>)

@@ -37,11 +37,9 @@ import static mb.nabl2.terms.matching.TermPattern.P;
 @Serial.Version(42L)
 public abstract class ARule {
 
-    @Value.Default public String label() {
-        return "";
-    }
+    @Value.Parameter public abstract String name(); // constraint name
 
-    @Value.Parameter public abstract String name();
+    @Value.Parameter public abstract RuleName label(); // rule name
 
     @Value.Parameter public abstract ImList.Immutable<Pattern> params();
 
@@ -189,7 +187,7 @@ public abstract class ARule {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges).setFreeVars(freeVars);
+        return Rule.of(name(), label(), params, body).withBodyCriticalEdges(bodyCriticalEdges).setFreeVars(freeVars);
     }
 
     /**
@@ -213,7 +211,7 @@ public abstract class ARule {
             bodyCriticalEdges = bodyCriticalEdges.apply(localSubst);
         }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
+        return Rule.of(name(), label(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
     }
 
 
@@ -234,7 +232,7 @@ public abstract class ARule {
             bodyCriticalEdges = bodyCriticalEdges.apply(subst);
         }
 
-        return Rule.of(name(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
+        return Rule.of(name(), label(), params, body).withBodyCriticalEdges(bodyCriticalEdges);
     }
 
 

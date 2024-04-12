@@ -6,10 +6,10 @@ import java.util.List;
 import org.metaborg.util.future.IFuture;
 import org.metaborg.util.unit.Unit;
 
-import mb.p_raffrayi.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeChecker;
 import mb.p_raffrayi.ITypeChecker.IOutput;
 import mb.p_raffrayi.ITypeChecker.IState;
+import mb.scopegraph.library.IScopeGraphLibrary;
 import mb.p_raffrayi.ITypeCheckerContext;
 import mb.p_raffrayi.IUnitResult;
 

@@ -31,7 +31,7 @@ public class STX_get_all_properties extends StatixPropertyPrimitive {
 
     @Override protected Optional<? extends ITerm> call(IContext env, ITerm term, List<ITerm> terms)
             throws InterpreterException {
-        final SolverResult analysis = M.blobValue(SolverResult.class).match(terms.get(0))
+        final SolverResult<?> analysis = M.blobValue(SolverResult.class).match(terms.get(0))
                 .orElseThrow(() -> new InterpreterException("Expected solver result."));
 
         final SortedMap<TermIndex, SortedMap<ITerm, ITermProperty>> groupedProps =

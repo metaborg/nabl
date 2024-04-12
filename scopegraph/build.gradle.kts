@@ -3,8 +3,8 @@ plugins {
   id("org.metaborg.gradle.config.junit-testing")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
 val spoofax2Version: String by ext
+val spoofax2DevenvVersion: String by ext
 dependencies {
   api(platform("org.metaborg:parent:$spoofax2Version"))
   testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
@@ -13,8 +13,7 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api(compositeBuild("org.metaborg.util"))
-
+  api("org.metaborg:org.metaborg.util:$spoofax2Version")
   api("io.usethesource:capsule")
 
   // Annotation processing
@@ -22,7 +21,7 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  implementation("jakarta.annotation:jakarta.annotation-api")
+  implementation(libs.jakarta.annotation)
 
   // Tests
   testImplementation("junit:junit")

@@ -36,7 +36,7 @@ public class STX_get_scopegraph extends StatixPrimitive {
 
         final IScopeGraph.Transient<Scope, ITerm, ITerm> scopeGraph = ScopeGraph.Transient.of();
         final IUnifier.Transient unifier = PersistentUnifier.Immutable.of().melt();
-        for(SolverResult analysis : analyses) {
+        for(SolverResult<?> analysis : analyses) {
             scopeGraph.addAll(analysis.state().scopeGraph());
             try {
                 unifier.unify(analysis.state().unifier());

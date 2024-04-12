@@ -1,6 +1,8 @@
 package mb.statix.concurrent;
 
 import java.util.List;
+//import java.util.Map;
+import java.util.function.Supplier;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -16,31 +18,30 @@ import mb.p_raffrayi.IUnitResult;
 import mb.p_raffrayi.impl.Result;
 import mb.statix.scopegraph.Scope;
 import mb.statix.solver.log.IDebugContext;
+import mb.statix.solver.tracer.SolverTracer;
 import mb.statix.spec.Rule;
 import mb.statix.spec.Spec;
 import mb.p_raffrayi.IIncrementalTypeCheckerContext;
 
-public class GroupTypeChecker extends AbstractTypeChecker<GroupResult> {
+public class GroupTypeChecker<TR extends SolverTracer.IResult<TR>> extends AbstractTypeChecker<GroupResult<TR>, TR> {
 
     private static final ILogger logger = LoggerUtils.logger(GroupTypeChecker.class);
 
     private final IStatixGroup group;
 
-    public GroupTypeChecker(IStatixGroup group, Spec spec, IDebugContext debug) {
-        super(spec, debug);
+    public GroupTypeChecker(IStatixGroup group, Spec spec, IDebugContext debug, Supplier<SolverTracer<TR>> tracerFactory, int solverFlags) {
+        super(spec, debug, tracerFactory, solverFlags);
         this.group = group;
     }
 
-    @Override public IFuture<GroupResult> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult, SolverState> context,
+    @Override public IFuture<GroupResult<TR>> run(IIncrementalTypeCheckerContext<Scope, ITerm, ITerm, GroupResult<TR>, SolverState> context,
             List<Scope> rootScopes) {
 
         final List<Scope> thisGroupScopes = group.scopeNames().stream().map(name -> makeSharedScope(context, name)).collect(Collectors.toList());
-        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult, SolverState>>>>
-            groupResults =
-            runGroups(context, group.groups(), thisGroupScopes);
-        final IFuture<Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult, SolverState>>>>
-            unitResults =
-            runUnits(context, group.units(), thisGroupScopes);
+        final IFuture<io.usethesource.capsule.Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, GroupResult<TR>, SolverState>>>>
+            groupResults = runGroups(context, group.groups(), thisGroupScopes);
+        final IFuture<Map.Immutable<String, IUnitResult<Scope, ITerm, ITerm, Result<Scope, ITerm, ITerm, UnitResult<TR>, SolverState>>>>
+            unitResults = runUnits(context, group.units(), thisGroupScopes);
         thisGroupScopes.forEach(context::closeScope);
 
         final Optional<Rule> rule = group.rule();

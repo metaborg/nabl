@@ -1,6 +1,5 @@
 package mb.statix.concurrent;
 
-import java.util.List;
 import java.util.Optional;
 
 import jakarta.annotation.Nullable;

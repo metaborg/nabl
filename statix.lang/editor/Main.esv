@@ -8,6 +8,7 @@ imports
   Evaluate
   Colorer
   Refactoring
+  Schema
 
 language
 
