@@ -13,9 +13,9 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg:org.metaborg.util:$spoofax2Version") // API to expose logger framework.
-  api("org.metaborg:org.spoofax.terms:$spoofax2Version")
-  api("org.metaborg:org.spoofax.interpreter.core:$spoofax2Version")
+  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion") // API to expose logger framework.
+  api("org.metaborg.devenv:org.spoofax.terms:$spoofax2DevenvVersion")
+  api("org.metaborg.devenv:org.spoofax.interpreter.core:$spoofax2DevenvVersion")
   api(project(":nabl2.terms"))
   api(project(":scopegraph"))
   api(project(":p_raffrayi"))
@@ -26,9 +26,9 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  implementation(libs.jakarta.annotation)
-  implementation(libs.jakarta.inject)
-  implementation(libs.javax.inject)
+  implementation("jakarta.annotation:jakarta.annotation-api")
+  implementation("jakarta.inject:jakarta.inject-api")
+  implementation("javax.inject:javax.inject")
 
   // Tests
   testImplementation("junit:junit")

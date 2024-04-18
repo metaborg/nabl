@@ -9,7 +9,6 @@ import java.util.Optional;
 import jakarta.annotation.Nullable;
 
 import org.metaborg.util.collection.ImList;
-import mb.nabl2.terms.matching.TermMatch;
 import org.metaborg.util.functions.Function1;
 import org.spoofax.interpreter.terms.IStrategoAppl;
 import org.spoofax.interpreter.terms.IStrategoInt;
@@ -28,6 +27,7 @@ import mb.nabl2.terms.ITerm;
 import mb.nabl2.terms.ListTerms;
 import mb.nabl2.terms.Terms;
 import mb.nabl2.terms.build.Attachments;
+import mb.nabl2.terms.matching.TermMatch;
 import mb.nabl2.terms.matching.VarProvider;
 
 import static mb.nabl2.terms.build.TermBuild.B;
