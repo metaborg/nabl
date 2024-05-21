@@ -1,18 +1,4 @@
-[![Build status](http://buildfarm.metaborg.org/job/metaborg/job/nabl/job/master/badge/icon)](http://buildfarm.metaborg.org/job/metaborg/job/nabl/job/master/)
-<!-- note that the branchname is not automatically updated in this badge -->
+# NaBL
 
-
-# NaBL: A Meta-Language for Declarative Name Binding and Scope Rules
-
-In Spoofax, name bindings are specified in NaBL.
-NaBL stands for *Name Binding Language* and the acronym is pronounced 'enable'.
-Name binding is specified in terms of
-  namespaces, 
-  binding instances (name declarations), 
-  bound instances (name references),
-  scopes and
-  imports.
-
-## Documentation
-
-We maintain the NaBL documentation in [our documentation repository](https://github.com/metaborg/documentation/blob/master/source/langdev/meta/lang/nabl2/index.rst). 
+> [!IMPORTANT]
+> The `spoofax3` branch has been deprecated and locked. Please create a PR or commit to `main`/`master` directly.
