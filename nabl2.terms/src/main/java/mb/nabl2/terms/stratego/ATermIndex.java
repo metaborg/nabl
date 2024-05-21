@@ -3,7 +3,9 @@ package mb.nabl2.terms.stratego;
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -116,6 +118,42 @@ public abstract class ATermIndex extends AbstractApplTerm implements ITermIndex,
                 .otherwise(__ -> Optional.empty()))
         );
         // @formatter:on
+    }
+
+    /**
+     * Finds the all indexed subterm term, in pre-order.
+     *
+     * @param term The term to find the index of.
+     * @return A list of {@link TermIndex} of each eligible term.
+     */
+    public static List<TermIndex> findAll(ITerm term) {
+        ArrayList<TermIndex> indices = new ArrayList<>();
+        findAllTo(term, indices);
+        return indices;
+    }
+
+    private static void findAllTo(ITerm term, List<TermIndex> indices) {
+        get(term.getAttachments()).ifPresent(indices::add);
+        // @formatter:off
+        term.match(Terms.<Void>cases()
+            .appl(appl -> {
+                findAllTo(appl.getArgs().iterator(), indices);
+                return null;
+            })
+            .list(list -> list.match(ListTerms.<Void>cases()
+                .cons(cons -> {
+                    findAllTo(cons.getHead(), indices);
+                    findAllTo(cons.getTail(), indices);
+                    return null;
+                }).otherwise(__ -> null)))
+            .otherwise(__ -> null));
+        // @formatter:on
+    }
+
+    private static void findAllTo(Iterator<ITerm> term, List<TermIndex> indices) {
+        while (term.hasNext()) {
+            findAllTo(term.next(), indices);
+        }
     }
 
     private static Optional<TermIndex> find(Iterator<ITerm> termIterator) {
