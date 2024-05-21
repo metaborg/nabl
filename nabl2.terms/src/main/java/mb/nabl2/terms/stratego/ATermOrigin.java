@@ -5,10 +5,10 @@ import java.util.Optional;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.spoofax.interpreter.terms.IStrategoTerm;
-import org.spoofax.jsglr.client.imploder.IToken;
-import org.spoofax.jsglr.client.imploder.ImploderAttachment;
 import org.spoofax.terms.attachments.OriginAttachment;
 
+import mb.jsglr.shared.IToken;
+import mb.jsglr.shared.ImploderAttachment;
 import mb.nabl2.terms.IAttachments;
 import mb.nabl2.terms.ITerm;
 

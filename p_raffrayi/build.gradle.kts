@@ -13,7 +13,7 @@ dependencies {
 
   // !! Update dependencies in pom.xml as well
 
-  api("org.metaborg:org.metaborg.util:$spoofax2Version")
+  api("org.metaborg.devenv:org.metaborg.util:$spoofax2DevenvVersion")
   api(project(":scopegraph"))
   api("io.usethesource:capsule")
 
@@ -22,7 +22,7 @@ dependencies {
   annotationProcessor("org.immutables:serial")
   compileOnly("org.immutables:value")
   compileOnly("org.immutables:serial")
-  implementation(libs.jakarta.annotation)
+  implementation("jakarta.annotation:jakarta.annotation-api")
 
   // Tests
   testImplementation("junit:junit")
