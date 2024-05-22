@@ -54,6 +54,7 @@ allprojects {
         dependsOn("classes")
         from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).allJava)
         archiveClassifier.set("sources")
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
     tasks {
         assemble {
