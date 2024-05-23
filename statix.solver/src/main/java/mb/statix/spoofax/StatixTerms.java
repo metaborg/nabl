@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import mb.statix.spec.*;
 import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.collection.ImList;
@@ -95,10 +96,6 @@ import mb.statix.solver.IConstraint;
 import mb.statix.solver.query.QueryFilter;
 import mb.statix.solver.query.QueryMin;
 import mb.statix.solver.query.QueryProject;
-import mb.statix.spec.Rule;
-import mb.statix.spec.RuleName;
-import mb.statix.spec.RuleSet;
-import mb.statix.spec.Spec;
 
 import static mb.nabl2.terms.build.TermBuild.B;
 import static mb.nabl2.terms.matching.TermMatch.M;
@@ -140,7 +137,7 @@ public class StatixTerms {
     }
 
     public static IMatcher<RuleSet> rules() {
-        return M.listElems(M.req(rule())).map(RuleSet::of);
+        return M.listElems(M.req(rule())).map(BaseRuleSet::of);
     }
 
     public static IMatcher<Rule> rule() {

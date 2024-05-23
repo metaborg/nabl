@@ -33,7 +33,7 @@ public class IndexedRuleApplicationTest {
     private static final ITerm baz = B.newString("baz");
 
     // @formatter:off
-    final RuleSet ruleSet = RuleSet.of(Arrays.asList(
+    final RuleSet ruleSet = BaseRuleSet.of(Arrays.asList(
         Rule.of("p", RuleName.empty(), ImList.Immutable.of(P.newVar(x), P.newVar(x)), new CTrue()),
         Rule.of("p", RuleName.empty(), ImList.Immutable.of(P.newWld(), P.newWld()), new CFalse()),
         Rule.of("q", RuleName.empty(), ImList.Immutable.of(P.newInt(1)), new CFalse()),
