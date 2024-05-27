@@ -1,6 +1,7 @@
 ---
 id: org.metaborg:statix.lang:${metaborgVersion}
 name: StatixLang
+metaborgVersion: 2.6.0-SNAPSHOT
 metaborgBaselineVersion: 2.5.20
 dependencies:
   compile:
