@@ -36,15 +36,6 @@ allprojects {
         }
     }
 
-    // Use the org.metaborg:*:2.6.0-SNAPSHOT dependencies instead of the Spoofax 3 dependencies
-    configurations.all {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "org.metaborg.devenv") {
-                useTarget("org.metaborg:${requested.name}:${spoofax2Version}")
-            }
-        }
-    }
-
     // Ugh, need to encode sourcesJar due to multiple gradle.config plugins
     metaborg {
         javaCreateSourcesJar = false
