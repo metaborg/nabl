@@ -86,6 +86,13 @@ public interface RuleSet {
     java.util.Map<String, java.util.Set<Rule>> getAllOrderIndependentRules();
 
     /**
+     * Gets a list of all rules, where the match order is reflected in (dis)equality constraints in the rule bodies.
+     *
+     * @return a list of rules that are order independent
+     */
+    List<Rule> getAllOrderIndependentRulesList();
+
+    /**
      * Gets a list of rules with the specified name, where the match order is reflected in (dis)equality constraints in
      * the rule bodies. The resulting rules can be applied independent of the other rules in the set.
      *

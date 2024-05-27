@@ -118,6 +118,16 @@ public final class BaseRuleSet implements Serializable, RuleSet {
     }
 
     @Override
+    public List<Rule> getAllOrderIndependentRulesList() {
+        final List<Rule> independentRules = new ArrayList<>();
+        this.rules.keySet().forEach(name -> {
+            final Immutable<Rule> orderIndependentRules = getOrderIndependentRules(name);
+            independentRules.addAll(orderIndependentRules);
+        });
+        return independentRules;
+    }
+
+    @Override
     public ImList.Immutable<Rule> getRules(String name) {
         final ImList.Immutable<Rule> rules = this.rules.get(name);
         if(rules == null) {
