@@ -1,9 +1,9 @@
 rootProject.name = "nabl"
 
 pluginManagement {
-  repositories {
-    maven("https://artifacts.metaborg.org/content/groups/public/")
-  }
+    repositories {
+        maven("https://artifacts.metaborg.org/content/groups/public/")
+    }
 }
 
 include("nabl2.terms")
