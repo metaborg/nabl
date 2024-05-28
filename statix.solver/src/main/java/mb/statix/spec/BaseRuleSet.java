@@ -193,7 +193,7 @@ public final class BaseRuleSet implements Serializable, RuleSet {
         final Set.Immutable<Rule> orderIndependentRules = getOrderIndependentRules(ruleName);
         Rule target = null; // rule that we are looking for
         for(Rule r : orderIndependentRules) {
-            this.independentRulesByName.put(label, r);
+            this.independentRulesByName.put(r.label(), r);
             if(r.label().equals(label)) {
                 target = r;
             }
