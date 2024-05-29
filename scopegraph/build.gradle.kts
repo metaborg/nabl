@@ -1,6 +1,7 @@
 plugins {
-    id("org.metaborg.gradle.config.java-library")
-    id("org.metaborg.gradle.config.junit-testing")
+    `java-library`
+//    id("org.metaborg.gradle.config.java-library")
+//    id("org.metaborg.gradle.config.junit-testing")
 }
 
 fun compositeBuild(name: String) = "$group:$name:$version"
@@ -13,7 +14,8 @@ dependencies {
     testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
 
     // !! Update dependencies in pom.xml as well
-    api(compositeBuild("org.metaborg.util"))
+    api("org.metaborg:org.metaborg.util:$spoofax2Version")
+//    api(compositeBuild("org.metaborg.util"))
     api("io.usethesource:capsule")
 
     // Annotation processing

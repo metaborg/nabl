@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    id("org.metaborg.gradle.config.root-project") version "0.5.6"
+//    id("org.metaborg.gradle.config.root-project") version "0.5.6"
     id("org.metaborg.gitonium") version "1.2.0"
     id("org.metaborg.devenv.spoofax.gradle.langspec") version "0.1.36" apply false
 }
@@ -15,6 +15,11 @@ allprojects {
     ext["spoofax2Version"] = spoofax2Version
     ext["spoofax2BaselineVersion"] = spoofax2BaselineVersion
     ext["spoofax2DevenvVersion"] = spoofax2DevenvVersion
+
+    repositories {
+        maven(url = "https://artifacts.metaborg.org/content/groups/public/")
+        mavenCentral() // Backup
+    }
 
     java {
         withSourcesJar()
@@ -37,8 +42,12 @@ allprojects {
     }
 
     // Ugh, need to encode sourcesJar due to multiple gradle.config plugins
-    metaborg {
-        javaCreateSourcesJar = false
+//    metaborg {
+//        javaCreateSourcesJar = false
+//    }
+
+    dependencies {
+        testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
     }
 
     val sourcesJar = tasks.getByName<Jar>("sourcesJar") {
@@ -59,8 +68,19 @@ allprojects {
 
 }
 
-subprojects {
-    metaborg {
-        configureSubProject()
+//subprojects {
+//    metaborg {
+//        configureSubProject()
+//    }
+//}
+
+
+tasks.register("includedProjects") {
+    doLast {
+        println("Included projects")
+        println("---------------")
+        for ((name, subproject) in project.childProjects) {
+            println("$name: ${subproject.group}:${subproject.name}:${subproject.version}")
+        }
     }
 }
