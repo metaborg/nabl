@@ -17,10 +17,10 @@ dependencies {
     api("io.usethesource:capsule")
 
     // Annotation processing
-    annotationProcessor("org.immutables:value")
-    annotationProcessor("org.immutables:serial")
-    compileOnly("org.immutables:value")
-    compileOnly("org.immutables:serial")
+    annotationProcessor(libs.immutables.value)
+    annotationProcessor(libs.immutables.serial)
+    compileOnly(libs.immutables.value)
+    compileOnly(libs.immutables.serial)
     implementation("jakarta.annotation:jakarta.annotation-api")
 
     // Tests
