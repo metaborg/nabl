@@ -108,11 +108,11 @@ rules
 
   desugar-tuples = topdown(try(desugar-tuple))
 
-  desugar-tuple: Tuple0Sort()      -> TupleSort([])
-  desugar-tuple: TupleNSort(s, ss) -> TupleSort([s|ss])
+  desugar-tuple: t@Tuple0Sort()      -> TupleSort(<with-origin(|t)> [])
+  desugar-tuple: t@TupleNSort(s, ss) -> TupleSort(<with-origin(|t)> [s|ss])
 
-  desugar-tuple: Tuple0()      -> Tuple([])
-  desugar-tuple: TupleN(x, xs) -> Tuple([x|xs])
+  desugar-tuple: t@Tuple0()      -> Tuple(<with-origin(|t)> [])
+  desugar-tuple: t@TupleN(x, xs) -> Tuple(<with-origin(|t)> [x|xs])
 
-  desugar-tuple: Tuple0Lift()      -> TupleLift([])
-  desugar-tuple: TupleNLift(x, xs) -> TupleLift([x|xs])
+  desugar-tuple: t@Tuple0Lift()      -> TupleLift(<with-origin(|t)> [])
+  desugar-tuple: t@TupleNLift(x, xs) -> TupleLift(<with-origin(|t)>[x|xs])
