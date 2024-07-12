@@ -104,7 +104,7 @@ rules // spec
 rules
 
   // At 'link-time' generate unique names
-  stx--uniquify-spec = Spec(id, id, id, stx--uniquify-rules, id)
+  stx--uniquify-spec = Spec(id, id, id, stx--uniquify-rules; stx--uniquify-rule-names, id)
 
   stx--uniquify-rules = scope-local-new(downup(where(try(stx--newname)), preserve-annos(try(stx--uniquify))))
 
@@ -137,6 +137,10 @@ rules
 
   stx--uniquify-wld: Wld(){a*} -> Var(v){a*}
     with v := <local-newname> "wld"
+
+rules
+
+  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(RuleName(local-newname)))))
 
 rules
 
