@@ -31,6 +31,7 @@ signature
     Solution
     Config
     WithConfig
+    RuleName
 
     StatixLibrary
 
@@ -53,6 +54,8 @@ signature
     Solution : List(Var, Term) * SolverResult -> Solution
 
     WithConfig : Config * Term -> WithConfig
+
+    Name : String -> RuleName
 
     EOP : Label // duplicate from statix.lang
 
@@ -140,7 +143,7 @@ rules
 
 rules
 
-  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(RuleName(local-newname)))))
+  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(Name(local-newname)))))
 
 rules
 
