@@ -125,4 +125,23 @@ public abstract class AState implements IState.Immutable {
         return State.of(Unifiers.Immutable.of(), ScopeGraph.Immutable.of(), Map.Immutable.of());
     }
 
+
+    /**
+     * Prints the immutable value {@code State} with attribute values.
+     * @return A string representation of the value
+     */
+    @Override
+    public String toString() {
+        return "State{"
+                + "resource=" + resource()
+                + ", __varCounter=" + __varCounter()
+                + ", __vars=" + __vars()
+                + ", __scopeCounter=" + __scopeCounter()
+                + ", __scopes=" + __scopes()
+                + ", unifier=" + unifier()
+//                + ", scopeGraph=" + scopeGraph() // Can get really expensive to compute
+                + ", termProperties=" + termProperties()
+                + "}";
+    }
+
 }
