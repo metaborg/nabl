@@ -805,6 +805,7 @@ public abstract class PersistentUnifier extends BaseUnifier implements IUnifier,
             }
             final int n = repAndTermVarsCache.remove(var, k);
             if(n < k) {
+                // sometimes is hit? Perhaps since Guava removal?
                 throw new IllegalStateException();
             }
             if(n == k) { // removed var
