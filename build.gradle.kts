@@ -1,68 +1,21 @@
+import org.metaborg.convention.MavenPublishConventionExtension
+
+// Workaround for issue: https://youtrack.jetbrains.com/issue/KTIJ-19369
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    `java-library`
-    id("org.metaborg.gradle.config.root-project") version "0.5.6"
-    id("org.metaborg.gitonium") version "1.7.0"
-    id("org.metaborg.devenv.spoofax.gradle.langspec") version "0.1.36" apply false
+    id("org.metaborg.convention.root-project")
+    alias(libs.plugins.gitonium)
 }
 
-val spoofax2Version: String = System.getProperty("spoofax2Version")
-val spoofax2BaselineVersion: String = System.getProperty("spoofax2BaselineVersion")
-val spoofax2DevenvVersion: String = System.getProperty("spoofax2DevenvVersion")
 allprojects {
-    apply(plugin = "java-library")
-
+    apply(plugin = "org.metaborg.gitonium")
     version = gitonium.version
-
     group = "org.metaborg.devenv"
-    ext["spoofax2Version"] = spoofax2Version
-    ext["spoofax2BaselineVersion"] = spoofax2BaselineVersion
-    ext["spoofax2DevenvVersion"] = spoofax2DevenvVersion
 
-    java {
-        withSourcesJar()
-        withJavadocJar()
-    }
-
-    tasks.withType<JavaCompile> {
-        options.encoding = "UTF-8"
-        options.compilerArgs = options.compilerArgs + listOf("-Xdoclint:none")
-    }
-
-    tasks.withType<Javadoc> {
-        options {
-            this as CoreJavadocOptions
-            addStringOption("Xdoclint:none", "-quiet")
-            encoding = "UTF-8"
-            quiet()
-            charset("UTF-8")
+    pluginManager.withPlugin("org.metaborg.convention.maven-publish") {
+        extensions.configure(MavenPublishConventionExtension::class.java) {
+            repoOwner.set("metaborg")
+            repoName.set("nabl")
         }
-    }
-
-    // Ugh, need to encode sourcesJar due to multiple gradle.config plugins
-    metaborg {
-        javaCreateSourcesJar = false
-    }
-
-    val sourcesJar = tasks.getByName<Jar>("sourcesJar") {
-        dependsOn("classes")
-        from(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).allJava)
-        archiveClassifier.set("sources")
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    tasks {
-        assemble {
-            dependsOn("sourcesJar")
-        }
-    }
-
-    artifacts {
-        add(Dependency.DEFAULT_CONFIGURATION, sourcesJar)
-    }
-
-}
-
-subprojects {
-    metaborg {
-        configureSubProject()
     }
 }
