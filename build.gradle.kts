@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("org.metaborg.gradle.config.root-project") version "0.5.6"
-    id("org.metaborg.gitonium") version "1.2.0"
+    id("org.metaborg.gitonium") version "1.7.0"
     id("org.metaborg.devenv.spoofax.gradle.langspec") version "0.1.36" apply false
 }
 
@@ -10,6 +10,8 @@ val spoofax2BaselineVersion: String = System.getProperty("spoofax2BaselineVersio
 val spoofax2DevenvVersion: String = System.getProperty("spoofax2DevenvVersion")
 allprojects {
     apply(plugin = "java-library")
+
+    version = gitonium.version
 
     group = "org.metaborg.devenv"
     ext["spoofax2Version"] = spoofax2Version
