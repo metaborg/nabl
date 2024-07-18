@@ -143,7 +143,7 @@ rules
 
 rules
 
-  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(Name(local-newname; !(<id>, "-UQ"); concat-strings)))))
+  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(Name(local-newname; !(<id>, "-UQ"); conc-strings)))))
 
 rules
 
