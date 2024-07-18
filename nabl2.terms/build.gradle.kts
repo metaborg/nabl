@@ -5,37 +5,35 @@ plugins {
     id("org.metaborg.convention.maven-publish")
 }
 
-fun compositeBuild(name: String) = "$group:$name:$version"
-val spoofax2Version: String by ext
-val spoofax2DevenvVersion: String by ext
 dependencies {
     api(platform(libs.metaborg.platform)) { version { require("latest.integration") } }
 
     // !! Update dependencies in pom.xml as well
 
-    implementation("org.metaborg:org.metaborg.util:$spoofax2Version")
-    api("org.metaborg:org.spoofax.terms:$spoofax2Version")
-    api("org.metaborg:org.spoofax.interpreter.core:$spoofax2Version")
-    api("org.metaborg:jsglr.shared:$spoofax2Version")
-    api("io.usethesource:capsule")
+    implementation(libs.metaborg.util)
+    api(libs.spoofax.terms)
+    api(libs.interpreter.core)
+    api(libs.jsglr.shared)
+    api(libs.capsule)
 
     // Annotation processing
-    annotationProcessor("org.immutables:value")
-    annotationProcessor("org.immutables:serial")
-    compileOnly("org.immutables:value")
-    compileOnly("org.immutables:serial")
-    implementation("jakarta.annotation:jakarta.annotation-api")
+    annotationProcessor(libs.immutables.value)
+    annotationProcessor(libs.immutables.serial)
+    compileOnly(libs.immutables.value)
+    compileOnly(libs.immutables.serial)
+    implementation(libs.jakarta.annotation)
 
     // Tests
-    testImplementation("junit:junit")
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
-    testImplementation("ch.qos.logback:logback-classic")
+    testImplementation(libs.junit)
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage)
+    testImplementation(libs.logback)
 
     // Test Annotation processing
-    testAnnotationProcessor("org.immutables:value")
-    testAnnotationProcessor("org.immutables:serial")
-    testCompileOnly("org.immutables:value")
-    testCompileOnly("org.immutables:serial")
+    testAnnotationProcessor(libs.immutables.value)
+    testAnnotationProcessor(libs.immutables.serial)
+    testCompileOnly(libs.immutables.value)
+    testCompileOnly(libs.immutables.serial)
 
     // !! Update dependencies in pom.xml as well
 }

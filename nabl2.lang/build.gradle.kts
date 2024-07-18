@@ -10,7 +10,7 @@ spoofaxLanguageSpecification {
     addSourceDependenciesFromMetaborgYaml.set(false)
 }
 dependencies {
-    sourceLanguage("org.metaborg.devenv:meta.lib.spoofax:$spoofax2DevenvVersion")
+    sourceLanguage(libs.spoofax2.meta.lib.spoofax)
     sourceLanguage(project(":org.metaborg.meta.nabl2.shared"))
 }
 
