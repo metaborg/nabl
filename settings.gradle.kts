@@ -15,7 +15,7 @@ pluginManagement {
 }
 
 plugins {
-    id("org.metaborg.convention.settings") version "0.8.1"
+    id("org.metaborg.convention.settings") version "latest.integration"
 }
 
 include("nabl2.terms")

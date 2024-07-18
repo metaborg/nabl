@@ -8,10 +8,7 @@ plugins {
 val spoofax2Version: String by ext
 val spoofax2DevenvVersion: String by ext
 dependencies {
-    api(platform("org.metaborg:parent:$spoofax2Version"))
-    testImplementation(platform("org.metaborg:parent:$spoofax2Version"))
-    annotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
-    testAnnotationProcessor(platform("org.metaborg:parent:$spoofax2Version"))
+    api(platform(libs.metaborg.platform)) { version { require("latest.integration") } }
 
     // !! Update dependencies in pom.xml as well
 
