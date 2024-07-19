@@ -16,12 +16,12 @@ spoofaxLanguageSpecification {
     addSpoofaxRepository.set(false)
 }
 dependencies {
-    compileLanguage(libs.spoofax2.esv.lang)     // Bootstrap using Spoofax 2 artifact
-    compileLanguage(libs.spoofax2.sdf3.lang)    // Bootstrap using Spoofax 2 artifact
+    compileLanguage(libs.esv.lang)
+    compileLanguage(libs.sdf3.lang)
     compileLanguage(project(":org.metaborg.meta.nabl2.lang"))
 
-    sourceLanguage(libs.spoofax2.meta.lib.spoofax)
+    sourceLanguage(libs.meta.lib.spoofax)
     sourceLanguage(project(":org.metaborg.meta.nabl2.shared"))
 
-    compileOnly(libs.spoofax2.core)
+    compileOnly(libs.spoofax.core)
 }

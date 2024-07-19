@@ -7,6 +7,7 @@ plugins {
 }
 
 spoofaxLanguageSpecification {
+    addCompileDependenciesFromMetaborgYaml.set(false)
     addSourceDependenciesFromMetaborgYaml.set(false)
 
     // We add the dependency manually and don't change the repositories
@@ -15,7 +16,9 @@ spoofaxLanguageSpecification {
     addSpoofaxRepository.set(false)
 }
 dependencies {
-    sourceLanguage(libs.spoofax2.meta.lib.spoofax)
+    compileLanguage(libs.sdf3.lang)
 
-    compileOnly(libs.spoofax2.core)
+    sourceLanguage(libs.meta.lib.spoofax)
+
+    compileOnly(libs.spoofax.core)
 }
