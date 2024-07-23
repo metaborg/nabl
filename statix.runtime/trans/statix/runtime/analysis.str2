@@ -54,6 +54,8 @@ signature
 
     WithConfig : Config * Term -> WithConfig
 
+    Name : String -> RuleName
+
     EOP : Label // duplicate from statix.lang
 
 
@@ -104,12 +106,15 @@ rules // spec
 rules
 
   // At 'link-time' generate unique names
-  stx--uniquify-spec = Spec(id, id, id, stx--uniquify-rules, id)
+  stx--uniquify-spec = Spec(id, id, id, stx--uniquify-rules; stx--uniquify-rule-names, id)
 
   stx--uniquify-rules = scope-local-new(downup(where(try(stx--newname)), preserve-annos(try(stx--uniquify))))
 
   stx--newname = ?CExists(<id>, _); map(Var(local-newname))
   stx--newname = ?C(<id>, _); topdown(try(Var(local-newname)))
+
+
+  stx--eq-noannos = strip-annos ; eq
 
   stx--uniquify =
      stx--uniquify-exists
@@ -130,10 +135,14 @@ rules
 
   stx--pair-fresh-name: v@Var(x){a*} -> (v, Var(<preserve-annos(local-newname)> x){a*})
   stx--subst-fresh-name: ((v_old, v_new), c) -> c'
-     with c' := <topdown(preserve-annos(try(?v_old; !v_new)))> c
+     with c' := <topdown(preserve-annos(try(<stx--eq-noannos> (<id>, v_old); !v_new)))> c
 
   stx--uniquify-wld: Wld(){a*} -> Var(v){a*}
     with v := <local-newname> "wld"
+
+rules
+
+  stx--uniquify-rule-names = scope-local-new(bottomup(preserve-annos(try(Name(local-newname; !(<id>, "-UQ"); conc-strings)))))
 
 rules
 

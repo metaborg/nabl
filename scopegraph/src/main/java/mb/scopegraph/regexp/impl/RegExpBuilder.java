@@ -6,11 +6,11 @@ import mb.scopegraph.regexp.IRegExpBuilder;
 public final class RegExpBuilder<S> implements IRegExpBuilder<S> {
 
     @Override public IRegExp<S> emptySet() {
-        return new EmptySet<>();
+        return EmptySet.of();
     }
 
     @Override public IRegExp<S> emptyString() {
-        return new EmptyString<>();
+        return EmptyString.of();
     }
 
     @Override public IRegExp<S> symbol(S s) {

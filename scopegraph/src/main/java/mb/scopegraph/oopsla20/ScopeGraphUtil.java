@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.metaborg.util.functions.Function1;
 
 import org.metaborg.util.collection.Sets;
+import org.metaborg.util.functions.PartialFunction1;
 
 public final class ScopeGraphUtil {
 
@@ -16,6 +17,10 @@ public final class ScopeGraphUtil {
     }
 
     public static <S, L, D> String toString(IScopeGraph<S, L, D> scopeGraph, Function1<D, D> instantiateData) {
+        return toString(scopeGraph, instantiateData, PartialFunction1.never());
+    }
+
+    public static <S, L, D> String toString(IScopeGraph<S, L, D> scopeGraph, Function1<D, D> instantiateData, PartialFunction1<D, D> getAuxData) {
         // @formatter:off
         final Map<? extends Map.Entry<S, L>, ? extends Iterable<S>> sgEdges = scopeGraph.getEdges();
         final Map<S, java.util.Set<Map.Entry<L, Iterable<S>>>> groupedScopes = sgEdges.entrySet().stream().collect(
@@ -35,7 +40,14 @@ public final class ScopeGraphUtil {
             sb.append(source);
             if(scopeGraph.getData(source).isPresent()) {
                 sb.append(" : ");
-                sb.append(instantiateData.apply(scopeGraph.getData(source).get()));
+                D data = scopeGraph.getData(source).get();
+                final D instantatedData = instantiateData.apply(data);
+                sb.append(instantatedData);
+                getAuxData.apply(instantatedData).ifPresent(a -> {
+                    sb.append("{");
+                    sb.append(a);
+                    sb.append("}");
+                });
             }
             if(!groupedScopes.containsKey(source)) {
                 sb.append("\n");

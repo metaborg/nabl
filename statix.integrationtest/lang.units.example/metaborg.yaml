@@ -1,8 +1,9 @@
 ---
-id: org.metaborg:statix.integrationtest.lang.units.example:2.5.20
+id: org.metaborg:statix.integrationtest.lang.units.example:${metaborgVersion}
 name: UnitsExample
+metaborgVersion: 2.6.0-SNAPSHOT
 dependencies:
   compile:
-  - org.metaborg:statix.integrationtest.lang.units:2.5.20
+  - org.metaborg:statix.integrationtest.lang.units:${metaborgVersion}
 build:
   useBuildSystemSpec: true

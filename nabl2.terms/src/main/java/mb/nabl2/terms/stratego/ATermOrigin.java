@@ -41,8 +41,10 @@ public abstract class ATermOrigin {
         IToken token = getImploderAttachment().getLeftToken();
         StringBuilder sb = new StringBuilder();
         sb.append("@");
-        sb.append(token.getFilename());
-        sb.append(":");
+        if (token.getFilename() != null) {
+            sb.append(token.getFilename());
+            sb.append(":");
+        }
         sb.append(token.getLine());
         sb.append(",");
         sb.append(token.getColumn());
