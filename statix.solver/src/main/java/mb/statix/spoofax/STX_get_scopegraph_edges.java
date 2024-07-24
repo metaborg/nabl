@@ -17,7 +17,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph_edges extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_get_scopegraph_edges() {
+    @jakarta.inject.Inject public STX_get_scopegraph_edges() {
         super(STX_get_scopegraph_edges.class.getSimpleName(), 1);
     }
 

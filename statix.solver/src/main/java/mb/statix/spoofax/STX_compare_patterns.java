@@ -16,7 +16,7 @@ import mb.nabl2.terms.matching.Pattern;
 
 public class STX_compare_patterns extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_compare_patterns() {
+    @jakarta.inject.Inject public STX_compare_patterns() {
         super(STX_compare_patterns.class.getSimpleName(), 0);
     }
 

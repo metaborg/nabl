@@ -20,7 +20,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_ast_properties extends StatixPropertyPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_get_ast_properties() {
+    @jakarta.inject.Inject public STX_get_ast_properties() {
         super(STX_get_ast_properties.class.getSimpleName(), 1);
     }
 

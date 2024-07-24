@@ -31,7 +31,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi_project extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_project.class);
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_project() {
+    @jakarta.inject.Inject public STX_solve_multi_project() {
         super(STX_solve_multi_project.class.getSimpleName(), 5);
     }
 

@@ -31,7 +31,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi_file extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi_file.class);
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi_file() {
+    @jakarta.inject.Inject public STX_solve_multi_file() {
         super(STX_solve_multi_file.class.getSimpleName(), 5);
     }
 

@@ -31,7 +31,7 @@ import mb.statix.spec.Spec;
 public abstract class StatixConstraintPrimitive extends StatixPrimitive {
     protected static final ILogger logger = LoggerUtils.logger(StatixConstraintPrimitive.class);
 
-    @jakarta.inject.Inject @javax.inject.Inject public StatixConstraintPrimitive(String name) {
+    @jakarta.inject.Inject public StatixConstraintPrimitive(String name) {
         super(name, 4);
     }
 

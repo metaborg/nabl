@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.collection.ImList;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.PrintlineLogger;
 
 import mb.nabl2.constraints.IConstraint;
 import mb.nabl2.constraints.messages.IMessageContent;
@@ -20,7 +19,6 @@ public abstract class Messages implements IMessages {
 
     public static class Immutable extends Messages implements IMessages.Immutable, Serializable {
 
-        private static final PrintlineLogger log = PrintlineLogger.logger(Messages.Immutable.class);
         private static final long serialVersionUID = 42L;
 
         private final ImList.Immutable<IMessageInfo> messages;
@@ -34,7 +32,6 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Transient melt() {
-            log.info("- melt {}: {}", System.identityHashCode(this), messages);
             return new Messages.Transient(messages.mutableCopy());
         }
 
@@ -70,8 +67,6 @@ public abstract class Messages implements IMessages {
 
     public static class Transient extends Messages implements IMessages.Transient {
 
-        private static final PrintlineLogger log = PrintlineLogger.logger(Messages.Transient.class);
-
         private final ImList.Mutable<IMessageInfo> messages;
 
         private Transient(ImList.Mutable<IMessageInfo> messages) {
@@ -80,7 +75,6 @@ public abstract class Messages implements IMessages {
 
         @Override public boolean add(IMessageInfo message) {
             messages.add(message);
-            log.info("- added {}: {}", message, messages);
             return true;
         }
 
@@ -97,7 +91,6 @@ public abstract class Messages implements IMessages {
         }
 
         @Override public Messages.Immutable freeze() {
-            log.info("- freeze {}: {}", System.identityHashCode(this), messages);
             return new Messages.Immutable(messages.freeze());
         }
 

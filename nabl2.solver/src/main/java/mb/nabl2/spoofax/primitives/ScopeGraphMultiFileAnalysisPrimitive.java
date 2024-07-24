@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.NullCancel;
@@ -36,8 +35,6 @@ import mb.nabl2.terms.stratego.StrategoTerms;
 public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimitive {
 
     private static ILogger logger = LoggerUtils.logger(ScopeGraphMultiFileAnalysisPrimitive.class);
-    private static final PrintlineLogger celog = PrintlineLogger.logger(CallExternal.class);
-
 
     public ScopeGraphMultiFileAnalysisPrimitive(String name, int tvars) {
         super(name, 0, tvars);
@@ -73,13 +70,11 @@ public abstract class ScopeGraphMultiFileAnalysisPrimitive extends AbstractPrimi
     static CallExternal callExternal(IContext env, StrategoTerms strategoTerms) {
         final HashMap<String, SDefT> strCache = new HashMap<>();
         return (name, args) -> {
-            celog.debug("calling external {}({})", name, args);
             final IStrategoTerm arg = prepareArguments(args, strategoTerms, env.getFactory());
             try {
                 final CallableStrategy strategy = StrategyCalls.lookup(env, name, strCache);
                 final Optional<IStrategoTerm> result = strategy.call(arg);
                 final Optional<ITerm> resultTerm = result.map(strategoTerms::fromStratego).map(ConstraintTerms::specialize);
-                celog.debug("* result: {}", resultTerm);
                 return resultTerm;
             } catch(Exception ex) {
                 logger.warn("External call to '{}' failed.", ex, name);

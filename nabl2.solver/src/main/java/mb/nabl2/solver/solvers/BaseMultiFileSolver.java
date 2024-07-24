@@ -9,7 +9,6 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.functions.Function1;
 import org.metaborg.util.functions.Predicate1;
 import org.metaborg.util.functions.Predicate2;
-import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 
@@ -51,8 +50,6 @@ import mb.scopegraph.pepm16.terms.Occurrence;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class BaseMultiFileSolver extends BaseSolver {
-
-    private static final PrintlineLogger log = PrintlineLogger.logger(BaseMultiFileSolver.class);
 
     public BaseMultiFileSolver(NaBL2DebugConfig nabl2Debug, CallExternal callExternal) {
         super(nabl2Debug, callExternal);
@@ -131,8 +128,6 @@ public class BaseMultiFileSolver extends BaseSolver {
                             nameResolutionResult.declProperties(), relationResult, unifierResult, symbolicConstraints,
                             messages.freeze(), solveResult.constraints())
                     .withNameResolutionCache(nameResolutionResult.resolutionCache());
-
-            log.info("finish intra: {}", solution);
 
             return solution;
         } catch(RuntimeException ex) {
