@@ -10,7 +10,6 @@ import java.util.Optional;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.log.ILogger;
 import org.metaborg.util.log.LoggerUtils;
-import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.tuple.Tuple2;
@@ -19,7 +18,6 @@ import org.spoofax.interpreter.core.InterpreterException;
 import io.usethesource.capsule.Set;
 import mb.nabl2.constraints.Constraints;
 import mb.nabl2.constraints.IConstraint;
-import mb.nabl2.constraints.equality.CEqual;
 import mb.nabl2.solver.Fresh;
 import mb.nabl2.solver.ISolution;
 import mb.nabl2.solver.SolverConfig;
@@ -36,8 +34,6 @@ import mb.nabl2.terms.unification.Unifiers;
 import mb.scopegraph.pepm16.terms.Scope;
 
 public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalysisPrimitive {
-
-    private static final PrintlineLogger log = PrintlineLogger.logger(SG_solve_multi_initial_constraint.class);
 
     @SuppressWarnings("unused") private static ILogger logger =
             LoggerUtils.logger(SG_solve_multi_initial_constraint.class);
@@ -57,13 +53,6 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
         final ITerm params = input._1();
         final Set.Immutable<IConstraint> constraints = CapsuleUtil.immutableSet(input._2());
 
-        if(log.enabled()) {
-            log.debug("start multi_initial; equality constraints: ");
-            constraints.stream()
-                .filter(CEqual.class::isInstance)
-                .forEach(c -> log.debug("* {}", c));
-        }
-
         final Set.Immutable<ITermVar> globalVars = params.getVars();
         final Fresh.Transient globalFresh = Fresh.Transient.of();
 
@@ -78,13 +67,6 @@ public class SG_solve_multi_initial_constraint extends ScopeGraphMultiFileAnalys
 
         final Collection<Scope> globalScopes =
                 T.collecttd(t -> Scope.matcher().match(t, solution.unifier())).apply(params);
-
-        if(log.enabled()) {
-            log.debug("finish multi_init; deferred equality constraints: ");
-            solution.constraints().stream()
-                .filter(CEqual.class::isInstance)
-                .forEach(c -> log.debug("* {}", c));
-        }
 
         final IResult result = MultiInitialResult.of(constraints, solution, Optional.empty(), globalVars, globalScopes,
                 globalFresh.freeze());

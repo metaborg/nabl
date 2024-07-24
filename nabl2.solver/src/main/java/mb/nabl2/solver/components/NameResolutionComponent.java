@@ -9,7 +9,6 @@ import java.util.Optional;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.metaborg.util.collection.CapsuleUtil;
-import org.metaborg.util.log.PrintlineLogger;
 
 import io.usethesource.capsule.Set;
 import io.usethesource.capsule.Set.Immutable;
@@ -44,8 +43,6 @@ import mb.scopegraph.pepm16.terms.Scope;
 import mb.scopegraph.pepm16.terms.path.Paths;
 
 public class NameResolutionComponent extends ASolver {
-
-    private static final PrintlineLogger log = PrintlineLogger.logger(NameResolutionComponent.class);
 
     private final IEsopScopeGraph.Transient<Scope, Label, Occurrence, ITerm> scopeGraph;
     private final IEsopNameResolution<Scope, Label, Occurrence> nameResolution;
@@ -97,24 +94,20 @@ public class NameResolutionComponent extends ASolver {
         final ITerm refTerm = r.getReference();
         if(!unifier().isGround(refTerm)) {
             final Immutable<ITermVar> refVars = unifier().getVars(refTerm);
-            log.debug("delaying: {}", refVars);
             throw new VariableDelayException(refVars);
         }
         final Occurrence ref = Occurrence.matcher().match(refTerm, unifier())
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + r));
         final Collection<IResolutionPath<Scope, Label, Occurrence>> paths;
         try {
-            log.debug("resolving: {}", ref);
             paths = nameResolution.resolve(ref, cancel, progress);
         } catch(InterruptedException e) {
             throw new InterruptedDelayException(e);
         } catch(CriticalEdgeException e) {
-            log.debug("critical edge: {}", ref);
             throw new CriticalEdgeDelayException(e);
         } catch(StuckException e) {
             IMessageInfo message = r.getMessageInfo().withDefaultContent(
                     MessageContent.builder().append("Resolution of ").append(ref).append(" is stuck.").build());
-            log.debug("stuck: {}", ref);
             return SolveResult.messages(message);
         }
         final java.util.Set<Occurrence> declarations = new HashSet<>(Paths.resolutionPathsToDecls(paths));
@@ -138,7 +131,6 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        log.debug("ref result: {} |-> {}", ref, result);
         return SolveResult.copyOf(result);
     }
 
@@ -170,7 +162,6 @@ public class NameResolutionComponent extends ASolver {
                 break;
             }
         }
-        log.debug("assoc result: {} |-> {}", declTerm, result);
         return result;
     }
 
@@ -183,18 +174,15 @@ public class NameResolutionComponent extends ASolver {
                 .orElseThrow(() -> new TypeException("Expected an occurrence as first argument to " + c));
         final SolveResult result = putProperty(decl, c.getKey(), c.getValue(), c.getMessageInfo())
                 .map(cc -> SolveResult.constraints(cc)).orElseGet(() -> SolveResult.empty());
-        log.debug("decl result: {} |-> {}", declTerm, result);
         return result;
     }
 
     private Optional<IConstraint> putProperty(Occurrence decl, ITerm key, ITerm value, IMessageInfo message) {
         Optional<ITerm> prev = properties.getValue(decl, key);
         if(!prev.isPresent()) {
-            log.debug("new prop: {}@{} |-> {}", key, decl, value);
             properties.putValue(decl, key, value);
             return Optional.empty();
         } else {
-            log.debug("eq prop: {}@{}: {} == {}", key, decl, value, prev.get());
             return Optional.of(CEqual.of(value, prev.get(), message));
         }
 
