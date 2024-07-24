@@ -9,6 +9,12 @@ plugins {
 
 allprojects {
     apply(plugin = "org.metaborg.gitonium")
+
+    // Configure Gitonium before setting the version
+    gitonium {
+        mainBranch.set("master")
+    }
+
     version = gitonium.version
     group = "org.metaborg.devenv"
 
@@ -16,6 +22,19 @@ allprojects {
         extensions.configure(MavenPublishConventionExtension::class.java) {
             repoOwner.set("metaborg")
             repoName.set("nabl")
+
+            metadata {
+                inceptionYear.set("2011")
+                developers.set(listOf(
+                    Developer("hendrikvanantwerpen", "Hendrik van Antwerpen", "hendrik@van-antwerpen.net"),
+                    Developer("AZWN", "Aron Zwaan", "aronzwaan@gmail.com"),
+                    Developer("guwac", "Guido Wachsmuth", "g.h.wachsmuth@tudelft.nl"),
+                    Developer("Gohla", "Gabriel Konat", "gabrielkonat@gmail.com"),
+                    Developer("Virtlink", "Daniel A. A. Pelsmaeker", "developer@pelsmaeker.net"),
+                    Developer("Apanatshka", "Jeff Smits", "mail@jeffsmits.net"),
+                    Developer("lennartcl", "Lennart Kats", "lclkats@gmail.com"),
+                ))
+            }
         }
     }
 }
