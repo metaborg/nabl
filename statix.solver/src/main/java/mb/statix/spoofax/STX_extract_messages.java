@@ -18,7 +18,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_extract_messages extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_extract_messages() {
+    @jakarta.inject.Inject public STX_extract_messages() {
         super(STX_extract_messages.class.getSimpleName(), 0);
     }
 

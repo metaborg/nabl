@@ -56,7 +56,7 @@ import mb.statix.spec.Spec;
 public class STX_solve_multi extends StatixPrimitive {
     private static final ILogger logger = LoggerUtils.logger(STX_solve_multi.class);
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_multi() {
+    @jakarta.inject.Inject public STX_solve_multi() {
         super(STX_solve_multi.class.getSimpleName(), 5);
     }
 

@@ -31,7 +31,7 @@ public class STX_debug_scopegraph extends StatixPrimitive {
 
     private static final ILogger logger = LoggerUtils.logger(STX_debug_scopegraph.class);
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_debug_scopegraph() {
+    @jakarta.inject.Inject public STX_debug_scopegraph() {
         super(STX_debug_scopegraph.class.getSimpleName(), 0);
     }
 

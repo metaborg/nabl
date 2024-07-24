@@ -27,7 +27,7 @@ import mb.scopegraph.regexp.impl.RegExpNormalizingBuilder;
 
 public class STX_labelre_to_states extends AbstractPrimitive {
 
-    @javax.inject.Inject @jakarta.inject.Inject public STX_labelre_to_states(String name) {
+    @jakarta.inject.Inject public STX_labelre_to_states(String name) {
         super(STX_labelre_to_states.class.getSimpleName(), 0, 2);
     }
 

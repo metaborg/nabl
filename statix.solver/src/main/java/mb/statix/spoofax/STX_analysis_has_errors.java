@@ -15,7 +15,7 @@ import mb.statix.solver.tracer.EmptyTracer.Empty;
 
 public class STX_analysis_has_errors extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_analysis_has_errors() {
+    @jakarta.inject.Inject public STX_analysis_has_errors() {
         super(STX_analysis_has_errors.class.getSimpleName(), 0);
     }
 

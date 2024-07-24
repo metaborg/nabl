@@ -22,7 +22,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 public class STX_solve_constraint_with_initial_state extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject
+    @jakarta.inject.Inject
     public STX_solve_constraint_with_initial_state() {
         super(STX_solve_constraint_with_initial_state.class.getSimpleName(), 4);
     }

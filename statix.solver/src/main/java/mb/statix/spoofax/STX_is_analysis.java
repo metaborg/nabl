@@ -15,7 +15,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_is_analysis extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_is_analysis() {
+    @jakarta.inject.Inject public STX_is_analysis() {
         super(STX_is_analysis.class.getSimpleName(), 0);
     }
 

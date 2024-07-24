@@ -19,7 +19,7 @@ import static mb.nabl2.terms.matching.TermMatch.M;
  */
 public final class STX_get_ast_property_from_index extends StatixPropertyPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_get_ast_property_from_index() {
+    @jakarta.inject.Inject public STX_get_ast_property_from_index() {
         super(STX_get_ast_property_from_index.class.getSimpleName(), 2);
     }
 

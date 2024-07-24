@@ -13,7 +13,7 @@ import static mb.nabl2.terms.build.TermBuild.B;
 
 public class STX_delays_as_errors extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_delays_as_errors() {
+    @jakarta.inject.Inject public STX_delays_as_errors() {
         super(STX_delays_as_errors.class.getSimpleName(), 0);
     }
 

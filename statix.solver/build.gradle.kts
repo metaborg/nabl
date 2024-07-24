@@ -28,7 +28,6 @@ dependencies {
     compileOnly("org.immutables:serial")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("jakarta.inject:jakarta.inject-api")
-    implementation("javax.inject:javax.inject")
 
     // Tests
     testImplementation("junit:junit")
