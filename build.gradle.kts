@@ -1,3 +1,4 @@
+import org.metaborg.convention.Developer
 import org.metaborg.convention.MavenPublishConventionExtension
 
 // Workaround for issue: https://youtrack.jetbrains.com/issue/KTIJ-19369
@@ -5,6 +6,12 @@ import org.metaborg.convention.MavenPublishConventionExtension
 plugins {
     id("org.metaborg.convention.root-project")
     alias(libs.plugins.gitonium)
+    alias(libs.plugins.spoofax.gradle.langspec) apply false
+}
+
+rootProjectConvention {
+    // Add `publishAll` and `publish` tasks that delegate to the subprojects and included builds.
+    registerPublishTasks.set(true)
 }
 
 allprojects {
