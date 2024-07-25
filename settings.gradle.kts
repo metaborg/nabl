@@ -1,4 +1,4 @@
-rootProject.name = "nabl"
+rootProject.name = "nabl-project"
 
 dependencyResolutionManagement {
     repositories {
