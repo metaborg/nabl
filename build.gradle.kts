@@ -2,7 +2,7 @@ plugins {
     `java-library`
     id("org.metaborg.gradle.config.root-project") version "0.7.3"
     id("org.metaborg.gitonium") version "1.2.0"
-    id("org.metaborg.devenv.spoofax.gradle.langspec") version "0.1.38" apply false
+    id("org.metaborg.devenv.spoofax.gradle.langspec") version "0.1.41" apply false
 }
 
 val spoofax2Version: String = System.getProperty("spoofax2Version")
