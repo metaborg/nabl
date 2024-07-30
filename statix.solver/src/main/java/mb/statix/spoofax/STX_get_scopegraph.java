@@ -21,7 +21,7 @@ import mb.statix.solver.persistent.SolverResult;
 
 public class STX_get_scopegraph extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_get_scopegraph() {
+    @jakarta.inject.Inject public STX_get_scopegraph() {
         super(STX_get_scopegraph.class.getSimpleName(), 0);
     }
 

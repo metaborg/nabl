@@ -13,7 +13,7 @@ import mb.scopegraph.oopsla20.reference.ResolutionException;
 
 public class STX_labelord_lt extends AbstractPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_labelord_lt() {
+    @jakarta.inject.Inject public STX_labelord_lt() {
         super(STX_labelord_lt.class.getSimpleName(), 0, 1);
     }
 

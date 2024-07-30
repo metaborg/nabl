@@ -8,7 +8,6 @@ import org.metaborg.util.Ref;
 import org.metaborg.util.collection.CapsuleUtil;
 import org.metaborg.util.functions.Action1;
 import org.metaborg.util.iterators.Iterables2;
-import org.metaborg.util.log.PrintlineLogger;
 import org.metaborg.util.task.ICancel;
 import org.metaborg.util.task.IProgress;
 import org.metaborg.util.task.RateLimitedCancel;
@@ -38,8 +37,6 @@ public class FixedPointSolver {
 
 //    @SuppressWarnings("unused")
 //    private static final ILogger log = LoggerUtils.logger(FixedPointSolver.class);
-
-    private static final PrintlineLogger log = PrintlineLogger.logger(FixedPointSolver.class);
 
     private final PublishSubject<Step> stepSubject;
 
@@ -93,10 +90,7 @@ public class FixedPointSolver {
 
                 final SolveResult result;
                 try {
-                    boolean l = !(constraint instanceof CConj);
-                    if(l) { log.debug("solving {}", constraint); }
                     result = component.apply(constraint);
-                    if(l) { log.debug("result {}", result); }
                 } catch(InterruptedDelayException e) {
                     throw e.getCause();
                 } catch(UnconditionalDelayExpection e) {
@@ -124,9 +118,6 @@ public class FixedPointSolver {
                 });
 
                 messages.addAll(result.messages());
-                if(!result.messages().getAll().isEmpty()) {
-                    log.info("+ updated messages: {}", messages);
-                }
 
                 result.constraints().forEach(constraints::addFirst);
 
@@ -153,7 +144,6 @@ public class FixedPointSolver {
                 // @formatter:on
                 .build();
 
-        log.info("+ fixpoint: {}", result);
         return result;
     }
 

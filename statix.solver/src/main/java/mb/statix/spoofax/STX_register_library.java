@@ -23,7 +23,7 @@ import mb.statix.solver.persistent.State;
 
 public class STX_register_library extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_register_library() {
+    @jakarta.inject.Inject public STX_register_library() {
         super(STX_register_library.class.getSimpleName(), 2);
     }
 

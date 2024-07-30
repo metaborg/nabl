@@ -34,7 +34,7 @@ import mb.statix.solver.tracer.EmptyTracer.Empty;
 
 public class STX_incremental_diagnostics extends StatixPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_incremental_diagnostics() {
+    @jakarta.inject.Inject public STX_incremental_diagnostics() {
         super(STX_incremental_diagnostics.class.getSimpleName(), 1);
     }
 

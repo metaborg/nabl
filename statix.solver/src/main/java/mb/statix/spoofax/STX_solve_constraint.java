@@ -16,7 +16,7 @@ import mb.statix.spec.Spec;
 
 public class STX_solve_constraint extends StatixConstraintPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_solve_constraint() {
+    @jakarta.inject.Inject public STX_solve_constraint() {
         super(STX_solve_constraint.class.getSimpleName());
     }
 

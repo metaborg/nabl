@@ -18,7 +18,7 @@ import mb.scopegraph.relations.impl.Relation;
 
 public class STX_ords_to_relation extends AbstractPrimitive {
 
-    @jakarta.inject.Inject @javax.inject.Inject public STX_ords_to_relation() {
+    @jakarta.inject.Inject public STX_ords_to_relation() {
         super(STX_ords_to_relation.class.getSimpleName(), 0, 1);
     }
 
