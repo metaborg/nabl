@@ -1,73 +1,80 @@
-## Repository-wide .gitignore
+# !! THIS FILE WAS GENERATED USING repoman !!
+# Modify `repo.yaml` instead and use `repoman` to update this file
+# See: https://github.com/metaborg/metaborg-gradle/
 
-
-## General
-*.tmp
-*.bak
-*.log
-*.hprof
-
-
-## Spoofax
-.polyglot.metaborg.yaml
-.cache/
-
-
-## Eclipse
-bin/
-tmp/
-.settings/
-.sts4-cache/
-.metadata
-.loadpath
-.recommenders
-.project
-.classpath
-.factorypath
-.apt_generated
-local.properties
-
-
-## Intellij
-.idea/
-.idea_modules/
-out/
-modules.xml
-*.iws
-*.iml
-*.ipr
-
-
-## Java
-src-gen/
+# Java
 *.class
+*.log
 *.jar
 *.war
 *.nar
 *.ear
-*.zip
-*.tar.gz
-*.rar
-.apt_generated_tests/
 
 
-## Maven
-/*/target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-.flattened-pom.xml
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
 
-## Gradle
-.gradle/
-/*/build/
-gradle-app.setting
-!gradle-wrapper.jar
-.gradletasknamecache
+# IntelliJ
+.idea/*
+!.idea/icon.svg
+!.idea/icon_dark.svg
+*.iws
+out/
+*.iml
+*.ipr
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+
+# Eclipse
+.metadata
+.classpath
+.project
+.apt_generated
+.settings
+.springBeans
+.sts4-cache
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.factorypath
+.recommenders/
+.apt_generated/
+.apt_generated_test/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+
+# VS Code
+.vscode/
+
+# Misc
+.cache
+.DS_Store
+*.lock
+jte-classes/
+
+# Spoofax
+src-gen/
+target/
+

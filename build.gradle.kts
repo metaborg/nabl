@@ -1,3 +1,7 @@
+// !! THIS FILE WAS GENERATED USING repoman !!
+// Modify `repo.yaml` instead and use `repoman` to update this file
+// See: https://github.com/metaborg/metaborg-gradle/
+
 import org.metaborg.convention.Person
 import org.metaborg.convention.MavenPublishConventionExtension
 
@@ -13,33 +17,39 @@ rootProjectConvention {
     // Add `publishAll` and `publish` tasks that delegate to the subprojects and included builds.
     registerPublishTasks.set(true)
 }
-
 allprojects {
     apply(plugin = "org.metaborg.gitonium")
 
     // Configure Gitonium before setting the version
     gitonium {
         mainBranch.set("master")
+        tagPrefix.set("devenv-release/")
     }
-
     version = gitonium.version
     group = "org.metaborg.devenv"
 
     pluginManager.withPlugin("org.metaborg.convention.maven-publish") {
         extensions.configure(MavenPublishConventionExtension::class.java) {
             repoOwner.set("metaborg")
-            repoName.set("nabl")
+            repoName.set("spoofax")
 
             metadata {
                 inceptionYear.set("2011")
                 developers.set(listOf(
-                    Person("hendrikvanantwerpen", "Hendrik van Antwerpen", "hendrik@van-antwerpen.net"),
-                    Person("AZWN", "Aron Zwaan", "aronzwaan@gmail.com"),
-                    Person("guwac", "Guido Wachsmuth", "g.h.wachsmuth@tudelft.nl"),
-                    Person("Gohla", "Gabriel Konat", "gabrielkonat@gmail.com"),
-                    Person("Virtlink", "Daniel A. A. Pelsmaeker", "developer@pelsmaeker.net"),
-                    Person("Apanatshka", "Jeff Smits", "mail@jeffsmits.net"),
-                    Person("lennartcl", "Lennart Kats", "lclkats@gmail.com"),
+                    Person("Jeff Smits", email = null, id = "Apanatshka"),
+                ))
+                contributors.set(listOf(
+                    Person("Hendrik van Antwerpen", email = null, id = "hendrikvanantwerpen"),
+                    Person("Aron Zwaan", email = null, id = "AZWN"),
+                    Person("Guido Wachsmuth", email = null, id = "guwac"),
+                    Person("Gabriel Konat", email = null, id = "Gohla"),
+                    Person("Daniel A. A. Pelsmaeker", email = null, id = "Virtlink"),
+                    Person("Gabriel Konat", email = null, id = "Gohla"),
+                    Person("Lennart Kats", email = null, id = "lennartcl"),
+                    Person("Casper Bach Poulsen", email = null, id = "casperbp"),
+                    Person("Vlad Vergu", email = null, id = "vvergu"),
+                    Person("Philippe Misteli", email = null, id = "pmisteliac"),
+                    Person("Michael Steindorfer", email = null, id = "msteindorfer"),
                 ))
             }
         }
