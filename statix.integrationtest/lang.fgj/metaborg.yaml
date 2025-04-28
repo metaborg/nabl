@@ -1,7 +1,7 @@
 ---
 id: org.metaborg:statix.integrationtest.lang.fgj:${metaborgVersion}
 name: FGJ
-metaborgVersion: 2.6.0-SNAPSHOT
+metaborgVersion: 2.5.23
 dependencies:
   compile:
   - org.metaborg:org.metaborg.meta.lang.esv:${metaborgVersion}
